@@ -1,21 +1,63 @@
 using fletflow.Infrastructure.Persistence;
+using fletflow.Api.Controllers;
 using Microsoft.EntityFrameworkCore;
+using fletflow.Infrastructure.Services;
+
+// 🧩 JWT y autenticación
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
+
 var builder = WebApplication.CreateBuilder(args);
 
+// ------------------------------------------
+// 🔧 Configuración de servicios
+// ------------------------------------------
+
+builder.Services.AddScoped<AuthService>();
+
+// Configurar Entity Framework Core con MySQL
 builder.Services.AddDbContext<AppDbContext>(options =>
 {
     var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
     options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString));
 });
 
-// Add services to the container.
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+// Configuración de JWT
+var jwtKey = builder.Configuration["Jwt:Key"];
+
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = builder.Configuration["Jwt:Issuer"],
+            ValidAudience = builder.Configuration["Jwt:Audience"],
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey))
+        };
+    });
+
+// Registrar controladores
+builder.Services.AddControllers()
+    .AddApplicationPart(typeof(AuthController).Assembly);
+
+// Swagger (para pruebas de endpoints)
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+
+// ------------------------------------------
+// 🚀 Construcción de la aplicación
+// ------------------------------------------
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+// ------------------------------------------
+// 🌐 Configuración del pipeline HTTP
+// ------------------------------------------
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -24,29 +66,10 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-var summaries = new[]
-{
-    "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-};
+// Habilitar autenticación y autorización JWT
+app.UseAuthentication();
+app.UseAuthorization();
 
-app.MapGet("/weatherforecast", () =>
-{
-    var forecast =  Enumerable.Range(1, 5).Select(index =>
-        new WeatherForecast
-        (
-            DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-            Random.Shared.Next(-20, 55),
-            summaries[Random.Shared.Next(summaries.Length)]
-        ))
-        .ToArray();
-    return forecast;
-})
-.WithName("GetWeatherForecast")
-.WithOpenApi();
+app.MapControllers();
 
 app.Run();
-
-record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
-{
-    public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
-}

@@ -5,23 +5,29 @@ using System.Security.Claims;
 namespace fletflow.Api.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")]
-    [Authorize] 
-    public class RutasController : ControllerBase
+[Route("api/[controller]")]
+public class RoutesController : ControllerBase
+{
+    [HttpGet("admin")]
+    [Authorize(Roles = "Admin")]
+    public IActionResult GetAdminRoutes()
     {
-        [HttpGet("mis-rutas")]
-        public IActionResult GetMisRutas()
-        {
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            var userEmail = User.FindFirstValue(ClaimTypes.Email);
-
-            return Ok(new
-            {
-                Message = "Acceso autorizado ✅",
-                UserId = userId,
-                Email = userEmail,
-                Fecha = DateTime.UtcNow
-            });
-        }
+        return Ok("Solo los administradores pueden ver esto.");
     }
+
+    [HttpGet("driver")]
+    [Authorize(Roles = "Driver")]
+    public IActionResult GetDriverRoutes()
+    {
+        return Ok("Solo los conductores pueden ver esto.");
+    }
+
+    [HttpGet("any")]
+    [Authorize] 
+    public IActionResult GetAll()
+    {
+        return Ok("Cualquier usuario autenticado puede ver esto.");
+    }
+}
+
 }

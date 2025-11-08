@@ -18,14 +18,15 @@ namespace fletflow.Api.Controllers
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] RegisterUserDto dto)
         {
-            var user = await _authService.RegisterAsync(dto.Username, dto.Email, dto.Password);
+            var token = await _authService.RegisterAsync(dto.Username, dto.Email, dto.Password, dto.RoleName);
 
-            return Ok(new
+            var response = new AuthResponseDto
             {
-                user.Id,
-                user.Username,
-                user.Email
-            });
+                Token = token,
+                Expiration = DateTime.UtcNow.AddHours(6)
+            };
+
+            return Ok(response);
         }
 
         [HttpPost("login")]

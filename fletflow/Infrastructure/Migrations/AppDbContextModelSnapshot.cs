@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
-using fletflow.Infrastructure.Persistence;
+using fletflow.Infrastructure.Persistence.Context;
 
 #nullable disable
 
@@ -22,7 +22,7 @@ namespace BackEnd_Gps.fletflow.Infrastructure.Migrations
 
             MySqlModelBuilderExtensions.AutoIncrementColumns(modelBuilder);
 
-            modelBuilder.Entity("fletflow.Domain.Auth.Entities.Role", b =>
+            modelBuilder.Entity("fletflow.Infrastructure.Persistence.Entities.RoleEntity", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -30,37 +30,55 @@ namespace BackEnd_Gps.fletflow.Infrastructure.Migrations
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasColumnType("longtext");
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
 
                     b.HasKey("Id");
 
-                    b.ToTable("Roles");
+                    b.HasIndex("Name")
+                        .IsUnique();
+
+                    b.ToTable("Roles", (string)null);
                 });
 
-            modelBuilder.Entity("fletflow.Domain.Auth.Entities.User", b =>
+            modelBuilder.Entity("fletflow.Infrastructure.Persistence.Entities.UserEntity", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("char(36)");
 
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime(6)");
+
                     b.Property<string>("Email")
                         .IsRequired()
-                        .HasColumnType("longtext");
+                        .HasMaxLength(200)
+                        .HasColumnType("varchar(200)");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit(1)")
+                        .HasDefaultValue(true);
 
                     b.Property<string>("PasswordHash")
                         .IsRequired()
-                        .HasColumnType("longtext");
+                        .HasMaxLength(500)
+                        .HasColumnType("varchar(500)");
 
                     b.Property<string>("Username")
                         .IsRequired()
-                        .HasColumnType("longtext");
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
 
                     b.HasKey("Id");
 
-                    b.ToTable("Users");
+                    b.HasIndex("Email")
+                        .IsUnique();
+
+                    b.ToTable("Users", (string)null);
                 });
 
-            modelBuilder.Entity("fletflow.Domain.Auth.Entities.UserRole", b =>
+            modelBuilder.Entity("fletflow.Infrastructure.Persistence.Entities.UserRoleEntity", b =>
                 {
                     b.Property<Guid>("UserId")
                         .HasColumnType("char(36)");
@@ -72,18 +90,18 @@ namespace BackEnd_Gps.fletflow.Infrastructure.Migrations
 
                     b.HasIndex("RoleId");
 
-                    b.ToTable("UserRoles");
+                    b.ToTable("UserRoles", (string)null);
                 });
 
-            modelBuilder.Entity("fletflow.Domain.Auth.Entities.UserRole", b =>
+            modelBuilder.Entity("fletflow.Infrastructure.Persistence.Entities.UserRoleEntity", b =>
                 {
-                    b.HasOne("fletflow.Domain.Auth.Entities.Role", "Role")
+                    b.HasOne("fletflow.Infrastructure.Persistence.Entities.RoleEntity", "Role")
                         .WithMany("UserRoles")
                         .HasForeignKey("RoleId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("fletflow.Domain.Auth.Entities.User", "User")
+                    b.HasOne("fletflow.Infrastructure.Persistence.Entities.UserEntity", "User")
                         .WithMany("UserRoles")
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -94,12 +112,12 @@ namespace BackEnd_Gps.fletflow.Infrastructure.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("fletflow.Domain.Auth.Entities.Role", b =>
+            modelBuilder.Entity("fletflow.Infrastructure.Persistence.Entities.RoleEntity", b =>
                 {
                     b.Navigation("UserRoles");
                 });
 
-            modelBuilder.Entity("fletflow.Domain.Auth.Entities.User", b =>
+            modelBuilder.Entity("fletflow.Infrastructure.Persistence.Entities.UserEntity", b =>
                 {
                     b.Navigation("UserRoles");
                 });

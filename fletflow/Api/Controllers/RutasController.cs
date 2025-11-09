@@ -1,11 +1,13 @@
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
+
 
 namespace fletflow.Api.Controllers
 {
     [ApiController]
-[Route("api/[controller]")]
+    [Route("api/[controller]")]
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
 public class RoutesController : ControllerBase
 {
     [HttpGet("admin")]

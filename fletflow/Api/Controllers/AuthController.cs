@@ -18,29 +18,53 @@ namespace fletflow.Api.Controllers
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] RegisterUserDto dto)
         {
-            var token = await _authService.RegisterAsync(dto.Username, dto.Email, dto.Password, dto.RoleName);
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
 
-            var response = new AuthResponseDto
+            try
             {
-                Token = token,
-                Expiration = DateTime.UtcNow.AddHours(6)
-            };
+                var token = await _authService.RegisterAsync(dto.Username, dto.Email, dto.Password, dto.RoleName);
 
-            return Ok(response);
+                return Ok(new AuthResponseDto
+                {
+                    Token = token,
+                    Expiration = DateTime.UtcNow.AddHours(6)
+                });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Conflict(new { message = ex.Message }); // 409
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = $"Error interno: {ex.Message}" });
+            }
         }
 
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginUserDto dto)
         {
-            var token = await _authService.LoginAsync(dto.Email, dto.Password);
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
 
-            var response = new AuthResponseDto
+            try
             {
-                Token = token,
-                Expiration = DateTime.UtcNow.AddHours(6)
-            };
+                var token = await _authService.LoginAsync(dto.Email, dto.Password);
 
-            return Ok(response);
+                return Ok(new AuthResponseDto
+                {
+                    Token = token,
+                    Expiration = DateTime.UtcNow.AddHours(6)
+                });
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Unauthorized(new { message = ex.Message }); // 401
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = $"Error interno: {ex.Message}" });
+            }
         }
     }
 }

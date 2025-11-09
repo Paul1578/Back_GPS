@@ -1,20 +1,44 @@
-using fletflow.Infrastructure.Persistence;
+
 using fletflow.Api.Controllers;
 using Microsoft.EntityFrameworkCore;
 using fletflow.Infrastructure.Services;
+using fletflow.Infrastructure.Security; 
 
 // 🧩 JWT y autenticación
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using fletflow.Application.Users.Queries;
+using fletflow.Application.Users.Commands;
+using System.Security.Claims;
+using fletflow.Infrastructure.Persistence.Context;
+using fletflow.Infrastructure.Config;
+using Microsoft.OpenApi.Models;
+using fletflow.Domain.Auth.Repositories;
+using fletflow.Infrastructure.Persistence.Repositories;
+using fletflow.Infrastructure.Persistence.Contracts;
+using fletflow.Infrastructure.Persistence;
+using fletflow.Api.Middleware;
+using FluentValidation.AspNetCore;
+using FluentValidation;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // ------------------------------------------
 // 🔧 Configuración de servicios
 // ------------------------------------------
-
+builder.Services.AddScoped<JwtTokenService>();
+builder.Services.AddScoped<GetAllUsersQuery>();
+builder.Services.AddScoped<UpdateUserCommand>();
 builder.Services.AddScoped<AuthService>();
+builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
+builder.Services.AddScoped<IRoleRepository, RoleRepository>();
+builder.Services.AddFluentValidationAutoValidation();
+builder.Services.AddValidatorsFromAssemblyContaining<RegisterUserValidator>();
+builder.Services.AddTransient<ExceptionMiddleware>();
+
+builder.Services.AddInfrastructure(builder.Configuration);
 
 // Configurar Entity Framework Core con MySQL
 builder.Services.AddDbContext<AppDbContext>(options =>
@@ -23,8 +47,12 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString));
 });
 
+
 // Configuración de JWT
-var jwtKey = builder.Configuration["Jwt:Key"];
+builder.Services.Configure<JwtSettings>(
+    builder.Configuration.GetSection("Jwt"));
+var jwtSettings = builder.Configuration.GetSection("Jwt").Get<JwtSettings>();
+var key = Encoding.UTF8.GetBytes(jwtSettings.Key);
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -35,11 +63,16 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateAudience = true,
             ValidateLifetime = true,
             ValidateIssuerSigningKey = true,
-            ValidIssuer = builder.Configuration["Jwt:Issuer"],
-            ValidAudience = builder.Configuration["Jwt:Audience"],
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey))
+            ValidIssuer = "fletflow.api",
+            ValidAudience = "fletflow.users",
+            IssuerSigningKey = new SymmetricSecurityKey(
+                Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"])
+            ),
+            NameClaimType = ClaimTypes.NameIdentifier,
+            RoleClaimType = ClaimTypes.Role
         };
     });
+
 
 builder.Services.AddAuthorization(options =>
 {
@@ -55,8 +88,45 @@ builder.Services.AddControllers()
 
 // Swagger (para pruebas de endpoints)
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(options =>
+{
+    options.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Title = "FletFlow API",
+        Version = "v1",
+        Description = "API para la gestión de flotas con autenticación JWT",
+        Contact = new OpenApiContact
+        {
+            Name = "Equipo fletflow",
+            Email = "soporte@fletflow.com"
+        }
+    });
 
+    // 🔐 Incluir esquema de autenticación JWT
+    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Description = "Encabezado de autorización JWT usando el esquema Bearer. Ejemplo: 'Bearer {token}'",
+        Name = "Authorization",
+        In = ParameterLocation.Header,
+        Type = SecuritySchemeType.ApiKey,
+        Scheme = "Bearer"
+    });
+
+    options.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
+            Array.Empty<string>()
+        }
+    });
+});
 
 // ------------------------------------------
 // 🚀 Construcción de la aplicación
@@ -72,12 +142,21 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    await DbSeeder.SeedAsync(db);
+}
+
 app.UseHttpsRedirection();
+app.UseMiddleware<ExceptionMiddleware>();
+app.UseRouting(); 
 
 // Habilitar autenticación y autorización JWT
-app.UseAuthentication();
+app.UseAuthentication(); 
 app.UseAuthorization();
 
 app.MapControllers();
 
 app.Run();
+

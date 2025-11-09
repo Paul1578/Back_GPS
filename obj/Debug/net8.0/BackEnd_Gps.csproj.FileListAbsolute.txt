@@ -7,6 +7,7 @@ C:\Users\User\OneDrive\Desktop\BackEnd_Gps\bin\Debug\net8.0\BackEnd_Gps.dll
 C:\Users\User\OneDrive\Desktop\BackEnd_Gps\bin\Debug\net8.0\BackEnd_Gps.pdb
 C:\Users\User\OneDrive\Desktop\BackEnd_Gps\bin\Debug\net8.0\BCrypt.Net-Next.dll
 C:\Users\User\OneDrive\Desktop\BackEnd_Gps\bin\Debug\net8.0\Humanizer.dll
+C:\Users\User\OneDrive\Desktop\BackEnd_Gps\bin\Debug\net8.0\Microsoft.AspNetCore.Authentication.JwtBearer.dll
 C:\Users\User\OneDrive\Desktop\BackEnd_Gps\bin\Debug\net8.0\Microsoft.AspNetCore.OpenApi.dll
 C:\Users\User\OneDrive\Desktop\BackEnd_Gps\bin\Debug\net8.0\Microsoft.Bcl.AsyncInterfaces.dll
 C:\Users\User\OneDrive\Desktop\BackEnd_Gps\bin\Debug\net8.0\Microsoft.Build.Locator.dll
@@ -30,6 +31,12 @@ C:\Users\User\OneDrive\Desktop\BackEnd_Gps\bin\Debug\net8.0\Microsoft.Extensions
 C:\Users\User\OneDrive\Desktop\BackEnd_Gps\bin\Debug\net8.0\Microsoft.Extensions.Logging.Abstractions.dll
 C:\Users\User\OneDrive\Desktop\BackEnd_Gps\bin\Debug\net8.0\Microsoft.Extensions.Options.dll
 C:\Users\User\OneDrive\Desktop\BackEnd_Gps\bin\Debug\net8.0\Microsoft.Extensions.Primitives.dll
+C:\Users\User\OneDrive\Desktop\BackEnd_Gps\bin\Debug\net8.0\Microsoft.IdentityModel.Abstractions.dll
+C:\Users\User\OneDrive\Desktop\BackEnd_Gps\bin\Debug\net8.0\Microsoft.IdentityModel.JsonWebTokens.dll
+C:\Users\User\OneDrive\Desktop\BackEnd_Gps\bin\Debug\net8.0\Microsoft.IdentityModel.Logging.dll
+C:\Users\User\OneDrive\Desktop\BackEnd_Gps\bin\Debug\net8.0\Microsoft.IdentityModel.Protocols.dll
+C:\Users\User\OneDrive\Desktop\BackEnd_Gps\bin\Debug\net8.0\Microsoft.IdentityModel.Protocols.OpenIdConnect.dll
+C:\Users\User\OneDrive\Desktop\BackEnd_Gps\bin\Debug\net8.0\Microsoft.IdentityModel.Tokens.dll
 C:\Users\User\OneDrive\Desktop\BackEnd_Gps\bin\Debug\net8.0\Microsoft.OpenApi.dll
 C:\Users\User\OneDrive\Desktop\BackEnd_Gps\bin\Debug\net8.0\Mono.TextTemplating.dll
 C:\Users\User\OneDrive\Desktop\BackEnd_Gps\bin\Debug\net8.0\MySqlConnector.dll
@@ -44,6 +51,7 @@ C:\Users\User\OneDrive\Desktop\BackEnd_Gps\bin\Debug\net8.0\System.Composition.H
 C:\Users\User\OneDrive\Desktop\BackEnd_Gps\bin\Debug\net8.0\System.Composition.Runtime.dll
 C:\Users\User\OneDrive\Desktop\BackEnd_Gps\bin\Debug\net8.0\System.Composition.TypedParts.dll
 C:\Users\User\OneDrive\Desktop\BackEnd_Gps\bin\Debug\net8.0\System.Diagnostics.DiagnosticSource.dll
+C:\Users\User\OneDrive\Desktop\BackEnd_Gps\bin\Debug\net8.0\System.IdentityModel.Tokens.Jwt.dll
 C:\Users\User\OneDrive\Desktop\BackEnd_Gps\bin\Debug\net8.0\System.IO.Pipelines.dll
 C:\Users\User\OneDrive\Desktop\BackEnd_Gps\bin\Debug\net8.0\System.Text.Encodings.Web.dll
 C:\Users\User\OneDrive\Desktop\BackEnd_Gps\bin\Debug\net8.0\System.Text.Json.dll
@@ -135,11 +143,6 @@ C:\Users\User\OneDrive\Desktop\BackEnd_Gps\obj\Debug\net8.0\refint\BackEnd_Gps.d
 C:\Users\User\OneDrive\Desktop\BackEnd_Gps\obj\Debug\net8.0\BackEnd_Gps.pdb
 C:\Users\User\OneDrive\Desktop\BackEnd_Gps\obj\Debug\net8.0\BackEnd_Gps.genruntimeconfig.cache
 C:\Users\User\OneDrive\Desktop\BackEnd_Gps\obj\Debug\net8.0\ref\BackEnd_Gps.dll
-C:\Users\User\OneDrive\Desktop\BackEnd_Gps\bin\Debug\net8.0\Microsoft.AspNetCore.Authentication.JwtBearer.dll
-C:\Users\User\OneDrive\Desktop\BackEnd_Gps\bin\Debug\net8.0\Microsoft.IdentityModel.Abstractions.dll
-C:\Users\User\OneDrive\Desktop\BackEnd_Gps\bin\Debug\net8.0\Microsoft.IdentityModel.JsonWebTokens.dll
-C:\Users\User\OneDrive\Desktop\BackEnd_Gps\bin\Debug\net8.0\Microsoft.IdentityModel.Logging.dll
-C:\Users\User\OneDrive\Desktop\BackEnd_Gps\bin\Debug\net8.0\Microsoft.IdentityModel.Protocols.dll
-C:\Users\User\OneDrive\Desktop\BackEnd_Gps\bin\Debug\net8.0\Microsoft.IdentityModel.Protocols.OpenIdConnect.dll
-C:\Users\User\OneDrive\Desktop\BackEnd_Gps\bin\Debug\net8.0\Microsoft.IdentityModel.Tokens.dll
-C:\Users\User\OneDrive\Desktop\BackEnd_Gps\bin\Debug\net8.0\System.IdentityModel.Tokens.Jwt.dll
+C:\Users\User\OneDrive\Desktop\BackEnd_Gps\bin\Debug\net8.0\FluentValidation.dll
+C:\Users\User\OneDrive\Desktop\BackEnd_Gps\bin\Debug\net8.0\FluentValidation.AspNetCore.dll
+C:\Users\User\OneDrive\Desktop\BackEnd_Gps\bin\Debug\net8.0\FluentValidation.DependencyInjectionExtensions.dll

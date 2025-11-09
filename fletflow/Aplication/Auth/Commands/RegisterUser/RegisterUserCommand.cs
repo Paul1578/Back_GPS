@@ -1,59 +1,60 @@
 using fletflow.Domain.Auth.Entities;
 using fletflow.Infrastructure.Persistence;
-using Microsoft.EntityFrameworkCore;
+using fletflow.Infrastructure.Persistence.Contracts;
 
-namespace fletflow.Aplication.Auth.Commands
+namespace fletflow.Application.Auth.Commands
 {
     public class RegisterUserCommand
     {
-        private readonly AppDbContext _context;
+        private readonly IUnitOfWork _unitOfWork;
 
-        public RegisterUserCommand(AppDbContext context)
+        public RegisterUserCommand(IUnitOfWork unitOfWork)
         {
-            _context = context;
+            _unitOfWork = unitOfWork;
         }
 
         public async Task<User> Execute(string username, string email, string password, string roleName)
         {
-            // 1️⃣ Verificar si el usuario ya existe
-            if (await _context.Users.AnyAsync(u => u.Email == email))
+            // 1) Verificar si el usuario ya existe
+            var existingUser = await _unitOfWork.Users.GetByEmailAsync(email);
+            if (existingUser is not null)
                 throw new Exception("El correo ya fue registrado.");
 
-            // 2️⃣ Crear el usuario
-            var user = new User
+            // 2) Normalizar rol
+            roleName = string.IsNullOrWhiteSpace(roleName) ? "User" : roleName.Trim();
+
+            // 3) Resolver (o crear) rol por nombre
+            var role = await _unitOfWork.Roles.GetByNameAsync(roleName);
+            if (role is null)
             {
-                Username = username,
-                Email = email,
-                PasswordHash = BCrypt.Net.BCrypt.HashPassword(password)
-            };
-
-            // 🔥 Normalizar el nombre del rol (elimina espacios/saltos y lo pone con mayúscula inicial)
-            roleName = roleName.Trim();
-
-            // 3️⃣ Buscar el rol sin importar mayúsculas/minúsculas
-            var role = await _context.Roles
-                .FirstOrDefaultAsync(r => r.Name.ToLower() == roleName.ToLower());
-
-            // 4️⃣ Si no existe, créalo
-            if (role == null)
-            {
-                role = new Role { Name = roleName };
-                _context.Roles.Add(role);
+                role = new Role { Id = Guid.NewGuid(), Name = roleName };
+                await _unitOfWork.Roles.AddAsync(role);
+                await _unitOfWork.CommitAsync(); // asegura Role.Id persistido
             }
 
-            // 5️⃣ Asignar el rol al usuario
+            // 4) Crear usuario de dominio
+            var user = new User
+            {
+                Id = Guid.NewGuid(),
+                Username = username,
+                Email = email,
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword(password),
+                IsActive = true
+            };
+
+            // 5) Relación por RoleId (clave: NO insertar de nuevo el role)
             user.UserRoles.Add(new UserRole
             {
-                User = user,
-                Role = role
+                UserId = user.Id,
+                RoleId = role.Id,
+                Role = role // opcional en dominio; NO se mapea a entity al guardar
             });
 
-            // 6️⃣ Guardar en DB
-            _context.Users.Add(user);
-            await _context.SaveChangesAsync();
+            // 6) Guardar usuario
+            await _unitOfWork.Users.AddAsync(user);
+            await _unitOfWork.CommitAsync();
 
             return user;
         }
-
     }
 }

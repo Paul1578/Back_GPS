@@ -3,13 +3,13 @@ using fletflow.Infrastructure.Persistence.Contracts;
 
 namespace fletflow.Application.Auth.Commands
 {
-    public class AssignRoleToUserCommand
+    public class RemoveRoleFromUserCommand
     {
         private readonly IUnitOfWork _uow;
         private readonly IUserRepository _users;
         private readonly IRoleRepository _roles;
 
-        public AssignRoleToUserCommand(IUnitOfWork uow, IUserRepository users, IRoleRepository roles)
+        public RemoveRoleFromUserCommand(IUnitOfWork uow, IUserRepository users, IRoleRepository roles)
         {
             _uow = uow;
             _users = users;
@@ -21,9 +21,7 @@ namespace fletflow.Application.Auth.Commands
             var user = await _users.GetByIdAsync(userId) ?? throw new KeyNotFoundException("Usuario no encontrado.");
             var role = await _roles.GetByNameAsync(roleName.Trim()) ?? throw new KeyNotFoundException($"Rol '{roleName}' no existe.");
 
-            if (await _users.HasRoleAsync(user.Id, role.Id)) return;
-
-            await _users.AssignRoleAsync(user.Id, role.Id);
+            await _users.RemoveRoleAsync(user.Id, role.Id);
             await _uow.CommitAsync();
         }
     }

@@ -6,5 +6,11 @@ namespace fletflow.Domain.Auth.Repositories
     {
         Task<Role?> GetByNameAsync(string name);
         Task AddAsync(Role role);
+    
+        Task<bool> DeleteByNameAsync(string name);
+        Task<IReadOnlyList<Role>> GetAllAsync();
+    
     }
+
+
 }

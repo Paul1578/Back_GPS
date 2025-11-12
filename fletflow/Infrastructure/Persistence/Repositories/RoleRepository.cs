@@ -22,6 +22,23 @@ namespace fletflow.Infrastructure.Persistence.Repositories
         public async Task AddAsync(Role role)
         {
             await _context.Roles.AddAsync(role.ToEntity());
+        }public async Task<bool> DeleteByNameAsync(string name)
+        {
+            var entity = await _context.Roles.FirstOrDefaultAsync(r => r.Name.ToLower() == name.Trim().ToLower());
+            if (entity is null) return false;
+
+            // protección simple: impide borrar si tiene usuarios
+            bool inUse = await _context.UserRoles.AnyAsync(ur => ur.RoleId == entity.Id);
+            if (inUse) throw new InvalidOperationException($"No se puede eliminar el rol '{name}' porque tiene usuarios asignados.");
+
+            _context.Roles.Remove(entity);
+            return true;
+        }
+
+        public async Task<IReadOnlyList<Role>> GetAllAsync()
+        {
+            var entities = await _context.Roles.AsNoTracking().ToListAsync();
+            return entities.Select(e => e.ToDomain()).ToList();
         }
     }
 }

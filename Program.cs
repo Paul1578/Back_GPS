@@ -34,7 +34,11 @@ builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddScoped<IRoleRepository, RoleRepository>();
-builder.Services.AddFluentValidationAutoValidation();
+builder.Services.AddScoped<fletflow.Application.Auth.Queries.GetAllRolesQuery>();
+builder.Services.AddScoped<fletflow.Application.Auth.Commands.CreateRoleCommand>();
+builder.Services.AddScoped<fletflow.Application.Auth.Commands.DeleteRoleCommand>();
+builder.Services.AddScoped<fletflow.Application.Auth.Commands.AssignRoleToUserCommand>();
+builder.Services.AddScoped<fletflow.Application.Auth.Commands.RemoveRoleFromUserCommand>();builder.Services.AddFluentValidationAutoValidation();
 builder.Services.AddValidatorsFromAssemblyContaining<RegisterUserValidator>();
 builder.Services.AddTransient<ExceptionMiddleware>();
 

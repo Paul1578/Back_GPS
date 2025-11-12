@@ -74,7 +74,9 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                 Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"])
             ),
             NameClaimType = ClaimTypes.NameIdentifier,
-            RoleClaimType = ClaimTypes.Role
+            RoleClaimType = ClaimTypes.Role,
+
+            ClockSkew = TimeSpan.Zero
         };
     });
 
@@ -106,6 +108,17 @@ builder.Services.AddSwaggerGen(options =>
             Email = "soporte@fletflow.com"
         }
     });
+
+    // CORS para el front (ajusta los origins a tu frontend)
+    builder.Services.AddCors(o =>
+    {
+        o.AddPolicy("Front", p => p
+            .WithOrigins("http://localhost:5173", "http://localhost:3000")
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            .AllowCredentials());
+    });
+
 
     // 🔐 Incluir esquema de autenticación JWT
     options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
@@ -156,6 +169,7 @@ using (var scope = app.Services.CreateScope())
 app.UseHttpsRedirection();
 app.UseMiddleware<ExceptionMiddleware>();
 app.UseRouting(); 
+app.UseCors("Front");
 
 // Habilitar autenticación y autorización JWT
 app.UseAuthentication(); 

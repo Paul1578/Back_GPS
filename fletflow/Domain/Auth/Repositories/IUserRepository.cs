@@ -15,5 +15,7 @@ namespace fletflow.Domain.Auth.Repositories
         Task AssignRoleAsync(Guid userId, Guid roleId);
         Task RemoveRoleAsync(Guid userId, Guid roleId);
 
+        Task UpdatePasswordHashAsync(Guid userId, string newPasswordHash);
+
     }
 }

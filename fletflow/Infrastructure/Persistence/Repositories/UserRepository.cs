@@ -56,5 +56,13 @@ namespace fletflow.Infrastructure.Persistence.Repositories
             var link = await _context.UserRoles.FirstOrDefaultAsync(ur => ur.UserId == userId && ur.RoleId == roleId);
             if (link is not null) _context.UserRoles.Remove(link);
         }
+        public async Task UpdatePasswordHashAsync(Guid userId, string newPasswordHash)
+    {
+        var entity = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
+        if (entity is null)
+            throw new KeyNotFoundException("Usuario no encontrado.");
+
+        entity.PasswordHash = newPasswordHash;
+    }
     }
 }

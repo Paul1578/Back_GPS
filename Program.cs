@@ -37,6 +37,7 @@ builder.Services.AddScoped<IRoleRepository, RoleRepository>();
 builder.Services.AddScoped<fletflow.Application.Auth.Queries.GetAllRolesQuery>();
 builder.Services.AddScoped<fletflow.Application.Auth.Commands.CreateRoleCommand>();
 builder.Services.AddScoped<fletflow.Application.Auth.Commands.DeleteRoleCommand>();
+builder.Services.AddScoped<fletflow.Application.Auth.Commands.ChangePasswordCommand>();
 builder.Services.AddScoped<fletflow.Application.Auth.Commands.AssignRoleToUserCommand>();
 builder.Services.AddScoped<fletflow.Application.Auth.Commands.RemoveRoleFromUserCommand>();builder.Services.AddFluentValidationAutoValidation();
 builder.Services.AddValidatorsFromAssemblyContaining<RegisterUserValidator>();

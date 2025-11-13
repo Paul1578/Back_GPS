@@ -1,5 +1,6 @@
 using System.Threading.Tasks;
 using fletflow.Domain.Auth.Repositories;
+using fletflow.Domain.Fleet.Repositories;
 
 namespace fletflow.Infrastructure.Persistence.Contracts
 {
@@ -22,6 +23,8 @@ namespace fletflow.Infrastructure.Persistence.Contracts
         IRefreshTokenRepository RefreshTokens { get; }
 
         IPasswordResetTokenRepository PasswordResetTokens { get; }
+
+        IVehicleRepository Vehicles { get; } 
         void Rollback();
     }
 }

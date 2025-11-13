@@ -14,6 +14,7 @@ namespace fletflow.Infrastructure.Persistence.Context
         public DbSet<UserRoleEntity> UserRoles { get; set; } = default!;
         public DbSet<RefreshTokenEntity> RefreshTokens { get; set; } = default!;
         public DbSet<PasswordResetTokenEntity> PasswordResetTokens { get; set; } = default!;
+        public DbSet<VehicleEntity> Vehicles { get; set; } = default!;
 
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -37,6 +38,8 @@ namespace fletflow.Infrastructure.Persistence.Context
                 .HasForeignKey(x => x.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
             });
+
+            modelBuilder.ApplyConfiguration(new VehicleConfiguration());
             base.OnModelCreating(modelBuilder);
         }
     }

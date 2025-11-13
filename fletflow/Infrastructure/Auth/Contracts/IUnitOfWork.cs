@@ -17,7 +17,11 @@ namespace fletflow.Infrastructure.Persistence.Contracts
         /// <summary>
         /// Descarta cambios en el DbContext (si procede).
         /// </summary>
+        
         /// 
+        IRefreshTokenRepository RefreshTokens { get; }
+
+        IPasswordResetTokenRepository PasswordResetTokens { get; }
         void Rollback();
     }
 }

@@ -2,7 +2,7 @@ using fletflow.Domain.Auth.Entities;
 using fletflow.Domain.Auth.Repositories;
 using fletflow.Infrastructure.Persistence.Context;
 using fletflow.Infrastructure.Persistence.Entities;
-using fletflow.Infrastructure.Persistence.Mappings; 
+using fletflow.Infrastructure.Persistence.Mappings;
 using Microsoft.EntityFrameworkCore;
 
 namespace fletflow.Infrastructure.Persistence.Repositories
@@ -16,30 +16,29 @@ namespace fletflow.Infrastructure.Persistence.Repositories
         public async Task<User?> GetByEmailAsync(string email)
         {
             var entity = await _context.Users
-                .Include(u => u.UserRoles)
-                    .ThenInclude(ur => ur.Role)
+                .Include(u => u.UserRoles).ThenInclude(ur => ur.Role)
                 .FirstOrDefaultAsync(u => u.Email == email);
 
-            return entity is null ? null : AuthMapper.ToDomain(entity); 
+            return entity is null ? null : AuthMapper.ToDomain(entity);
         }
 
         public async Task<User?> GetByIdAsync(Guid id)
         {
             var entity = await _context.Users
-                .Include(u => u.UserRoles)
-                    .ThenInclude(ur => ur.Role)
+                .Include(u => u.UserRoles).ThenInclude(ur => ur.Role)
                 .FirstOrDefaultAsync(u => u.Id == id);
 
-            return entity is null ? null : AuthMapper.ToDomain(entity); // 👈 calificado
+            return entity is null ? null : AuthMapper.ToDomain(entity);
         }
 
         public async Task AddAsync(User user)
         {
-            var entity = AuthMapper.ToEntity(user); // 👈 calificado
+            var entity = AuthMapper.ToEntity(user);
             await _context.Users.AddAsync(entity);
         }
 
-        public async Task SaveChangesAsync() => await _context.SaveChangesAsync();
+        public Task SaveChangesAsync() => _context.SaveChangesAsync();
+
         public async Task<bool> HasRoleAsync(Guid userId, Guid roleId)
         {
             return await _context.UserRoles.AnyAsync(ur => ur.UserId == userId && ur.RoleId == roleId);
@@ -56,13 +55,14 @@ namespace fletflow.Infrastructure.Persistence.Repositories
             var link = await _context.UserRoles.FirstOrDefaultAsync(ur => ur.UserId == userId && ur.RoleId == roleId);
             if (link is not null) _context.UserRoles.Remove(link);
         }
-        public async Task UpdatePasswordHashAsync(Guid userId, string newPasswordHash)
-    {
-        var entity = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
-        if (entity is null)
-            throw new KeyNotFoundException("Usuario no encontrado.");
 
-        entity.PasswordHash = newPasswordHash;
-    }
+        // ✅ implementación que persiste el hash realmente en DB
+        public async Task UpdatePasswordHashAsync(Guid userId, string newPasswordHash)
+        {
+            var entity = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
+            if (entity is null) throw new KeyNotFoundException("Usuario no encontrado.");
+            entity.PasswordHash = newPasswordHash;
+            _context.Users.Update(entity);
+        }
     }
 }

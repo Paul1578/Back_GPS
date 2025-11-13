@@ -24,8 +24,10 @@ namespace fletflow.Application.Auth.Commands
 
             var newHash = BCrypt.Net.BCrypt.HashPassword(newPassword);
 
-            // 👇 actualización sobre la entidad EF
+            // actualización sobre la entidad EF
             await _users.UpdatePasswordHashAsync(userId, newHash);
+
+            await _uow.RefreshTokens.RevokeAllForUserAsync(user.Id);
 
             // commit con UnitOfWork
             await _uow.CommitAsync();

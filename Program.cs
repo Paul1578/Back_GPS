@@ -32,8 +32,10 @@ builder.Services.AddScoped<GetAllUsersQuery>();
 builder.Services.AddScoped<UpdateUserCommand>();
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
-builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddScoped<IRoleRepository, RoleRepository>();
+builder.Services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
+builder.Services.AddScoped<IPasswordResetTokenRepository, PasswordResetTokenRepository>();
+builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddScoped<fletflow.Application.Auth.Queries.GetAllRolesQuery>();
 builder.Services.AddScoped<fletflow.Application.Auth.Commands.CreateRoleCommand>();
 builder.Services.AddScoped<fletflow.Application.Auth.Commands.DeleteRoleCommand>();
@@ -42,6 +44,7 @@ builder.Services.AddScoped<fletflow.Application.Auth.Commands.AssignRoleToUserCo
 builder.Services.AddScoped<fletflow.Application.Auth.Commands.RemoveRoleFromUserCommand>();builder.Services.AddFluentValidationAutoValidation();
 builder.Services.AddValidatorsFromAssemblyContaining<RegisterUserValidator>();
 builder.Services.AddTransient<ExceptionMiddleware>();
+
 
 builder.Services.AddInfrastructure(builder.Configuration);
 
@@ -93,6 +96,17 @@ builder.Services.AddAuthorization(options =>
 builder.Services.AddControllers()
     .AddApplicationPart(typeof(AuthController).Assembly);
 
+ // CORS para el front (ajusta los origins a tu frontend)
+    builder.Services.AddCors(o =>
+    {
+        o.AddPolicy("Front", p => p
+            .WithOrigins("http://localhost:5173", "http://localhost:3000")
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            .AllowCredentials());
+    });
+
+
 // Swagger (para pruebas de endpoints)
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
@@ -108,17 +122,6 @@ builder.Services.AddSwaggerGen(options =>
             Email = "soporte@fletflow.com"
         }
     });
-
-    // CORS para el front (ajusta los origins a tu frontend)
-    builder.Services.AddCors(o =>
-    {
-        o.AddPolicy("Front", p => p
-            .WithOrigins("http://localhost:5173", "http://localhost:3000")
-            .AllowAnyHeader()
-            .AllowAnyMethod()
-            .AllowCredentials());
-    });
-
 
     // 🔐 Incluir esquema de autenticación JWT
     options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme

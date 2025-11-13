@@ -25,6 +25,8 @@ namespace fletflow.Infrastructure.Persistence.Contracts
         IPasswordResetTokenRepository PasswordResetTokens { get; }
 
         IVehicleRepository Vehicles { get; } 
+
+        IDriverRepository Drivers { get; }
         void Rollback();
     }
 }

@@ -54,6 +54,12 @@ builder.Services.AddScoped<UpdateVehicleCommand>();
 builder.Services.AddScoped<ChangeVehicleStatusCommand>();
 builder.Services.AddScoped<GetVehicleByIdQuery>();
 builder.Services.AddScoped<GetVehiclesQuery>();
+builder.Services.AddScoped<IDriverRepository, DriverRepository>();
+builder.Services.AddScoped<CreateDriverCommand>();
+builder.Services.AddScoped<GetDriverByIdQuery>();
+builder.Services.AddScoped<GetDriversQuery>();
+builder.Services.AddScoped<AssignDriverToVehicleCommand>();
+builder.Services.AddScoped<UnassignDriverFromVehicleCommand>();
 
 builder.Services.AddInfrastructure(builder.Configuration);
 

@@ -31,5 +31,34 @@ namespace fletflow.Infrastructure.Persistence.Mappings
                 IsActive = domain.IsActive
             };
         }
+
+        public static Driver ToDomain(DriverEntity entity)
+        {
+            return Driver.CreateExisting(
+                entity.Id,
+                entity.FirstName,
+                entity.LastName,
+                entity.DocumentNumber,
+                entity.PhoneNumber,
+                entity.IsActive,
+                entity.VehicleId
+            );
+        }
+
+        public static DriverEntity ToEntity(Driver domain)
+        {
+            return new DriverEntity
+            {
+                Id = domain.Id,
+                FirstName = domain.FirstName,
+                LastName = domain.LastName,
+                DocumentNumber = domain.DocumentNumber,
+                PhoneNumber = domain.PhoneNumber,
+                IsActive = domain.IsActive,
+                VehicleId = domain.VehicleId
+            };
+        }
+
+
     }
 }

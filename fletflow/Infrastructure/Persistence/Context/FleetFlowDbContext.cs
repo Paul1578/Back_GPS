@@ -15,6 +15,7 @@ namespace fletflow.Infrastructure.Persistence.Context
         public DbSet<RefreshTokenEntity> RefreshTokens { get; set; } = default!;
         public DbSet<PasswordResetTokenEntity> PasswordResetTokens { get; set; } = default!;
         public DbSet<VehicleEntity> Vehicles { get; set; } = default!;
+        public DbSet<DriverEntity> Drivers { get; set; } = default!;
 
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -40,6 +41,7 @@ namespace fletflow.Infrastructure.Persistence.Context
             });
 
             modelBuilder.ApplyConfiguration(new VehicleConfiguration());
+             modelBuilder.ApplyConfiguration(new DriverConfiguration());
             base.OnModelCreating(modelBuilder);
         }
     }

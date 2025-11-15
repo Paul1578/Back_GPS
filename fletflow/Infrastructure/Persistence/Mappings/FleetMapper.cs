@@ -58,7 +58,38 @@ namespace fletflow.Infrastructure.Persistence.Mappings
                 VehicleId = domain.VehicleId
             };
         }
+        public static RouteE ToDomain(RouteEntity entity)
+        {
+            return RouteE.CreateExisting(
+                entity.Id,
+                entity.VehicleId,
+                entity.DriverId,
+                entity.Origin,
+                entity.Destination,
+                entity.CargoDescription,
+                entity.PlannedStart,
+                entity.PlannedEnd,
+                (RouteStatus)entity.Status,
+                entity.IsActive
+            );
+        }
 
+        public static RouteEntity ToEntity(RouteE domain)
+        {
+            return new RouteEntity
+            {
+                Id = domain.Id,
+                VehicleId = domain.VehicleId,
+                DriverId = domain.DriverId,
+                Origin = domain.Origin,
+                Destination = domain.Destination,
+                CargoDescription = domain.CargoDescription,
+                PlannedStart = domain.PlannedStart,
+                PlannedEnd = domain.PlannedEnd,
+                Status = (int)domain.Status,
+                IsActive = domain.IsActive
+            };
+        }
 
     }
 }

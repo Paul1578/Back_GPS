@@ -60,6 +60,13 @@ builder.Services.AddScoped<GetDriverByIdQuery>();
 builder.Services.AddScoped<GetDriversQuery>();
 builder.Services.AddScoped<AssignDriverToVehicleCommand>();
 builder.Services.AddScoped<UnassignDriverFromVehicleCommand>();
+builder.Services.AddScoped<IRouteRepository, RouteRepository>();
+
+builder.Services.AddScoped<CreateRouteCommand>();
+builder.Services.AddScoped<UpdateRouteCommand>();
+builder.Services.AddScoped<ChangeRouteStatusCommand>();
+builder.Services.AddScoped<GetRouteByIdQuery>();
+builder.Services.AddScoped<GetRoutesQuery>();
 
 builder.Services.AddInfrastructure(builder.Configuration);
 

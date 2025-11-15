@@ -27,6 +27,7 @@ namespace fletflow.Infrastructure.Persistence.Contracts
         IVehicleRepository Vehicles { get; } 
 
         IDriverRepository Drivers { get; }
+        IRouteRepository Routes { get; }
         void Rollback();
     }
 }

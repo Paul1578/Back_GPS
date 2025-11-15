@@ -67,6 +67,9 @@ builder.Services.AddScoped<UpdateRouteCommand>();
 builder.Services.AddScoped<ChangeRouteStatusCommand>();
 builder.Services.AddScoped<GetRouteByIdQuery>();
 builder.Services.AddScoped<GetRoutesQuery>();
+builder.Services.AddScoped<IRoutePositionRepository, RoutePositionRepository>();
+builder.Services.AddScoped<RegisterRoutePositionCommand>();
+builder.Services.AddScoped<GetRoutePositionsQuery>();
 
 builder.Services.AddInfrastructure(builder.Configuration);
 

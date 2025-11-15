@@ -15,6 +15,7 @@ namespace fletflow.Infrastructure.Persistence
         public IVehicleRepository Vehicles { get; }
         public IDriverRepository Drivers { get; }
         public IRouteRepository Routes { get; }
+        public IRoutePositionRepository RoutePositions { get; }
 
         public UnitOfWork(
             AppDbContext context,
@@ -24,7 +25,8 @@ namespace fletflow.Infrastructure.Persistence
             IPasswordResetTokenRepository passwordResetTokens,
             IVehicleRepository vehicleRepository,
             IDriverRepository drivers,
-            IRouteRepository routes)
+            IRouteRepository routes,
+            IRoutePositionRepository routePositions)
         {
             _context = context;
             Users = users;
@@ -34,6 +36,7 @@ namespace fletflow.Infrastructure.Persistence
             Vehicles = vehicleRepository;
             Drivers = drivers;
             Routes = routes;
+            RoutePositions = routePositions;
         }
 
         public Task<int> CommitAsync() => _context.SaveChangesAsync();

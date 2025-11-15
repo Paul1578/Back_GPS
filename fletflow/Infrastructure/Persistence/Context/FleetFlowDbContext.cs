@@ -17,6 +17,7 @@ namespace fletflow.Infrastructure.Persistence.Context
         public DbSet<VehicleEntity> Vehicles { get; set; } = default!;
         public DbSet<DriverEntity> Drivers { get; set; } = default!;
         public DbSet<RouteEntity> Routes { get; set; } = default!;
+        public DbSet<RoutePositionEntity> RoutePositions { get; set; } = default!;
 
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -44,6 +45,7 @@ namespace fletflow.Infrastructure.Persistence.Context
             modelBuilder.ApplyConfiguration(new VehicleConfiguration());
             modelBuilder.ApplyConfiguration(new DriverConfiguration());
             modelBuilder.ApplyConfiguration(new RouteConfiguration());
+            base.OnModelCreating(modelBuilder);
             base.OnModelCreating(modelBuilder);
         }
     }

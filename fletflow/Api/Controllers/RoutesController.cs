@@ -19,18 +19,25 @@ namespace fletflow.Api.Controllers
         private readonly GetRouteByIdQuery _getById;
         private readonly GetRoutesQuery _getAll;
 
+        private readonly RegisterRoutePositionCommand _registerPosition;
+        private readonly GetRoutePositionsQuery _getPositions;  
+
         public RoutesController(
             CreateRouteCommand createRoute,
             UpdateRouteCommand updateRoute,
             ChangeRouteStatusCommand changeStatus,
             GetRouteByIdQuery getById,
-            GetRoutesQuery getAll)
+            GetRoutesQuery getAll,
+            RegisterRoutePositionCommand registerPosition,
+            GetRoutePositionsQuery getPositions)
         {
             _createRoute = createRoute;
             _updateRoute = updateRoute;
             _changeStatus = changeStatus;
             _getById = getById;
             _getAll = getAll;
+            _registerPosition = registerPosition;
+            _getPositions = getPositions;
         }
 
         [HttpPost]
@@ -87,6 +94,34 @@ namespace fletflow.Api.Controllers
         public async Task<ActionResult<RouteDto>> GetById(Guid id)
         {
             var result = await _getById.Execute(id);
+            return Ok(result);
+        }
+
+        [HttpPost("{routeId:guid}/positions")]
+        public async Task<ActionResult<RoutePositionDto>> RegisterPosition(
+            Guid routeId,
+            [FromBody] RegisterRoutePositionRequest request)
+        {
+            var result = await _registerPosition.Execute(
+                routeId,
+                request.Latitude,
+                request.Longitude,
+                request.RecordedAt,
+                request.SpeedKmh,
+                request.Heading
+            );
+
+            return Ok(result);
+        }
+
+        // GET api/routes/{routeId}/positions?from=2025-11-14T00:00:00Z&to=...
+        [HttpGet("{routeId:guid}/positions")]
+        public async Task<ActionResult<List<RoutePositionDto>>> GetPositions(
+            Guid routeId,
+            [FromQuery] DateTime? from,
+            [FromQuery] DateTime? to)
+        {
+            var result = await _getPositions.Execute(routeId, from, to);
             return Ok(result);
         }
     }

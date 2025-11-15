@@ -91,5 +91,32 @@ namespace fletflow.Infrastructure.Persistence.Mappings
             };
         }
 
+        public static RoutePosition ToDomain(RoutePositionEntity entity)
+        {
+            return RoutePosition.CreateExisting(
+                entity.Id,
+                entity.RouteId,
+                entity.Latitude,
+                entity.Longitude,
+                entity.RecordedAt,
+                entity.SpeedKmh,
+                entity.Heading
+            );
+        }
+
+        public static RoutePositionEntity ToEntity(RoutePosition domain)
+        {
+            return new RoutePositionEntity
+            {
+                Id = domain.Id,
+                RouteId = domain.RouteId,
+                Latitude = domain.Latitude,
+                Longitude = domain.Longitude,
+                RecordedAt = domain.RecordedAt,
+                SpeedKmh = domain.SpeedKmh,
+                Heading = domain.Heading
+            };
+        }
+
     }
 }

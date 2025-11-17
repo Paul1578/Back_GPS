@@ -1,4 +1,5 @@
 using fletflow.Domain.Auth.Repositories;
+using fletflow.Domain.Fleet.Repositories;
 using fletflow.Infrastructure.Persistence.Context;
 using fletflow.Infrastructure.Persistence.Contracts;
 
@@ -11,19 +12,31 @@ namespace fletflow.Infrastructure.Persistence
         public IUserRepository Users { get; }
         public IRoleRepository Roles { get; }
         public IRefreshTokenRepository RefreshTokens { get; }
+        public IVehicleRepository Vehicles { get; }
+        public IDriverRepository Drivers { get; }
+        public IRouteRepository Routes { get; }
+        public IRoutePositionRepository RoutePositions { get; }
 
         public UnitOfWork(
             AppDbContext context,
             IUserRepository users,
             IRoleRepository roles,
             IRefreshTokenRepository rts,
-            IPasswordResetTokenRepository passwordResetTokens)
+            IPasswordResetTokenRepository passwordResetTokens,
+            IVehicleRepository vehicleRepository,
+            IDriverRepository drivers,
+            IRouteRepository routes,
+            IRoutePositionRepository routePositions)
         {
             _context = context;
             Users = users;
             Roles = roles;
             RefreshTokens = rts;
             PasswordResetTokens = passwordResetTokens;
+            Vehicles = vehicleRepository;
+            Drivers = drivers;
+            Routes = routes;
+            RoutePositions = routePositions;
         }
 
         public Task<int> CommitAsync() => _context.SaveChangesAsync();

@@ -21,6 +21,9 @@ using fletflow.Infrastructure.Persistence;
 using fletflow.Api.Middleware;
 using FluentValidation.AspNetCore;
 using FluentValidation;
+using fletflow.Domain.Fleet.Repositories;
+using fletflow.Application.Fleet.Commands;
+using fletflow.Application.Fleet.Queries;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -44,7 +47,29 @@ builder.Services.AddScoped<fletflow.Application.Auth.Commands.AssignRoleToUserCo
 builder.Services.AddScoped<fletflow.Application.Auth.Commands.RemoveRoleFromUserCommand>();builder.Services.AddFluentValidationAutoValidation();
 builder.Services.AddValidatorsFromAssemblyContaining<RegisterUserValidator>();
 builder.Services.AddTransient<ExceptionMiddleware>();
+// Fleet
+builder.Services.AddScoped<IVehicleRepository, VehicleRepository>();
+builder.Services.AddScoped<CreateVehicleCommand>();
+builder.Services.AddScoped<UpdateVehicleCommand>();
+builder.Services.AddScoped<ChangeVehicleStatusCommand>();
+builder.Services.AddScoped<GetVehicleByIdQuery>();
+builder.Services.AddScoped<GetVehiclesQuery>();
+builder.Services.AddScoped<IDriverRepository, DriverRepository>();
+builder.Services.AddScoped<CreateDriverCommand>();
+builder.Services.AddScoped<GetDriverByIdQuery>();
+builder.Services.AddScoped<GetDriversQuery>();
+builder.Services.AddScoped<AssignDriverToVehicleCommand>();
+builder.Services.AddScoped<UnassignDriverFromVehicleCommand>();
+builder.Services.AddScoped<IRouteRepository, RouteRepository>();
 
+builder.Services.AddScoped<CreateRouteCommand>();
+builder.Services.AddScoped<UpdateRouteCommand>();
+builder.Services.AddScoped<ChangeRouteStatusCommand>();
+builder.Services.AddScoped<GetRouteByIdQuery>();
+builder.Services.AddScoped<GetRoutesQuery>();
+builder.Services.AddScoped<IRoutePositionRepository, RoutePositionRepository>();
+builder.Services.AddScoped<RegisterRoutePositionCommand>();
+builder.Services.AddScoped<GetRoutePositionsQuery>();
 
 builder.Services.AddInfrastructure(builder.Configuration);
 

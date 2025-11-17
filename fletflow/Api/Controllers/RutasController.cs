@@ -8,7 +8,7 @@ namespace fletflow.Api.Controllers
     [ApiController]
     [Route("api/[controller]")]
     [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
-public class RoutesController : ControllerBase
+public class RoutesPRUEBAController : ControllerBase
 {
     [HttpGet("admin")]
     [Authorize(Roles = "Admin")]

@@ -19,10 +19,27 @@ namespace fletflow.Infrastructure.Persistence.Repositories
 
         public async Task<PasswordResetToken?> GetByRawTokenAsync(string rawToken)
         {
-            var hash = TokenHashing.Sha256(rawToken);
+            var normalized = Uri.UnescapeDataString(rawToken.Trim()).Replace(" ", "+");
+            var hash = TokenHashing.Sha256(normalized);
             var entity = await _context.PasswordResetTokens
                 .AsNoTracking()
                 .FirstOrDefaultAsync(x => x.TokenHash == hash);
+            if (entity is null)
+            {
+                Console.WriteLine($"[ResetPasswordRepo] Token no encontrado. normalized={normalized} hash={hash}");
+            }
+            return entity is null ? null : PasswordResetTokenMapper.ToDomain(entity);
+        }
+
+        public async Task<PasswordResetToken?> GetByTokenHashAsync(string tokenHash)
+        {
+            var entity = await _context.PasswordResetTokens
+                .AsNoTracking()
+                .FirstOrDefaultAsync(x => x.TokenHash == tokenHash);
+            if (entity is null)
+            {
+                Console.WriteLine($"[ResetPasswordRepo] Token no encontrado por hash={tokenHash}");
+            }
             return entity is null ? null : PasswordResetTokenMapper.ToDomain(entity);
         }
 

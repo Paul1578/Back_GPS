@@ -1,20 +1,20 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\User\\OneDrive\\Desktop\\BackEnd_Gps\\BackEnd_Gps.csproj": {}
+    "C:\\Users\\alfredo.sosa\\5AMS\\PROYECTOS\\Back_GPS\\BackEnd_Gps.csproj": {}
   },
   "projects": {
-    "C:\\Users\\User\\OneDrive\\Desktop\\BackEnd_Gps\\BackEnd_Gps.csproj": {
+    "C:\\Users\\alfredo.sosa\\5AMS\\PROYECTOS\\Back_GPS\\BackEnd_Gps.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\User\\OneDrive\\Desktop\\BackEnd_Gps\\BackEnd_Gps.csproj",
+        "projectUniqueName": "C:\\Users\\alfredo.sosa\\5AMS\\PROYECTOS\\Back_GPS\\BackEnd_Gps.csproj",
         "projectName": "BackEnd_Gps",
-        "projectPath": "C:\\Users\\User\\OneDrive\\Desktop\\BackEnd_Gps\\BackEnd_Gps.csproj",
-        "packagesPath": "C:\\Users\\User\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\User\\OneDrive\\Desktop\\BackEnd_Gps\\obj\\",
+        "projectPath": "C:\\Users\\alfredo.sosa\\5AMS\\PROYECTOS\\Back_GPS\\BackEnd_Gps.csproj",
+        "packagesPath": "C:\\Users\\alfredo.sosa\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\alfredo.sosa\\5AMS\\PROYECTOS\\Back_GPS\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
-          "C:\\Users\\User\\AppData\\Roaming\\NuGet\\NuGet.Config"
+          "C:\\Users\\alfredo.sosa\\AppData\\Roaming\\NuGet\\NuGet.Config"
         ],
         "originalTargetFrameworks": [
           "net8.0"
@@ -101,7 +101,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\8.0.414/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\8.0.416/PortableRuntimeIdentifierGraph.json"
         }
       }
     }

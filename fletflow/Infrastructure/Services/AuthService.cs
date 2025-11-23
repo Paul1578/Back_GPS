@@ -1,9 +1,10 @@
-using fletflow.Application.Auth.Commands;
+﻿using fletflow.Application.Auth.Commands;
 using fletflow.Application.DTOs.Auth;
 using fletflow.Domain.Auth.Entities;
 using fletflow.Infrastructure.Persistence.Contracts;  // IUnitOfWork
 using fletflow.Infrastructure.Security;
 using fletflow.Infrastructure.Security.Hashing;
+using Microsoft.Extensions.Options;
 
 namespace fletflow.Infrastructure.Services
 {
@@ -11,11 +12,17 @@ namespace fletflow.Infrastructure.Services
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly JwtTokenService _jwtService;
+        private readonly IEmailSender _emailService;
+        private readonly EmailSettings _emailSettings;
+        private readonly PasswordResetTokenFactory _passwordResetTokenFactory;
 
-        public AuthService(IUnitOfWork unitOfWork, JwtTokenService jwtService)
+        public AuthService(IUnitOfWork unitOfWork, JwtTokenService jwtService, IEmailSender emailService, PasswordResetTokenFactory passwordResetTokenFactory, IOptions<EmailSettings> emailOptions)
         {
             _unitOfWork = unitOfWork;
             _jwtService = jwtService;
+            _emailService = emailService;
+            _passwordResetTokenFactory = passwordResetTokenFactory;
+            _emailSettings = emailOptions.Value;
         }
 
         // Access + Refresh
@@ -37,7 +44,7 @@ namespace fletflow.Infrastructure.Services
         public async Task<AuthResponseDto> RefreshAsync(string refreshTokenRaw)
         {
             var rt = await _unitOfWork.RefreshTokens.GetByTokenAsync(refreshTokenRaw)
-                ?? throw new UnauthorizedAccessException("RT inválido.");
+                ?? throw new UnauthorizedAccessException("RT invalido.");
 
             if (!rt.IsActive)
                 throw new UnauthorizedAccessException("RT expirado o revocado.");
@@ -45,8 +52,8 @@ namespace fletflow.Infrastructure.Services
             var user = await _unitOfWork.Users.GetByIdAsync(rt.UserId)
                 ?? throw new KeyNotFoundException("Usuario no encontrado.");
 
-            // rotación de refresh
-            var newRaw  = RefreshTokenFactory.Create();
+            // rotacion de refresh
+            var newRaw = RefreshTokenFactory.Create();
             var newHash = TokenHashing.Sha256(newRaw);
 
             var newRt = new RefreshToken
@@ -93,9 +100,14 @@ namespace fletflow.Infrastructure.Services
             };
         }
 
-        public async Task<ForgotPasswordResponseDto> ForgotPasswordAsync(string email, bool returnTokenInResponse = true)
+        public async Task<ForgotPasswordResponseDto> ForgotPasswordAsync(string email, bool returnTokenInResponse = false)
         {
-            var user = await _unitOfWork.Users.GetByEmailAsync(email);
+            var normalizedEmail = email?.Trim();
+            Console.WriteLine($"[ForgotPassword] Solicitud para {normalizedEmail}");
+            if (string.IsNullOrWhiteSpace(normalizedEmail))
+                return new ForgotPasswordResponseDto();
+
+            var user = await _unitOfWork.Users.GetByEmailAsync(normalizedEmail);
 
             // respuesta ciega
             string? raw = null;
@@ -103,23 +115,25 @@ namespace fletflow.Infrastructure.Services
 
             if (user != null)
             {
+                Console.WriteLine($"[ForgotPassword] Usuario encontrado {user.Email}");
                 await _unitOfWork.PasswordResetTokens.InvalidateAllForUserAsync(user.Id);
 
-                raw = RefreshTokenFactory.Create(32);
-                var hash = TokenHashing.Sha256(raw);
+                var (token, plainToken) = _passwordResetTokenFactory.Create(user.Id, _emailSettings.ResetTokenMinutes);
+                raw = plainToken;
 
-                var prt = new PasswordResetToken
-                {
-                    UserId = user.Id,
-                    TokenHash = hash,
-                    ExpiresAt = DateTime.UtcNow.AddMinutes(30)
-                };
+                await _unitOfWork.PasswordResetTokens.AddAsync(token);
+                var saved = await _unitOfWork.CommitAsync();
+                Console.WriteLine($"[ForgotPassword] Token guardado? filas={saved} tokenId={token.Id}");
 
-                await _unitOfWork.PasswordResetTokens.AddAsync(prt);
-                await _unitOfWork.CommitAsync();
-
-                exp = prt.ExpiresAt;
-                // TODO: enviar 'raw' por correo en producción
+                exp = token.ExpiresAt;
+                var encoded = Uri.EscapeDataString(plainToken);
+                var link = $"{_emailSettings.ResetPasswordUrl}?token={encoded}";
+                Console.WriteLine($"[ForgotPassword] Enviando correo a {user.Email} link={link} plain={plainToken}");
+                await _emailService.SendPasswordResetEmailAsync(user.Email, link, plainToken);
+            }
+            else
+            {
+                Console.WriteLine($"[ForgotPassword] Email no encontrado {normalizedEmail}");
             }
 
             return new ForgotPasswordResponseDto
@@ -132,7 +146,7 @@ namespace fletflow.Infrastructure.Services
         public async Task ResetPasswordAsync(string rawToken, string newPassword)
         {
             var prt = await _unitOfWork.PasswordResetTokens.GetByRawTokenAsync(rawToken)
-                ?? throw new UnauthorizedAccessException("Token inválido.");
+                ?? throw new UnauthorizedAccessException("Token invalido.");
 
             if (!prt.IsActive)
                 throw new UnauthorizedAccessException("Token expirado o usado.");
@@ -140,14 +154,14 @@ namespace fletflow.Infrastructure.Services
             var user = await _unitOfWork.Users.GetByIdAsync(prt.UserId)
                 ?? throw new KeyNotFoundException("Usuario no encontrado.");
 
-            // ✅ generar hash y PERSISTIRLO mediante el repositorio
+            // generar hash y persistirlo mediante el repositorio
             var newHash = BCrypt.Net.BCrypt.HashPassword(newPassword);
             await _unitOfWork.Users.UpdatePasswordHashAsync(user.Id, newHash);
 
             // marcar token como usado
             await _unitOfWork.PasswordResetTokens.MarkUsedAsync(prt.Id);
 
-            // (opcional) revocar todos los refresh tokens del usuario:
+            // opcional: revocar todos los refresh tokens del usuario
             // await _unitOfWork.RefreshTokens.RevokeAllForUserAsync(user.Id);
 
             await _unitOfWork.CommitAsync();
@@ -160,7 +174,7 @@ namespace fletflow.Infrastructure.Services
 
             var access = _jwtService.GenerateToken(user.Id, user.Username, user.Email, role);
 
-            var raw  = RefreshTokenFactory.Create();
+            var raw = RefreshTokenFactory.Create();
             var hash = TokenHashing.Sha256(raw);
 
             var rt = new RefreshToken
@@ -184,7 +198,6 @@ namespace fletflow.Infrastructure.Services
             return new AuthResponseDto
             {
                 Token = access,
-                // si quieres usar JwtSettings.ExpireMinutes, inyecta IOptions<JwtSettings> y calcula aquí
                 Expiration = DateTime.UtcNow.AddMinutes(60),
                 RefreshToken = refreshRaw,
                 RefreshTokenExpiration = rtExp

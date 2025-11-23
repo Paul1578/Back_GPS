@@ -9,6 +9,7 @@ namespace fletflow.Infrastructure.Persistence.Entities
         public string PasswordHash { get; set; } = default!;
         public bool IsActive { get; set; } = true;
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        public Guid? OwnerUserId { get; set; }
 
         // Navigation
         public ICollection<UserRoleEntity> UserRoles { get; set; } = new List<UserRoleEntity>();

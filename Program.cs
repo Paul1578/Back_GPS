@@ -24,6 +24,7 @@ using FluentValidation;
 using fletflow.Domain.Fleet.Repositories;
 using fletflow.Application.Fleet.Commands;
 using fletflow.Application.Fleet.Queries;
+using fletflow.Application.Auth.Commands;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -75,6 +76,10 @@ builder.Services.AddScoped<RegisterRoutePositionCommand>();
 builder.Services.AddScoped<GetRoutePositionsQuery>();
 builder.Services.AddScoped<DeleteVehicleCommand>();
 builder.Services.AddScoped<DeleteRouteCommand>();
+builder.Services.AddScoped<CreateUserWithRoleCommand>();
+builder.Services.AddScoped<GetMyTeamUsersQuery>();
+builder.Services.AddScoped<RegisterUserCommand>();
+
 
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("Email"));

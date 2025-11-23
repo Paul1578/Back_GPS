@@ -8,6 +8,7 @@ namespace fletflow.Domain.Auth.Entities
         public string PasswordHash { get; set; } = default!;
         public bool IsActive { get; set; } = true;
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        public Guid? OwnerUserId { get; set; }
         public ICollection<UserRole> UserRoles { get; set; } = new List<UserRole>();
     }
 }

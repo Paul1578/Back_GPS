@@ -1,9 +1,11 @@
-using fletflow.Infrastructure.Services;
-using fletflow.Application.DTOs.Auth;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Authorization;
-using fletflow.Application.Auth.Commands;
+using System;
 using System.Security.Claims;
+using fletflow.Application.Auth.Commands;
+using fletflow.Application.Auth.Commands.ResetPassword;
+using fletflow.Application.DTOs.Auth;
+using fletflow.Infrastructure.Services;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 
 namespace fletflow.Api.Controllers
 {
@@ -12,10 +14,12 @@ namespace fletflow.Api.Controllers
     public class AuthController : ControllerBase
     {
         private readonly AuthService _authService;
+        private readonly IEmailSender _emailService;
 
-        public AuthController(AuthService authService)
+        public AuthController(AuthService authService, IEmailSender emailService)
         {
             _authService = authService;
+            _emailService = emailService;
         }
 
         [HttpPost("register")]
@@ -48,7 +52,7 @@ namespace fletflow.Api.Controllers
 
             var userId = Guid.Parse(userIdStr);
             await command.Execute(userId, dto.CurrentPassword, dto.NewPassword);
-            return Ok(new { message = "Contraseña actualizada correctamente." });
+            return Ok(new { message = "Contrasena actualizada correctamente." });
         }
 
         public class RefreshRequestDto
@@ -69,7 +73,7 @@ namespace fletflow.Api.Controllers
         public async Task<IActionResult> Logout([FromBody] RefreshRequestDto dto)
         {
             await _authService.LogoutAsync(dto.RefreshToken);
-            return Ok(new { message = "Sesión cerrada." });
+            return Ok(new { message = "Sesion cerrada." });
         }
 
         [HttpPost("logout-all")]
@@ -94,7 +98,7 @@ namespace fletflow.Api.Controllers
                 return Unauthorized("Token sin identificador de usuario.");
 
             if (!Guid.TryParse(userIdStr, out var userId))
-                return Unauthorized("Identificador de usuario inválido en el token.");
+                return Unauthorized("Identificador de usuario invalido en el token.");
 
             var me = await _authService.GetMeAsync(userId);
             return Ok(me);
@@ -104,16 +108,30 @@ namespace fletflow.Api.Controllers
         [AllowAnonymous]
         public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordDto dto)
         {
-            var resp = await _authService.ForgotPasswordAsync(dto.Email, returnTokenInResponse: true); // en prod: false
+            var resp = await _authService.ForgotPasswordAsync(dto.Email, returnTokenInResponse: false);
             return Ok(resp);
         }
 
         [HttpPost("reset-password")]
         [AllowAnonymous]
-        public async Task<IActionResult> ResetPassword([FromBody] ResetPasswordDto dto)
+        public async Task<IActionResult> ResetPassword([FromServices] ResetPasswordCommand command, [FromBody] ResetPasswordDto dto)
         {
-            await _authService.ResetPasswordAsync(dto.Token, dto.NewPassword);
-            return Ok(new { message = "Contraseña restablecida." });
+            await command.ExecuteAsync(dto.Token, dto.NewPassword, dto.ConfirmNewPassword);
+            return Ok(new { message = "Contrasena restablecida." });
+        }
+
+        [HttpGet("test-email")]
+        [AllowAnonymous]
+        public async Task<IActionResult> TestEmail([FromQuery] string to)
+        {
+            if (string.IsNullOrWhiteSpace(to))
+                return BadRequest(new { message = "Debe enviar ?to=email@dominio.com" });
+
+            var plainToken = $"test-{Guid.NewGuid():N}";
+            var encoded = Uri.EscapeDataString(plainToken);
+            var testLink = $"https://example.com/reset?token={encoded}";
+            await _emailService.SendPasswordResetEmailAsync(to, testLink, plainToken);
+            return Ok(new { message = "Correo de prueba enviado (si SMTP se configuro correctamente)." });
         }
     }
 }

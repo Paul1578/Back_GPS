@@ -25,9 +25,10 @@ namespace fletflow.Infrastructure.Persistence.Repositories
 
         public async Task<User?> GetByEmailAsync(string email)
         {
+            var normalized = email.Trim().ToLowerInvariant();
             var entity = await _context.Users
                 .Include(u => u.UserRoles).ThenInclude(ur => ur.Role)
-                .FirstOrDefaultAsync(u => u.Email == email);
+                .FirstOrDefaultAsync(u => u.Email.ToLower() == normalized);
 
             // 👇 usamos AuthMapper explícito, NO entity.ToDomain()
             return entity is null ? null : AuthMapper.ToDomain(entity);

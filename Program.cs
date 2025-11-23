@@ -1,10 +1,10 @@
-
+﻿
 using fletflow.Api.Controllers;
 using Microsoft.EntityFrameworkCore;
 using fletflow.Infrastructure.Services;
 using fletflow.Infrastructure.Security; 
 
-// 🧩 JWT y autenticación
+// Autenticacion JWT
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
@@ -29,7 +29,7 @@ using fletflow.Application.Auth.Commands;
 var builder = WebApplication.CreateBuilder(args);
 
 // ------------------------------------------
-// 🔧 Configuración de servicios
+// Configuracion de servicios
 // ------------------------------------------
 builder.Services.AddScoped<JwtTokenService>();
 builder.Services.AddScoped<GetAllUsersQuery>();
@@ -39,6 +39,9 @@ builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IRoleRepository, RoleRepository>();
 builder.Services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
 builder.Services.AddScoped<IPasswordResetTokenRepository, PasswordResetTokenRepository>();
+builder.Services.AddScoped<fletflow.Application.Auth.Commands.ResetPassword.ResetPasswordCommand>();
+builder.Services.AddScoped<PasswordResetTokenFactory>();
+builder.Services.AddScoped<IEmailSender, EmailService>();
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddScoped<fletflow.Application.Auth.Queries.GetAllRolesQuery>();
 builder.Services.AddScoped<fletflow.Application.Auth.Commands.CreateRoleCommand>();
@@ -79,6 +82,8 @@ builder.Services.AddScoped<RegisterUserCommand>();
 
 
 builder.Services.AddInfrastructure(builder.Configuration);
+builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("Email"));
+builder.Services.AddScoped<EmailService>();
 
 // Configurar Entity Framework Core con MySQL
 builder.Services.AddDbContext<AppDbContext>(options =>
@@ -88,7 +93,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 });
 
 
-// Configuración de JWT
+// Configuracion de JWT
 builder.Services.Configure<JwtSettings>(
     builder.Configuration.GetSection("Jwt"));
 var jwtSettings = builder.Configuration.GetSection("Jwt").Get<JwtSettings>();
@@ -147,7 +152,7 @@ builder.Services.AddSwaggerGen(options =>
     {
         Title = "FletFlow API",
         Version = "v1",
-        Description = "API para la gestión de flotas con autenticación JWT",
+        Description = "API para la gestion de flotas con autenticacion JWT",
         Contact = new OpenApiContact
         {
             Name = "Equipo fletflow",
@@ -155,10 +160,10 @@ builder.Services.AddSwaggerGen(options =>
         }
     });
 
-    // 🔐 Incluir esquema de autenticación JWT
+    // Incluir esquema de autenticacion JWT
     options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
-        Description = "Encabezado de autorización JWT usando el esquema Bearer. Ejemplo: 'Bearer {token}'",
+        Description = "Encabezado de autorizacion JWT usando el esquema Bearer. Ejemplo: 'Bearer {token}'",
         Name = "Authorization",
         In = ParameterLocation.Header,
         Type = SecuritySchemeType.ApiKey,
@@ -182,12 +187,12 @@ builder.Services.AddSwaggerGen(options =>
 });
 
 // ------------------------------------------
-// 🚀 Construcción de la aplicación
+// Construccion de la aplicacion
 // ------------------------------------------
 var app = builder.Build();
 
 // ------------------------------------------
-// 🌐 Configuración del pipeline HTTP
+// Configuracion del pipeline HTTP
 // ------------------------------------------
 if (app.Environment.IsDevelopment())
 {
@@ -206,7 +211,7 @@ app.UseMiddleware<ExceptionMiddleware>();
 app.UseRouting(); 
 app.UseCors("Front");
 
-// Habilitar autenticación y autorización JWT
+// Habilitar autenticacion y autorizacion JWT
 app.UseAuthentication(); 
 app.UseAuthorization();
 

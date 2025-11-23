@@ -10,6 +10,7 @@ namespace fletflow.Domain.Fleet.Repositories
         Task<List<RouteE>> GetAllAsync(
             Guid? vehicleId = null,
             Guid? driverId = null,
-            RouteStatus? status = null);
+            RouteStatus? status = null,
+            bool? onlyActive = null);
     }
 }

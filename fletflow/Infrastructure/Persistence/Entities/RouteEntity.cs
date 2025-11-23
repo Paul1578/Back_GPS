@@ -9,6 +9,7 @@ namespace fletflow.Infrastructure.Persistence.Entities
 
         public Guid DriverId { get; set; }
         public DriverEntity Driver { get; set; } = default!;
+        public string Name { get; set; } = default!;
 
         public string Origin { get; set; } = default!;
         public string Destination { get; set; } = default!;

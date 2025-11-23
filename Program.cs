@@ -71,6 +71,7 @@ builder.Services.AddScoped<IRoutePositionRepository, RoutePositionRepository>();
 builder.Services.AddScoped<RegisterRoutePositionCommand>();
 builder.Services.AddScoped<GetRoutePositionsQuery>();
 builder.Services.AddScoped<DeleteVehicleCommand>();
+builder.Services.AddScoped<DeleteRouteCommand>();
 
 builder.Services.AddInfrastructure(builder.Configuration);
 

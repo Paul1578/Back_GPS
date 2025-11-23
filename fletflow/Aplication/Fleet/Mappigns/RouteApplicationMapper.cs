@@ -12,6 +12,7 @@ namespace fletflow.Application.Fleet.Mappings
                 Id = route.Id,
                 VehicleId = route.VehicleId,
                 DriverId = route.DriverId,
+                Name = route.Name,
                 Origin = route.Origin,
                 Destination = route.Destination,
                 CargoDescription = route.CargoDescription,

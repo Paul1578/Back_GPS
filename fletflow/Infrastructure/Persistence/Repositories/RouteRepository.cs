@@ -51,7 +51,8 @@ namespace fletflow.Infrastructure.Persistence.Repositories
         public async Task<List<RouteE>> GetAllAsync(
             Guid? vehicleId = null,
             Guid? driverId = null,
-            RouteStatus? status = null)
+            RouteStatus? status = null,
+            bool? onlyActive = null)
         {
             IQueryable<RouteEntity> query = _context.Routes.AsNoTracking();
 
@@ -65,6 +66,11 @@ namespace fletflow.Infrastructure.Persistence.Repositories
             {
                 var s = (int)status.Value;
                 query = query.Where(r => r.Status == s);
+            }
+            
+            if (onlyActive == true)
+            {
+                query = query.Where(r => r.IsActive);
             }
 
             var entities = await query.ToListAsync();

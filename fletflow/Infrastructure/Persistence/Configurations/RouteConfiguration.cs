@@ -11,6 +11,9 @@ namespace fletflow.Infrastructure.Persistence.Configurations
             builder.ToTable("Routes");
 
             builder.HasKey(r => r.Id);
+            builder.Property(r => r.Name)
+                .IsRequired()
+                .HasMaxLength(100);
 
             builder.Property(r => r.Origin)
                 .IsRequired()

@@ -17,9 +17,10 @@ namespace fletflow.Application.Fleet.Queries
         public async Task<List<RouteDto>> Execute(
             Guid? vehicleId = null,
             Guid? driverId = null,
-            RouteStatus? status = null)
+            RouteStatus? status = null,
+            bool? onlyActive = null)
         {
-            var routes = await _routes.GetAllAsync(vehicleId, driverId, status);
+            var routes = await _routes.GetAllAsync(vehicleId, driverId, status, onlyActive);
             return RouteApplicationMapper.ToDtoList(routes);
         }
     }

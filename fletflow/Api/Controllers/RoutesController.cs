@@ -21,6 +21,7 @@ namespace fletflow.Api.Controllers
 
         private readonly RegisterRoutePositionCommand _registerPosition;
         private readonly GetRoutePositionsQuery _getPositions;  
+        private readonly DeleteRouteCommand _deleteRoute; 
 
         public RoutesController(
             CreateRouteCommand createRoute,
@@ -29,7 +30,8 @@ namespace fletflow.Api.Controllers
             GetRouteByIdQuery getById,
             GetRoutesQuery getAll,
             RegisterRoutePositionCommand registerPosition,
-            GetRoutePositionsQuery getPositions)
+            GetRoutePositionsQuery getPositions,
+            DeleteRouteCommand deleteRoute)
         {
             _createRoute = createRoute;
             _updateRoute = updateRoute;
@@ -38,6 +40,13 @@ namespace fletflow.Api.Controllers
             _getAll = getAll;
             _registerPosition = registerPosition;
             _getPositions = getPositions;
+            _deleteRoute = deleteRoute; 
+        }
+        [HttpDelete("{id:guid}")]
+        public async Task<IActionResult> Delete(Guid id)
+        {
+            await _deleteRoute.Execute(id);
+            return NoContent();
         }
 
         [HttpPost]
@@ -46,6 +55,7 @@ namespace fletflow.Api.Controllers
             var result = await _createRoute.Execute(
                 request.VehicleId,
                 request.DriverId,
+                request.Name,
                 request.Origin,
                 request.Destination,
                 request.CargoDescription,
@@ -63,6 +73,7 @@ namespace fletflow.Api.Controllers
                 id,
                 request.VehicleId,
                 request.DriverId,
+                request.Name,
                 request.Origin,
                 request.Destination,
                 request.CargoDescription,
@@ -82,13 +93,41 @@ namespace fletflow.Api.Controllers
 
         [HttpGet]
         public async Task<ActionResult<List<RouteDto>>> GetAll(
-            [FromQuery] Guid? vehicleId,
-            [FromQuery] Guid? driverId,
-            [FromQuery] RouteStatus? status)
+    [FromQuery] Guid? vehicleId,
+    [FromQuery] Guid? driverId,
+    [FromQuery] string? status,
+    [FromQuery] bool? onlyActive)   // 👈 nuevo
+    {
+        RouteStatus? parsedStatus = null;
+
+        if (!string.IsNullOrWhiteSpace(status))
         {
-            var result = await _getAll.Execute(vehicleId, driverId, status);
-            return Ok(result);
+            
+            if (Enum.TryParse<RouteStatus>(status, ignoreCase: true, out var enumStatus))
+            {
+                parsedStatus = enumStatus;
+            }
+            // Permitir número (0,1,2,3)
+            else if (int.TryParse(status, out var intStatus) &&
+                    Enum.IsDefined(typeof(RouteStatus), intStatus))
+            {
+                parsedStatus = (RouteStatus)intStatus;
+            }
+            else
+            {
+                throw new ArgumentException($"El estado de ruta '{status}' no es válido.");
+            }
         }
+
+        var result = await _getAll.Execute(
+            vehicleId,
+            driverId,
+            parsedStatus,
+            onlyActive
+        );
+
+        return Ok(result);
+    }
 
         [HttpGet("{id:guid}")]
         public async Task<ActionResult<RouteDto>> GetById(Guid id)

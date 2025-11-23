@@ -4,6 +4,7 @@ namespace fletflow.Api.Contracts.Routes
     {
         public Guid VehicleId { get; set; }
         public Guid DriverId { get; set; }
+        public string Name { get; set; } = default!;
         public string Origin { get; set; } = default!;
         public string Destination { get; set; } = default!;
         public string? CargoDescription { get; set; }

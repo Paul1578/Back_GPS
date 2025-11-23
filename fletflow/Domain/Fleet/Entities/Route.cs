@@ -6,7 +6,7 @@ namespace fletflow.Domain.Fleet.Entities
 
         public Guid VehicleId { get; private set; }
         public Guid DriverId { get; private set; }
-
+        public string Name { get; private set; } = default!;
         public string Origin { get; private set; } = default!;
         public string Destination { get; private set; } = default!;
         public string? CargoDescription { get; private set; }
@@ -23,6 +23,7 @@ namespace fletflow.Domain.Fleet.Entities
             Guid id,
             Guid vehicleId,
             Guid driverId,
+            string name,
             string origin,
             string destination,
             string? cargoDescription,
@@ -34,6 +35,7 @@ namespace fletflow.Domain.Fleet.Entities
             Id = id;
             VehicleId = vehicleId;
             DriverId = driverId;
+            Name = name;
             Origin = origin;
             Destination = destination;
             CargoDescription = cargoDescription;
@@ -46,12 +48,14 @@ namespace fletflow.Domain.Fleet.Entities
         public static RouteE Create(
             Guid vehicleId,
             Guid driverId,
+            string name,
             string origin,
             string destination,
             string? cargoDescription,
             DateTime? plannedStart,
             DateTime? plannedEnd)
         {
+            name = name.Trim();
             origin = origin.Trim();
             destination = destination.Trim();
             cargoDescription = string.IsNullOrWhiteSpace(cargoDescription) ? null : cargoDescription.Trim();
@@ -60,12 +64,13 @@ namespace fletflow.Domain.Fleet.Entities
                 Guid.NewGuid(),
                 vehicleId,
                 driverId,
+                name,
                 origin,
                 destination,
                 cargoDescription,
                 plannedStart,
                 plannedEnd,
-                RouteStatus.Planned,
+                RouteStatus.Pending,
                 isActive: true
             );
         }
@@ -74,6 +79,7 @@ namespace fletflow.Domain.Fleet.Entities
             Guid id,
             Guid vehicleId,
             Guid driverId,
+            string name,
             string origin,
             string destination,
             string? cargoDescription,
@@ -86,6 +92,7 @@ namespace fletflow.Domain.Fleet.Entities
                 id,
                 vehicleId,
                 driverId,
+                name,
                 origin,
                 destination,
                 cargoDescription,
@@ -99,6 +106,7 @@ namespace fletflow.Domain.Fleet.Entities
         public void Update(
             Guid vehicleId,
             Guid driverId,
+            string name,
             string origin,
             string destination,
             string? cargoDescription,
@@ -107,6 +115,7 @@ namespace fletflow.Domain.Fleet.Entities
         {
             VehicleId = vehicleId;
             DriverId = driverId;
+            Name = name.Trim();
             Origin = origin.Trim();
             Destination = destination.Trim();
             CargoDescription = string.IsNullOrWhiteSpace(cargoDescription) ? null : cargoDescription.Trim();

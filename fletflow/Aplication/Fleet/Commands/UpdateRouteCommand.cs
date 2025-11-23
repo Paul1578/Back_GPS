@@ -28,6 +28,7 @@ namespace fletflow.Application.Fleet.Commands
             Guid id,
             Guid vehicleId,
             Guid driverId,
+            string name,
             string origin,
             string destination,
             string? cargoDescription,
@@ -52,6 +53,7 @@ namespace fletflow.Application.Fleet.Commands
             route.Update(
                 vehicleId,
                 driverId,
+                name,
                 origin,
                 destination,
                 cargoDescription,

@@ -28,6 +28,7 @@ namespace fletflow.Application.Fleet.Commands
         public async Task<RouteDto> Execute(
             Guid vehicleId,
             Guid driverId,
+            string name,
             string origin,
             string destination,
             string? cargoDescription,
@@ -50,6 +51,7 @@ namespace fletflow.Application.Fleet.Commands
             var route = RouteE.Create(
                 vehicleId,
                 driverId,
+                name,
                 origin,
                 destination,
                 cargoDescription,

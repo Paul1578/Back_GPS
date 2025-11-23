@@ -67,6 +67,7 @@ namespace fletflow.Infrastructure.Persistence.Repositories
             entity.Year = vehicle.Year;
             entity.Description = vehicle.Description;
             entity.IsActive = vehicle.IsActive;
+            entity.Status = (int)vehicle.Status;
         }
 
     }

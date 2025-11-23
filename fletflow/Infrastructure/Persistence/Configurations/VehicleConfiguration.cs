@@ -32,6 +32,9 @@ namespace fletflow.Infrastructure.Persistence.Configurations
 
             builder.Property(v => v.IsActive)
                 .IsRequired();
+            
+            builder.Property(v => v.Status)
+                .IsRequired();
         }
     }
 }

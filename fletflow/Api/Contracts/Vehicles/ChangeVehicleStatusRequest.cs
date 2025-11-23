@@ -1,7 +1,9 @@
+using fletflow.Domain.Fleet.Entities;
+
 namespace fletflow.Api.Contracts.Vehicles
 {
     public class ChangeVehicleStatusRequest
     {
-        public bool IsActive { get; set; }
+        public VehicleStatus Status { get; set; }
     }
 }

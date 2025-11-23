@@ -15,7 +15,8 @@ namespace fletflow.Application.Fleet.Mappings
                 Model = vehicle.Model,
                 Year = vehicle.Year,
                 Description = vehicle.Description,
-                IsActive = vehicle.IsActive
+                IsActive = vehicle.IsActive,
+                Status = vehicle.Status
             };
         }
 

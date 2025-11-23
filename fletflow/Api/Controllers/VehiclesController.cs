@@ -17,21 +17,31 @@ namespace fletflow.Api.Controllers
         private readonly ChangeVehicleStatusCommand _changeStatus;
         private readonly GetVehicleByIdQuery _getById;
         private readonly GetVehiclesQuery _getAll;
+        private readonly DeleteVehicleCommand _deleteVehicle;
 
         public VehiclesController(
             CreateVehicleCommand createVehicle,
             UpdateVehicleCommand updateVehicle,
             ChangeVehicleStatusCommand changeStatus,
             GetVehicleByIdQuery getById,
-            GetVehiclesQuery getAll)
+            GetVehiclesQuery getAll,
+            DeleteVehicleCommand deleteVehicle)
         {
             _createVehicle = createVehicle;
             _updateVehicle = updateVehicle;
             _changeStatus = changeStatus;
             _getById = getById;
             _getAll = getAll;
+            _deleteVehicle = deleteVehicle;
         }
 
+        [HttpDelete("{id:guid}")]
+        public async Task<IActionResult> Delete(Guid id)
+        {
+            await _deleteVehicle.Execute(id);
+            return NoContent();
+        }
+        
         [HttpPost]
         public async Task<ActionResult<VehicleDto>> Create([FromBody] CreateVehicleRequest request)
         {
@@ -64,7 +74,7 @@ namespace fletflow.Api.Controllers
         [HttpPut("{id:guid}/status")]
         public async Task<IActionResult> ChangeStatus(Guid id, [FromBody] ChangeVehicleStatusRequest request)
         {
-            await _changeStatus.Execute(id, request.IsActive);
+            await _changeStatus.Execute(id, request.Status);
             return NoContent();
         }
 

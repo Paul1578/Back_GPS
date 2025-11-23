@@ -14,7 +14,8 @@ namespace fletflow.Infrastructure.Persistence.Mappings
                 entity.Model,
                 entity.Year,
                 entity.Description,
-                entity.IsActive
+                entity.IsActive,
+                (VehicleStatus)entity.Status
             );
         }
 
@@ -28,7 +29,8 @@ namespace fletflow.Infrastructure.Persistence.Mappings
                 Model = domain.Model,
                 Year = domain.Year,
                 Description = domain.Description,
-                IsActive = domain.IsActive
+                IsActive = domain.IsActive,
+                Status = (int)domain.Status
             };
         }
 

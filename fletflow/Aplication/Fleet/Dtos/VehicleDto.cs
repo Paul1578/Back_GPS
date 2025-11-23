@@ -1,3 +1,5 @@
+using fletflow.Domain.Fleet.Entities;
+
 namespace fletflow.Application.Fleet.Dtos
 {
     public class VehicleDto
@@ -9,5 +11,6 @@ namespace fletflow.Application.Fleet.Dtos
         public int Year { get; set; }
         public string? Description { get; set; }
         public bool IsActive { get; set; }
+        public VehicleStatus Status { get; set; }
     }
 }

@@ -13,12 +13,23 @@ namespace fletflow.Infrastructure.Persistence.Repositories
 
         public UserRepository(AppDbContext context) => _context = context;
 
+        public async Task<List<User>> GetByOwnerAsync(Guid ownerUserId)
+        {
+            var entities = await _context.Users
+                .Include(u => u.UserRoles).ThenInclude(ur => ur.Role)
+                .Where(u => u.OwnerUserId == ownerUserId)
+                .ToListAsync();
+
+            return entities.Select(AuthMapper.ToDomain).ToList();
+        }
+
         public async Task<User?> GetByEmailAsync(string email)
         {
             var entity = await _context.Users
                 .Include(u => u.UserRoles).ThenInclude(ur => ur.Role)
                 .FirstOrDefaultAsync(u => u.Email == email);
 
+            // 👇 usamos AuthMapper explícito, NO entity.ToDomain()
             return entity is null ? null : AuthMapper.ToDomain(entity);
         }
 
@@ -56,7 +67,6 @@ namespace fletflow.Infrastructure.Persistence.Repositories
             if (link is not null) _context.UserRoles.Remove(link);
         }
 
-        // ✅ implementación que persiste el hash realmente en DB
         public async Task UpdatePasswordHashAsync(Guid userId, string newPasswordHash)
         {
             var entity = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);

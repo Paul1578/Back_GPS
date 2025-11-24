@@ -1,6 +1,7 @@
 using System;
 using System.Security.Claims;
 using fletflow.Application.Auth.Commands;
+using fletflow.Application.Auth.Commands.ActivateAccount;
 using fletflow.Application.Auth.Commands.ResetPassword;
 using fletflow.Application.DTOs.Auth;
 using fletflow.Infrastructure.Services;
@@ -15,11 +16,13 @@ namespace fletflow.Api.Controllers
     {
         private readonly AuthService _authService;
         private readonly IEmailSender _emailService;
+        private readonly ActivateAccountCommand _activateAccountCommand;
 
-        public AuthController(AuthService authService, IEmailSender emailService)
+        public AuthController(AuthService authService, IEmailSender emailService, ActivateAccountCommand activateAccountCommand)
         {
             _authService = authService;
             _emailService = emailService;
+            _activateAccountCommand = activateAccountCommand;
         }
 
         [HttpPost("register")]
@@ -118,6 +121,14 @@ namespace fletflow.Api.Controllers
         {
             await command.ExecuteAsync(dto.Token, dto.NewPassword, dto.ConfirmNewPassword);
             return Ok(new { message = "Contrasena restablecida." });
+        }
+
+        [HttpPost("activate-account")]
+        [AllowAnonymous]
+        public async Task<IActionResult> ActivateAccount([FromBody] ActivateAccountDto dto)
+        {
+            await _activateAccountCommand.ExecuteAsync(dto.Token, dto.NewPassword, dto.ConfirmNewPassword);
+            return Ok(new { message = "Cuenta activada y contrasena actualizada." });
         }
 
         [HttpGet("test-email")]

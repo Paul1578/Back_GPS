@@ -29,7 +29,7 @@ namespace fletflow.Infrastructure.Services
         public async Task<AuthResponseDto> RegisterAsync(string username, string email, string password, string roleName = "User")
         {
             var cmd = new RegisterUserCommand(_unitOfWork);
-            var user = await cmd.Execute(username, email, password, roleName);
+            var user = await cmd.Execute(username, email, password, roleName, mustChangePassword: false);
             return await IssueTokensAsync(user);
         }
 

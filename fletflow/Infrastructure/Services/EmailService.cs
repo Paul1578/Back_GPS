@@ -18,7 +18,9 @@ namespace fletflow.Infrastructure.Services
         public string User { get; set; } = default!;
         public string Password { get; set; } = default!;
         public string ResetPasswordUrl { get; set; } = "http://192.168.56.1:3000/reset-password";
+        public string ActivationUrl { get; set; } = "http://192.168.56.1:3000/activate-account";
         public int ResetTokenMinutes { get; set; } = 1440; // 24 horas
+        public string FrontendBaseUrl { get; set; } = "http://192.168.56.1:3000";
     }
 
     public class EmailService : IEmailSender
@@ -92,6 +94,54 @@ namespace fletflow.Infrastructure.Services
                 Credentials = new NetworkCredential(_settings.User, _settings.Password),
                 Timeout = 15000
             };
+        }
+
+        public async Task SendUserInvitationEmailAsync(string toEmail, string tempPassword, string activationLink, string activationToken, CancellationToken cancellationToken = default)
+        {
+            if (string.IsNullOrWhiteSpace(_settings.SmtpHost) || _settings.SmtpHost.Contains("tu-dominio"))
+            {
+                throw new InvalidOperationException("SmtpHost no configurado. Actualiza appsettings.json -> Email.SmtpHost (ej: smtp.gmail.com).");
+            }
+
+            using var mail = new MailMessage
+            {
+                From = new MailAddress(_settings.From, _settings.DisplayName),
+                Subject = "Invitacion a la plataforma",
+                Body =
+                    "Has sido invitado a la plataforma.\n\n" +
+                    "Correo: " + toEmail + "\n" +
+                    "Password temporal: " + tempPassword + "\n\n" +
+                    "Enlace para activar tu cuenta: " + activationLink + "\n\n" +
+                    "Token (copiar/pegar si se requiere): " + activationToken + "\n\n" +
+                    "Por seguridad, cambia tu contrasena al ingresar.",
+                IsBodyHtml = false
+            };
+            mail.To.Add(toEmail);
+
+            using var client = BuildClient();
+
+            try
+            {
+                await client.SendMailAsync(mail, cancellationToken);
+                _logger.LogInformation(
+                    "Correo de invitacion enviado a {Email} via {Host}:{Port} ssl={Ssl}",
+                    toEmail, _settings.SmtpHost, _settings.SmtpPort, _settings.EnableSsl);
+            }
+            catch (Exception ex)
+            {
+                var smtpEx = ex as SmtpException;
+                _logger.LogError(
+                    ex,
+                    "Error enviando correo de invitacion a {Email}. Host={Host} Port={Port} Ssl={Ssl} User={User} StatusCode={StatusCode} Inner={InnerMessage}",
+                    toEmail,
+                    _settings.SmtpHost,
+                    _settings.SmtpPort,
+                    _settings.EnableSsl,
+                    _settings.User,
+                    smtpEx?.StatusCode,
+                    ex.InnerException?.Message);
+                throw;
+            }
         }
     }
 }

@@ -15,6 +15,7 @@ namespace fletflow.Infrastructure.Persistence.Configurations
             builder.HasIndex(u => u.Email).IsUnique();
             builder.Property(u => u.PasswordHash).IsRequired().HasMaxLength(500);
             builder.Property(u => u.IsActive).HasDefaultValue(true);
+            builder.Property(u => u.MustChangePassword).HasDefaultValue(false);
             builder.Property(u => u.CreatedAt).IsRequired();
             builder.Property(u => u.OwnerUserId).IsRequired(false);
 

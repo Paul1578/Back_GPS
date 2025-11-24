@@ -11,20 +11,36 @@ namespace BackEnd_Gps.fletflow.Infrastructure.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.AddColumn<Guid>(
-                name: "OwnerUserId",
-                table: "Users",
-                type: "char(36)",
-                nullable: true,
-                collation: "ascii_general_ci");
+            // Compatibilidad con MySQL < 8 (sin ADD COLUMN IF NOT EXISTS)
+            migrationBuilder.Sql(@"
+                SET @col := (
+                    SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+                    WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'Users' AND COLUMN_NAME = 'OwnerUserId'
+                );
+                SET @sql := IF(@col = 0,
+                    'ALTER TABLE `Users` ADD `OwnerUserId` char(36) COLLATE ascii_general_ci NULL;',
+                    'SELECT 1');
+                PREPARE stmt FROM @sql;
+                EXECUTE stmt;
+                DEALLOCATE PREPARE stmt;
+            ");
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropColumn(
-                name: "OwnerUserId",
-                table: "Users");
+            migrationBuilder.Sql(@"
+                SET @col := (
+                    SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS
+                    WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'Users' AND COLUMN_NAME = 'OwnerUserId'
+                );
+                SET @sql := IF(@col = 1,
+                    'ALTER TABLE `Users` DROP COLUMN `OwnerUserId`;',
+                    'SELECT 1');
+                PREPARE stmt FROM @sql;
+                EXECUTE stmt;
+                DEALLOCATE PREPARE stmt;
+            ");
         }
     }
 }

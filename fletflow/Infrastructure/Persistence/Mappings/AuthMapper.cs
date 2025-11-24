@@ -21,6 +21,7 @@ namespace fletflow.Infrastructure.Persistence.Mappings
                 Email = entity.Email,
                 PasswordHash = entity.PasswordHash,
                 IsActive = entity.IsActive,
+                MustChangePassword = entity.MustChangePassword,
                 OwnerUserId = entity.OwnerUserId,
                 UserRoles = entity.UserRoles?.Select(ur => new UserRole
                 {
@@ -71,6 +72,7 @@ namespace fletflow.Infrastructure.Persistence.Mappings
                 Email = domain.Email,
                 PasswordHash = domain.PasswordHash,
                 IsActive = domain.IsActive,
+                MustChangePassword = domain.MustChangePassword,
                 OwnerUserId = domain.OwnerUserId,
 
                 // ⚠️ Importante: NO asignamos Role completo para evitar inserts duplicados de Roles.

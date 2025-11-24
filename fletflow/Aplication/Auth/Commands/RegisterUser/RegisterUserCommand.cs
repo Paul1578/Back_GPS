@@ -13,7 +13,7 @@ namespace fletflow.Application.Auth.Commands
             _unitOfWork = unitOfWork;
         }
 
-        public async Task<User> Execute(string username, string email, string password, string roleName, Guid? ownerUserId = null)
+        public async Task<User> Execute(string username, string email, string password, string roleName, Guid? ownerUserId = null, bool mustChangePassword = false)
         {
             // 1) Verificar si el usuario ya existe
             var existingUser = await _unitOfWork.Users.GetByEmailAsync(email);
@@ -40,6 +40,7 @@ namespace fletflow.Application.Auth.Commands
                 Email = email,
                 PasswordHash = BCrypt.Net.BCrypt.HashPassword(password),
                 IsActive = true,
+                MustChangePassword = mustChangePassword,
                 OwnerUserId = ownerUserId 
             };
 

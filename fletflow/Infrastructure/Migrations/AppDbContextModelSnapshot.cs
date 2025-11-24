@@ -255,6 +255,11 @@ namespace BackEnd_Gps.fletflow.Infrastructure.Migrations
                         .HasColumnType("bit(1)")
                         .HasDefaultValue(true);
 
+                    b.Property<bool>("MustChangePassword")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit(1)")
+                        .HasDefaultValue(false);
+
                     b.Property<Guid?>("OwnerUserId")
                         .HasColumnType("char(36)");
 

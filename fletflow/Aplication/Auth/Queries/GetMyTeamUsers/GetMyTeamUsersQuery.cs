@@ -24,6 +24,10 @@ namespace fletflow.Application.Users.Queries
                     Id = u.Id,
                     Username = u.Username,
                     Email = u.Email,
+                    DriverId = _context.Drivers
+                        .Where(d => d.UserId == u.Id)
+                        .Select(d => (Guid?)d.Id)
+                        .FirstOrDefault(),
                     Roles = u.UserRoles.Select(ur => ur.Role.Name).ToList(),
                     IsActive = u.IsActive,
                     CreatedAt = u.CreatedAt

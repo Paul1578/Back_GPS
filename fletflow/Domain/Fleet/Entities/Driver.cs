@@ -9,10 +9,11 @@ namespace fletflow.Domain.Fleet.Entities
         public string PhoneNumber { get; private set; } = default!;
         public bool IsActive { get; private set; }
         public Guid? VehicleId { get; private set; }
+        public Guid? UserId { get; private set; }
 
         private Driver() { }
 
-        private Driver(Guid id, string firstName, string lastName, string documentNumber, string phoneNumber, Guid? vehicleId = null)
+        private Driver(Guid id, string firstName, string lastName, string documentNumber, string phoneNumber, Guid? vehicleId = null, Guid? userId = null)
         {
             Id = id;
             FirstName = firstName;
@@ -20,23 +21,25 @@ namespace fletflow.Domain.Fleet.Entities
             DocumentNumber = documentNumber;
             PhoneNumber = phoneNumber;
             VehicleId = vehicleId;
+            UserId = userId;
             IsActive = true;
         }
 
-        public static Driver Create(string firstName, string lastName, string documentNumber, string phoneNumber)
+        public static Driver Create(string firstName, string lastName, string documentNumber, string phoneNumber, Guid? userId = null)
         {
             return new Driver(
                 Guid.NewGuid(),
                 firstName.Trim(),
                 lastName.Trim(),
                 documentNumber.Trim(),
-                phoneNumber.Trim()
+                phoneNumber.Trim(),
+                userId: userId
             );
         }
 
-        public static Driver CreateExisting(Guid id, string firstName, string lastName, string documentNumber, string phoneNumber, bool isActive, Guid? vehicleId)
+        public static Driver CreateExisting(Guid id, string firstName, string lastName, string documentNumber, string phoneNumber, bool isActive, Guid? vehicleId, Guid? userId)
         {
-            var d = new Driver(id, firstName, lastName, documentNumber, phoneNumber, vehicleId);
+            var d = new Driver(id, firstName, lastName, documentNumber, phoneNumber, vehicleId, userId);
             if (!isActive) d.IsActive = false;
             return d;
         }
@@ -56,11 +59,15 @@ namespace fletflow.Domain.Fleet.Entities
         {
             VehicleId = vehicleId;
         }
-        
+
         public void UnassignVehicle()
         {
             VehicleId = null;
         }
 
+        public void LinkToUser(Guid userId)
+        {
+            UserId = userId;
+        }
     }
 }

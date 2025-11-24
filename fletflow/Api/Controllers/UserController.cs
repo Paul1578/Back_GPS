@@ -1,10 +1,15 @@
+using System;
 using System.Security.Claims;
 using fletflow.Application.Users.Queries;
 using fletflow.Application.Users.Commands;
 using fletflow.Application.Auth.Commands;
 using fletflow.Api.Contracts.Users;
+using fletflow.Domain.Fleet.Entities;
+using fletflow.Infrastructure.Services;
+using fletflow.Infrastructure.Persistence.Contracts;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 
 namespace fletflow.Api.Controllers
 {
@@ -19,6 +24,10 @@ namespace fletflow.Api.Controllers
         private readonly RemoveRoleFromUserCommand _removeRole;
         private readonly RegisterUserCommand _registerUserCommand;
         private readonly GetMyTeamUsersQuery _getMyTeamUsersQuery;
+        private readonly PasswordResetTokenFactory _passwordResetTokenFactory;
+        private readonly IEmailSender _emailSender;
+        private readonly EmailSettings _emailSettings;
+        private readonly IUnitOfWork _unitOfWork;
 
         public UsersController(
             GetAllUsersQuery getAllUsersQuery,
@@ -26,7 +35,11 @@ namespace fletflow.Api.Controllers
             UpdateUserCommand updateUserCommand,
             AssignRoleToUserCommand assignRole,
             RemoveRoleFromUserCommand removeRole,
-            RegisterUserCommand registerUserCommand)
+            RegisterUserCommand registerUserCommand,
+            PasswordResetTokenFactory passwordResetTokenFactory,
+            IEmailSender emailSender,
+            IOptions<EmailSettings> emailOptions,
+            IUnitOfWork unitOfWork)
         {
             _getAllUsersQuery = getAllUsersQuery;
             _updateUserCommand = updateUserCommand;
@@ -34,6 +47,10 @@ namespace fletflow.Api.Controllers
             _removeRole = removeRole;
             _registerUserCommand = registerUserCommand;
             _getMyTeamUsersQuery = getMyTeamUsersQuery;
+            _passwordResetTokenFactory = passwordResetTokenFactory;
+            _emailSender = emailSender;
+            _emailSettings = emailOptions.Value;
+            _unitOfWork = unitOfWork;
         }
 
         private Guid GetCurrentUserId()
@@ -107,8 +124,44 @@ namespace fletflow.Api.Controllers
                 request.Email,
                 request.Password,
                 request.RoleName,
-                ownerId // 👈 se guarda en OwnerUserId
+                ownerId,
+                mustChangePassword: true
             );
+
+            // Auto-crear Driver si el rol es Driver
+            if (request.RoleName.Trim().Equals("Driver", StringComparison.OrdinalIgnoreCase))
+            {
+                var existingDriver = await _unitOfWork.Drivers.GetByUserIdAsync(user.Id);
+                if (existingDriver is null)
+                {
+                    var first = string.IsNullOrWhiteSpace(user.Username) ? "Driver" : user.Username;
+                    var last = "Driver";
+                    var doc = string.IsNullOrWhiteSpace(user.Email)
+                        ? user.Id.ToString("N")[..Math.Min(20, user.Id.ToString("N").Length)]
+                        : user.Email.Length > 20 ? user.Email[..20] : user.Email;
+                    var phone = "N/A";
+
+                    var driver = Driver.Create(first, last, doc, phone, user.Id);
+                    await _unitOfWork.Drivers.AddAsync(driver);
+                }
+            }
+
+            var (token, plainToken) = _passwordResetTokenFactory.Create(user.Id, _emailSettings.ResetTokenMinutes);
+            await _unitOfWork.PasswordResetTokens.AddAsync(token);
+
+            var activationBase = string.IsNullOrWhiteSpace(_emailSettings.ActivationUrl)
+                ? _emailSettings.ResetPasswordUrl
+                : _emailSettings.ActivationUrl;
+            var encoded = Uri.EscapeDataString(plainToken);
+            var activationLink = $"{activationBase}?token={encoded}";
+
+            await _emailSender.SendUserInvitationEmailAsync(
+                user.Email,
+                request.Password,
+                activationLink,
+                plainToken);
+
+            await _unitOfWork.CommitAsync();
 
             return Ok(new
             {

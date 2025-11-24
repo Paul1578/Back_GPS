@@ -34,6 +34,14 @@ namespace fletflow.Infrastructure.Persistence.Repositories
             return entity is null ? null : FleetMapper.ToDomain(entity);
         }
 
+        public async Task<Driver?> GetByUserIdAsync(Guid userId)
+        {
+            var entity = await _context.Drivers.AsNoTracking()
+                .FirstOrDefaultAsync(d => d.UserId == userId);
+
+            return entity is null ? null : FleetMapper.ToDomain(entity);
+        }
+
         public async Task AddAsync(Driver driver)
         {
             var entity = FleetMapper.ToEntity(driver);

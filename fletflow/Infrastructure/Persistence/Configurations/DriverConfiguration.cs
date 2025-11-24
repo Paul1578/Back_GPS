@@ -37,9 +37,20 @@ namespace fletflow.Infrastructure.Persistence.Configurations
             // 👇 relación opcional 1–N: un vehículo puede tener muchos drivers asignados en distintos momentos,
             // pero en la práctica para MVP vamos a usar solo uno "actual".
             builder.HasOne(d => d.Vehicle)
-                .WithMany() // si luego quieres navegación inversa, se puede cambiar
+                .WithMany() // si luego quieres navegaci��n inversa, se puede cambiar
                 .HasForeignKey(d => d.VehicleId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            builder.Property(d => d.UserId)
+                .IsRequired(false);
+
+            builder.HasOne<UserEntity>()
+                .WithMany()
+                .HasForeignKey(d => d.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.HasIndex(d => d.UserId)
+                .IsUnique();
         }
 
     }

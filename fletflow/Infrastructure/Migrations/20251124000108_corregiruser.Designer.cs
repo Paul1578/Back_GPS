@@ -13,7 +13,7 @@ namespace BackEnd_Gps.fletflow.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
     [Migration("20251124000108_corregiruser")]
-    partial class corregiruser
+    partial class CorregirUser
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)

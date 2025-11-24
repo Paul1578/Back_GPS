@@ -1,3 +1,5 @@
+using System;
+
 namespace fletflow.Api.Contracts.Drivers
 {
     public class CreateDriverRequest
@@ -6,5 +8,6 @@ namespace fletflow.Api.Contracts.Drivers
         public string LastName { get; set; } = default!;
         public string DocumentNumber { get; set; } = default!;
         public string PhoneNumber { get; set; } = default!;
+        public Guid? UserId { get; set; }
     }
 }

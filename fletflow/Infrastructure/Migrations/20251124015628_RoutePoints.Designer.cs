@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using fletflow.Infrastructure.Persistence.Context;
 
@@ -11,9 +12,11 @@ using fletflow.Infrastructure.Persistence.Context;
 namespace BackEnd_Gps.fletflow.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251124015628_RoutePoints")]
+    partial class RoutePoints
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -51,18 +54,12 @@ namespace BackEnd_Gps.fletflow.Infrastructure.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("varchar(20)");
 
-                    b.Property<Guid?>("UserId")
-                        .HasColumnType("char(36)");
-
                     b.Property<Guid?>("VehicleId")
                         .HasColumnType("char(36)");
 
                     b.HasKey("Id");
 
                     b.HasIndex("DocumentNumber")
-                        .IsUnique();
-
-                    b.HasIndex("UserId")
                         .IsUnique();
 
                     b.HasIndex("VehicleId");
@@ -371,11 +368,6 @@ namespace BackEnd_Gps.fletflow.Infrastructure.Migrations
 
             modelBuilder.Entity("fletflow.Infrastructure.Persistence.Entities.DriverEntity", b =>
                 {
-                    b.HasOne("fletflow.Infrastructure.Persistence.Entities.UserEntity", null)
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
                     b.HasOne("fletflow.Infrastructure.Persistence.Entities.VehicleEntity", "Vehicle")
                         .WithMany()
                         .HasForeignKey("VehicleId")

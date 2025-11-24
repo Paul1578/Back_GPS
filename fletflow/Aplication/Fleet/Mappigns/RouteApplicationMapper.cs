@@ -1,3 +1,4 @@
+using System.Linq;
 using fletflow.Application.Fleet.Dtos;
 using fletflow.Domain.Fleet.Entities;
 
@@ -13,8 +14,9 @@ namespace fletflow.Application.Fleet.Mappings
                 VehicleId = route.VehicleId,
                 DriverId = route.DriverId,
                 Name = route.Name,
-                Origin = route.Origin,
-                Destination = route.Destination,
+                Origin = ToPointDto(route.Origin),
+                Destination = ToPointDto(route.Destination),
+                Points = route.Points.Select(ToPointDto).ToList(),
                 CargoDescription = route.CargoDescription,
                 PlannedStart = route.PlannedStart,
                 PlannedEnd = route.PlannedEnd,
@@ -25,5 +27,15 @@ namespace fletflow.Application.Fleet.Mappings
 
         public static List<RouteDto> ToDtoList(IEnumerable<RouteE> routes)
             => routes.Select(ToDto).ToList();
+
+        private static RoutePointDto ToPointDto(RoutePoint point)
+        {
+            return new RoutePointDto
+            {
+                Latitude = point.Latitude,
+                Longitude = point.Longitude,
+                Name = point.Name
+            };
+        }
     }
 }

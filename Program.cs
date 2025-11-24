@@ -25,6 +25,7 @@ using fletflow.Domain.Fleet.Repositories;
 using fletflow.Application.Fleet.Commands;
 using fletflow.Application.Fleet.Queries;
 using fletflow.Application.Auth.Commands;
+using fletflow.Application.Auth.Commands.ActivateAccount;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -51,6 +52,7 @@ builder.Services.AddScoped<fletflow.Application.Auth.Commands.AssignRoleToUserCo
 builder.Services.AddScoped<fletflow.Application.Auth.Commands.RemoveRoleFromUserCommand>();builder.Services.AddFluentValidationAutoValidation();
 builder.Services.AddValidatorsFromAssemblyContaining<RegisterUserValidator>();
 builder.Services.AddTransient<ExceptionMiddleware>();
+builder.Services.AddScoped<ActivateAccountCommand>();
 // Fleet
 builder.Services.AddScoped<IVehicleRepository, VehicleRepository>();
 builder.Services.AddScoped<CreateVehicleCommand>();

@@ -12,7 +12,12 @@ namespace fletflow.Infrastructure.Persistence.Entities
         public string Name { get; set; } = default!;
 
         public string Origin { get; set; } = default!;
+        public double OriginLat { get; set; }
+        public double OriginLng { get; set; }
+
         public string Destination { get; set; } = default!;
+        public double DestinationLat { get; set; }
+        public double DestinationLng { get; set; }
         public string? CargoDescription { get; set; }
 
         public DateTime? PlannedStart { get; set; }
@@ -20,5 +25,7 @@ namespace fletflow.Infrastructure.Persistence.Entities
 
         public int Status { get; set; }  // se mapeará a RouteStatus en dominio
         public bool IsActive { get; set; }
+
+        public string PointsJson { get; set; } = "[]";
     }
 }

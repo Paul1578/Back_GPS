@@ -9,5 +9,6 @@ namespace fletflow.Application.Fleet.Dtos
         public string PhoneNumber { get; set; } = default!;
         public bool IsActive { get; set; }
         public Guid? VehicleId { get; set; }
+        public Guid? UserId { get; set; }
     }
 }

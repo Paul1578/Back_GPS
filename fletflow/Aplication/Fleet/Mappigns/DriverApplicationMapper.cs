@@ -15,7 +15,8 @@ namespace fletflow.Application.Fleet.Mappings
                 DocumentNumber = driver.DocumentNumber,
                 PhoneNumber = driver.PhoneNumber,
                 IsActive = driver.IsActive,
-                VehicleId = driver.VehicleId
+                VehicleId = driver.VehicleId,
+                UserId = driver.UserId
             };
         }
 

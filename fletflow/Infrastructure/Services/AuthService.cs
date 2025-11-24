@@ -1,6 +1,7 @@
 ﻿using fletflow.Application.Auth.Commands;
 using fletflow.Application.DTOs.Auth;
 using fletflow.Domain.Auth.Entities;
+using fletflow.Domain.Fleet.Entities;
 using fletflow.Infrastructure.Persistence.Contracts;  // IUnitOfWork
 using fletflow.Infrastructure.Security;
 using fletflow.Infrastructure.Security.Hashing;
@@ -30,6 +31,27 @@ namespace fletflow.Infrastructure.Services
         {
             var cmd = new RegisterUserCommand(_unitOfWork);
             var user = await cmd.Execute(username, email, password, roleName, ownerUserId: null, mustChangePassword: false);
+
+            // Auto-crear Driver si el rol es Driver
+            if (roleName.Trim().Equals("Driver", StringComparison.OrdinalIgnoreCase))
+            {
+                var existingDriver = await _unitOfWork.Drivers.GetByUserIdAsync(user.Id);
+                if (existingDriver is null)
+                {
+                    // Generar datos mínimos para driver
+                    var first = string.IsNullOrWhiteSpace(user.Username) ? "Driver" : user.Username;
+                    var last = "Driver";
+                    var doc = string.IsNullOrWhiteSpace(user.Email)
+                        ? user.Id.ToString("N")[..Math.Min(20, user.Id.ToString("N").Length)]
+                        : user.Email.Length > 20 ? user.Email[..20] : user.Email;
+                    var phone = "N/A";
+
+                    var driver = Driver.Create(first, last, doc, phone, user.Id);
+                    await _unitOfWork.Drivers.AddAsync(driver);
+                    await _unitOfWork.CommitAsync();
+                }
+            }
+
             return await IssueTokensAsync(user);
         }
 

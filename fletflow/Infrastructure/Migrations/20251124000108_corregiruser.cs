@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace BackEnd_Gps.fletflow.Infrastructure.Migrations
 {
     /// <inheritdoc />
-    public partial class corregiruser : Migration
+    public partial class CorregirUser : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)

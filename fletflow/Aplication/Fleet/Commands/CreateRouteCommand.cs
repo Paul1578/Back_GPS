@@ -1,3 +1,5 @@
+using System.Linq;
+using System.Collections.Generic;
 using fletflow.Application.Fleet.Dtos;
 using fletflow.Application.Fleet.Mappings;
 using fletflow.Domain.Fleet.Entities;
@@ -29,8 +31,7 @@ namespace fletflow.Application.Fleet.Commands
             Guid vehicleId,
             Guid driverId,
             string name,
-            string origin,
-            string destination,
+            IEnumerable<RoutePoint> points,
             string? cargoDescription,
             DateTime? plannedStart,
             DateTime? plannedEnd)
@@ -48,12 +49,17 @@ namespace fletflow.Application.Fleet.Commands
             if (!driver.IsActive)
                 throw new InvalidOperationException("No se puede crear una ruta con un conductor inactivo.");
 
+            var pointsList = points?.ToList() ?? new List<RoutePoint>();
+            if (pointsList.Count < 2)
+                throw new ArgumentException("La ruta debe tener al menos origen y destino.", nameof(points));
+
             var route = RouteE.Create(
                 vehicleId,
                 driverId,
                 name,
-                origin,
-                destination,
+                pointsList.First(),
+                pointsList.Last(),
+                pointsList,
                 cargoDescription,
                 plannedStart,
                 plannedEnd

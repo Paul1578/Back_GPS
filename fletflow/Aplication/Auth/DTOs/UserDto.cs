@@ -8,5 +8,6 @@
         public List<string> Roles { get; set; } = new();
         public bool IsActive { get; set; }
         public DateTime CreatedAt { get; set; }
+        public Guid? DriverId { get; set; }
     }
 }

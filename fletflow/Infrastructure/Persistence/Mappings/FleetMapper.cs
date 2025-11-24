@@ -1,3 +1,6 @@
+using System.Collections.Generic;
+using System.Linq;
+using System.Text.Json;
 using fletflow.Domain.Fleet.Entities;
 using fletflow.Infrastructure.Persistence.Entities;
 
@@ -43,7 +46,8 @@ namespace fletflow.Infrastructure.Persistence.Mappings
                 entity.DocumentNumber,
                 entity.PhoneNumber,
                 entity.IsActive,
-                entity.VehicleId
+                entity.VehicleId,
+                entity.UserId
             );
         }
 
@@ -57,18 +61,22 @@ namespace fletflow.Infrastructure.Persistence.Mappings
                 DocumentNumber = domain.DocumentNumber,
                 PhoneNumber = domain.PhoneNumber,
                 IsActive = domain.IsActive,
-                VehicleId = domain.VehicleId
+                VehicleId = domain.VehicleId,
+                UserId = domain.UserId
             };
         }
         public static RouteE ToDomain(RouteEntity entity)
         {
+            var points = DeserializePoints(entity);
+
             return RouteE.CreateExisting(
                 entity.Id,
                 entity.VehicleId,
                 entity.DriverId,
                 entity.Name,
-                entity.Origin,
-                entity.Destination,
+                points.First(),
+                points.Last(),
+                points,
                 entity.CargoDescription,
                 entity.PlannedStart,
                 entity.PlannedEnd,
@@ -79,19 +87,28 @@ namespace fletflow.Infrastructure.Persistence.Mappings
 
         public static RouteEntity ToEntity(RouteE domain)
         {
+            var origin = domain.Origin;
+            var destination = domain.Destination;
+            var pointsJson = JsonSerializer.Serialize(domain.Points);
+
             return new RouteEntity
             {
                 Id = domain.Id,
                 VehicleId = domain.VehicleId,
                 DriverId = domain.DriverId,
                 Name = domain.Name,
-                Origin = domain.Origin,
-                Destination = domain.Destination,
+                Origin = origin.Name ?? domain.Name,
+                OriginLat = origin.Latitude,
+                OriginLng = origin.Longitude,
+                Destination = destination.Name ?? domain.Name,
+                DestinationLat = destination.Latitude,
+                DestinationLng = destination.Longitude,
                 CargoDescription = domain.CargoDescription,
                 PlannedStart = domain.PlannedStart,
                 PlannedEnd = domain.PlannedEnd,
                 Status = (int)domain.Status,
-                IsActive = domain.IsActive
+                IsActive = domain.IsActive,
+                PointsJson = pointsJson
             };
         }
 
@@ -122,5 +139,32 @@ namespace fletflow.Infrastructure.Persistence.Mappings
             };
         }
 
+        private static List<RoutePoint> DeserializePoints(RouteEntity entity)
+        {
+            try
+            {
+                var deserialized = JsonSerializer.Deserialize<List<SerializableRoutePoint>>(entity.PointsJson);
+                if (deserialized is { Count: > 0 })
+                {
+                    return deserialized
+                        .Select(p => RoutePoint.Create(p.Latitude, p.Longitude, p.Name))
+                        .ToList();
+                }
+            }
+            catch
+            {
+                // ignored -> fallback below
+            }
+
+            // Fallback a origen/destino básicos
+            var points = new List<RoutePoint>();
+
+            points.Add(RoutePoint.Create(entity.OriginLat, entity.OriginLng, entity.Origin));
+            points.Add(RoutePoint.Create(entity.DestinationLat, entity.DestinationLng, entity.Destination));
+
+            return points;
+        }
+
+        private record SerializableRoutePoint(double Latitude, double Longitude, string? Name);
     }
 }

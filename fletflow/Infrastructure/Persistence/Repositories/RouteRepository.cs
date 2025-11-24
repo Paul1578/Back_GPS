@@ -4,6 +4,7 @@ using fletflow.Infrastructure.Persistence.Context;
 using fletflow.Infrastructure.Persistence.Entities;
 using fletflow.Infrastructure.Persistence.Mappings;
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
 
 namespace fletflow.Infrastructure.Persistence.Repositories
 {
@@ -39,13 +40,18 @@ namespace fletflow.Infrastructure.Persistence.Repositories
 
             entity.VehicleId = route.VehicleId;
             entity.DriverId = route.DriverId;
-            entity.Origin = route.Origin;
-            entity.Destination = route.Destination;
+            entity.Origin = route.Origin.Name ?? route.Name;
+            entity.OriginLat = route.Origin.Latitude;
+            entity.OriginLng = route.Origin.Longitude;
+            entity.Destination = route.Destination.Name ?? route.Name;
+            entity.DestinationLat = route.Destination.Latitude;
+            entity.DestinationLng = route.Destination.Longitude;
             entity.CargoDescription = route.CargoDescription;
             entity.PlannedStart = route.PlannedStart;
             entity.PlannedEnd = route.PlannedEnd;
             entity.Status = (int)route.Status;
             entity.IsActive = route.IsActive;
+            entity.PointsJson = JsonSerializer.Serialize(route.Points);
         }
 
         public async Task<List<RouteE>> GetAllAsync(

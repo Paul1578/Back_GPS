@@ -19,9 +19,25 @@ namespace fletflow.Infrastructure.Persistence.Configurations
                 .IsRequired()
                 .HasMaxLength(200);
 
+            builder.Property(r => r.OriginLat)
+                .IsRequired()
+                .HasDefaultValue(0d);
+
+            builder.Property(r => r.OriginLng)
+                .IsRequired()
+                .HasDefaultValue(0d);
+
             builder.Property(r => r.Destination)
                 .IsRequired()
                 .HasMaxLength(200);
+
+            builder.Property(r => r.DestinationLat)
+                .IsRequired()
+                .HasDefaultValue(0d);
+
+            builder.Property(r => r.DestinationLng)
+                .IsRequired()
+                .HasDefaultValue(0d);
 
             builder.Property(r => r.CargoDescription)
                 .HasMaxLength(1000);
@@ -41,6 +57,11 @@ namespace fletflow.Infrastructure.Persistence.Configurations
                 .WithMany()
                 .HasForeignKey(r => r.DriverId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            builder.Property(r => r.PointsJson)
+                .IsRequired()
+                .HasColumnType("longtext")
+                .HasDefaultValue("[]");
         }
     }
 }

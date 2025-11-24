@@ -40,7 +40,8 @@ namespace fletflow.Api.Controllers
                 request.FirstName,
                 request.LastName,
                 request.DocumentNumber,
-                request.PhoneNumber
+                request.PhoneNumber,
+                request.UserId
             );
 
             return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);

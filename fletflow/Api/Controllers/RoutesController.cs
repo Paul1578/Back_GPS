@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+using System.Linq;
 using fletflow.Api.Contracts.Routes;
 using fletflow.Application.Fleet.Commands;
 using fletflow.Application.Fleet.Dtos;
@@ -52,12 +54,13 @@ namespace fletflow.Api.Controllers
         [HttpPost]
         public async Task<ActionResult<RouteDto>> Create([FromBody] CreateRouteRequest request)
         {
+            var points = BuildPoints(request.Points, request.Origin, request.Destination);
+
             var result = await _createRoute.Execute(
                 request.VehicleId,
                 request.DriverId,
                 request.Name,
-                request.Origin,
-                request.Destination,
+                points,
                 request.CargoDescription,
                 request.PlannedStart,
                 request.PlannedEnd
@@ -69,13 +72,14 @@ namespace fletflow.Api.Controllers
         [HttpPut("{id:guid}")]
         public async Task<ActionResult<RouteDto>> Update(Guid id, [FromBody] UpdateRouteRequest request)
         {
+            var points = BuildPoints(request.Points, request.Origin, request.Destination);
+
             var result = await _updateRoute.Execute(
                 id,
                 request.VehicleId,
                 request.DriverId,
                 request.Name,
-                request.Origin,
-                request.Destination,
+                points,
                 request.CargoDescription,
                 request.PlannedStart,
                 request.PlannedEnd
@@ -162,6 +166,43 @@ namespace fletflow.Api.Controllers
         {
             var result = await _getPositions.Execute(routeId, from, to);
             return Ok(result);
+        }
+
+        private static List<RoutePoint> BuildPoints(
+            IEnumerable<RoutePointRequest>? points,
+            RoutePointRequest? origin,
+            RoutePointRequest? destination)
+        {
+            var list = points?.Select(ToRoutePoint).ToList() ?? new List<RoutePoint>();
+
+            // Si envían origin/destination explícitos, forzamos que sean extremos.
+            if (origin != null)
+            {
+                var originPoint = ToRoutePoint(origin);
+                if (list.Count == 0)
+                    list.Add(originPoint);
+                else
+                    list[0] = originPoint;
+            }
+
+            if (destination != null)
+            {
+                var destPoint = ToRoutePoint(destination);
+                if (list.Count < 2)
+                    list.Add(destPoint);
+                else
+                    list[list.Count - 1] = destPoint;
+            }
+
+            if (list.Count < 2)
+                throw new ArgumentException("Debes enviar al menos origen y destino con lat/lng.");
+
+            return list;
+        }
+
+        private static RoutePoint ToRoutePoint(RoutePointRequest request)
+        {
+            return RoutePoint.Create(request.Lat, request.Lng, request.Name);
         }
     }
 }

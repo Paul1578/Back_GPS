@@ -137,14 +137,19 @@ builder.Services.AddControllers()
 
  // CORS para el front (ajusta los origins a tu frontend)
     builder.Services.AddCors(o =>
-    {
-        o.AddPolicy("Front", p => p
-            .WithOrigins("http://localhost:5173", "http://localhost:3000")
-            .AllowAnyHeader()
-            .AllowAnyMethod()
-            .AllowCredentials());
-    });
-
+{
+    o.AddPolicy("Front", p => p
+        .WithOrigins(
+            "http://localhost:5173",
+            "http://localhost:3000",
+            "http://localhost:19000",   // Expo web
+            "exp://127.0.0.1:19000",    // Expo Go local
+            "exp://10.0.2.2:19000"      // Expo Go emulador
+        )
+        .AllowAnyHeader()
+        .AllowAnyMethod()
+        .SetIsOriginAllowed(_ => true)); // permite Origin: null de RN
+});
 
 // Swagger (para pruebas de endpoints)
 builder.Services.AddEndpointsApiExplorer();

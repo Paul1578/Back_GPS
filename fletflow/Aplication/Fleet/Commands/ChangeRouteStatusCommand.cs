@@ -8,16 +8,16 @@ namespace fletflow.Application.Fleet.Commands
     {
         private readonly IUnitOfWork _uow;
         private readonly IRouteRepository _routes;
-        private readonly IVehicleRepository _vehicles;   // 👈 NUEVO
+        private readonly IVehicleRepository _vehicles;
 
         public ChangeRouteStatusCommand(
             IUnitOfWork uow,
             IRouteRepository routes,
-            IVehicleRepository vehicles)                   // 👈 NUEVO
+            IVehicleRepository vehicles)
         {
             _uow = uow;
             _routes = routes;
-            _vehicles = vehicles;                         // 👈 NUEVO
+            _vehicles = vehicles;
         }
 
         public async Task Execute(Guid id, RouteStatus status)

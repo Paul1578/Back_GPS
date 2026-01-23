@@ -1,18 +1,21 @@
 # Back_GPS
 
-Backend .NET + MySQL (Docker) + phpMyAdmin
+Backend en .NET 8 con base de datos MySQL usando Docker.
 
-Este proyecto utiliza **Docker Compose** para levantar la base de datos y **.NET 8** para el backend.
+Este repositorio contiene **solo un entorno de desarrollo local**. No existe producción ni despliegue automático.
+El objetivo es que cualquier persona del equipo pueda clonar el proyecto y ejecutarlo sin configuraciones complejas.
 
 ---
 
-## 1. Requisitos
+## 1. ¿Qué necesito para usar este proyecto?
+
+Antes de empezar, asegúrate de tener instalado:
 
 * Docker
-* Docker Compose (plugin `docker compose`)
-* .NET SDK 8.0+
+* Docker Compose (incluido en Docker Desktop)
+* .NET SDK 8.0 o superior
 
-Verificar:
+Puedes verificarlo con estos comandos:
 
 ```bash
 docker --version
@@ -20,211 +23,150 @@ docker compose version
 dotnet --version
 ```
 
+Si alguno falla, primero instala ese componente.
+
 ---
 
-## 2. Variables de entorno (.env)
+## 2. Configuración inicial (paso más importante)
 
-Crear un archivo `.env` en la raíz del proyecto (`Back_GPS/`).
+### 2.1 Crear el archivo `.env`
 
-```env
-# =====================
-# DATABASE CONFIG
-# =====================
-DB_HOST=127.0.0.1
-DB_PORT=3306
-DB_NAME=fletflow
-DB_USER=root
-DB_PASSWORD=admin
+El proyecto necesita un archivo llamado `.env` con la configuración básica de la base de datos.
 
-# =====================
-# MYSQL DOCKER
-# =====================
-MYSQL_ROOT_PASSWORD=admin
-MYSQL_DATABASE=fletflow
+En el repositorio existe un archivo de ejemplo llamado `.env.example`.
+
+Debes copiarlo y renombrarlo a `.env`.
+
+Linux / macOS:
+
+```bash
+cp .env.example .env
 ```
 
-⚠️ **Nunca subir `.env` al repositorio**. Agregarlo a `.gitignore`.
+Windows (PowerShell):
 
----
-
-## 3. Docker Compose
-
-Archivo: `docker-compose.yml`
-
-```yaml
-version: "3.9"
-
-services:
-  mysql:
-    image: mysql:8.0
-    container_name: mysql-gps
-    restart: unless-stopped
-    environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
-      MYSQL_DATABASE: ${MYSQL_DATABASE}
-    ports:
-      - "3306:3306"
-    volumes:
-      - mysql_data:/var/lib/mysql
-    command: --default-authentication-plugin=mysql_native_password
-
-  phpmyadmin:
-    image: phpmyadmin/phpmyadmin:latest
-    container_name: phpmyadmin-gps
-    restart: unless-stopped
-    ports:
-      - "8080:80"
-    environment:
-      PMA_HOST: mysql
-      PMA_PORT: 3306
-    depends_on:
-      - mysql
-
-volumes:
-  mysql_data:
+```powershell
+copy .env.example .env
 ```
 
+No es necesario modificar nada dentro del archivo para empezar.
+
+**Importante:** el archivo `.env` no debe subirse a Git.
+
 ---
 
-## 4. Comandos Docker
+## 3. Levantar la base de datos (Docker)
 
-### Levantar servicios
+El proyecto usa Docker para ejecutar MySQL y phpMyAdmin.
+
+### Forma recomendada
+
+Linux / macOS:
+
+```bash
+./scripts/dev-up.sh
+```
+
+Windows:
+
+```powershell
+.\scripts\dev-up.ps1
+```
+
+Estos comandos levantan automáticamente los servicios necesarios.
+
+### Forma manual (opcional)
+
+Si prefieres hacerlo directamente:
 
 ```bash
 docker compose up -d
 ```
 
-### Ver estado
-
-```bash
-docker compose ps
-```
-
-### Ver logs
-
-```bash
-docker compose logs mysql
-docker compose logs phpmyadmin
-```
-
-### Detener servicios
-
-```bash
-docker compose down
-```
-
-### Limpieza (opcional)
-
-```bash
-docker system prune -f
-docker volume prune -f
-```
-
 ---
 
-## 5. Acceso a phpMyAdmin
+## 4. Verificar que todo funciona
 
-URL:
+Cuando Docker termine de levantar los servicios:
 
-```
-http://localhost:8080
-```
+* Abre un navegador
+* Entra a: [http://localhost:8080](http://localhost:8080)
 
-Credenciales:
+Eso abrirá phpMyAdmin (herramienta visual para la base de datos).
+
+Datos de acceso:
 
 * Servidor: `mysql`
 * Usuario: `root`
-* Password: `admin`
+* Contraseña: `admin`
+
+Si puedes entrar, la base de datos está funcionando correctamente.
 
 ---
 
-## 6. Configuración en .NET
+## 5. Ejecutar el backend (.NET)
 
-### appsettings.json
-
-```json
-{
-  "ConnectionStrings": {
-    "DefaultConnection": "Server=${DB_HOST};Port=${DB_PORT};Database=${DB_NAME};User=${DB_USER};Password=${DB_PASSWORD};TreatTinyAsBoolean=false;"
-  }
-}
-```
-
-⚠️ En producción se recomienda **NO** dejar credenciales en `appsettings.json` y usar solo variables de entorno.
-
----
-
-## 7. Dependency Injection (EF Core + MySQL)
-
-Ejemplo recomendado:
-
-```csharp
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-
-services.AddDbContext<AppDbContext>(options =>
-    options.UseMySql(
-        connectionString,
-        ServerVersion.Parse("8.0.36-mysql")
-    )
-);
-```
-
-❌ Evitar:
-
-```csharp
-ServerVersion.AutoDetect(connectionString)
-```
-
----
-
-## 8. Comandos .NET
-
-### Restaurar dependencias
-
-```bash
-dotnet restore
-```
-
-### Ejecutar backend (watch mode)
+Con la base de datos levantada, ejecuta el backend:
 
 ```bash
 dotnet watch run
 ```
 
-### Build
+El backend se conectará automáticamente a MySQL usando la configuración del archivo `.env`.
+
+---
+
+## 6. Flujo normal de trabajo
+
+Cada vez que empieces a trabajar:
+
+1. Asegúrate de que Docker esté abierto
+2. Levanta los servicios (`dev-up` o `docker compose up -d`)
+3. Ejecuta el backend con `dotnet watch run`
+4. Desarrolla normalmente
+
+Al terminar:
 
 ```bash
-dotnet build
+docker compose down
 ```
 
 ---
 
-## 9. Flujo recomendado de desarrollo
+## 7. Problemas comunes
 
-1. Crear `.env`
-2. `docker compose up -d`
-3. Verificar phpMyAdmin
-4. `dotnet watch run`
-5. Desarrollar / migraciones
+**La base de datos no inicia**
 
----
+* Verifica que no tengas MySQL instalado y corriendo en tu sistema
 
-## 10. Próximos pasos (roadmap)
+**phpMyAdmin no conecta**
 
-* [ ] Crear usuario MySQL no-root
-* [ ] Migraciones EF Core
-* [ ] Dockerizar backend .NET
-* [ ] Separar perfiles dev / prod
-* [ ] Seguridad básica MySQL
+* Espera unos segundos y recarga la página
 
----
+**Todo está roto y no sabes qué pasó**
 
-## 11. Notas
-
-* MySQL corre **solo en Docker**
-* El backend se conecta vía `127.0.0.1:3306`
-* Los datos persisten en volumen Docker
+```bash
+docker compose down -v
+docker compose up -d
+```
 
 ---
 
-**Estado actual:** entorno limpio, reproducible y listo para escalar.
+## 8. Notas para usuarios Windows
+
+* Usar Docker Desktop con WSL2 habilitado
+* Ejecutar los scripts `.ps1` desde PowerShell
+* No usar MySQL instalado localmente
+
+---
+
+## 9. Próximos pasos (planificados)
+
+* Crear un usuario MySQL que no sea root
+* Configurar migraciones con Entity Framework
+* Dockerizar el backend
+* Separar configuraciones de desarrollo y producción
+
+---
+
+Estado actual: entorno local simple, estable y fácil de levantar.

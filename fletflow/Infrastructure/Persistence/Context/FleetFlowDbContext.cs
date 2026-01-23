@@ -6,9 +6,11 @@ namespace fletflow.Infrastructure.Persistence.Context
 {
     public class AppDbContext : DbContext
     {
-        public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
+        public AppDbContext(DbContextOptions<AppDbContext> options)
+            : base(options)
+        {
+        }
 
-        // --> ¡Asegúrate que sean las Entities del folder Infrastructure/Persistence/Entities!
         public DbSet<UserEntity> Users { get; set; } = default!;
         public DbSet<RoleEntity> Roles { get; set; } = default!;
         public DbSet<UserRoleEntity> UserRoles { get; set; } = default!;
@@ -19,33 +21,34 @@ namespace fletflow.Infrastructure.Persistence.Context
         public DbSet<RouteEntity> Routes { get; set; } = default!;
         public DbSet<RoutePositionEntity> RoutePositions { get; set; } = default!;
 
-
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             modelBuilder.ApplyConfiguration(new UserConfiguration());
             modelBuilder.ApplyConfiguration(new RoleConfiguration());
             modelBuilder.ApplyConfiguration(new UserRoleConfiguration());
-            modelBuilder.Entity<RefreshTokenEntity>(b =>
+
+            modelBuilder.Entity<RefreshTokenEntity>(entity =>
             {
-                b.HasIndex(x => x.TokenHash).IsUnique();
-                b.HasOne(x => x.User)
-                .WithMany()
-                .HasForeignKey(x => x.UserId)
-                .OnDelete(DeleteBehavior.Cascade);
+                entity.HasIndex(x => x.TokenHash).IsUnique();
+                entity.HasOne(x => x.User)
+                      .WithMany()
+                      .HasForeignKey(x => x.UserId)
+                      .OnDelete(DeleteBehavior.Cascade);
             });
-            modelBuilder.Entity<PasswordResetTokenEntity>(b =>
+
+            modelBuilder.Entity<PasswordResetTokenEntity>(entity =>
             {
-                b.HasIndex(x => x.TokenHash).IsUnique();
-                b.HasOne(x => x.User)
-                .WithMany() // o colección si la defines
-                .HasForeignKey(x => x.UserId)
-                .OnDelete(DeleteBehavior.Cascade);
+                entity.HasIndex(x => x.TokenHash).IsUnique();
+                entity.HasOne(x => x.User)
+                      .WithMany()
+                      .HasForeignKey(x => x.UserId)
+                      .OnDelete(DeleteBehavior.Cascade);
             });
 
             modelBuilder.ApplyConfiguration(new VehicleConfiguration());
             modelBuilder.ApplyConfiguration(new DriverConfiguration());
             modelBuilder.ApplyConfiguration(new RouteConfiguration());
-            base.OnModelCreating(modelBuilder);
+
             base.OnModelCreating(modelBuilder);
         }
     }

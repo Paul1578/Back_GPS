@@ -22,126 +22,146 @@ namespace fletflow.Infrastructure.Services
         public int ResetTokenMinutes { get; set; } = 1440; // 24 horas
         public string FrontendBaseUrl { get; set; } = "http://192.168.56.1:3000";
     }
-
     public class EmailService : IEmailSender
-    {
-        private readonly EmailSettings _settings;
-        private readonly ILogger<EmailService> _logger;
-
-        public EmailService(IOptions<EmailSettings> options, ILogger<EmailService> logger)
         {
-            _settings = options.Value;
-            _logger = logger;
-        }
+            private readonly EmailSettings _settings;
+            private readonly ILogger<EmailService> _logger;
 
-        public async Task SendPasswordResetEmailAsync(string toEmail, string resetLink, string plainToken, CancellationToken cancellationToken = default)
-        {
-            if (string.IsNullOrWhiteSpace(_settings.SmtpHost) || _settings.SmtpHost.Contains("tu-dominio"))
+            public EmailService(IOptions<EmailSettings> options, ILogger<EmailService> logger)
             {
-                throw new InvalidOperationException("SmtpHost no configurado. Actualiza appsettings.json -> Email.SmtpHost (ej: smtp.gmail.com).");
+                _settings = options.Value;
+                _logger = logger;
             }
 
-            using var mail = new MailMessage
+            // =========================
+            // TEMPLATE LOADER
+            // =========================
+            private static string LoadTemplate(string fileName)
             {
-                From = new MailAddress(_settings.From, _settings.DisplayName),
-                Subject = "Restablecer contrasena",
-                Body =
-                    "Recibimos una solicitud para restablecer tu contrasena.\n\n" +
-                    "Enlace directo (click): " + resetLink + "\n\n" +
-                    "Enlace al front (abre y el token estara en la URL): " + _settings.ResetPasswordUrl + "\n\n" +
-                    "Token (copiar/pegar en el front si lo necesitas): " + plainToken + "\n",
-                IsBodyHtml = false
-            };
-            mail.To.Add(toEmail);
+                var basePath = AppContext.BaseDirectory;
+                var fullPath = Path.Combine(basePath, "EmailTemplates", fileName);
 
-            using var client = BuildClient();
+                if (!File.Exists(fullPath))
+                    throw new FileNotFoundException($"Email template not found: {fullPath}");
 
-            try
-            {
-                await client.SendMailAsync(mail, cancellationToken);
-                _logger.LogInformation(
-                    "Correo de reset enviado a {Email} via {Host}:{Port} ssl={Ssl}",
-                    toEmail, _settings.SmtpHost, _settings.SmtpPort, _settings.EnableSsl);
-                Console.WriteLine($"[EmailService] Correo de reset enviado a {toEmail} via {_settings.SmtpHost}:{_settings.SmtpPort} ssl={_settings.EnableSsl}");
-            }
-            catch (Exception ex)
-            {
-                var smtpEx = ex as SmtpException;
-                _logger.LogError(
-                    ex,
-                    "Error enviando correo de reset a {Email}. Host={Host} Port={Port} Ssl={Ssl} User={User} StatusCode={StatusCode} Inner={InnerMessage}",
-                    toEmail,
-                    _settings.SmtpHost,
-                    _settings.SmtpPort,
-                    _settings.EnableSsl,
-                    _settings.User,
-                    smtpEx?.StatusCode,
-                    ex.InnerException?.Message);
-                Console.WriteLine($"[EmailService] Error enviando correo a {toEmail}: {ex.GetType().Name} {ex.Message} StatusCode={smtpEx?.StatusCode} Inner={ex.InnerException?.Message}");
-                throw;
-            }
-        }
-
-        private SmtpClient BuildClient()
-        {
-            return new SmtpClient
-            {
-                Host = _settings.SmtpHost,
-                Port = _settings.SmtpPort,
-                EnableSsl = _settings.EnableSsl,
-                DeliveryMethod = SmtpDeliveryMethod.Network,
-                UseDefaultCredentials = false,
-                Credentials = new NetworkCredential(_settings.User, _settings.Password),
-                Timeout = 15000
-            };
-        }
-
-        public async Task SendUserInvitationEmailAsync(string toEmail, string tempPassword, string activationLink, string activationToken, CancellationToken cancellationToken = default)
-        {
-            if (string.IsNullOrWhiteSpace(_settings.SmtpHost) || _settings.SmtpHost.Contains("tu-dominio"))
-            {
-                throw new InvalidOperationException("SmtpHost no configurado. Actualiza appsettings.json -> Email.SmtpHost (ej: smtp.gmail.com).");
+                return File.ReadAllText(fullPath);
             }
 
-            using var mail = new MailMessage
+            // =========================
+            // PASSWORD RESET
+            // =========================
+            public async Task SendPasswordResetEmailAsync(
+                string toEmail,
+                string resetLink,
+                string _,
+                CancellationToken cancellationToken = default)
             {
-                From = new MailAddress(_settings.From, _settings.DisplayName),
-                Subject = "Invitacion a la plataforma",
-                Body =
-                    "Has sido invitado a la plataforma.\n\n" +
-                    "Correo: " + toEmail + "\n" +
-                    "Password temporal: " + tempPassword + "\n\n" +
-                    "Enlace para activar tu cuenta: " + activationLink + "\n\n" +
-                    "Token (copiar/pegar si se requiere): " + activationToken + "\n\n" +
-                    "Por seguridad, cambia tu contrasena al ingresar.",
-                IsBodyHtml = false
-            };
-            mail.To.Add(toEmail);
+                EnsureSmtpConfigured();
 
-            using var client = BuildClient();
+                var html = LoadTemplate("ResetPassword.html")
+                    .Replace("{{RESET_LINK}}", resetLink)
+                    .Replace("{{TOKEN_MINUTES}}", _settings.ResetTokenMinutes.ToString())
+                    .Replace("{{APP_NAME}}", "FletFlow");
 
-            try
-            {
-                await client.SendMailAsync(mail, cancellationToken);
-                _logger.LogInformation(
-                    "Correo de invitacion enviado a {Email} via {Host}:{Port} ssl={Ssl}",
-                    toEmail, _settings.SmtpHost, _settings.SmtpPort, _settings.EnableSsl);
+                using var mail = new MailMessage
+                {
+                    From = new MailAddress(_settings.From, _settings.DisplayName),
+                    Subject = "Restablecer contraseña",
+                    Body = html,
+                    IsBodyHtml = true
+                };
+
+                mail.To.Add(toEmail);
+
+                await SendAsync(mail, toEmail, cancellationToken);
             }
-            catch (Exception ex)
+
+            // =========================
+            // USER INVITATION
+            // =========================
+            public async Task SendUserInvitationEmailAsync(
+                string toEmail,
+                string tempPassword,
+                string activationLink,
+                string _,
+                CancellationToken cancellationToken = default)
             {
-                var smtpEx = ex as SmtpException;
-                _logger.LogError(
-                    ex,
-                    "Error enviando correo de invitacion a {Email}. Host={Host} Port={Port} Ssl={Ssl} User={User} StatusCode={StatusCode} Inner={InnerMessage}",
-                    toEmail,
-                    _settings.SmtpHost,
-                    _settings.SmtpPort,
-                    _settings.EnableSsl,
-                    _settings.User,
-                    smtpEx?.StatusCode,
-                    ex.InnerException?.Message);
-                throw;
+                EnsureSmtpConfigured();
+
+                var html = LoadTemplate("Invitation.html")
+                    .Replace("{{EMAIL}}", toEmail)
+                    .Replace("{{TEMP_PASSWORD}}", tempPassword)
+                    .Replace("{{ACTIVATION_LINK}}", activationLink)
+                    .Replace("{{APP_NAME}}", "FletFlow");
+
+                using var mail = new MailMessage
+                {
+                    From = new MailAddress(_settings.From, _settings.DisplayName),
+                    Subject = "Invitación a FletFlow",
+                    Body = html,
+                    IsBodyHtml = true
+                };
+
+                mail.To.Add(toEmail);
+
+                await SendAsync(mail, toEmail, cancellationToken);
+            }
+
+            // =========================
+            // SMTP
+            // =========================
+            private void EnsureSmtpConfigured()
+            {
+                if (string.IsNullOrWhiteSpace(_settings.SmtpHost) ||
+                    _settings.SmtpHost.Contains("tu-dominio"))
+                {
+                    throw new InvalidOperationException(
+                        "SmtpHost no configurado. Revisa appsettings.json -> Email");
+                }
+            }
+
+            private async Task SendAsync(
+                MailMessage mail,
+                string toEmail,
+                CancellationToken cancellationToken)
+            {
+                using var client = BuildClient();
+
+                try
+                {
+                    await client.SendMailAsync(mail, cancellationToken);
+                    _logger.LogInformation(
+                        "Correo enviado a {Email} via {Host}:{Port} ssl={Ssl}",
+                        toEmail,
+                        _settings.SmtpHost,
+                        _settings.SmtpPort,
+                        _settings.EnableSsl);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(
+                        ex,
+                        "Error enviando correo a {Email} via {Host}",
+                        toEmail,
+                        _settings.SmtpHost);
+                    throw;
+                }
+            }
+
+            private SmtpClient BuildClient()
+            {
+                return new SmtpClient
+                {
+                    Host = _settings.SmtpHost,
+                    Port = _settings.SmtpPort,
+                    EnableSsl = _settings.EnableSsl,
+                    DeliveryMethod = SmtpDeliveryMethod.Network,
+                    UseDefaultCredentials = false,
+                    Credentials = new NetworkCredential(
+                        _settings.User,
+                        _settings.Password),
+                    Timeout = 15000
+                };
             }
         }
     }
-}

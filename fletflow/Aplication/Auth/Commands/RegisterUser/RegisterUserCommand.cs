@@ -49,7 +49,8 @@ namespace fletflow.Application.Auth.Commands
             {
                 UserId = user.Id,
                 RoleId = role.Id,
-                Role = role // opcional en dominio; NO se mapea a entity al guardar
+                Role = role, // opcional en dominio; NO se mapea a entity al guardar
+                User = user
             });
 
             // 6) Guardar usuario

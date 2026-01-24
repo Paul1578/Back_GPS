@@ -8,25 +8,22 @@ using System.Security.Claims;
 
 using fletflow.Api.Controllers;
 using fletflow.Api.Middleware;
-// ...existing code...
 using fletflow.Api.Filters;
+
 using fletflow.Infrastructure.Security;
+using fletflow.Infrastructure.Security.Hashing;
 using fletflow.Infrastructure.Persistence.Context;
 using fletflow.Infrastructure.Persistence;
 using fletflow.Infrastructure.Persistence.Repositories;
 using fletflow.Infrastructure.Persistence.Contracts;
 using fletflow.Infrastructure.Config;
+using fletflow.Infrastructure.Services;
+
 using fletflow.Domain.Auth.Repositories;
 using fletflow.Domain.Fleet.Repositories;
-using fletflow.Application.Users.Commands;
-using fletflow.Application.Users.Queries;
-using fletflow.Application.Auth.Commands;
-using fletflow.Application.Auth.Commands.ActivateAccount;
-using fletflow.Application.Auth.Queries;
-using fletflow.Application.Fleet.Commands;
-using fletflow.Application.Fleet.Queries;
-using fletflow.Infrastructure.Security.Hashing;
-using fletflow.Infrastructure.Services;
+
+using fletflow.Application;
+
 using FluentValidation;
 using FluentValidation.AspNetCore;
 
@@ -54,7 +51,12 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 );
 
 // =====================
-// Services
+// Application (Commands & Queries)
+// =====================
+builder.Services.AddApplication();
+
+// =====================
+// Core Services
 // =====================
 builder.Services.AddScoped<IPasswordHasher, PasswordHasher>();
 builder.Services.AddScoped<PasswordResetTokenFactory>();
@@ -64,6 +66,9 @@ builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<IEmailSender, EmailService>();
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 
+// =====================
+// Repositories
+// =====================
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IRoleRepository, RoleRepository>();
 builder.Services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
@@ -74,46 +79,17 @@ builder.Services.AddScoped<IDriverRepository, DriverRepository>();
 builder.Services.AddScoped<IRouteRepository, RouteRepository>();
 builder.Services.AddScoped<IRoutePositionRepository, RoutePositionRepository>();
 
-builder.Services.AddScoped<GetAllUsersQuery>();
-builder.Services.AddScoped<RegisterUserCommand>();
-builder.Services.AddScoped<UpdateUserCommand>();
-builder.Services.AddScoped<CreateUserWithRoleCommand>();
-builder.Services.AddScoped<GetMyTeamUsersQuery>();
-
-builder.Services.AddScoped<CreateVehicleCommand>();
-builder.Services.AddScoped<UpdateVehicleCommand>();
-builder.Services.AddScoped<DeleteVehicleCommand>();
-builder.Services.AddScoped<GetVehicleByIdQuery>();
-builder.Services.AddScoped<GetVehiclesQuery>();
-builder.Services.AddScoped<ChangeVehicleStatusCommand>();
-
-builder.Services.AddScoped<CreateDriverCommand>();
-builder.Services.AddScoped<GetDriverByIdQuery>();
-builder.Services.AddScoped<GetDriversQuery>();
-builder.Services.AddScoped<AssignDriverToVehicleCommand>();
-builder.Services.AddScoped<UnassignDriverFromVehicleCommand>();
-
-builder.Services.AddScoped<CreateRouteCommand>();
-builder.Services.AddScoped<UpdateRouteCommand>();
-builder.Services.AddScoped<DeleteRouteCommand>();
-builder.Services.AddScoped<GetRouteByIdQuery>();
-builder.Services.AddScoped<GetRoutesQuery>();
-builder.Services.AddScoped<ChangeRouteStatusCommand>();
-builder.Services.AddScoped<RegisterRoutePositionCommand>();
-builder.Services.AddScoped<GetRoutePositionsQuery>();
-
-builder.Services.AddScoped<ActivateAccountCommand>();
-builder.Services.AddScoped<ChangePasswordCommand>();
-
+// =====================
+// Validation & Middleware
+// =====================
 builder.Services.AddFluentValidationAutoValidation();
 builder.Services.AddValidatorsFromAssemblyContaining<RegisterUserValidator>();
+
 builder.Services.AddTransient<ExceptionMiddleware>();
 builder.Services.AddTransient<JwtMiddleware>();
 builder.Services.AddTransient<RoleValidationMiddleware>();
 builder.Services.AddTransient<SimpleRateLimitMiddleware>();
 builder.Services.AddTransient<HeaderValidationMiddleware>();
-
-
 
 builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("Email"));
 
@@ -122,8 +98,10 @@ builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("Emai
 // =====================
 builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("Jwt"));
 var jwtSettings = builder.Configuration.GetSection("Jwt").Get<JwtSettings>();
+
 if (jwtSettings == null || string.IsNullOrWhiteSpace(jwtSettings.Key))
-    throw new Exception("JWT key is not properly configured in appsettings.json or environment variables.");
+    throw new Exception("JWT key is not properly configured.");
+
 var key = Encoding.UTF8.GetBytes(jwtSettings.Key);
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -153,7 +131,7 @@ builder.Services.AddControllers()
     .AddApplicationPart(typeof(AuthController).Assembly)
     .AddMvcOptions(options =>
     {
-        options.Filters.Add(typeof(fletflow.Api.Filters.ValidateModelStateFilter));
+        options.Filters.Add(typeof(ValidateModelStateFilter));
     });
 
 builder.Services.AddCors(o =>
@@ -167,8 +145,9 @@ builder.Services.AddCors(o =>
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
-    var xmlFile = $"BackEnd_Gps.xml";
+    var xmlFile = "BackEnd_Gps.xml";
     var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+
     if (File.Exists(xmlPath))
         options.IncludeXmlComments(xmlPath, includeControllerXmlComments: true);
 
@@ -176,19 +155,7 @@ builder.Services.AddSwaggerGen(options =>
     {
         Title = "FletFlow API",
         Version = "v1",
-        Description = "REST API for fleet, routes, users management and JWT authentication.",
-        TermsOfService = new Uri("https://github.com/tu-org/tu-repo/terms"),
-        Contact = new OpenApiContact
-        {
-            Name = "FletFlow Support",
-            Email = "support@fletflow.com",
-            Url = new Uri("https://fletflow.com/contact")
-        },
-        License = new OpenApiLicense
-        {
-            Name = "MIT",
-            Url = new Uri("https://opensource.org/licenses/MIT")
-        }
+        Description = "REST API for fleet, routes, users management and JWT authentication."
     });
 
     options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
@@ -197,7 +164,7 @@ builder.Services.AddSwaggerGen(options =>
         In = ParameterLocation.Header,
         Type = SecuritySchemeType.ApiKey,
         Scheme = "Bearer",
-        Description = "JWT Authentication. Example: Bearer {token}"
+        Description = "Bearer {token}"
     });
 
     options.AddSecurityRequirement(new OpenApiSecurityRequirement
@@ -215,9 +182,6 @@ builder.Services.AddSwaggerGen(options =>
         }
     });
 
-
-
-    // Ejemplo global de respuesta 401
     options.OperationFilter<SwaggerUnauthorizedResponseOperationFilter>();
 });
 
@@ -225,7 +189,6 @@ builder.Services.AddSwaggerGen(options =>
 // Build
 // =====================
 var app = builder.Build();
-
 
 if (app.Environment.IsDevelopment())
 {
@@ -240,14 +203,16 @@ using (var scope = app.Services.CreateScope())
     await DbSeeder.SeedAsync(dbContext);
 }
 
-
 app.UseHttpsRedirection();
+
 app.UseMiddleware<SimpleRateLimitMiddleware>();
 app.UseMiddleware<HeaderValidationMiddleware>();
 app.UseMiddleware<ExceptionMiddleware>();
 app.UseMiddleware<JwtMiddleware>();
 app.UseMiddleware<RoleValidationMiddleware>();
+
 app.UseAuthentication();
 app.UseAuthorization();
+
 app.MapControllers();
 app.Run();

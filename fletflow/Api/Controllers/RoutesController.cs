@@ -123,9 +123,12 @@ namespace fletflow.Api.Controllers
         }
 
         /// <summary>
-        /// Obtiene todas las rutas (opcionalmente filtradas por vehículo).
+        /// Obtiene todas las rutas (opcionalmente filtradas por vehículo, conductor, estado o solo activas).
         /// </summary>
         /// <param name="vehicleId">ID del vehículo (opcional).</param>
+        /// <param name="driverId">ID del conductor (opcional).</param>
+        /// <param name="status">Estado de la ruta (opcional).</param>
+        /// <param name="onlyActive">Solo rutas activas (opcional).</param>
         /// <response code="200">Listado de rutas.</response>
         [HttpGet]
         public async Task<ActionResult<List<RouteDto>>> GetAll(

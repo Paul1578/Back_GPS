@@ -31,7 +31,8 @@ namespace fletflow.Infrastructure.Persistence.Mappings
                     {
                         Id = ur.Role.Id,
                         Name = ur.Role.Name
-                    }
+                    },
+                    User = null! // Se debe asignar luego si es necesario
                 }).ToList() ?? new List<UserRole>()
             };
         }
@@ -54,7 +55,8 @@ namespace fletflow.Infrastructure.Persistence.Mappings
             {
                 UserId = entity.UserId,
                 RoleId = entity.RoleId,
-                Role = entity.Role?.ToDomain()
+                Role = entity.Role?.ToDomain(),
+                User = null! // Se debe asignar luego si es necesario
             };
         }
 

@@ -19,7 +19,8 @@ namespace fletflow.Infrastructure.Persistence.Mappings
                 UserRoles = entity.UserRoles
                     .Select(ur => new UserRole
                     {
-                        Role = new Role { Id = ur.Role.Id, Name = ur.Role.Name }
+                        Role = new Role { Id = ur.Role.Id, Name = ur.Role.Name },
+                        User = null! // Se debe asignar luego si es necesario
                     }).ToList()
             };
         }

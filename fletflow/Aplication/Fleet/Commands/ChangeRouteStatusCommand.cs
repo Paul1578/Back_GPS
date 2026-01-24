@@ -24,14 +24,14 @@ namespace fletflow.Application.Fleet.Commands
         {
             // 1. Cargamos la ruta
             var route = await _routes.GetByIdAsync(id)
-                ?? throw new KeyNotFoundException("Ruta no encontrada.");
+                ?? throw new KeyNotFoundException("Route not found.");
 
             if (!route.IsActive)
-                throw new InvalidOperationException("No se puede cambiar el estado de una ruta inactiva.");
+                throw new InvalidOperationException("Cannot change the status of an inactive route.");
 
             // 2. Cargamos el vehículo asociado
             var vehicle = await _vehicles.GetByIdAsync(route.VehicleId)
-                ?? throw new KeyNotFoundException("Vehículo asociado a la ruta no encontrado.");
+                ?? throw new KeyNotFoundException("Vehicle associated with the route not found.");
 
             // 3. Regla de negocio: estado de ruta → estado de vehículo
             switch (status)

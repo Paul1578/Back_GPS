@@ -18,7 +18,7 @@ namespace fletflow.Application.Auth.Commands
             // 1) Verificar si el usuario ya existe
             var existingUser = await _unitOfWork.Users.GetByEmailAsync(email);
             if (existingUser is not null)
-                throw new Exception("El correo ya fue registrado.");
+                throw new InvalidOperationException("El correo ya fue registrado.");
 
             // 2) Normalizar rol
             roleName = string.IsNullOrWhiteSpace(roleName) ? "User" : roleName.Trim();

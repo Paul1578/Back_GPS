@@ -4,11 +4,11 @@ namespace fletflow.Application.DTOs.Auth
 {
     public class LoginUserDto
     {
-        [Required(ErrorMessage = "El correo electrónico es obligatorio.")]
-        [EmailAddress(ErrorMessage = "Debe proporcionar un correo electrónico válido.")]
+        [Required(ErrorMessage = "Email is required.")]
+        [EmailAddress(ErrorMessage = "A valid email address is required.")]
         public string Email { get; set; }
 
-        [Required(ErrorMessage = "La contraseña es obligatoria.")]
+        [Required(ErrorMessage = "Password is required.")]
         public string Password { get; set; }
     }
 }

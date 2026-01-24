@@ -23,6 +23,10 @@ namespace fletflow.Api.Controllers
             _delete = delete;
         }
 
+        /// <summary>
+        /// Obtiene todos los roles.
+        /// </summary>
+        /// <response code="200">Listado de roles.</response>
         [HttpGet]
         public async Task<IActionResult> GetAll()
         {
@@ -32,6 +36,12 @@ namespace fletflow.Api.Controllers
 
         public class CreateRoleDto { public string Name { get; set; } = default!; }
 
+        /// <summary>
+        /// Crea un nuevo rol.
+        /// </summary>
+        /// <param name="dto">Datos del rol.</param>
+        /// <response code="201">Rol creado correctamente.</response>
+        /// <response code="400">Datos inválidos o rol ya existe.</response>
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] CreateRoleDto dto)
         {
@@ -39,6 +49,12 @@ namespace fletflow.Api.Controllers
             return Created("", new { message = "Rol creado", name = dto.Name });
         }
 
+        /// <summary>
+        /// Elimina un rol por nombre.
+        /// </summary>
+        /// <param name="name">Nombre del rol.</param>
+        /// <response code="200">Rol eliminado correctamente.</response>
+        /// <response code="404">Rol no encontrado.</response>
         [HttpDelete("{name}")]
         public async Task<IActionResult> Delete(string name)
         {

@@ -63,6 +63,10 @@ namespace fletflow.Api.Controllers
             return userId;
         }
 
+        /// <summary>
+        /// Obtiene los usuarios del equipo del usuario autenticado.
+        /// </summary>
+        /// <response code="200">Listado de usuarios del equipo.</response>
         [HttpGet("my-team")]
         public async Task<IActionResult> GetMyTeam()
         {
@@ -73,6 +77,10 @@ namespace fletflow.Api.Controllers
             return Ok(users);
         }
 
+        /// <summary>
+        /// Obtiene todos los usuarios.
+        /// </summary>
+        /// <response code="200">Listado de usuarios.</response>
         [HttpGet]
         public async Task<IActionResult> GetAll()
         {
@@ -80,6 +88,13 @@ namespace fletflow.Api.Controllers
             return Ok(users);
         }
 
+        /// <summary>
+        /// Cambia el estado de un usuario.
+        /// </summary>
+        /// <param name="id">ID del usuario.</param>
+        /// <param name="isActive">Nuevo estado.</param>
+        /// <response code="200">Estado actualizado correctamente.</response>
+        /// <response code="404">Usuario no encontrado.</response>
         [HttpPut("{id:guid}/status")]
         public async Task<IActionResult> UpdateStatus(Guid id, [FromQuery] bool isActive)
         {
@@ -87,6 +102,13 @@ namespace fletflow.Api.Controllers
             return Ok(new { Message = "Estado del usuario actualizado." });
         }
 
+        /// <summary>
+        /// Asigna un rol a un usuario.
+        /// </summary>
+        /// <param name="id">ID del usuario.</param>
+        /// <param name="name">Nombre del rol.</param>
+        /// <response code="200">Rol asignado correctamente.</response>
+        /// <response code="404">Usuario o rol no encontrado.</response>
         [HttpPost("{id:guid}/roles/{name}")]
         public async Task<IActionResult> AssignRole(Guid id, string name)
         {
@@ -94,6 +116,13 @@ namespace fletflow.Api.Controllers
             return Ok(new { message = "Rol asignado", userId = id, role = name });
         }
 
+        /// <summary>
+        /// Elimina un rol de un usuario.
+        /// </summary>
+        /// <param name="id">ID del usuario.</param>
+        /// <param name="name">Nombre del rol.</param>
+        /// <response code="200">Rol removido correctamente.</response>
+        /// <response code="404">Usuario o rol no encontrado.</response>
         [HttpDelete("{id:guid}/roles/{name}")]
         public async Task<IActionResult> RemoveRole(Guid id, string name)
         {
@@ -102,6 +131,12 @@ namespace fletflow.Api.Controllers
         }
 
         // POST /api/users
+        /// <summary>
+        /// Crea un usuario con rol y envía invitación por email.
+        /// </summary>
+        /// <param name="request">Datos del usuario.</param>
+        /// <response code="200">Usuario creado correctamente.</response>
+        /// <response code="400">Datos inválidos o usuario ya existe.</response>
         [HttpPost]
         public async Task<IActionResult> CreateUserWithRole([FromBody] CreateUserWithRoleRequest request)
         {

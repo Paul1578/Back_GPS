@@ -16,7 +16,7 @@ namespace fletflow.Application.Fleet.Queries
         public async Task<DriverDto> Execute(Guid id)
         {
             var driver = await _drivers.GetByIdAsync(id)
-                ?? throw new KeyNotFoundException("Conductor no encontrado.");
+                ?? throw new KeyNotFoundException("Driver not found.");
 
             return DriverApplicationMapper.ToDto(driver);
         }

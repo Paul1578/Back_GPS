@@ -6,6 +6,13 @@ namespace fletflow.Api.Middleware
 {
     public class ExceptionMiddleware : IMiddleware
     {
+        private readonly ILogger<ExceptionMiddleware> _logger;
+
+        public ExceptionMiddleware(ILogger<ExceptionMiddleware> logger)
+        {
+            _logger = logger;
+        }
+
         public async Task InvokeAsync(HttpContext context, RequestDelegate next)
         {
             try
@@ -21,6 +28,9 @@ namespace fletflow.Api.Middleware
                     KeyNotFoundException => HttpStatusCode.NotFound,
                     _ => HttpStatusCode.InternalServerError
                 };
+
+                _logger.LogError(ex, "[ExceptionMiddleware] Error procesando la solicitud. TraceId: {TraceId}, Path: {Path}, Status: {Status}",
+                    context.TraceIdentifier, context.Request.Path, (int)status);
 
                 var payload = new
                 {

@@ -38,16 +38,16 @@ namespace fletflow.Application.Fleet.Commands
         {
             // Validamos que vehículo y conductor existan
             var vehicle = await _vehicles.GetByIdAsync(vehicleId)
-                ?? throw new KeyNotFoundException("Vehículo no encontrado.");
+                ?? throw new KeyNotFoundException("Vehicle not found.");
 
             var driver = await _drivers.GetByIdAsync(driverId)
-                ?? throw new KeyNotFoundException("Conductor no encontrado.");
+                ?? throw new KeyNotFoundException("Driver not found.");
 
             if (!vehicle.IsActive)
-                throw new InvalidOperationException("No se puede crear una ruta con un vehículo inactivo.");
+                throw new InvalidOperationException("Cannot create a route with an inactive vehicle.");
 
             if (!driver.IsActive)
-                throw new InvalidOperationException("No se puede crear una ruta con un conductor inactivo.");
+                throw new InvalidOperationException("Cannot create a route with an inactive driver.");
 
             var pointsList = points?.ToList() ?? new List<RoutePoint>();
             if (pointsList.Count < 2)

@@ -35,6 +35,12 @@ namespace fletflow.Api.Controllers
             _deleteVehicle = deleteVehicle;
         }
 
+        /// <summary>
+        /// Elimina un vehículo por su ID.
+        /// </summary>
+        /// <param name="id">ID del vehículo.</param>
+        /// <response code="204">Vehículo eliminado correctamente.</response>
+        /// <response code="404">Vehículo no encontrado.</response>
         [HttpDelete("{id:guid}")]
         public async Task<IActionResult> Delete(Guid id)
         {
@@ -42,6 +48,12 @@ namespace fletflow.Api.Controllers
             return NoContent();
         }
         
+        /// <summary>
+        /// Crea un nuevo vehículo.
+        /// </summary>
+        /// <param name="request">Datos del vehículo.</param>
+        /// <response code="201">Vehículo creado correctamente.</response>
+        /// <response code="400">Datos inválidos.</response>
         [HttpPost]
         public async Task<ActionResult<VehicleDto>> Create([FromBody] CreateVehicleRequest request)
         {
@@ -56,6 +68,14 @@ namespace fletflow.Api.Controllers
             return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
         }
 
+        /// <summary>
+        /// Actualiza un vehículo existente.
+        /// </summary>
+        /// <param name="id">ID del vehículo.</param>
+        /// <param name="request">Datos del vehículo.</param>
+        /// <response code="200">Vehículo actualizado correctamente.</response>
+        /// <response code="400">Datos inválidos.</response>
+        /// <response code="404">Vehículo no encontrado.</response>
         [HttpPut("{id:guid}")]
         public async Task<ActionResult<VehicleDto>> Update(Guid id, [FromBody] UpdateVehicleRequest request)
         {
@@ -71,6 +91,13 @@ namespace fletflow.Api.Controllers
             return Ok(result);
         }
 
+        /// <summary>
+        /// Cambia el estado de un vehículo.
+        /// </summary>
+        /// <param name="id">ID del vehículo.</param>
+        /// <param name="request">Nuevo estado.</param>
+        /// <response code="204">Estado actualizado correctamente.</response>
+        /// <response code="404">Vehículo no encontrado.</response>
         [HttpPut("{id:guid}/status")]
         public async Task<IActionResult> ChangeStatus(Guid id, [FromBody] ChangeVehicleStatusRequest request)
         {
@@ -78,6 +105,11 @@ namespace fletflow.Api.Controllers
             return NoContent();
         }
 
+        /// <summary>
+        /// Obtiene todos los vehículos.
+        /// </summary>
+        /// <param name="onlyActive">Solo activos (opcional).</param>
+        /// <response code="200">Listado de vehículos.</response>
         [HttpGet]
         public async Task<ActionResult<List<VehicleDto>>> GetAll([FromQuery] bool? onlyActive)
         {
@@ -85,6 +117,12 @@ namespace fletflow.Api.Controllers
             return Ok(result);
         }
 
+        /// <summary>
+        /// Obtiene un vehículo por ID.
+        /// </summary>
+        /// <param name="id">ID del vehículo.</param>
+        /// <response code="200">Vehículo encontrado.</response>
+        /// <response code="404">Vehículo no encontrado.</response>
         [HttpGet("{id:guid}")]
         public async Task<ActionResult<VehicleDto>> GetById(Guid id)
         {

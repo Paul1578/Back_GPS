@@ -25,7 +25,7 @@ namespace fletflow.Application.Fleet.Commands
             string? description)
         {
             var vehicle = await _vehicles.GetByIdAsync(id)
-                ?? throw new KeyNotFoundException("Vehículo no encontrado.");
+                ?? throw new KeyNotFoundException("Vehicle not found.");
 
             plate = plate.Trim();
             brand = brand.Trim();
@@ -36,13 +36,13 @@ namespace fletflow.Application.Fleet.Commands
             {
                 var existing = await _vehicles.GetByPlateAsync(plate);
                 if (existing is not null && existing.Id != vehicle.Id)
-                    throw new InvalidOperationException($"Ya existe otro vehículo con la placa {plate}.");
+                    throw new InvalidOperationException($"Another vehicle with plate {plate} already exists.");
             }
 
             // Actualizamos la entidad de dominio
             vehicle.Update(plate, brand, model, year, description);
 
-            // 👈 Ahora sí se lo decimos al repositorio para que lo aplique a EF
+            // Ahora sí se lo decimos al repositorio para que lo aplique a EF
             await _vehicles.UpdateAsync(vehicle);
             await _uow.CommitAsync();
 

@@ -32,7 +32,7 @@ namespace fletflow.Application.Fleet.Commands
             // Reglas: placa única
             var existing = await _vehicles.GetByPlateAsync(plate);
             if (existing is not null)
-                throw new InvalidOperationException($"Ya existe un vehículo con la placa {plate}.");
+                throw new InvalidOperationException($"A vehicle with plate {plate} already exists.");
 
             var vehicle = Vehicle.Create(plate, brand, model, year, description);
 

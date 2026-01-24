@@ -17,7 +17,7 @@ namespace fletflow.Application.Fleet.Commands
         public async Task Execute(Guid id)
         {
             var vehicle = await _vehicles.GetByIdAsync(id)
-                ?? throw new KeyNotFoundException("Vehículo no encontrado.");
+                ?? throw new KeyNotFoundException("Vehicle not found.");
 
             // Delete lógico
             vehicle.Deactivate();

@@ -16,7 +16,7 @@ namespace fletflow.Application.Fleet.Queries
         public async Task<VehicleDto> Execute(Guid id)
         {
             var vehicle = await _vehicles.GetByIdAsync(id)
-                ?? throw new KeyNotFoundException("Vehículo no encontrado.");
+                ?? throw new KeyNotFoundException("Vehicle not found.");
 
             return VehicleApplicationMapper.ToDto(vehicle);
         }

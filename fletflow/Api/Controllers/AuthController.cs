@@ -25,6 +25,13 @@ namespace fletflow.Api.Controllers
             _activateAccountCommand = activateAccountCommand;
         }
 
+        /// <summary>
+        /// Registra un nuevo usuario y devuelve tokens de acceso y refresh.
+        /// </summary>
+        /// <param name="dto">Datos de registro (usuario, email, contraseña, rol).</param>
+        /// <returns>Tokens de acceso y refresh.</returns>
+        /// <response code="200">Usuario registrado correctamente.</response>
+        /// <response code="400">Datos inválidos o el correo ya fue registrado.</response>
         [HttpPost("register")]
         [AllowAnonymous]
         public async Task<IActionResult> Register([FromBody] RegisterUserDto dto)
@@ -34,6 +41,14 @@ namespace fletflow.Api.Controllers
             return Ok(response);
         }
 
+        /// <summary>
+        /// Inicia sesión y devuelve tokens de acceso y refresh.
+        /// </summary>
+        /// <param name="dto">Credenciales de usuario.</param>
+        /// <returns>Tokens de acceso y refresh.</returns>
+        /// <response code="200">Login exitoso.</response>
+        /// <response code="400">El usuario no existe o la cuenta no está activada.</response>
+        /// <response code="401">Contraseña incorrecta.</response>
         [HttpPost("login")]
         [AllowAnonymous]
         public async Task<IActionResult> Login([FromBody] LoginUserDto dto)
@@ -43,6 +58,14 @@ namespace fletflow.Api.Controllers
             return Ok(response);
         }
 
+        /// <summary>
+        /// Cambia la contraseña del usuario autenticado y revoca todos los refresh tokens.
+        /// </summary>
+        /// <param name="command">Comando de cambio de contraseña.</param>
+        /// <param name="dto">Datos de cambio de contraseña.</param>
+        /// <returns>Mensaje de éxito.</returns>
+        /// <response code="200">Contraseña cambiada correctamente.</response>
+        /// <response code="401">No autenticado.</response>
         [HttpPost("change-password")]
         [Authorize]
         public async Task<IActionResult> ChangePassword(
@@ -63,6 +86,15 @@ namespace fletflow.Api.Controllers
             public string RefreshToken { get; set; } = default!;
         }
 
+        /// <summary>
+        /// Renueva el token de acceso usando un refresh token válido (rotación segura).
+        /// </summary>
+        /// <param name="dto">Refresh token actual.</param>
+        /// <returns>Nuevos tokens de acceso y refresh.</returns>
+        /// <response code="200">Tokens renovados correctamente.</response>
+        /// <response code="401">Refresh token inválido o revocado.</response>
+        /// <response code="401">Refresh token inválido o revocado.</response>
+        /// <response code="404">Usuario no encontrado.</response>
         [HttpPost("refresh")]
         [AllowAnonymous]
         public async Task<IActionResult> Refresh([FromBody] RefreshRequestDto dto)
@@ -71,6 +103,13 @@ namespace fletflow.Api.Controllers
             return Ok(response);
         }
 
+        /// <summary>
+        /// Revoca el refresh token actual (logout de una sesión).
+        /// </summary>
+        /// <param name="dto">Refresh token a revocar.</param>
+        /// <returns>Mensaje de éxito.</returns>
+        /// <response code="200">Sesión cerrada correctamente.</response>
+        /// <response code="401">No autenticado.</response>
         [HttpPost("logout")]
         [Authorize]
         public async Task<IActionResult> Logout([FromBody] RefreshRequestDto dto)
@@ -79,6 +118,12 @@ namespace fletflow.Api.Controllers
             return Ok(new { message = "Sesion cerrada." });
         }
 
+        /// <summary>
+        /// Revoca todos los refresh tokens del usuario (logout global).
+        /// </summary>
+        /// <returns>Mensaje de éxito.</returns>
+        /// <response code="200">Todas las sesiones cerradas correctamente.</response>
+        /// <response code="401">No autenticado.</response>
         [HttpPost("logout-all")]
         [Authorize]
         public async Task<IActionResult> LogoutAll()
@@ -92,6 +137,15 @@ namespace fletflow.Api.Controllers
             return Ok(new { message = "Todas las sesiones han sido cerradas." });
         }
 
+        /// <summary>
+        /// Obtiene la información del usuario autenticado.
+        /// </summary>
+        /// <returns>Datos del usuario.</returns>
+        /// <response code="200">Datos del usuario autenticado.</response>
+        /// <response code="401">No autenticado.</response>
+        /// <response code="200">Datos del usuario autenticado.</response>
+        /// <response code="401">No autenticado.</response>
+        /// <response code="404">Usuario no encontrado.</response>
         [HttpGet("me")]
         [Authorize]
         public async Task<IActionResult> Me()
@@ -107,6 +161,12 @@ namespace fletflow.Api.Controllers
             return Ok(me);
         }
 
+        /// <summary>
+        /// Envía un correo para restablecer la contraseña del usuario.
+        /// </summary>
+        /// <param name="dto">Email del usuario.</param>
+        /// <returns>Mensaje de éxito.</returns>
+        /// <response code="200">Correo enviado si el email existe.</response>
         [HttpPost("forgot-password")]
         [AllowAnonymous]
         public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordDto dto)
@@ -115,6 +175,17 @@ namespace fletflow.Api.Controllers
             return Ok(resp);
         }
 
+        /// <summary>
+        /// Restablece la contraseña usando un token recibido por correo.
+        /// </summary>
+        /// <param name="command">Comando de reset de contraseña.</param>
+        /// <param name="dto">Datos de restablecimiento.</param>
+        /// <returns>Mensaje de éxito.</returns>
+        /// <response code="200">Contraseña restablecida correctamente.</response>
+        /// <response code="400">Token inválido o expirado.</response>
+        /// <response code="200">Contraseña restablecida correctamente.</response>
+        /// <response code="400">Token inválido o expirado.</response>
+        /// <response code="404">Usuario no encontrado.</response>
         [HttpPost("reset-password")]
         [AllowAnonymous]
         public async Task<IActionResult> ResetPassword([FromServices] ResetPasswordCommand command, [FromBody] ResetPasswordDto dto)
@@ -123,6 +194,13 @@ namespace fletflow.Api.Controllers
             return Ok(new { message = "Contrasena restablecida." });
         }
 
+        /// <summary>
+        /// Activa la cuenta de usuario y establece una nueva contraseña.
+        /// </summary>
+        /// <param name="dto">Token de activación y nueva contraseña.</param>
+        /// <returns>Mensaje de éxito.</returns>
+        /// <response code="200">Cuenta activada correctamente.</response>
+        /// <response code="400">Token inválido o expirado.</response>
         [HttpPost("activate-account")]
         [AllowAnonymous]
         public async Task<IActionResult> ActivateAccount([FromBody] ActivateAccountDto dto)
@@ -131,6 +209,13 @@ namespace fletflow.Api.Controllers
             return Ok(new { message = "Cuenta activada y contrasena actualizada." });
         }
 
+        /// <summary>
+        /// Envía un correo de prueba para verificar la configuración de email.
+        /// </summary>
+        /// <param name="to">Email de destino.</param>
+        /// <returns>Mensaje de éxito.</returns>
+        /// <response code="200">Correo de prueba enviado.</response>
+        /// <response code="400">Email de destino no proporcionado.</response>
         [HttpGet("test-email")]
         [AllowAnonymous]
         public async Task<IActionResult> TestEmail([FromQuery] string to)

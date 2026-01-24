@@ -16,7 +16,7 @@ namespace fletflow.Application.Fleet.Queries
         public async Task<RouteDto> Execute(Guid id)
         {
             var route = await _routes.GetByIdAsync(id)
-                ?? throw new KeyNotFoundException("Ruta no encontrada.");
+                ?? throw new KeyNotFoundException("Route not found.");
 
             return RouteApplicationMapper.ToDto(route);
         }

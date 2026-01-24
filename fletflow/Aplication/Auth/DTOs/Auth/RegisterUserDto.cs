@@ -4,16 +4,16 @@ namespace fletflow.Application.DTOs.Auth
 {
     public class RegisterUserDto
     {
-        [Required(ErrorMessage = "El nombre de usuario es obligatorio.")]
-        [MinLength(3, ErrorMessage = "El nombre de usuario debe tener al menos 3 caracteres.")]
+        [Required(ErrorMessage = "Username is required.")]
+        [MinLength(3, ErrorMessage = "Username must be at least 3 characters.")]
         public string Username { get; set; }
 
-        [Required(ErrorMessage = "El correo electrónico es obligatorio.")]
-        [EmailAddress(ErrorMessage = "Debe proporcionar un correo electrónico válido.")]
+        [Required(ErrorMessage = "Email is required.")]
+        [EmailAddress(ErrorMessage = "A valid email address is required.")]
         public string Email { get; set; }
 
-        [Required(ErrorMessage = "La contraseña es obligatoria.")]
-        [MinLength(6, ErrorMessage = "La contraseña debe tener al menos 6 caracteres.")]
+        [Required(ErrorMessage = "Password is required.")]
+        [MinLength(6, ErrorMessage = "Password must be at least 6 characters.")]
         public string Password { get; set; }
 
         public string RoleName { get; set; } = "User";

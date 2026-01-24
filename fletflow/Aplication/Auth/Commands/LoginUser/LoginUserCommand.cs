@@ -18,14 +18,14 @@ namespace fletflow.Application.Auth.Commands
         {
             var user = await _unitOfWork.Users.GetByEmailAsync(email);
             if (user == null)
-                throw new Exception("El usuario no existe.");
+                throw new InvalidOperationException("User does not exist.");
 
             var passwordValid = BCrypt.Net.BCrypt.Verify(password, user.PasswordHash);
             if (!passwordValid)
-                throw new Exception("Contrase\u00f1a incorrecta.");
+                throw new UnauthorizedAccessException("Incorrect password.");
 
             if (user.MustChangePassword)
-                throw new Exception("Debe activar su cuenta antes de iniciar sesion.");
+                throw new InvalidOperationException("You must activate your account before logging in.");
 
             return user;
         }

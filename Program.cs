@@ -8,7 +8,8 @@ using System.Security.Claims;
 
 using fletflow.Api.Controllers;
 using fletflow.Api.Middleware;
-using fletflow.Infrastructure.Services;
+// ...existing code...
+using fletflow.Api.Filters;
 using fletflow.Infrastructure.Security;
 using fletflow.Infrastructure.Persistence.Context;
 using fletflow.Infrastructure.Persistence;
@@ -107,6 +108,10 @@ builder.Services.AddScoped<ChangePasswordCommand>();
 builder.Services.AddFluentValidationAutoValidation();
 builder.Services.AddValidatorsFromAssemblyContaining<RegisterUserValidator>();
 builder.Services.AddTransient<ExceptionMiddleware>();
+builder.Services.AddTransient<JwtMiddleware>();
+builder.Services.AddTransient<RoleValidationMiddleware>();
+builder.Services.AddTransient<SimpleRateLimitMiddleware>();
+builder.Services.AddTransient<HeaderValidationMiddleware>();
 
 
 
@@ -117,6 +122,8 @@ builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("Emai
 // =====================
 builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("Jwt"));
 var jwtSettings = builder.Configuration.GetSection("Jwt").Get<JwtSettings>();
+if (jwtSettings == null || string.IsNullOrWhiteSpace(jwtSettings.Key))
+    throw new Exception("JWT key is not properly configured in appsettings.json or environment variables.");
 var key = Encoding.UTF8.GetBytes(jwtSettings.Key);
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -143,7 +150,11 @@ builder.Services.AddAuthorization();
 // Controllers + CORS + Swagger
 // =====================
 builder.Services.AddControllers()
-    .AddApplicationPart(typeof(AuthController).Assembly);
+    .AddApplicationPart(typeof(AuthController).Assembly)
+    .AddMvcOptions(options =>
+    {
+        options.Filters.Add(typeof(fletflow.Api.Filters.ValidateModelStateFilter));
+    });
 
 builder.Services.AddCors(o =>
 {
@@ -156,10 +167,28 @@ builder.Services.AddCors(o =>
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
 {
+    var xmlFile = $"BackEnd_Gps.xml";
+    var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+    if (File.Exists(xmlPath))
+        options.IncludeXmlComments(xmlPath, includeControllerXmlComments: true);
+
     options.SwaggerDoc("v1", new OpenApiInfo
     {
         Title = "FletFlow API",
-        Version = "v1"
+        Version = "v1",
+        Description = "REST API for fleet, routes, users management and JWT authentication.",
+        TermsOfService = new Uri("https://github.com/tu-org/tu-repo/terms"),
+        Contact = new OpenApiContact
+        {
+            Name = "FletFlow Support",
+            Email = "support@fletflow.com",
+            Url = new Uri("https://fletflow.com/contact")
+        },
+        License = new OpenApiLicense
+        {
+            Name = "MIT",
+            Url = new Uri("https://opensource.org/licenses/MIT")
+        }
     });
 
     options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
@@ -167,7 +196,8 @@ builder.Services.AddSwaggerGen(options =>
         Name = "Authorization",
         In = ParameterLocation.Header,
         Type = SecuritySchemeType.ApiKey,
-        Scheme = "Bearer"
+        Scheme = "Bearer",
+        Description = "JWT Authentication. Example: Bearer {token}"
     });
 
     options.AddSecurityRequirement(new OpenApiSecurityRequirement
@@ -184,6 +214,11 @@ builder.Services.AddSwaggerGen(options =>
             Array.Empty<string>()
         }
     });
+
+
+
+    // Ejemplo global de respuesta 401
+    options.OperationFilter<SwaggerUnauthorizedResponseOperationFilter>();
 });
 
 // =====================
@@ -191,10 +226,12 @@ builder.Services.AddSwaggerGen(options =>
 // =====================
 var app = builder.Build();
 
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
+    app.UseCors("Front");
 }
 
 using (var scope = app.Services.CreateScope())
@@ -203,9 +240,13 @@ using (var scope = app.Services.CreateScope())
     await DbSeeder.SeedAsync(dbContext);
 }
 
+
 app.UseHttpsRedirection();
+app.UseMiddleware<SimpleRateLimitMiddleware>();
+app.UseMiddleware<HeaderValidationMiddleware>();
 app.UseMiddleware<ExceptionMiddleware>();
-app.UseCors("Front");
+app.UseMiddleware<JwtMiddleware>();
+app.UseMiddleware<RoleValidationMiddleware>();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();

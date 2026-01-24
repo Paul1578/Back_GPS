@@ -33,6 +33,12 @@ namespace fletflow.Api.Controllers
             _unassignDriverFromVehicle = unassignDriverFromVehicle;
         }
 
+        /// <summary>
+        /// Crea un nuevo conductor.
+        /// </summary>
+        /// <param name="request">Datos del conductor.</param>
+        /// <response code="201">Conductor creado correctamente.</response>
+        /// <response code="400">Datos inválidos.</response>
         [HttpPost]
         public async Task<ActionResult<DriverDto>> Create([FromBody] CreateDriverRequest request)
         {
@@ -47,6 +53,11 @@ namespace fletflow.Api.Controllers
             return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
         }
 
+        /// <summary>
+        /// Obtiene todos los conductores.
+        /// </summary>
+        /// <param name="onlyActive">Solo activos (opcional).</param>
+        /// <response code="200">Listado de conductores.</response>
         [HttpGet]
         public async Task<ActionResult<List<DriverDto>>> GetAll([FromQuery] bool? onlyActive)
         {
@@ -54,12 +65,25 @@ namespace fletflow.Api.Controllers
             return Ok(result);
         }
 
+        /// <summary>
+        /// Obtiene un conductor por ID.
+        /// </summary>
+        /// <param name="id">ID del conductor.</param>
+        /// <response code="200">Conductor encontrado.</response>
+        /// <response code="404">Conductor no encontrado.</response>
         [HttpGet("{id:guid}")]
         public async Task<ActionResult<DriverDto>> GetById(Guid id)
         {
             var result = await _getById.Execute(id);
             return Ok(result);
         }
+        /// <summary>
+        /// Asigna un vehículo a un conductor.
+        /// </summary>
+        /// <param name="id">ID del conductor.</param>
+        /// <param name="request">ID del vehículo.</param>
+        /// <response code="204">Vehículo asignado correctamente.</response>
+        /// <response code="404">Conductor o vehículo no encontrado.</response>
         [HttpPut("{id:guid}/assign-vehicle")]
         public async Task<IActionResult> AssignVehicle(Guid id, [FromBody] AssignVehicleRequest request)
         {
@@ -68,6 +92,12 @@ namespace fletflow.Api.Controllers
         }
 
         // PUT api/drivers/{id}/unassign-vehicle
+        /// <summary>
+        /// Desasigna el vehículo de un conductor.
+        /// </summary>
+        /// <param name="id">ID del conductor.</param>
+        /// <response code="204">Vehículo desasignado correctamente.</response>
+        /// <response code="404">Conductor no encontrado.</response>
         [HttpPut("{id:guid}/unassign-vehicle")]
         public async Task<IActionResult> UnassignVehicle(Guid id)
         {

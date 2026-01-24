@@ -22,16 +22,16 @@ namespace fletflow.Application.Fleet.Commands
         public async Task Execute(Guid driverId, Guid vehicleId)
         {
             var driver = await _drivers.GetByIdAsync(driverId)
-                ?? throw new KeyNotFoundException("Conductor no encontrado.");
+                ?? throw new KeyNotFoundException("Driver not found.");
 
             var vehicle = await _vehicles.GetByIdAsync(vehicleId)
-                ?? throw new KeyNotFoundException("Vehículo no encontrado.");
+                ?? throw new KeyNotFoundException("Vehicle not found.");
 
             if (!driver.IsActive)
-                throw new InvalidOperationException("No se puede asignar un conductor inactivo.");
+                throw new InvalidOperationException("Cannot assign an inactive driver.");
 
             if (!vehicle.IsActive)
-                throw new InvalidOperationException("No se puede asignar un vehículo inactivo.");
+                throw new InvalidOperationException("Cannot assign an inactive vehicle.");
 
             // Regla simple de MVP:
             // si el driver ya tiene vehículo, lo pisamos

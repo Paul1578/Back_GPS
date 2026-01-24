@@ -38,19 +38,19 @@ namespace fletflow.Application.Fleet.Commands
             DateTime? plannedEnd)
         {
             var route = await _routes.GetByIdAsync(id)
-                ?? throw new KeyNotFoundException("Ruta no encontrada.");
+                ?? throw new KeyNotFoundException("Route not found.");
 
             var vehicle = await _vehicles.GetByIdAsync(vehicleId)
-                ?? throw new KeyNotFoundException("Vehículo no encontrado.");
+                ?? throw new KeyNotFoundException("Vehicle not found.");
 
             var driver = await _drivers.GetByIdAsync(driverId)
-                ?? throw new KeyNotFoundException("Conductor no encontrado.");
+                ?? throw new KeyNotFoundException("Driver not found.");
 
             if (!vehicle.IsActive)
-                throw new InvalidOperationException("No se puede asignar un vehículo inactivo.");
+                throw new InvalidOperationException("Cannot assign an inactive vehicle.");
 
             if (!driver.IsActive)
-                throw new InvalidOperationException("No se puede asignar un conductor inactivo.");
+                throw new InvalidOperationException("Cannot assign an inactive driver.");
 
             var pointsList = points?.ToList() ?? new List<RoutePoint>();
             if (pointsList.Count < 2)

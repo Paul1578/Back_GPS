@@ -17,10 +17,10 @@ namespace fletflow.Application.Auth.Commands
         public async Task Execute(Guid userId, string currentPassword, string newPassword)
         {
             var user = await _users.GetByIdAsync(userId)
-                ?? throw new KeyNotFoundException("Usuario no encontrado.");
+                ?? throw new KeyNotFoundException("User not found.");
 
             if (!BCrypt.Net.BCrypt.Verify(currentPassword, user.PasswordHash))
-                throw new UnauthorizedAccessException("La contraseña actual es incorrecta.");
+                throw new UnauthorizedAccessException("Current password is incorrect.");
 
             var newHash = BCrypt.Net.BCrypt.HashPassword(newPassword);
 

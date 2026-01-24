@@ -44,6 +44,12 @@ namespace fletflow.Api.Controllers
             _getPositions = getPositions;
             _deleteRoute = deleteRoute; 
         }
+        /// <summary>
+        /// Elimina una ruta por su ID.
+        /// </summary>
+        /// <param name="id">ID de la ruta.</param>
+        /// <response code="204">Ruta eliminada correctamente.</response>
+        /// <response code="404">Ruta no encontrada.</response>
         [HttpDelete("{id:guid}")]
         public async Task<IActionResult> Delete(Guid id)
         {
@@ -51,6 +57,12 @@ namespace fletflow.Api.Controllers
             return NoContent();
         }
 
+        /// <summary>
+        /// Crea una nueva ruta.
+        /// </summary>
+        /// <param name="request">Datos de la ruta.</param>
+        /// <response code="201">Ruta creada correctamente.</response>
+        /// <response code="400">Datos inválidos.</response>
         [HttpPost]
         public async Task<ActionResult<RouteDto>> Create([FromBody] CreateRouteRequest request)
         {
@@ -69,6 +81,14 @@ namespace fletflow.Api.Controllers
             return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
         }
 
+        /// <summary>
+        /// Actualiza una ruta existente.
+        /// </summary>
+        /// <param name="id">ID de la ruta.</param>
+        /// <param name="request">Datos de la ruta.</param>
+        /// <response code="200">Ruta actualizada correctamente.</response>
+        /// <response code="400">Datos inválidos.</response>
+        /// <response code="404">Ruta no encontrada.</response>
         [HttpPut("{id:guid}")]
         public async Task<ActionResult<RouteDto>> Update(Guid id, [FromBody] UpdateRouteRequest request)
         {
@@ -88,6 +108,13 @@ namespace fletflow.Api.Controllers
             return Ok(result);
         }
 
+        /// <summary>
+        /// Cambia el estado de una ruta.
+        /// </summary>
+        /// <param name="id">ID de la ruta.</param>
+        /// <param name="request">Nuevo estado.</param>
+        /// <response code="204">Estado actualizado correctamente.</response>
+        /// <response code="404">Ruta no encontrada.</response>
         [HttpPut("{id:guid}/status")]
         public async Task<IActionResult> ChangeStatus(Guid id, [FromBody] ChangeRouteStatusRequest request)
         {
@@ -95,6 +122,11 @@ namespace fletflow.Api.Controllers
             return NoContent();
         }
 
+        /// <summary>
+        /// Obtiene todas las rutas (opcionalmente filtradas por vehículo).
+        /// </summary>
+        /// <param name="vehicleId">ID del vehículo (opcional).</param>
+        /// <response code="200">Listado de rutas.</response>
         [HttpGet]
         public async Task<ActionResult<List<RouteDto>>> GetAll(
     [FromQuery] Guid? vehicleId,

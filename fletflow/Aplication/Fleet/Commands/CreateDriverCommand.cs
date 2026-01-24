@@ -30,20 +30,20 @@ namespace fletflow.Application.Fleet.Commands
 
             var existing = await _drivers.GetByDocumentAsync(documentNumber);
             if (existing is not null)
-                throw new InvalidOperationException($"Ya existe un conductor con documento {documentNumber}.");
+                throw new InvalidOperationException($"A driver with document {documentNumber} already exists.");
 
             if (userId.HasValue)
             {
                 var user = await _uow.Users.GetByIdAsync(userId.Value)
-                    ?? throw new KeyNotFoundException("Usuario no encontrado para vincular como driver.");
+                    ?? throw new KeyNotFoundException("User not found to link as driver.");
 
                 var driverForUser = await _drivers.GetByUserIdAsync(userId.Value);
                 if (driverForUser is not null)
-                    throw new InvalidOperationException("Este usuario ya está vinculado a un conductor.");
+                    throw new InvalidOperationException("This user is already linked to a driver.");
 
                 var hasDriverRole = user.UserRoles.Any(ur => ur.Role.Name.Trim().Equals("Driver", StringComparison.OrdinalIgnoreCase));
                 if (!hasDriverRole)
-                    throw new InvalidOperationException("El usuario no tiene rol Driver.");
+                    throw new InvalidOperationException("The user does not have the Driver role.");
             }
 
             var driver = Driver.Create(firstName, lastName, documentNumber, phoneNumber, userId);

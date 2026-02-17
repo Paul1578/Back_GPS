@@ -138,11 +138,9 @@ namespace fletflow.Api.Controllers
         }
 
         /// <summary>
-        /// Obtiene la información del usuario autenticado.
+        /// Obtiene la información del usuario autenticado (incluye driverId si aplica).
         /// </summary>
-        /// <returns>Datos del usuario.</returns>
-        /// <response code="200">Datos del usuario autenticado.</response>
-        /// <response code="401">No autenticado.</response>
+        /// <returns>Datos del usuario (y driverId si existe).</returns>
         /// <response code="200">Datos del usuario autenticado.</response>
         /// <response code="401">No autenticado.</response>
         /// <response code="404">Usuario no encontrado.</response>

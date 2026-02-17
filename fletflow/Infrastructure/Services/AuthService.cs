@@ -112,13 +112,16 @@ namespace fletflow.Infrastructure.Services
             var user = await _unitOfWork.Users.GetByIdAsync(userId)
                 ?? throw new KeyNotFoundException("Usuario no encontrado.");
 
+            var driver = await _unitOfWork.Drivers.GetByUserIdAsync(userId);
+
             return new MeResponseDto
             {
                 Id = user.Id,
                 Username = user.Username,
                 Email = user.Email,
                 IsActive = user.IsActive,
-                Roles = user.UserRoles.Select(ur => ur.Role.Name.Trim()).ToList()
+                Roles = user.UserRoles.Select(ur => ur.Role.Name.Trim()).ToList(),
+                DriverId = driver?.Id
             };
         }
 

@@ -203,7 +203,7 @@ using (var scope = app.Services.CreateScope())
     await DbSeeder.SeedAsync(dbContext);
 }
 
-app.UseHttpsRedirection();
+//app.UseHttpsRedirection();
 
 app.UseMiddleware<SimpleRateLimitMiddleware>();
 app.UseMiddleware<HeaderValidationMiddleware>();

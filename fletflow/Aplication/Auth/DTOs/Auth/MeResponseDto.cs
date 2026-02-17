@@ -7,5 +7,9 @@ namespace fletflow.Application.DTOs.Auth
         public string Email { get; set; } = default!;
         public bool IsActive { get; set; }
         public List<string> Roles { get; set; } = new();
+        /// <summary>
+        /// Id del driver asociado al usuario (si aplica).
+        /// </summary>
+        public Guid? DriverId { get; set; }
     }
 }

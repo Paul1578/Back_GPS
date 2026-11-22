@@ -578,3 +578,4 @@ Cada cambio de API debe incluir validación de compilación, migraciones si apli
 - Solución: aceptar `200` o `201` para exactamente una creación, manteniendo `409` obligatorio para la solicitud concurrente perdedora y el assert SQL `Users:Drivers:PasswordResetTokens=1:1:1`.
 - Prevención: al escribir pruebas HTTP nuevas, inspeccionar y validar el código real de respuesta del endpoint antes de codificar la expectativa; conservar asserts de persistencia para verificar el resultado de negocio.
 - Verificación: pendiente repetir smoke completo de Actions; no contar aún el caso como validado hasta CI verde.
+- Error de ejecución relacionado: el primer `gh workflow run backend-ci.yml` respondió HTTP 404 porque ese archivo no existe. El workflow real es `.github/workflows/ci.yml`; repetir el dispatch usando ese nombre.

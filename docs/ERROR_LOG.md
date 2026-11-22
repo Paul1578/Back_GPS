@@ -964,11 +964,12 @@ Cada cambio de API debe incluir validación de compilación, migraciones si apli
 - No se alteró ningún recurso. Se consultó desde `/home/leonardo/Front_gpsR` y se confirmó que el run terminó success.
 - Prevención: consultar IDs de Actions desde el checkout dueño del workflow.
 
-## 2026-11-22 — Cuenta Driver desactivada aún podía iniciar una ruta — CORREGIDO LOCAL; ACTIONS PENDIENTE
+## 2026-11-22 — Cuenta Driver desactivada aún podía iniciar una ruta — CORREGIDO Y VALIDADO
 
 - Auditoría encontró que `/Users/{id}/status?isActive=false` revocaba la sesión de la cuenta User pero dejaba activo su Driver enlazado. `ChangeRouteStatusCommand` sólo comprobaba `Driver.IsActive`, por lo que una ruta pendiente podía iniciarse y cambiar el vehículo a `OnRoute` aunque el Driver no pudiera autenticarse.
 - Corrección: el inicio valida la cuenta vinculada bajo los locks de ruta/vehículo/Driver/cuenta. La baja de una cuenta con Driver usa los mismos locks, relee la relación y bloquea la desactivación mientras haya ruta en progreso. Conflictos devuelven HTTP 409 antes de persistir cambios.
 - xUnit añade rechazo de inicio con cuenta vinculada inactiva y rechazo de baja durante ruta activa; ambas aserciones verifican que route/vehicle/user permanezcan consistentes. Smoke HTTP/MySQL cubre desactivar→intentar iniciar (409, Pending/Available/Inactive), cuenta activa→iniciar y baja durante ruta (409, InProgress/OnRoute/Active), cancelar, desactivar y cleanup.
-- Validación local: xUnit enfocado **3/3**, suite Release **88/88**, restore correcto, build Release **0 warnings/0 errores**, `bash -n scripts/smoke-tenant-http.sh` y `git diff --check` correctos. Falta ejecutar el smoke con MySQL/API descartables en Actions.
+- Validación local: xUnit enfocado **3/3**, suite Release **88/88**, restore correcto, build Release **0 warnings/0 errores**, `bash -n scripts/smoke-tenant-http.sh` y `git diff --check` correctos.
+- Backend commit `190f284` pasó Actions `45045070288`: Release build/test, xUnit **88/88**, smoke HTTP/MySQL tenant/flota y smoke de concurrencia; cleanup de servicios correcto. SHA exacto validado.
 - Durante la auditoría dos búsquedas intentaron abrir `AppDbContext.cs` y `fletflow/Program.cs` en ubicaciones que no existen; el output confirmó rutas no encontradas. Solución: localizar las clases con `rg -n 'class AppDbContext'` / `rg --files | rg 'Program.cs'` antes de abrirlas; no hubo cambios ni impacto.
 - El primer `git diff --check` encontró una línea vacía extra al final de `docs/CHANGELOG.md`; se recortó el EOF y la repetición pasó.

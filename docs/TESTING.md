@@ -503,3 +503,5 @@ La invitación envía sólo el enlace de activación; el usuario fija su contras
 
 - `scripts/run-e2e-local.sh` crea una cuenta Driver de uso exclusivo para la ruta operativa, separada del Driver de CRUD, y exporta `FLETFLOW_E2E_ROUTE_DRIVER_ID` junto con sus credenciales.
 - Los fixtures se eliminan mediante `scripts/cleanup-e2e.sql`. La validación de sintaxis pasa localmente; falta confirmar provisioning, E2E y cleanup en la Action nueva.
+
+- Backend Action `45061524504` pasó para SHA `3f87af8`: build/tests Release, smoke de tenant HTTP/MySQL, concurrencia de rutas y cleanup de contenedores.

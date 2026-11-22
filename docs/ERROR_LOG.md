@@ -1075,3 +1075,8 @@ Cada cambio de API debe incluir validación de compilación, migraciones si apli
 - Solución: el provisionador local/CI crea un segundo usuario y entidad Driver de QA para Mi Ruta/foto, exporta su ID y activa la cuenta. La extracción del JSON se hace con Node, ya requerido por el frontend; así no se añade `jq` como dependencia implícita.
 - `bash -n scripts/run-e2e-local.sh` y `git diff --check` pasan. Action backend `45060714338` pasó antes de este cambio de fixture; una corrida nueva debe confirmar creación y limpieza del segundo Driver.
 - Prevención: fixtures paralelos para recursos con exclusión de agenda y dependencias del runner limitadas a las herramientas verificadas por el script.
+
+## 2026-11-22 — CI confirmó fixture backend independiente — VALIDADO
+
+- Backend Action `45061524504` pasó tras añadir el segundo Driver QA al runner: compilación Release, xUnit, aislamiento por tenant HTTP/MySQL, concurrencia de rutas y cleanup de contenedores.
+- El runner de browser se valida además en Front Action `45061522878`, que sigue en progreso al registrar esta entrada.

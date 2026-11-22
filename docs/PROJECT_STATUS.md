@@ -453,3 +453,5 @@ Nota de actualización: algunos resultados históricos de registro público más
 
 - El runner provisiona un Driver adicional exclusivo para el escenario operativo de Mi Ruta/evidencia; el fixture de Driver de gestión queda libre para CRUD. Los IDs JSON se extraen con Node sin introducir dependencia jq.
 - La sintaxis del runner pasa localmente. Action integrado de backend pendiente para verificar provisioning y cleanup en MySQL efímero.
+
+- Backend Action `45061524504` pasó para `3f87af8`: Release build, xUnit, smoke de aislamiento HTTP/MySQL, concurrencia de asignaciones y cleanup. El commit también contiene el fixture Driver adicional; la comprobación del runner dentro del flujo frontend sigue en curso.

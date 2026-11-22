@@ -573,3 +573,5 @@ Errores de migración, herramientas, QA y soluciones están en `docs/ERROR_LOG.m
 - El E2E frontend descubrió colisión de agenda al compartir Driver operativo entre escenarios paralelos. El runner ahora crea y exporta un Driver adicional específico para Mi Ruta/evidencia; extrae ambos IDs con Node y activa ambas cuentas.
 - Fixtures de runner se limpian con el patrón existente `fletflow.e2e.driver.*` / documentos `E2EQA%`; confirmar cleanup en Action.
 - `bash -n` y diff-check pasan. Backend Action `45060714338` validó el SHA anterior; ejecutar CI al publicar este cambio.
+
+- Backend Action `45061524504` terminó success en `3f87af8`: build/tests Release, smoke HTTP/MySQL y concurrencia/cleanup. Front Action integrada `45061522878` sigue ejecutando E2E Playwright con ambos branches actualizados.

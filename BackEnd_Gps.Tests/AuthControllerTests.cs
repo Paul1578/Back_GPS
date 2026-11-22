@@ -9,7 +9,7 @@ namespace BackEnd_Gps.Tests;
 public class AuthControllerTests
 {
     [Fact]
-    public async Task Register_AlwaysAssignsUserRoleRegardlessOfRequestedRole()
+    public async Task Register_CreatesTenantAdminRegardlessOfRequestedRole()
     {
         var registration = new RecordingRegistrationService();
         var controller = new AuthController(null!, registration, null!, null!);
@@ -18,13 +18,13 @@ public class AuthControllerTests
             Username = "operator",
             Email = "operator@example.test",
             Password = "safe-password",
-            RoleName = "Admin"
+            RoleName = "Driver"
         };
 
         var result = await controller.Register(dto);
 
         Assert.IsType<OkObjectResult>(result);
-        Assert.Equal("User", registration.RoleName);
+        Assert.Equal("Admin", registration.RoleName);
     }
 
     [Fact]

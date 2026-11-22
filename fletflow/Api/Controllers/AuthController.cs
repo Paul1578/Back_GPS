@@ -39,9 +39,10 @@ namespace fletflow.Api.Controllers
         public async Task<IActionResult> Register([FromBody] RegisterUserDto dto)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
-            // El registro público nunca acepta roles enviados por el cliente.
-            // Los roles operativos se asignan desde la administración autenticada.
-            var response = await _registrationService.RegisterAsync(dto.Username, dto.Email, dto.Password, "User");
+            // El alta pública crea la cuenta raíz Admin de una empresa nueva.
+            // El rol es fijo en el servidor y nunca se toma del request; owner_id queda
+            // asociado al usuario recién creado para aislar su empresa del resto.
+            var response = await _registrationService.RegisterAsync(dto.Username, dto.Email, dto.Password, "Admin");
             return Ok(response);
         }
 

@@ -32,7 +32,7 @@
 - Se verificó compilación del backend y Swagger.
 - Se documentaron hallazgos de seguridad y arquitectura.
 - Se confirmó que las paradas pueden ser recogida, entrega o ambas.
-- Se bloqueó la asignación de roles desde el registro público.
+- Se bloqueó la elección de rol desde el registro público. La cuenta nueva es Admin raíz de su propio tenant (rol fijo de servidor, `owner_id` propio), sin acceso a empresas existentes; el smoke integrado comprueba aislamiento.
 - Se protegió el endpoint de prueba de correo.
 - Se eliminaron tokens de recuperación de los logs.
 - Se revocan refresh tokens después de resetear contraseña.
@@ -43,7 +43,7 @@
 - Se verificó la API corregida en `5047`: Swagger HTTP 200, rutas sin token HTTP 401 y prueba de correo sin token HTTP 401.
 # Cambios 2026-11-20 — Estabilización de backend
 
-- Registro público ya no puede autoasignarse roles privilegiados; endpoint de prueba SMTP requiere Admin.
+- Registro público no puede elegir roles: el servidor crea Admin raíz aislado para cada empresa nueva; endpoint de prueba SMTP requiere Admin.
 - Se quitaron tokens de recuperación de logs, reset revoca refresh tokens y el seeder no incluye contraseña fija.
 - CORS toma orígenes de configuración; secretos locales pasan por `.env`; errores 500 ocultan detalles internos.
 - Rutas validan fechas, vehículo disponible, solapamiento y transiciones de estado; el nombre de actualización persiste.
@@ -52,6 +52,12 @@
 - Se implementó aislamiento de recursos por `owner_id`, stamping del propietario, restricciones únicas por empresa y migración aditiva `TenantFleetOwnership`; tests de aislamiento y claim JWT incluidos (25/25). Migración aplicada tras asignar el vehículo legado al Admin raíz más antiguo con aprobación del usuario.
 - E2E local sobre MySQL pasó: vehículo, conductor, ruta de recogida/entrega, GPS, estados, limpieza de datos y verificación IDOR cross-tenant.
 - Pendientes de producto/seguridad están listados en `PROJECT_STATUS.md` y `SECURITY.md`.
+
+## 2026-11-22 — Onboarding de empresa con tenant raíz
+
+- El registro público ahora crea una cuenta raíz Admin fija; `roleName` del cliente se ignora y el owner del tenant deriva del ID del usuario nuevo.
+- Se amplía el smoke para verificar claims, empresa recién creada, flota vacía y acceso cruzado denegado, y se elimina la elevación SQL manual del tenant secundario.
+- xUnit Release local 61/61; smoke HTTP/MySQL y Actions pendientes.
 
 ## 2026-11-20 — Operación y evidencia por parada
 

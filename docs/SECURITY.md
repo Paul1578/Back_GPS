@@ -2,7 +2,7 @@
 
 ## Controles implementados
 
-- El registro público asigna `User` aunque el request solicite otro rol. La cuenta Admin de bootstrap sólo se crea con configuración explícita.
+- El registro público crea una cuenta raíz `Admin` de un tenant nuevo. El backend fija ese rol e ignora `roleName` enviado por el cliente; el tenant queda limitado al `owner_id` del usuario recién creado. No otorga acceso a organizaciones existentes.
 - JWT, base de datos, CORS y SMTP se configuran fuera de los valores versionados; CORS acepta una lista explícita de orígenes. El inicio exige conexión DB completa y JWT con clave de 32 bytes, emisor y audiencia.
 - La contraseña local MySQL root y la clave JWT fueron rotadas; todos los refresh tokens anteriores se revocaron. Los usuarios locales deben iniciar sesión de nuevo. `.env` está ignorado y tiene permisos 0600. Docker Compose requiere `MYSQL_ROOT_PASSWORD` y `.env.example` contiene marcadores no utilizables.
 - `OwnerUserId` se fija desde la claim firmada `owner_id`; filtros globales limitan Vehicles, Drivers, Routes y posiciones al tenant. La migración local asignó el vehículo huérfano al administrador raíz más antiguo, decisión confirmada por el usuario.

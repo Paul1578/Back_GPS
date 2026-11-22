@@ -154,15 +154,28 @@ token="$(jq -er '.token // .accessToken' "$work_dir/response.json")"
 
 public_registration_email="fletflow.e2e.register.ci.$(date +%s%N | tail -c 9)@example.test"
 public_registration_password="$(openssl rand -hex 24)"
-request POST /Auth/register "$(jq -nc --arg username "Public registration QA" --arg email "$public_registration_email" --arg password "$public_registration_password" '{username:$username,email:$email,password:$password,roleName:"Admin"}')" ""
-expect_status 200 "Registro público con intento de elevar rol"
+request POST /Auth/register "$(jq -nc --arg username "Public registration QA" --arg email "$public_registration_email" --arg password "$public_registration_password" '{username:$username,email:$email,password:$password,roleName:"Driver"}')" ""
+expect_status 200 "Registro público crea empresa raíz ignorando el rol solicitado"
 mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" "$db_name" \
   --batch --skip-column-names -e "SELECT CONCAT(COUNT(DISTINCT ur.RoleId), ':', COALESCE(GROUP_CONCAT(DISTINCT LOWER(r.Name)), 'none')) FROM Users u LEFT JOIN UserRoles ur ON ur.UserId=u.Id LEFT JOIN Roles r ON r.Id=ur.RoleId WHERE u.Email='$public_registration_email';" >"$work_dir/registration_role.txt"
 registered_role_state="$(cat "$work_dir/registration_role.txt")"
-[[ "$registered_role_state" == "1:user" ]] || { echo "Registro público produjo roles inesperados ($registered_role_state)." >&2; exit 1; }
+[[ "$registered_role_state" == "1:admin" ]] || { echo "Registro público produjo roles inesperados ($registered_role_state)." >&2; exit 1; }
 public_registration_token="$(jq -er '.token // .accessToken' "$work_dir/response.json")"
+public_registration_user_id="$(mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" "$db_name" \
+  --batch --skip-column-names -e "SELECT Id FROM Users WHERE Email='$public_registration_email';")"
+public_registration_is_root="$(mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" "$db_name" \
+  --batch --skip-column-names -e "SELECT IF(OwnerUserId IS NULL, 1, 0) FROM Users WHERE Email='$public_registration_email';")"
+[[ "$public_registration_is_root" == "1" ]] || { echo "La cuenta raíz de registro recibió un OwnerUserId inesperado." >&2; exit 1; }
+public_jwt_payload="$(printf '%s' "$public_registration_token" | cut -d. -f2 | tr '_-' '/+')"
+while (( ${#public_jwt_payload} % 4 != 0 )); do public_jwt_payload+="="; done
+public_jwt_owner_id="$(printf '%s' "$public_jwt_payload" | base64 --decode | jq -er '.owner_id')"
+[[ "$public_jwt_owner_id" == "$public_registration_user_id" ]] || { echo "El JWT no limita el tenant al ID de la cuenta raíz." >&2; exit 1; }
 request GET /Vehicles "" "$public_registration_token"
-expect_status 403 "Denegar flota a registro público User"
+expect_status 200 "Admin raíz del nuevo tenant puede consultar su flota"
+jq -e 'type == "array" and length == 0' "$work_dir/response.json" >/dev/null || {
+  echo "La flota inicial del tenant recién registrado no está vacía o tiene formato inesperado." >&2
+  exit 1
+}
 
 suffix="$(date +%s%N | tail -c 10)"
 restricted_user_email="fletflow.e2e.user.ci.$suffix@example.test"
@@ -212,6 +225,9 @@ role_points='[{"lat":-0.18,"lng":-78.46,"name":"Role origin"},{"lat":-0.185,"lng
 request POST /Vehicles "$(jq -nc --arg plate "$manager_plate" '{plate:$plate,brand:"CI Manager",model:"Fleet",year:2025}')" "$deactivated_access_token"
 expect_status 201 "Crear vehículo como Manager"
 manager_vehicle_id="$(jq -er '.id' "$work_dir/response.json")"
+request GET /Vehicles "" "$public_registration_token"; expect_status 200 "Flota del registro sigue aislada tras crear vehículo en otro tenant"
+jq -e 'type == "array" and length == 0' "$work_dir/response.json" >/dev/null || { echo "El registro público vio flota de otro tenant." >&2; exit 1; }
+request GET "/Vehicles/$manager_vehicle_id" "" "$public_registration_token"; expect_status 404 "Registro público no puede consultar vehículo de otro tenant"
 request POST /Drivers "$(jq -nc --arg document "$manager_document" '{firstName:"CI Manager",lastName:"Driver",documentNumber:$document,phoneNumber:"0990000000"}')" "$deactivated_access_token"
 expect_status 201 "Crear Driver como Manager"
 manager_driver_id="$(jq -er '.id' "$work_dir/response.json")"
@@ -345,14 +361,7 @@ document_number="E2EQA${suffix: -9}"
 request POST /Auth/register "$(jq -nc --arg email "$other_tenant_email" --arg password "$other_tenant_password" --arg username "E2E tenant B $suffix" '{username:$username,email:$email,password:$password,roleName:"Admin"}')" ""
 expect_status 200 "Registro tenant B"
 
-# El registro público fuerza User. Este upgrade sólo afecta la cuenta QA temporal y
-# permite verificar aislamiento entre dos usuarios Admin de empresas independientes.
-mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" "$db_name" <<SQL
-UPDATE Users SET IsActive=1, MustChangePassword=0 WHERE Email='$other_tenant_email';
-DELETE FROM UserRoles WHERE UserId=(SELECT Id FROM Users WHERE Email='$other_tenant_email');
-INSERT INTO UserRoles (UserId, RoleId)
-SELECT u.Id, r.Id FROM Users u JOIN Roles r ON r.Name='Admin' WHERE u.Email='$other_tenant_email';
-SQL
+# El registro público crea el tenant raíz Admin sin elevar manualmente el rol en SQL.
 
 request POST /Auth/login "$(jq -nc --arg email "$other_tenant_email" --arg password "$other_tenant_password" '{email:$email,password:$password}')" ""
 expect_status 200 "Login tenant B"

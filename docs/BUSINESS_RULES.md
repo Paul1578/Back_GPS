@@ -3,7 +3,8 @@
 ## Usuarios
 
 - Los roles reales son los definidos por backend; las etiquetas del frontend no los reemplazan.
-- El registro público no puede elegir roles privilegiados.
+- El registro público crea la cuenta raíz `Admin` de una empresa nueva; el servidor asigna este rol fijo e ignora cualquier rol solicitado por el cliente.
+- La cuenta raíz es propietaria de su tenant (`owner_id` igual a su propio ID); todos sus recursos quedan aislados de otras empresas.
 - Los usuarios y recursos deben pertenecer a un propietario/empresa.
 - Crear usuarios de equipo persiste la cuenta y los datos de conductor antes del intento SMTP; si el correo falla, la API devuelve `invitationSent=false` para que la interfaz no afirme que se entregó.
 - Un usuario con rol Driver recibe un único registro de conductor enlazado, con documento y teléfono proporcionados; los documentos duplicados se rechazan antes de crear usuario.

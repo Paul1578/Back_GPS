@@ -157,7 +157,7 @@ NODE
 export FLETFLOW_E2E_DRIVER_ID
 
 mysql --protocol=TCP --host="$MYSQL_HOST" --user="$MYSQL_USER" "$DB_NAME" \
-  -e "UPDATE Users SET IsActive=1, MustChangePassword=0 WHERE Email='$FLETFLOW_E2E_OTHER_TENANT_EMAIL'; DELETE FROM UserRoles WHERE UserId=(SELECT Id FROM Users WHERE Email='$FLETFLOW_E2E_OTHER_TENANT_EMAIL'); INSERT INTO UserRoles (UserId, RoleId) SELECT u.Id, r.Id FROM Users u JOIN Roles r ON r.Name='Admin' WHERE u.Email='$FLETFLOW_E2E_OTHER_TENANT_EMAIL';" \
+  -e "UPDATE Users SET IsActive=1, MustChangePassword=0 WHERE Email='$FLETFLOW_E2E_OTHER_TENANT_EMAIL';" \
   >/dev/null 2>&1
 
 mysql --protocol=TCP --host="$MYSQL_HOST" --user="$MYSQL_USER" "$DB_NAME" \

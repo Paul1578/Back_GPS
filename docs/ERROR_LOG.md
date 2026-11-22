@@ -508,3 +508,33 @@ Cada cambio de API debe incluir validación de compilación, migraciones si apli
 - Corrección: usar BusinessConflictException/HTTP 409 y un mensaje español uniforme también en UserController, antes de crear la cuenta. Pruebas unitarias prueban rechazo sin mutación/commit; E2E agregado comprueba sin usuario parcial.
 - Suite backend Release local: 61/61; lint/build/discovery Front local: 16 casos. CI integrado pendiente.
 - Validación corregida confirmada: Actions `44997043103` para `a7f7c4e` pasó build, xUnit 61/61 y smokes MySQL tenant/concurrencia.
+
+## 2026-11-22 — DTO de registro buscado bajo `Application` en vez de `Aplication` — CORREGIDO
+
+- `sed` usó `fletflow/Application/DTOs/Auth/RegisterUserDto.cs`, pero el repositorio mantiene el nombre histórico de carpeta `fletflow/Aplication`; el comando devolvió archivo inexistente y no cambió nada.
+- Corrección: localizar con `rg --files fletflow` y abrir `fletflow/Aplication/Auth/DTOs/Auth/RegisterUserDto.cs`. El DTO permite omitir `RoleName`; el servidor aplica la política fija en el controlador.
+
+## 2026-11-22 — Registro público creaba cuenta operativa sin permisos — CORREGIDO EN CÓDIGO, INTEGRACIÓN PENDIENTE
+
+- UX y API discrepaban: `/register` prometía una cuenta Gerente, el frontend solicitaba Admin, pero `AuthController` forzaba User. El registro emitía una sesión válida para una cuenta incapaz de operar su nueva empresa.
+- El registro es la creación de un tenant nuevo; no requiere elevar permisos dentro de una empresa existente. Se cambió a asignar Admin raíz fijo en servidor, ignorando el rol de request. El token limita esa cuenta a `owner_id=user.Id` y los filtros multi-tenant mantienen el aislamiento.
+- xUnit verifica que una solicitud Driver recibe Admin; Release local 61/61. Smoke HTTP/MySQL verifica un tenant Admin nuevo con flota vacía y acceso 200; Actions integrada aún pendiente.
+- El runner ya no muta manualmente `UserRoles` del segundo tenant, para que la prueba confirme el contrato del registro real.
+
+## 2026-11-22 — Parche de documentación detenido por encabezado distinto — CORREGIDO
+
+- Un parche agrupado esperaba el encabezado `## Estado actual`, que no existe en `PROJECT_STATUS.md` (el encabezado real es `## Estado operativo`). El parche se detuvo parcialmente: sólo se aplicaron los cambios previos independientes a Business Rules y Security; no se tocó código ni datos.
+- Corrección: inspeccionar el encabezado real, aplicar los cambios pendientes por contexto correcto y revisar `git diff` en ambos repositorios.
+- Prevención: comprobar la estructura de cada archivo antes de crear parches multiarquivo dependientes de headings.
+
+## 2026-11-22 — Dotnet global apuntaba a un host sin SDK — CORREGIDO
+
+- `dotnet test` mediante el ejecutable global resolvió `/usr/lib64/dotnet/host/fxr`, que no contiene versiones instaladas; terminó con código 131 antes de ejecutar pruebas.
+- Corrección: usar el SDK local documentado `/home/leonardo/.dotnet/dotnet`; Release volvió a pasar 61/61.
+- Prevención: en este entorno invocar explícitamente el SDK local, sin depender del `dotnet` del PATH.
+
+## 2026-11-22 — Workflows no ejecutables en ramas de trabajo — CORREGIDO
+
+- Los workflows sólo escuchaban push/PR hacia `main`; al mantener el trabajo aislado en `chore/stabilize-fleet-platform`, no había ejecución automática para validar este cambio integrado sin crear una integración a `main`.
+- Corrección: habilitar `workflow_dispatch` para que la suite completa se ejecute contra el ref de trabajo elegido; el workflow frontend usa además el backend feature checkout.
+- Prevención: al exigir validación antes de merge, comprobar que la CI se pueda ejecutar sobre la rama aislada.

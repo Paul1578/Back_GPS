@@ -1,3 +1,7 @@
+## 2026-11-22 — Cierre de fix GPS para Driver inactivo (backend)
+
+- Cambio centralizado en `IsCurrentDriverAssigned`, backend Release 61/61; Actions `45002238853` pasó. El E2E Front que comprueba denegación por otro Driver y perfil inactivo/reactivado queda pendiente de Actions.
+
 ## 2026-11-22 — Autorizar GPS sólo a Driver activo asignado
 
 - `GET/POST /Routes/{id}/positions` reutilizan `IsCurrentDriverAssigned`; se deniega GPS cuando el perfil operativo Driver está inactivo o la ruta pertenece a otro conductor. Integración HTTP/UI pendiente.

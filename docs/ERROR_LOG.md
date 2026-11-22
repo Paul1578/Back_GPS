@@ -1,3 +1,10 @@
+# 2026-11-22 — Inspección buscó Application con ortografía distinta — CORREGIDO
+
+- Síntoma: `rg` en `/home/leonardo/Back_GPS` no encontró `fletflow/Application`; el proyecto histórico tiene carpetas `Aplication` y namespaces `Application`, con spelling inconsistente.
+- Causa: se usó el namespace como si fuera la ruta del directorio.
+- Solución: localizar archivos con `rg --files fletflow` y filtrar la ruta real (`fletflow/Aplication`).
+- Prevención: descubrir la estructura real con `rg --files` antes de asumir rutas derivadas del namespace; el antecedente general también está registrado abajo en la bitácora.
+
 # Registro de errores y soluciones
 
 ## 2026-11-21 — Prueba UI de Driver se detuvo por selector ambiguo — CORREGIDO EN FRONTEND

@@ -1,3 +1,10 @@
+## GPS y autorización Driver — backend corregido — 2026-11-22
+
+- Auditor independiente (solo lectura) confirmó el ownership de lista/detalle/estado/paradas/evidencia y filtros tenant, pero halló que GPS no validaba `Driver.IsActive` y faltaban pruebas HTTP de ruta ajena por Driver para paradas/evidencia/GPS.
+- Backend `2fdc9e0` centraliza GET/POST posiciones con `IsCurrentDriverAssigned`. Release/xUnit local 61/61; Actions `45002238853` pasó build, 61/61, smoke tenant/HTTP y concurrencia. El smoke existente no cubre por sí mismo el nuevo caso de perfil Driver inactivo.
+- Front `refactor/route-builder` agregó el E2E real de denegaciones a otra ruta y perfil inactivo/reactivado; Actions `45002306327` y `45002396041` aún ejecutándose al momento del handoff. La segunda contiene el ajuste de assert de lista no vacía permitido.
+- Al pasar Actions, registrar códigos exactos y cleanup. No cerrar criterio hasta que prueba HTTP/browser compruebe estado/evidencia/GPS persistentes tras denegación.
+
 ## Autorización Driver/GPS — validación pendiente — 2026-11-22
 
 - Auditor independiente de solo lectura confirmó filtros tenant y controles Driver para detalle, estado, paradas y evidencia; faltaba cobertura HTTP automatizada de otros conductores en paradas/evidencia/GPS.
@@ -29,7 +36,7 @@
 
 - Auditor independiente sugirió probar aislamiento de estado/rol de usuarios, protección del propietario raíz y límites de Driver; no modificó archivos.
 - Smoke HTTP pendiente de Actions: tenant B intenta cambiar estado/rol de un User de A, incluidos alias legado; Admin A intenta mutar su propia cuenta raíz. El script requiere 404/400 y verifica persistencia del rol/estado con SQL read-only.
-- Actions `45000893415` pasó: build, xUnit 61/61, smoke HTTP/MySQL y concurrency success. Primer intento falló sólo porque MySQL formateó TINYINT como byte de control en el assert; CASE string corrigió el test, detalle en ERROR_LOG. Siguiente: atomicidad del alta Driver concurrente y autorización Driver sobre ruta ajena.
+- Actions `45000893415` pasó: build, xUnit 61/61, smoke HTTP/MySQL y concurrency success. Primer intento falló sólo porque MySQL formateó TINYINT como byte de control en el assert; CASE string corrigió el test, detalle en ERROR_LOG. Siguiente en ese punto: atomicidad Driver (validada después) y autorización Driver/GPS (ahora corregida en código, con E2E Front pendiente en Actions).
 
 ## Ramas
 

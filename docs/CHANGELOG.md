@@ -1,3 +1,9 @@
+# 2026-11-22 — Pruebas HTTP negativas de CRUD Vehicle/Driver
+
+- `smoke-tenant-http.sh` ahora envía datos inválidos a edición Vehicle, alta Driver y edición Driver.
+- Verifica HTTP 400 para campos requeridos vacíos, año inválido y límites de 20 caracteres de placa/documento/teléfono; consulta MySQL antes/después y exige cero mutaciones o filas nuevas.
+- Smoke completo pasó en MySQL 8 efímero con cleanup en cero; `bash -n` y `git diff --check` correctos. Sin cambios de código de producto. Action para este cambio pendiente.
+
 ## 2026-11-22 — Logout limitado al dueño del refresh token
 
 - `POST /api/Auth/logout` obtiene el ID del JWT y sólo revoca refresh tokens de esa cuenta.

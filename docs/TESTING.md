@@ -25,6 +25,15 @@
 - Front integrado cross-repo: Playwright **33/33**, lint/build/audit (0 vulnerabilidades).
 - Action `45058536309` sobre `22c2fb6` pasó Release build/xUnit, smoke tenant HTTP/MySQL, concurrencia y cleanup.
 
+# Smoke HTTP negativo de validación Vehicle/Driver — 2026-11-22
+
+- `bash -n scripts/smoke-tenant-http.sh` y `git diff --check`: correctos.
+- Smoke tenant completo en API local con MySQL 8 descartable: exit 0 (`SMOKE_COMPLETO_OK`); cleanup confirmó cero fixtures y se cerraron contenedor/API.
+- `PUT /Vehicles/{id}`: año 2101 y placa de 21 caracteres devuelven 400; snapshot de placa, datos, activo y estado queda idéntico en MySQL.
+- `POST /Drivers`: nombres requeridos vacíos, documento de 21 y teléfono de 21 caracteres devuelven 400 y no crean Driver.
+- `PUT /Drivers/{id}`: apellido requerido vacío, documento largo y teléfono largo devuelven 400; fila completa, asignaciones y estado quedan idénticos.
+- La primera tentativa de arranque falló con el host global incompleto; repetición con `/home/leonardo/.dotnet/dotnet` pasó. Detalle en `ERROR_LOG.md`. Action de CI pendiente.
+
 # Pruebas backend
 
 ## Edición de perfil con scope de tenant — 2026-11-22

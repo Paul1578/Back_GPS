@@ -1138,6 +1138,12 @@ Cada cambio de API debe incluir validación de compilación, migraciones si apli
 - Backend Action `45066082294` pasó en `52d7e46`: build/tests, creación duplicada neutral, piso temporal del smoke y cleanup.
 - Prevención: probar también alta pública duplicada y comparar status y cuerpo; nunca retornar tokens en un branch de éxito si los conflictos se normalizan a respuesta pública genérica.
 
+## 2026-11-22 — Primer arranque del smoke con dotnet global incompleto — REPETIDO CON SDK LOCAL
+
+- La tentativa inicial del smoke HTTP de validaciones CRUD no pudo arrancar el backend porque el ejecutable `dotnet` global apunta a un host/runtime incompleto; no llegó a ejecutar requests ni usó la base persistente.
+- Repetición fijando `/home/leonardo/.dotnet/dotnet`, API loopback y MySQL 8 efímero terminó `SMOKE_COMPLETO_OK`; cleanup confirmó fixtures eliminados y cerró contenedor/puertos temporales.
+- Prevención: usar el SDK local del entorno para scripts backend y limitar siempre estas pruebas a DB descartable.
+
 ## 2026-11-22 — dotnet global apunta a instalación incompleta al ejecutar smoke — CORREGIDO EN EL RUNNER
 
 - El primer intento de smoke con la instalación `dotnet` del sistema no pudo iniciar la API por un host/runtime incompleto.

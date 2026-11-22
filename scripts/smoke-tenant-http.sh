@@ -1197,6 +1197,26 @@ jq -e --arg plate "$updated_vehicle_plate" \
   echo "La lectura API no refleja la edición persistida del vehículo." >&2; cat "$work_dir/response.json" >&2; exit 1;
 }
 
+vehicle_before_invalid_updates="$(mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" "$db_name" \
+  --batch --skip-column-names -e "SELECT CONCAT_WS('|',Plate,Brand,Model,Year,COALESCE(Description,'NULL'),IsActive,Status) FROM Vehicles WHERE Id='$duplicate_vehicle_id';")"
+request PUT "/Vehicles/$duplicate_vehicle_id" "$(jq -nc --arg plate "$updated_vehicle_plate" '{plate:$plate,brand:"Intento inválido",model:"Año fuera de rango",year:2101,description:"No debe persistir"}')" "$token"
+expect_status 400 "Rechazar año inválido al editar vehículo"
+vehicle_after_invalid_year="$(mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" "$db_name" \
+  --batch --skip-column-names -e "SELECT CONCAT_WS('|',Plate,Brand,Model,Year,COALESCE(Description,'NULL'),IsActive,Status) FROM Vehicles WHERE Id='$duplicate_vehicle_id';")"
+[[ "$vehicle_after_invalid_year" == "$vehicle_before_invalid_updates" ]] || {
+  echo "PUT /Vehicles persistió cambios pese al rechazo de año: antes='$vehicle_before_invalid_updates', después='$vehicle_after_invalid_year'." >&2
+  exit 1
+}
+invalid_update_plate="$(printf 'P%.0s' {1..21})"
+request PUT "/Vehicles/$duplicate_vehicle_id" "$(jq -nc --arg plate "$invalid_update_plate" '{plate:$plate,brand:"Intento inválido",model:"Placa larga",year:2024,description:"No debe persistir"}')" "$token"
+expect_status 400 "Rechazar placa mayor al límite al editar vehículo"
+vehicle_after_invalid_plate="$(mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" "$db_name" \
+  --batch --skip-column-names -e "SELECT CONCAT_WS('|',Plate,Brand,Model,Year,COALESCE(Description,'NULL'),IsActive,Status) FROM Vehicles WHERE Id='$duplicate_vehicle_id';")"
+[[ "$vehicle_after_invalid_plate" == "$vehicle_before_invalid_updates" ]] || {
+  echo "PUT /Vehicles persistió cambios pese al rechazo de placa: antes='$vehicle_before_invalid_updates', después='$vehicle_after_invalid_plate'." >&2
+  exit 1
+}
+
 request PUT "/Vehicles/$duplicate_vehicle_id/status" '{"status":2}' "$token"
 expect_status 204 "Cambiar estado operativo del vehículo sin desactivarlo"
 vehicle_status_sql="$(mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" "$db_name" \
@@ -1239,6 +1259,35 @@ jq -e '.isActive == true and .status == 2' "$work_dir/response.json" >/dev/null 
   echo "La API no refleja la reactivación del vehículo ni conserva su estado operativo." >&2; cat "$work_dir/response.json" >&2; exit 1;
 }
 
+invalid_driver_required_document="E2ER${suffix: -8}"
+request POST /Drivers "$(jq -nc --arg document "$invalid_driver_required_document" '{firstName:"",lastName:"Driver inválido",documentNumber:$document,phoneNumber:"0990000000"}')"
+expect_status 400 "Rechazar campo obligatorio vacío al crear Driver"
+invalid_driver_required_count="$(mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" "$db_name" \
+  --batch --skip-column-names -e "SELECT COUNT(*) FROM Drivers WHERE DocumentNumber='$invalid_driver_required_document';")"
+[[ "$invalid_driver_required_count" == "0" ]] || {
+  echo "POST /Drivers creó una fila pese al rechazo de campo obligatorio (filas=$invalid_driver_required_count)." >&2
+  exit 1
+}
+invalid_driver_document="$(printf 'D%.0s' {1..21})"
+request POST /Drivers "$(jq -nc --arg document "$invalid_driver_document" '{firstName:"Driver inválido",lastName:"Documento largo",documentNumber:$document,phoneNumber:"0990000000"}')"
+expect_status 400 "Rechazar documento de Driver mayor a 20 caracteres"
+invalid_driver_document_count="$(mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" "$db_name" \
+  --batch --skip-column-names -e "SELECT COUNT(*) FROM Drivers WHERE DocumentNumber='$invalid_driver_document';")"
+[[ "$invalid_driver_document_count" == "0" ]] || {
+  echo "POST /Drivers creó una fila pese al rechazo de documento largo (filas=$invalid_driver_document_count)." >&2
+  exit 1
+}
+invalid_driver_phone_document="E2EP${suffix: -8}"
+invalid_driver_phone="$(printf '9%.0s' {1..21})"
+request POST /Drivers "$(jq -nc --arg document "$invalid_driver_phone_document" --arg phone "$invalid_driver_phone" '{firstName:"Driver inválido",lastName:"Teléfono largo",documentNumber:$document,phoneNumber:$phone}')"
+expect_status 400 "Rechazar teléfono de Driver mayor a 20 caracteres"
+invalid_driver_phone_count="$(mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" "$db_name" \
+  --batch --skip-column-names -e "SELECT COUNT(*) FROM Drivers WHERE DocumentNumber='$invalid_driver_phone_document';")"
+[[ "$invalid_driver_phone_count" == "0" ]] || {
+  echo "POST /Drivers creó una fila pese al rechazo de teléfono largo (filas=$invalid_driver_phone_count)." >&2
+  exit 1
+}
+
 request POST /Drivers "$(jq -nc --arg document "$document_number" '{firstName:"E2E QA",lastName:"Driver A",documentNumber:$document,phoneNumber:"0990000000"}')"
 expect_status 201 "Crear Driver tenant A"
 driver_id="$(jq -er '.id' "$work_dir/response.json")"
@@ -1253,6 +1302,34 @@ request GET "/Drivers/$driver_id"
 expect_status 200 "Confirmar edición persistida de Driver"
 jq -e --arg document "$updated_document" '.firstName == "E2E QA editado" and .documentNumber == $document and .phoneNumber == "0990000009"' \
   "$work_dir/response.json" >/dev/null || { echo "La edición del Driver no quedó persistida." >&2; cat "$work_dir/response.json" >&2; exit 1; }
+driver_before_invalid_updates="$(mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" "$db_name" \
+  --batch --skip-column-names -e "SELECT CONCAT_WS('|',FirstName,LastName,DocumentNumber,PhoneNumber,IsActive,COALESCE(CAST(VehicleId AS CHAR),'NULL'),COALESCE(CAST(UserId AS CHAR),'NULL')) FROM Drivers WHERE Id='$driver_id';")"
+request PUT "/Drivers/$driver_id" "$(jq -nc --arg document "$updated_document" '{firstName:"Intento inválido",lastName:"",documentNumber:$document,phoneNumber:"0990000009"}')" "$token"
+expect_status 400 "Rechazar campo obligatorio vacío al editar Driver"
+driver_after_invalid_required="$(mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" "$db_name" \
+  --batch --skip-column-names -e "SELECT CONCAT_WS('|',FirstName,LastName,DocumentNumber,PhoneNumber,IsActive,COALESCE(CAST(VehicleId AS CHAR),'NULL'),COALESCE(CAST(UserId AS CHAR),'NULL')) FROM Drivers WHERE Id='$driver_id';")"
+[[ "$driver_after_invalid_required" == "$driver_before_invalid_updates" ]] || {
+  echo "PUT /Drivers persistió cambios pese al rechazo de campo obligatorio: antes='$driver_before_invalid_updates', después='$driver_after_invalid_required'." >&2
+  exit 1
+}
+invalid_update_document="$(printf 'U%.0s' {1..21})"
+request PUT "/Drivers/$driver_id" "$(jq -nc --arg document "$invalid_update_document" '{firstName:"Intento inválido",lastName:"Documento largo",documentNumber:$document,phoneNumber:"0990000009"}')" "$token"
+expect_status 400 "Rechazar documento largo al editar Driver"
+driver_after_invalid_document="$(mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" "$db_name" \
+  --batch --skip-column-names -e "SELECT CONCAT_WS('|',FirstName,LastName,DocumentNumber,PhoneNumber,IsActive,COALESCE(CAST(VehicleId AS CHAR),'NULL'),COALESCE(CAST(UserId AS CHAR),'NULL')) FROM Drivers WHERE Id='$driver_id';")"
+[[ "$driver_after_invalid_document" == "$driver_before_invalid_updates" ]] || {
+  echo "PUT /Drivers persistió cambios pese al rechazo de documento largo: antes='$driver_before_invalid_updates', después='$driver_after_invalid_document'." >&2
+  exit 1
+}
+invalid_update_phone="$(printf '8%.0s' {1..21})"
+request PUT "/Drivers/$driver_id" "$(jq -nc --arg document "$updated_document" --arg phone "$invalid_update_phone" '{firstName:"Intento inválido",lastName:"Teléfono largo",documentNumber:$document,phoneNumber:$phone}')" "$token"
+expect_status 400 "Rechazar teléfono largo al editar Driver"
+driver_after_invalid_phone="$(mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" "$db_name" \
+  --batch --skip-column-names -e "SELECT CONCAT_WS('|',FirstName,LastName,DocumentNumber,PhoneNumber,IsActive,COALESCE(CAST(VehicleId AS CHAR),'NULL'),COALESCE(CAST(UserId AS CHAR),'NULL')) FROM Drivers WHERE Id='$driver_id';")"
+[[ "$driver_after_invalid_phone" == "$driver_before_invalid_updates" ]] || {
+  echo "PUT /Drivers persistió cambios pese al rechazo de teléfono largo: antes='$driver_before_invalid_updates', después='$driver_after_invalid_phone'." >&2
+  exit 1
+}
 request PUT "/Drivers/$driver_id/status" '{"isActive":false}'
 expect_status 204 "Desactivar Driver propio"
 request GET /Drivers?onlyActive=false

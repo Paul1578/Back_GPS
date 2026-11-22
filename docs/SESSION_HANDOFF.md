@@ -1,3 +1,11 @@
+# Continuación — validaciones negativas CRUD Driver/Vehicle — 2026-11-22
+
+- Rama Backend `chore/stabilize-fleet-platform`; Front `refactor/route-builder`; `main` intacta.
+- `scripts/smoke-tenant-http.sh` añade prueba HTTP + snapshot MySQL para PUT inválido Vehicle (año/placa), POST inválido Driver (requerido/documento/teléfono) y PUT inválido Driver (apellido/documento/teléfono).
+- Ejecución completa con API y MySQL 8 efímeros terminó `SMOKE_COMPLETO_OK`, cleanup cero; `bash -n`/diff-check pasan. Primera ejecución con dotnet global falló por host incompleto, repetición con `/home/leonardo/.dotnet/dotnet` pasó; ver `ERROR_LOG.md`.
+- Solo script modificado, sin código C#; revisar, registrar y publicar y validar Action. No tocar main.
+- Continuar cobertura positiva/negativa CRUD, roles y responsive. Misión no completa; Admin delegado espera decisión, SMTP/PFX/infra productiva externos y móvil nativo pospuesto.
+
 ## Smoke de ciclo Vehicle y anti-enumeración — 2026-11-22
 
 - Rama `chore/stabilize-fleet-platform`, Front relacionado `refactor/route-builder`; `main` intacta.

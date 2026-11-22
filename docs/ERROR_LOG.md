@@ -1099,3 +1099,9 @@ Cada cambio de API debe incluir validación de compilación, migraciones si apli
 - El primer Release test completo tras introducir la traducción de carrera tuvo 102/103. `UpdateVehicle_MapsConcurrentDuplicatePlateToConflictWithoutChangingPersistedVehicle` devolvió el `DbUpdateException` porque `FakeVehicles.GetByIdAsync` compartía la instancia que el comando había mutado; la reconsulta encontraba el valor pendiente del mismo vehículo y no el registro del competidor.
 - Solución: el fake devuelve una copia de dominio como el repositorio productivo `AsNoTracking`; el competidor de la placa aparece como registro separado. Repetición Release: **103/103**; build Release: **0 warnings, 0 errors**.
 - Prevención: los fakes de repositorios deben modelar el tracking/copia real de EF; una prueba de concurrencia no debe hacer que la entidad pendiente parezca ya persistida.
+
+## 2026-11-22 — Cambio de rol reactivaba Driver aunque User seguía inactivo — CORREGIDO; CI INTEGRADO PENDIENTE
+
+- Al reasignar `Logistics` a `Driver`, `ChangeUserRoleCommand` reactivaba el perfil Driver vinculado sin comprobar `User.IsActive`; esto dejaba el perfil operativo en la base pese a que la cuenta no podía autenticarse. `CreateDriverCommand` ya impedía crear perfiles desde cuentas inactivas, pero el flujo de cambio de rol no preservaba esa regla.
+- Fix: condicionar la reactivación del perfil a que la cuenta esté activa. Prueba unitaria cubre usuario inactivo/perfil inactivo; smoke HTTP/MySQL cambia Logistics→Driver y verifica que `Driver.isActive` siga false. Test Release local 104/104; publicar/validar Action pendiente.
+- Prevención: probar el estado combinado de cuenta y perfil, no sólo el rol; cambios de rol no deben restaurar permisos operativos de una cuenta desactivada.

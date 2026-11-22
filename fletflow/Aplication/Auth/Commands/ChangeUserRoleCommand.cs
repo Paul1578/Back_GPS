@@ -50,7 +50,7 @@ public class ChangeUserRoleCommand
                 linkedDriver.UnassignVehicle();
                 await _uow.Drivers.UpdateAsync(linkedDriver);
             }
-            else if (roleName.Equals("Driver", StringComparison.OrdinalIgnoreCase) && linkedDriver is { IsActive: false })
+            else if (user.IsActive && roleName.Equals("Driver", StringComparison.OrdinalIgnoreCase) && linkedDriver is { IsActive: false })
             {
                 linkedDriver.Activate();
                 await _uow.Drivers.UpdateAsync(linkedDriver);

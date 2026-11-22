@@ -506,4 +506,6 @@ La invitación envía sólo el enlace de activación; el usuario fija su contras
 
 - Backend Action `45061524504` pasó para SHA `3f87af8`: build/tests Release, smoke de tenant HTTP/MySQL, concurrencia de rutas y cleanup de contenedores.
 
-- Vehicle validation/concurrency: Release xUnit **103/103**; Release build **0 warnings, 0 errors**. El primer intento tuvo 102/103 por fake mutable de EF, corregido y registrado en `ERROR_LOG.md`. Smoke tenant HTTP/MySQL ahora comprueba límites 400 y placas duplicadas 409 en create/update; requiere Action integrada.
+- Vehicle validation/concurrency: Release xUnit **103/103**; Release build **0 warnings, 0 errors**. El primer intento tuvo 102/103 por fake mutable de EF, corregido y registrado en `ERROR_LOG.md`. Backend Action `45063488394` pasó e incluye smoke tenant HTTP/MySQL para límites 400 y placas duplicadas 409 en create/update.
+
+- Cambio de rol con cuenta Driver inactiva: xUnit Release **104/104**; smoke HTTP/MySQL cubre Logistics→Driver y comprueba que el perfil siga inactivo. Validación integrada pendiente.

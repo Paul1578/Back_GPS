@@ -401,4 +401,8 @@
 ## 2026-11-22 — Validación de Vehicle y colisión de placa concurrente
 
 - Contratos y comandos CREATE/UPDATE rechazan campos fuera de rango con 400. Colisión confirmada del índice único por placa devuelve 409 también si dos peticiones compiten.
-- Cobertura Release xUnit 103/103 y smoke HTTP para límites/duplicados; CI integrada pendiente.
+- Cobertura Release xUnit 103/103 y smoke HTTP para límites/duplicados. Backend Action `45063488394` pasó build, 103 tests y smoke HTTP/MySQL en SHA `84e7c66`.
+
+## 2026-11-22 — Cambio de rol no reactiva Driver con cuenta inactiva
+
+- Se corrigió `ChangeUserRoleCommand`: asignar el rol Driver sólo reactiva el perfil vinculado si User está activo. Test focal y suite Release 104/104; smoke HTTP/MySQL agregado para este ciclo real.

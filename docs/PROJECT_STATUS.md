@@ -461,4 +461,8 @@ Nota de actualización: algunos resultados históricos de registro público más
 - Auditoría detectó campos que podían exceder límites de persistencia y una carrera create/update de placa única que salía como 500. Contratos y comandos ahora validan en borde HTTP y de aplicación y traducen sólo duplicidad confirmada a 409.
 - Se añadieron pruebas de entrada inválida y carrera duplicada. Release local con DOTNET_ROOT configurado; el host `/usr/bin/dotnet` del sistema estaba roto, la repetición usa `/home/leonardo/.dotnet`.
 
-- Vehicle Release local: xUnit **103/103**, build **0 warnings/0 errors** con SDK `8.0.428` seleccionada desde `/home/leonardo/.dotnet`; `bash -n` smoke y diff-check pasan. Commit `adcc286` publicado; Action `45063399400` valida HTTP/MySQL (400 por placa/año inválidos y 409 en duplicados de alta/edición).
+- Vehicle Release local: xUnit **103/103**, build **0 warnings/0 errors** con SDK `8.0.428` seleccionada desde `/home/leonardo/.dotnet`; `bash -n` smoke y diff-check pasan. Backend Action `45063488394` pasó en SHA `84e7c66`, incluyendo HTTP/MySQL (400 por placa/año inválidos y 409 en duplicados de alta/edición).
+
+## Cambio de rol y cuenta Driver inactiva — CI integrado pendiente
+
+- El análisis encontró que cambio de rol Logistics→Driver reactivaba el perfil vinculado sin activar la cuenta User. Se condicionó a `User.IsActive`; Release local 104/104. Smoke HTTP/MySQL comprueba que la cuenta inactiva no recupera un perfil operativo.

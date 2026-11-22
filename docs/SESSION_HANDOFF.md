@@ -586,4 +586,9 @@ Errores de migración, herramientas, QA y soluciones están en `docs/ERROR_LOG.m
 - Auditoría backend read-only detectó límites de Vehicle ausentes y colisión índice único no traducida. Create/Update request usan DataAnnotations; comandos normalizan/validan igual en aplicación (Plate 20, Brand/Model 100, Description 1000, Year 1900–2100). `DbUpdateException` sólo se traduce a conflicto si la reconsulta confirma placa de otro vehículo.
 - Se extendió `VehicleCommandTests` para input inválido, create race y update race; smoke HTTP/MySQL verifica 400 y 409 con persistencia de la placa original intacta.
 - Primera suite Release fue **102/103**: el fake de Update devolvía misma instancia mutable. Fake ajustado a copia no rastreada; suite **103/103**, build **0 warnings/0 errors**, bash -n/diff-check pasan con `/home/leonardo/.dotnet`.
-- Commit/push hecho; Action `45063399400` debe confirmar smoke en MySQL real desechable. Siguiente revisión P3: cambio rol a Driver con cuenta inactiva, más pendientes de seguridad.
+- Backend Action `45063488394` confirma build, 103 tests y smoke Vehicle en MySQL efímero. Otro P3 sobre cambio de rol fue confirmado y corregido en el bloque siguiente; revisar pendientes de seguridad.
+
+## Continuación — perfil Driver con cuenta desactivada
+
+- Subagente confirmó el bug real y corrigió `ChangeUserRoleCommand`: cambiar a Driver ya no reactiva el perfil vinculado cuando `User.IsActive=false`. Test nuevo; suite Release local **104/104**.
+- Smoke `scripts/smoke-tenant-http.sh` ampliado para ejecutar Logistics→Driver en API/MySQL real y asegurar `Driver.isActive=false`. Error/causa/prevención en `docs/ERROR_LOG.md`; suite 104/104, bash syntax y diff-check pasan. Commit y Actions nuevas pendientes.

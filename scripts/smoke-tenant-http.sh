@@ -775,6 +775,17 @@ request GET /Routes/assignment-options "" "$inactive_driver_access_token"
 expect_status 403 "Denegar opciones de asignación a Driver"
 request PUT "/Users/$inactive_driver_user_id/status?isActive=false" "" "$token"
 expect_status 200 "Desactivar cuenta de Driver enlazado"
+request PUT "/Users/$inactive_driver_user_id/role" '{"roleName":"Logistics"}' "$token"
+expect_status 200 "Cambiar a Logistics el rol de cuenta Driver inactiva"
+request PUT "/Users/$inactive_driver_user_id/role" '{"roleName":"Driver"}' "$token"
+expect_status 200 "Restaurar rol Driver sin reactivar cuenta inactiva"
+request GET "/Drivers/$inactive_linked_driver_id" "" "$token"
+expect_status 200 "Consultar perfil vinculado tras cambio de rol con cuenta inactiva"
+jq -e '.isActive == false' "$work_dir/response.json" >/dev/null || {
+  echo "Cambiar el rol reactivó el perfil Driver de una cuenta User inactiva." >&2
+  cat "$work_dir/response.json" >&2
+  exit 1
+}
 request PUT "/Routes/$inactive_driver_route_id" "$inactive_driver_route_payload" "$token"
 expect_status 409 "Impedir editar ruta para cuenta Driver inactiva"
 request PUT "/Routes/$inactive_driver_route_id/status" '{"status":1}' "$token"

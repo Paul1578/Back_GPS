@@ -70,6 +70,28 @@ public class ChangeUserRoleTests
     }
 
     [Fact]
+    public async Task Execute_DoesNotReactivateLinkedDriverWhenUserAccountIsInactive()
+    {
+        var logisticsRole = new Role { Name = "Logistics" };
+        var driverRole = new Role { Name = "Driver" };
+        var user = new User { IsActive = false };
+        user.UserRoles.Add(new UserRole { User = user, Role = logisticsRole });
+        var driver = Driver.Create("Ana", "Paz", "100", "099", user.Id);
+        driver.Deactivate();
+        var users = new RecordingUserRepository(user, logisticsRole.Id);
+        var uow = new RecordingUnitOfWork(users, new RecordingRoleRepository(logisticsRole, driverRole), driver);
+
+        await new ChangeUserRoleCommand(uow).Execute(user.Id, "Driver");
+
+        Assert.False(user.IsActive);
+        Assert.False(driver.IsActive);
+        Assert.Equal(new[] { driverRole.Id }, users.RoleIds);
+        Assert.Equal(1, user.TokenVersion);
+        Assert.Equal(1, ((RecordingRefreshTokenRepository)uow.RefreshTokens).RevokeAllCount);
+        Assert.Equal(1, uow.CommitCount);
+    }
+
+    [Fact]
     public async Task Execute_RejectsRoleChangeWhileLinkedDriverHasRouteInProgress()
     {
         var adminRole = new Role { Name = "Admin" };

@@ -11,11 +11,11 @@
 - Se habilitó `workflow_dispatch` en ambas CI para correr sobre las ramas aisladas; ambos workflows están en verde.
 - El hallazgo/solución y errores de inspección de rutas se documentan en `ERROR_LOG.md` de Front y Back.
 
-## Cobertura HTTP de ownership de usuarios — en curso
+## Cobertura HTTP de ownership de usuarios — validada
 
 - Auditor independiente sugirió probar aislamiento de estado/rol de usuarios, protección del propietario raíz y límites de Driver; no modificó archivos.
 - Smoke HTTP pendiente de Actions: tenant B intenta cambiar estado/rol de un User de A, incluidos alias legado; Admin A intenta mutar su propia cuenta raíz. El script requiere 404/400 y verifica persistencia del rol/estado con SQL read-only.
-- Shell syntax y diff-check pasan localmente; publicar y ejecutar el workflow backend antes de contar la prueba. Después priorizar alta Driver concurrente y autorización de Driver sobre ruta ajena.
+- Actions `45000893415` pasó: build, xUnit 61/61, smoke HTTP/MySQL y concurrency success. Primer intento falló sólo porque MySQL formateó TINYINT como byte de control en el assert; CASE string corrigió el test, detalle en ERROR_LOG. Siguiente: atomicidad del alta Driver concurrente y autorización Driver sobre ruta ajena.
 
 ## Ramas
 

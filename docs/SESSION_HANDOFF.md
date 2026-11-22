@@ -4,7 +4,7 @@
 - Validación: Release xUnit 111/111, Release build 0 warnings/0 errors, `smoke-tenant-http.sh` completo sobre API + MySQL 8 descartable `fletflow_ci_user_deactivation`, cleanup correcto, bash syntax/diff-check correctos.
 - El contenedor `fletflow-route-deactivation-mysql` y API local se detuvieron y eliminaron; MySQL persistente no se tocó.
 - Backend commit `87b208e` pasó Action `45071475764`: xUnit 111/111, Release build, smoke HTTP/MySQL tenant, concurrencia y cleanup.
-- Front `5d4e290` Action `45071113746` pasó: 36/36 E2E, responsive 1/1, backend 110/110, audit/lint/build y cleanup. Front `340eb55` ya está publicado y su Action `45072015727` está en curso.
+- Front `5d4e290` Action `45071113746` pasó: 36/36 E2E, responsive 1/1, backend 110/110, audit/lint/build y cleanup. Front `340eb55` pasó `45072015727` con 36/36 E2E, responsive 1/1, backend 111/111 y cleanup. Front `7f4841c` está publicado; Action `45072706025` ejecuta la cobertura de errores de carga.
 - Continúa pendiente: política para otorgar Admin y requisito de desvincular User/Driver; seguir cobertura CRUD/responsive y pruebas reales. Móvil nativo pospuesto.
 
 # El estado vigente se mantiene al inicio de este handoff; las notas posteriores son registro histórico.

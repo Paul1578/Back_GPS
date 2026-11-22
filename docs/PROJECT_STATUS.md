@@ -18,6 +18,7 @@
 - Backend `chore/stabilize-fleet-platform`: se corrigió la baja de cuenta vinculada a Driver durante rutas Pending/InProgress. Local: xUnit 111/111, Release build 0 warnings/0 errors, smoke HTTP/MySQL descartable completo y cleanup cero. Action `45071475764` sobre `87b208e` pasó build, xUnit 111/111, smokes y cleanup.
 - Backend Action `45070491409` sobre `f564aa3` pasó (build, xUnit 110/110, tenant HTTP/MySQL, concurrencia y cleanup); docs publicadas en `777b905`.
 - Front `refactor/route-builder`: Action `45070512838` pasó **36/36 E2E**, responsive **1/1**, backend **110/110**, audit, lint/build y cleanup sobre `96f7a21`. Commit `5d4e290` pasó Action `45071113746`: 36/36 E2E, responsive 1/1, backend 110/110 y cleanup.
+- Backend docs commit `6a0cd6d` pasó Action `45072150441`. Front `340eb55` pasó Action `45072015727` (36/36 E2E, responsive 1/1, backend 111/111 y cleanup); Front `7f4841c` agrega manejo de errores de carga y su Action `45072706025` está ejecutando.
 - Las políticas de Admin delegado y desvinculación User/Driver siguen sin decisión. App nativa está aplazada; SMTP/PFX e infraestructura productiva son externos. Misión abierta.
 
 ## Validación HTTP negativa Vehicle/Driver — local y CI aprobadas

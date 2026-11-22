@@ -38,7 +38,7 @@ Los hallazgos anteriores de roles públicos, logs con tokens, CORS abierto, recu
 
 - Auditoría estática independiente confirmó que el endpoint exige Admin, limita el miembro al tenant, bloquea editar cuenta raíz, valida campos a 100 caracteres y no expone hash/token.
 - No se encontró IDOR directo por este endpoint. Como defensa en profundidad, `UpdateUserProfileCommand` ahora exige `CurrentOwnerUserId` y filtra tanto usuario como Driver asociado por propietario.
-- xUnit verifica sync de nombres User/Driver y rechazo cross-tenant. Smoke HTTP/MySQL ahora comprueba máximos de username, FirstName y LastName (resultado integrado pendiente).
+- xUnit verifica sync de nombres User/Driver y rechazo cross-tenant. Actions `45007491905` pasó 64/64 y smoke HTTP/MySQL valida máximos de username, FirstName y LastName; cleanup exitoso.
 - Hallazgo aún abierto de política: cualquier Admin actual puede asignar el rol Admin a otro miembro de su mismo tenant (y potencialmente a sí mismo); no se cambió el comportamiento hasta definir si sólo la cuenta raíz puede otorgarlo.
 
 ## Cobertura verificada — 2026-11-21

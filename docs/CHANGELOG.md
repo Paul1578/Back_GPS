@@ -28,7 +28,7 @@
 
 - El comando ahora requiere `CurrentOwnerUserId` y filtra explícitamente User y Driver por propietario además del query filter global.
 - Pruebas xUnit cubren sincronización de User/Driver, normalización y rechazo de User de otro tenant; Release **64/64** local.
-- Smoke HTTP amplía el máximo de 100 caracteres para FirstName y LastName; Actions/API/MySQL integrada pendiente.
+- Smoke HTTP amplía el máximo de 100 caracteres para FirstName y LastName; Actions `45007491905` pasó build, xUnit **64/64**, smoke tenant HTTP/MySQL y concurrencia; cleanup exitoso.
 - La revisión estática no encontró IDOR directo en endpoint actual. La asignación de Admin por Admin delegado queda pendiente de política de negocio.
 
 ## 2026-11-21 — Rate limit Development y prueba E2E extendida

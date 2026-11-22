@@ -26,7 +26,7 @@ Backend implementa persistencia de nombres, endpoint Admin para edición de nomb
 ## Edición de perfil — defensa de tenant — 2026-11-22
 
 - `UpdateUserProfileCommand` ya no depende exclusivamente del chequeo del controller: requiere propietario autenticado y filtra explícitamente User/Driver asociado por tenant.
-- Tests Release local **64/64**; smoke shell syntax y diff-check correctos. Actions/MySQL del nuevo cambio están pendientes.
+- Tests Release local y Actions **64/64**; smoke shell syntax y diff-check correctos. Actions `45007491905` confirmó tenant HTTP/MySQL, límites de FirstName/LastName, concurrencia y cleanup.
 - La revisión de seguridad no halló IDOR HTTP en el endpoint. Sigue pendiente definir privilegio de Admin delegado para asignar rol Admin.
 
 Fecha de corte: 2026-11-22.

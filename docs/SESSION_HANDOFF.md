@@ -12,9 +12,9 @@
 ## Seguridad de perfil — continuación 2026-11-22
 
 - Auditoría estática real (subagente independiente) no encontró bypass directo en `PUT /Users/{id}/profile`, pero recomendó defense-in-depth dentro del command. Implementado: comando filtra por `CurrentOwnerUserId` y agrega owner scope al Driver ligado.
-- xUnit local Release **64/64**; smoke sintáctico y diff-check limpios. Smoke HTTP/MySQL añade límites de nombre/apellido y se debe repetir en Actions.
+- xUnit local Release **64/64**; smoke sintáctico y diff-check limpios. Actions backend `45007491905` confirmó build, 64/64, smoke HTTP/MySQL con límites de nombre/apellido y concurrencia; cleanup exitoso.
 - Hallazgo de negocio abierto: Admin delegado puede asignar/promover rol Admin. No modificar esa capacidad hasta resolver la política raíz/delegado. El frontend también tiene esta duda pendiente.
-- Error conocido y solución en `docs/ERROR_LOG.md`. Próximo: ejecutar backend Actions, verificar smoke MySQL, actualizar resultado/documentos.
+- Error conocido y solución en `docs/ERROR_LOG.md`. Próximo: continuar auditoría de CRUD/roles; mantener sin resolver la promoción Admin hasta recibir decisión de producto.
 
 ## GPS y autorización Driver — backend corregido — 2026-11-22
 

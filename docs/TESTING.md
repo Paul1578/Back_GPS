@@ -4,7 +4,7 @@
 
 - Tests nuevos de `UpdateUserProfileCommand`: sincroniza username/nombres con Driver dentro del tenant; rechaza un usuario perteneciente a otro propietario. Release local **64/64** (SDK 8.0.428).
 - `bash -n scripts/smoke-tenant-http.sh` y `git diff --check` pasan.
-- Smoke HTTP amplía validación de máximos de 100 caracteres para nombre y apellido; requiere la próxima ejecución integrada Actions con MySQL descartable.
+- Smoke HTTP amplía validación de máximos de 100 caracteres para nombre y apellido. Actions `45007491905`: Release build, **64/64** xUnit, smoke tenant HTTP/MySQL y concurrencia; cleanup de servicios descartables correcto.
 
 ## Suite automatizada
 

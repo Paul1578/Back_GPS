@@ -12,6 +12,7 @@
 - Revisión de seguridad identificó que `UpdateUserProfileCommand` consultaba por ID solamente, aunque el controller sí verificaba tenant antes de invocarlo. No se confirmó un bypass HTTP.
 - El comando ahora requiere claim `owner_id` desde `AppDbContext.CurrentOwnerUserId` y limita explícitamente User y Driver al mismo `OwnerUserId`; intento de invocación sin tenant autenticado falla cerrado.
 - xUnit prueba edición/sincronización propia y rechazo de usuario ajeno; el smoke HTTP también valida límites de nombre y apellido.
+- Actions `45007491905` confirmó Release build, xUnit 64/64, smoke tenant HTTP/MySQL con ambos límites y concurrencia; contenedores descartables cerrados.
 - Prevención: comandos que mutan registros tenant-aware deben conservar el scope de propietario aunque el controller ya lo haya comprobado.
 
 ## 2026-11-21 — Prueba UI de Driver se detuvo por selector ambiguo — CORREGIDO EN FRONTEND

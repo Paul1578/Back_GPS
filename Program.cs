@@ -70,6 +70,9 @@ builder.Services.AddScoped<JwtTokenService>();
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<IUserRegistrationService>(services => services.GetRequiredService<AuthService>());
 builder.Services.AddScoped<IEmailSender, EmailService>();
+builder.Services.AddSingleton<EmailDeliveryQueue>();
+builder.Services.AddSingleton<IEmailDeliveryQueue>(services => services.GetRequiredService<EmailDeliveryQueue>());
+builder.Services.AddHostedService(services => services.GetRequiredService<EmailDeliveryQueue>());
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 
 // =====================

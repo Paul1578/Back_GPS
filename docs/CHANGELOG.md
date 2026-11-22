@@ -275,3 +275,9 @@
 - Añadidas pruebas unitarias y smoke HTTP/MySQL para carreras y revocación.
 
 - Logout-all y refresh ahora se serializan por lock transaccional de la fila User; smoke MySQL fuerza la contención y confirma que el cierre revoca cualquier sucesor.
+
+## 2026-11-22 — Recuperación con respuesta uniforme
+
+- SMTP ya no bloquea la petición de recuperación; un worker bounded intenta entregar fuera del request.
+- Respuestas de cuenta conocida/desconocida tienen el mismo payload y mínimo de 250 ms. Cola llena/SMTP no configurado queda en logs y nunca se afirma éxito.
+- La cola en memoria requiere sustituirse por un outbox durable antes de tratar entrega como operación garantizada en producción.

@@ -814,3 +814,11 @@ Cada cambio de API debe incluir validación de compilación, migraciones si apli
 - Prevención: verificar nombres/rutas antes de abrir, incluso si el namespace sugiere otra carpeta.
 
 - Verificación cerrada de la carrera: MySQL 8 efímero + API real ejecutó el smoke ampliado con lock deliberado y refresh/logout-all concurrentes; exit code 0, cero refresh activos tras logout, token anterior inválido, cleanup `0 rutas, 0 posiciones GPS, 0 vehículos`. `dotnet test -c Release --no-restore`: 76/76 después del cambio. La posible diferencia temporal de ForgotPassword permanece anotada como pendiente de seguridad, no como resuelta.
+
+## 2026-11-22 — Enumeración temporal de ForgotPassword — MITIGADA PARCIALMENTE
+
+- El auditor observó diferencia temporal marcada porque una cuenta existente esperaba SMTP (hasta timeout) y una inexistente respondía tras sólo consultar la cuenta.
+- Solución: envío fuera del request en `EmailDeliveryQueue` bounded de 256 mensajes, mínimo de 250 ms para ambas ramas y HTTP smoke que compara payload y duración mínima. Fallos/cola llena sólo generan log; SMTP no se presenta como enviado.
+- Verificación local: xUnit Release 76/76; build 0 warnings/0 errores; smoke API/MySQL 8 exit 0 con payloads/códigos idénticos y ambos tiempos >=200 ms. El worker reportó SMTP no configurado, sin enviar correo real.
+- Límite explícito: la cola de proceso no es durable y el piso de tiempo no garantiza igualdad ante saturación/DB lenta. Requiere outbox durable protegido para producción; no marcar como eliminación matemática del canal temporal.
+- Error de edición durante este fix: el hunk inicial no coincidió con el cuerpo real (`normalizedEmail` se valida como nullable y tiene early return); no hubo cambios aplicados. Solución: releer el método exacto y dividir el parche. Prevención: revisar BOM/contexto y ramas de retorno reales antes de cambiar timing.

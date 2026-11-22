@@ -355,3 +355,9 @@ La invitación envía sólo el enlace de activación; el usuario fija su contras
 - Smoke HTTP/MySQL ejecutado con API local y MySQL 8 efímero. El test bloquea deliberadamente la fila de Users, lanza `logout-all` y refresh en paralelo, y valida HTTP 200 al cierre global, cero refresh activos al final y 401 para cualquier sucesor devuelto antes del cierre. Resultado: exit code 0.
 - La configuración JWT real también denegó (`401`) un access token anterior al cierre. Cleanup al final: 0 rutas, 0 posiciones GPS, 0 vehículos de Logistics/Manager.
 - Riesgo pendiente: la duración de recuperación puede diferenciar cuentas conocidas/desconocidas; no se cuenta como mitigado por la igualdad del cuerpo HTTP.
+
+## Recuperación uniforme y worker SMTP — 2026-11-22
+
+- xUnit Release: 76/76, incluyendo respuesta genérica, token sólo para cuenta conocida, cola de entrega y duración mínima >=200 ms para conocidas/desconocidas.
+- Smoke HTTP/MySQL real comparó JSON ordenado y HTTP 200 para ambas cuentas; ambas duraciones fueron >=200 ms. La cola ejecutó el worker y registró `SmtpHost no configurado`; no se envió email ni se comunicó como enviado.
+- `EmailDeliveryQueue` es volátil y bounded (256). Falta outbox durable y prueba de entrega SMTP cuando haya credenciales vigentes.

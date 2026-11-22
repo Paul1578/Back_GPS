@@ -7,6 +7,7 @@ using fletflow.Infrastructure.Security;
 using fletflow.Infrastructure.Security.Hashing;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Logging;
+using System.Diagnostics;
 
 namespace fletflow.Infrastructure.Services
 {
@@ -14,16 +15,16 @@ namespace fletflow.Infrastructure.Services
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly JwtTokenService _jwtService;
-        private readonly IEmailSender _emailService;
+        private readonly IEmailDeliveryQueue _emailDeliveryQueue;
         private readonly EmailSettings _emailSettings;
         private readonly PasswordResetTokenFactory _passwordResetTokenFactory;
         private readonly ILogger<AuthService> _logger;
 
-        public AuthService(IUnitOfWork unitOfWork, JwtTokenService jwtService, IEmailSender emailService, PasswordResetTokenFactory passwordResetTokenFactory, IOptions<EmailSettings> emailOptions, ILogger<AuthService> logger)
+        public AuthService(IUnitOfWork unitOfWork, JwtTokenService jwtService, IEmailDeliveryQueue emailDeliveryQueue, PasswordResetTokenFactory passwordResetTokenFactory, IOptions<EmailSettings> emailOptions, ILogger<AuthService> logger)
         {
             _unitOfWork = unitOfWork;
             _jwtService = jwtService;
-            _emailService = emailService;
+            _emailDeliveryQueue = emailDeliveryQueue;
             _passwordResetTokenFactory = passwordResetTokenFactory;
             _emailSettings = emailOptions.Value;
             _logger = logger;
@@ -140,9 +141,13 @@ namespace fletflow.Infrastructure.Services
 
         public async Task<ForgotPasswordResponseDto> ForgotPasswordAsync(string email, bool returnTokenInResponse = false)
         {
+            var startedAt = Stopwatch.GetTimestamp();
             var normalizedEmail = email?.Trim();
             if (string.IsNullOrWhiteSpace(normalizedEmail))
+            {
+                await WaitForRecoveryResponseFloorAsync(startedAt);
                 return new ForgotPasswordResponseDto();
+            }
 
             var user = await _unitOfWork.Users.GetByEmailAsync(normalizedEmail);
 
@@ -161,22 +166,27 @@ namespace fletflow.Infrastructure.Services
 
                 var encoded = Uri.EscapeDataString(plainToken);
                 var link = $"{_emailSettings.ResetPasswordUrl}?token={encoded}";
-                try
-                {
-                    await _emailService.SendPasswordResetEmailAsync(user.Email, link, plainToken);
-                }
-                catch (Exception exception)
-                {
-                    // Keep the public response indistinguishable for known/unknown accounts.
-                    _logger.LogError(exception, "Password reset email delivery failed.");
-                }
+                if (!_emailDeliveryQueue.TryQueuePasswordReset(user.Email, link, plainToken))
+                    _logger.LogError("Password reset email queue is full; delivery was not queued.");
             }
+
+            // SMTP latency must not expose account existence. Keep both response paths
+            // above the same minimum while delivery proceeds outside this request.
+            await WaitForRecoveryResponseFloorAsync(startedAt);
 
             return new ForgotPasswordResponseDto
             {
                 DebugToken = returnTokenInResponse ? raw : null,
                 ExpiresAt = null
             };
+        }
+
+        private static async Task WaitForRecoveryResponseFloorAsync(long startedAt)
+        {
+            var floor = TimeSpan.FromMilliseconds(250);
+            var elapsed = Stopwatch.GetElapsedTime(startedAt);
+            if (elapsed < floor)
+                await Task.Delay(floor - elapsed);
         }
 
         public async Task ResetPasswordAsync(string rawToken, string newPassword)

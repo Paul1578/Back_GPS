@@ -284,3 +284,9 @@ Nota de actualización: algunos resultados históricos de registro público más
 - Carrera refresh/logout-all corregida con lock común de fila User. xUnit Release 76/76 y smoke MySQL 8 real (lock deliberado, requests simultáneos, cero refresh activo después del logout y cleanup cero) pasaron.
 - La validación JWT de `TokenVersion` ya está en `JwtBearerEvents.OnTokenValidated`; un finding del auditor que sólo examinó `JwtMiddleware` no se reprodujo y se documentó.
 - Pendiente de seguridad: ForgotPassword devuelve mismo contenido, pero la duración todavía puede diferenciar correo existente por trabajo DB/envío; implementar/desplegar mitigación antes de cerrar auditoría.
+
+## Recuperación SMTP con respuesta uniforme — lote local posterior a `bcf7bac`
+
+- Nuevo worker bounded de proceso saca SMTP del request; both paths de recuperación responden el mismo JSON con mínimo 250 ms. Unit/HTTP smoke verifican payload y piso; smoke real vio `SmtpHost no configurado`, sin envío ni éxito simulado.
+- La rama local tiene cambios aún sin publicar; revisar/commitear y volver a correr Actions.
+- Riesgo restante: la cola actual no es durable y el tiempo puede variar si DB está lenta; un outbox persistente cifrado y credenciales SMTP son necesarios para garantía productiva. No considerar seguridad de enumeración totalmente cerrada.

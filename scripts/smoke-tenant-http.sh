@@ -188,6 +188,30 @@ request GET /Roles "" "$token"; expect_status 200 "Consultar catálogo global de
 request POST /Roles '{"name":"Admin"}' "$token"; expect_status 403 "Impedir modificar catálogo global de roles desde un tenant"
 request DELETE "/Roles/E2EQA_missing" "" "$token"; expect_status 403 "Impedir eliminar roles globales desde un tenant"
 
+known_recovery_metrics="$(curl --silent --show-error --output "$work_dir/forgot-known.json" --write-out '%{http_code} %{time_total}' \
+  --header 'Content-Type: application/json' --data "$(jq -nc --arg email "$admin_email" '{email:$email}')" \
+  "$api_base/Auth/forgot-password")"
+unknown_recovery_metrics="$(curl --silent --show-error --output "$work_dir/forgot-unknown.json" --write-out '%{http_code} %{time_total}' \
+  --header 'Content-Type: application/json' --data "$(jq -nc --arg email "unknown.$(date +%s%N)@example.test" '{email:$email}')" \
+  "$api_base/Auth/forgot-password")"
+read -r known_recovery_status known_recovery_seconds <<<"$known_recovery_metrics"
+read -r unknown_recovery_status unknown_recovery_seconds <<<"$unknown_recovery_metrics"
+[[ "$known_recovery_status" == "200" && "$unknown_recovery_status" == "200" ]] || {
+  echo "Forgot-password devolvió estados diferentes/inesperados: conocido=$known_recovery_status desconocido=$unknown_recovery_status." >&2
+  exit 1
+}
+jq -S . "$work_dir/forgot-known.json" >"$work_dir/forgot-known.sorted.json"
+jq -S . "$work_dir/forgot-unknown.json" >"$work_dir/forgot-unknown.sorted.json"
+cmp -s "$work_dir/forgot-known.sorted.json" "$work_dir/forgot-unknown.sorted.json" || {
+  echo "Forgot-password expuso respuestas diferentes para correo existente e inexistente." >&2
+  exit 1
+}
+awk -v known="$known_recovery_seconds" -v unknown="$unknown_recovery_seconds" \
+  'BEGIN { if (known < 0.20 || unknown < 0.20) exit 1 }' || {
+  echo "Forgot-password no respetó la duración mínima uniforme (conocido=$known_recovery_seconds desconocido=$unknown_recovery_seconds)." >&2
+  exit 1
+}
+
 public_registration_email="fletflow.e2e.register.ci.$(date +%s%N | tail -c 9)@example.test"
 public_registration_password="$(openssl rand -hex 24)"
 request POST /Auth/register "$(jq -nc --arg username "Public registration QA" --arg email "$public_registration_email" --arg password "$public_registration_password" '{username:$username,email:$email,password:$password,roleName:"Driver"}')" ""

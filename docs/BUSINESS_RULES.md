@@ -88,3 +88,8 @@ Cambiar, restablecer o activar una contraseña incrementa `User.TokenVersion`, r
 - Cerrar todas las sesiones invalida refresh tokens y access JWT existentes mediante `TokenVersion`; el usuario puede volver a iniciar sesión después.
 - Recuperación de contraseña mantiene el mismo mensaje público para cuentas existentes e inexistentes y no revela expiración. La disponibilidad SMTP no implica que se haya enviado un mensaje.
 - `logout-all` y la rotación de refresh bloquean la fila del usuario dentro de transacciones MySQL. Así, si ambas operaciones compiten, el logout revoca cualquier sucesor producido antes de terminar y una rotación posterior ve revocado el token anterior.
+
+## Recuperación de contraseña y entrega de correo — 2026-11-22
+
+- La API devuelve contenido idéntico para correo conocido/desconocido y un mínimo de 250 ms de respuesta; el envío SMTP se realiza fuera del request en worker bounded.
+- Error SMTP se registra como fallo y no se comunica entrega exitosa. La cola actual es local a proceso y no durable; no utilizarla como garantía de entrega en producción hasta añadir outbox persistente protegido.

@@ -379,3 +379,11 @@ Errores de migración, herramientas, QA y soluciones están en `docs/ERROR_LOG.m
 - Smoke tenant/http reforzado bloquea fila User y lanza refresh + logout-all al mismo tiempo; quedó exit 0 con cero refresh activos, sucesor rechazado si lo hubo y cleanup cero.
 - xUnit Release después de cambio: 76/76; smoke de concurrencia de rutas también exit 0. Front lint/build pasaron y E2E de gestión recupera vehículo seleccionable; su última corrida enfocada pasó 1/1.
 - Pendiente antes de completar seguridad: timing de enumeración en ForgotPassword (mismo body, trabajo/respuesta temporal aún distintos); además sigue abierta decisión sobre promoción a Admin delegado. SMTP externo requiere credenciales vigentes; app nativa sigue pospuesta.
+
+## Próxima iteración — worker de correo y timing de recuperación — 2026-11-22
+
+- Backend último commit remoto `bcf7bac`; Actions `45023615413` terminó `success`. Front último commit de producto `42b1b4b`, Actions `45023625523` terminó `success`; commit documental siguiente `bb028a9` publicado.
+- Cambios backend locales sin publicar: `EmailDeliveryQueue` bounded con background worker, SMTP ya no bloquea ForgotPassword, respuesta JSON igual y mínimo 250 ms en cuenta conocida/desconocida; smoke HTTP compara códigos/payload y exige >=200 ms.
+- Validación local posterior: Release xUnit 76/76, Release build 0 warnings/errors, smoke API/MySQL 8 exit 0; el worker registró SMTP sin configurar, y no se afirmó envío. Repetir Actions con SHA nuevo antes de cerrar.
+- Riesgo abierto: cola en memoria (hasta 256) no es durable y piso no garantiza timings idénticos bajo saturación. Añadir outbox durable protegido antes de garantía productiva. Credenciales SMTP siguen externas.
+- Otros pendientes: decisión del usuario sobre promoción de Admin por cuentas delegadas, cobertura CRUD/responsive restante, y no cerrar misión.

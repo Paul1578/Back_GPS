@@ -4,6 +4,7 @@ using fletflow.Domain.Auth.Repositories;
 using fletflow.Domain.Fleet.Repositories;
 using fletflow.Infrastructure.Persistence.Contracts;
 using fletflow.Infrastructure.Services;
+using System.Diagnostics;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 
@@ -16,7 +17,7 @@ public sealed class AuthServiceSecurityTests
     {
         var user = new User { Email = "member@example.test", TokenVersion = 4 };
         var unitOfWork = new RecordingUnitOfWork(user);
-        var service = CreateService(unitOfWork, new NoopEmailSender());
+        var service = CreateService(unitOfWork, new RecordingEmailQueue());
 
         await service.LogoutAllAsync(user.Id);
 
@@ -27,14 +28,19 @@ public sealed class AuthServiceSecurityTests
     }
 
     [Fact]
-    public async Task ForgotPassword_HidesAccountExistenceEvenWhenEmailDeliveryFails()
+    public async Task ForgotPassword_HidesAccountExistenceAndQueuesDeliveryOutOfBand()
     {
         var user = new User { Email = "known@example.test" };
         var unitOfWork = new RecordingUnitOfWork(user);
-        var service = CreateService(unitOfWork, new FailingEmailSender());
+        var emailQueue = new RecordingEmailQueue();
+        var service = CreateService(unitOfWork, emailQueue);
 
+        var knownStarted = Stopwatch.GetTimestamp();
         var known = await service.ForgotPasswordAsync("known@example.test");
+        var knownElapsed = Stopwatch.GetElapsedTime(knownStarted);
+        var unknownStarted = Stopwatch.GetTimestamp();
         var unknown = await service.ForgotPasswordAsync("unknown@example.test");
+        var unknownElapsed = Stopwatch.GetElapsedTime(unknownStarted);
 
         Assert.Equal(known.Message, unknown.Message);
         Assert.Null(known.ExpiresAt);
@@ -43,12 +49,15 @@ public sealed class AuthServiceSecurityTests
         Assert.Null(unknown.DebugToken);
         Assert.Single(unitOfWork.PasswordResetTokens.Added);
         Assert.Equal(1, unitOfWork.CommitCount);
+        Assert.Equal(1, emailQueue.QueuedCount);
+        Assert.True(knownElapsed >= TimeSpan.FromMilliseconds(200));
+        Assert.True(unknownElapsed >= TimeSpan.FromMilliseconds(200));
     }
 
-    private static AuthService CreateService(IUnitOfWork unitOfWork, IEmailSender emailSender) => new(
+    private static AuthService CreateService(IUnitOfWork unitOfWork, IEmailDeliveryQueue emailDeliveryQueue) => new(
         unitOfWork,
         null!,
-        emailSender,
+        emailDeliveryQueue,
         new PasswordResetTokenFactory(),
         Options.Create(new EmailSettings { ResetPasswordUrl = "https://example.test/reset" }),
         NullLogger<AuthService>.Instance);
@@ -115,15 +124,13 @@ public sealed class AuthServiceSecurityTests
         }
     }
 
-    private class NoopEmailSender : IEmailSender
+    private sealed class RecordingEmailQueue : IEmailDeliveryQueue
     {
-        public virtual Task SendPasswordResetEmailAsync(string toEmail, string link, string plainToken, CancellationToken cancellationToken = default) => Task.CompletedTask;
-        public Task SendUserInvitationEmailAsync(string toEmail, string activationLink, CancellationToken cancellationToken = default) => Task.CompletedTask;
-    }
-
-    private sealed class FailingEmailSender : NoopEmailSender
-    {
-        public override Task SendPasswordResetEmailAsync(string toEmail, string link, string plainToken, CancellationToken cancellationToken = default) =>
-            Task.FromException(new InvalidOperationException("SMTP unavailable in test"));
+        public int QueuedCount { get; private set; }
+        public bool TryQueuePasswordReset(string email, string resetLink, string plainToken)
+        {
+            QueuedCount++;
+            return false; // Queue unavailability must not change the public response.
+        }
     }
 }

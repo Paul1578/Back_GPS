@@ -112,3 +112,10 @@ El smoke anónimo solicitó rol Admin en el registro; la fila persistida conserv
 ### Limitación de enumeración por tiempo en recuperación
 
 - Respuestas JSON y expiración son iguales para correo existente/no existente, y la excepción SMTP no se expone. Aun así, una cuenta existente ejecuta escritura y flujo SMTP mientras una desconocida no lo hace; existe diferencia temporal potencial. Requiere desacoplar el envío y reforzar respuesta uniforme; sigue pendiente y no se considera cerrado.
+
+### Mitigación de timing en recuperación — 2026-11-22
+
+- SMTP dejó de ejecutarse dentro del request. Una cola bounded de proceso (`EmailDeliveryQueue`, capacidad 256) entrega en background y registra fallos sin filtrar existencia/entrega.
+- Tanto correo existente como desconocido esperan un mínimo de 250 ms; el smoke HTTP compara respuestas JSON/códigos y exige al menos 200 ms para ambos casos.
+- MySQL 8 + API reales: ambas respuestas fueron HTTP 200 idénticas; el worker registró `SmtpHost no configurado` y no indicó éxito de envío. No se envió correo.
+- Límite residual: la cola es volátil; un reinicio o cola llena puede descartar solicitudes. El mensaje no confirma envío. Para uso productivo hace falta outbox durable y protección/encriptación del contenido sensible. La duración mínima reduce el canal temporal pero no garantiza igualdad bajo DB lenta/sobrecarga; tratar timing como mitigado parcialmente, no imposible.

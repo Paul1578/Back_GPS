@@ -1,5 +1,6 @@
 using fletflow.Application.Fleet.Dtos;
 using fletflow.Application.Fleet.Mappings;
+using fletflow.Domain.Fleet.Exceptions;
 using fletflow.Domain.Fleet.Repositories;
 using fletflow.Infrastructure.Persistence.Contracts;
 
@@ -36,7 +37,7 @@ namespace fletflow.Application.Fleet.Commands
             {
                 var existing = await _vehicles.GetByPlateAsync(plate);
                 if (existing is not null && existing.Id != vehicle.Id)
-                    throw new InvalidOperationException($"Another vehicle with plate {plate} already exists.");
+                    throw new BusinessConflictException($"Ya existe otro vehículo con la placa {plate} en esta empresa.");
             }
 
             // Actualizamos la entidad de dominio

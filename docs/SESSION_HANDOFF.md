@@ -199,3 +199,11 @@ Errores de migración, herramientas, QA y soluciones están en `docs/ERROR_LOG.m
 - Smoke pasó contra API temporal en 5058 y MySQL 8 efímero en 13306, DB `fletflow_ci_lifecycle_*`; 201 alta, 200 lectura/edición/parada/evidencia/GPS, 204 inicio/cierre/baja. Cleanup comprobó cero rutas, posiciones y vehículos QA.
 - Primer intento falló sólo en el assert de cleanup porque warning MySQL contaminaba stdout; se separó stderr y repetición pasó. Release build 0 warnings; `bash -n` y `git diff --check` limpios. xUnit no se ejecutó en esta iteración.
 - `d58c5ab` pasó Actions `44990525889`: build, xUnit 57/57 y smoke tenant/Logistics/concurrencia; el log confirmó operación Logistics y cleanup `0:0:0`. El fallback de cleanup por nombre QA quedó en `da53081`; Actions `44991032520` confirmó build, xUnit 57/57, smoke y cleanup `0:0:0`. El fallback especial cuando falta el ID no se indujo directamente; sí se probó el cleanup normal con el fallback instalado.
+
+## Cambio en curso — placa duplicada y feedback UI — 2026-11-22
+
+- Rama `chore/stabilize-fleet-platform`: CreateVehicle y UpdateVehicle responden conflicto de negocio 409 en lugar de InvalidOperation/400 para placas duplicadas; mensajes en español.
+- Añadidas dos pruebas unitarias que confirman rechazo sin agregar/actualizar ni hacer commit. Ejecutado Release con SDK `/home/leonardo/.dotnet`: **59/59**.
+- El host `/usr/bin/dotnet` falló inicialmente porque `/usr/lib64/dotnet/host/fxr` está vacío; se repitió correctamente con SDK 8.0.428 desde `/home/leonardo/.dotnet`.
+- Frontend añadió E2E móvil que intenta crear una segunda unidad con la misma placa, espera HTTP 409, verifica el mensaje y que quede una sola tarjeta. Lint/build/discovery 16 pasaron; CI integrado sigue pendiente.
+- Siguiente: revisar diff, publicar backend y verificar Actions; publicar luego el E2E frontend y comprobar ambos branches integrados con API/MySQL.

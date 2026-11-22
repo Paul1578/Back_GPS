@@ -1,6 +1,8 @@
 # Estado del proyecto
 
-Fecha de corte: 2026-11-21.
+Fecha de corte: 2026-11-22.
+
+Actualización de estabilidad: duplicados de placa en creación/edición ahora se reportan como conflicto de negocio HTTP 409 con mensaje en español. `dotnet test` Release pasó 59/59 con el SDK local 8.0.428; CI integrado pendiente.
 
 ## Estado operativo
 

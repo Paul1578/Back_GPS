@@ -252,3 +252,9 @@ La invitación envía sólo el enlace de activación; el usuario fija su contras
 - Actions `44990525889` para `d58c5ab` pasó el smoke ampliado y xUnit **57/57**; el log confirma operación Logistics y cleanup `0:0:0`.
 - Tras la revisión se añadió fallback de cleanup por nombre QA. La repetición local posterior, con Release build 0 warnings y MySQL 8 desechable, pasó; el código actualizado aún necesita su propia ejecución de Actions.
 - CI del código actualizado: Actions `44991032520` para `da53081` success; Release build, xUnit 57/57, smoke tenant/roles/Logistics y concurrencia HTTP/MySQL. El smoke de Logistics volvió a confirmar `0:0:0`; el caso excepcional de ID ausente no se indujo.
+
+## Conflicto de placa duplicada — 2026-11-22
+
+- `DOTNET_ROOT=/home/leonardo/.dotnet PATH=/home/leonardo/.dotnet:$PATH /home/leonardo/.dotnet/dotnet test BackEnd_Gps.sln --configuration Release --no-restore`: **59/59**, 0 fallidas/omitidas.
+- Dos pruebas unitarias verifican que crear o editar con placa ya utilizada devuelve `BusinessConflictException` y no persiste cambios.
+- Frontend lint/build/discovery pasó con 16 E2E; la ejecución navegador/API/MySQL del nuevo rechazo visual queda pendiente del Actions cross-branch.

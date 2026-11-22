@@ -1,6 +1,7 @@
 using fletflow.Application.Fleet.Dtos;
 using fletflow.Application.Fleet.Mappings;
 using fletflow.Domain.Fleet.Entities;
+using fletflow.Domain.Fleet.Exceptions;
 using fletflow.Domain.Fleet.Repositories;
 using fletflow.Infrastructure.Persistence.Contracts;
 
@@ -32,7 +33,7 @@ namespace fletflow.Application.Fleet.Commands
             // Reglas: placa única
             var existing = await _vehicles.GetByPlateAsync(plate);
             if (existing is not null)
-                throw new InvalidOperationException($"A vehicle with plate {plate} already exists.");
+                throw new BusinessConflictException($"Ya existe un vehículo con la placa {plate} en esta empresa.");
 
             var vehicle = Vehicle.Create(plate, brand, model, year, description);
 

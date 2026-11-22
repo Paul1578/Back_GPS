@@ -484,3 +484,20 @@ Cada cambio de API debe incluir validación de compilación, migraciones si apli
 - Corrección: guardar el nombre QA antes del POST y usarlo como alternativa para borrar ruta/posiciones y para la consulta final cuando no se extrajo el ID. Se aplica a Manager y Logistics.
 - Un primer intento de QA delegado no inició pruebas porque `/usr/bin/dotnet` no tenía un host SDK (`host/fxr` vacío); no creó base ni contenedor y no tocó MySQL. Repetición con `DOTNET_ROOT=/home/leonardo/.dotnet` compiló y ejecutó el smoke contra MySQL 8 descartable; el ciclo pasó y cleanup confirmó `0:0:0`. El camino de fallback por nombre estático no se indujo por separado.
 - Actions `44991032520` para `da53081` confirmó build, xUnit 57/57 y smoke HTTP/MySQL completo; `Cleanup verificado: 0 rutas, 0 posiciones GPS y 0 vehículos`. El fallback específico por nombre sigue sin inducción directa, pero la limpieza normal pasó con el nuevo código.
+
+## 2026-11-22 — Placa duplicada se devolvía como error genérico — CORREGIDO
+
+- La inspección del CRUD encontró que CreateVehicle/UpdateVehicle detectaban duplicados pero lanzaban `InvalidOperationException`; el middleware respondía 400 y el mensaje técnico en inglés llegaba a la UI.
+- Se cambiaron a `BusinessConflictException`, que el middleware mapea a HTTP 409, y mensajes claros en español. Pruebas unitarias confirman que alta/edición no hacen commit ni mutan la entidad si la placa pertenece a otro vehículo.
+- Validación: Release local con .NET 8.0.428, 59/59. Actions integrada aún pendiente.
+
+## 2026-11-22 — Rutas de inspección cruzada equivocadas — CORREGIDO
+
+- Búsquedas iniciales usaron rutas relativas inexistentes para el backend y una asumió `AppDbContext.cs`, que no existe. `rg` informó archivos inexistentes y no inspeccionó esos objetivos ni modificó datos.
+- Corrección: usar `/home/leonardo/Back_GPS` como raíz, listar con `rg --files`, y abrir el contexto real `fletflow/Infrastructure/Persistence/Context/FleetFlowDbContext.cs`. Inspección posterior confirmó filtros por `OwnerUserId` y el índice compuesto tenant+placa.
+- Prevención: comprobar `pwd`/archivos antes de consultas cruzadas y verificar el nombre real desde `rg --files`.
+
+## 2026-11-22 — Host dotnet predeterminado no tiene SDK — SUPERADO
+
+- `/usr/bin/dotnet test` terminó antes de compilar porque `/usr/lib64/dotnet/host/fxr` no tiene runtime.
+- Solución: usar `DOTNET_ROOT=/home/leonardo/.dotnet` y `/home/leonardo/.dotnet/dotnet` (SDK 8.0.428). La suite Release terminó 59/59; ningún test fue omitido.

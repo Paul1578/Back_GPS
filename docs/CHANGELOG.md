@@ -147,3 +147,8 @@
 - MySQL 8/DB descartable confirmó persistencia y cleanup en cero rutas, posiciones y vehículos. El primer conteo mezcló un warning MySQL; se separó stderr y la repetición pasó.
 - Actions `44990525889` para `d58c5ab`: build, xUnit 57/57 y smoke completo success. Después se añadió fallback de cleanup por nombre, probado localmente; queda pendiente Actions para ese ajuste.
 - Actions `44991032520` para `da53081` pasó build, xUnit 57/57 y smoke HTTP/MySQL; cleanup `0:0:0`. El fallback excepcional de ID ausente no se indujo.
+
+## 2026-11-22 — Placa duplicada produce conflicto claro
+
+- Crear y editar un vehículo con placa ya usada ahora lanzan conflicto de negocio HTTP 409 con un mensaje en español; antes se convertía en 400 con detalle técnico en inglés.
+- Se añadieron pruebas unitarias para ambos comandos; suite Release local 59/59. CI integrado pendiente.

@@ -568,8 +568,9 @@ La invitación envía sólo el enlace de activación; el usuario fija su contras
 - MySQL confirma estado `Cancelled`, vehículo `Available`, una posición persistida y asignación conservada. El filtro HTTP manipulado devuelve únicamente la ruta propia; la ruta de otro Driver sigue inaccesible.
 - Primera corrida falló en una aserción obsoleta que suponía lista vacía al existir una ruta propia; se corrigió para comprobar exclusión por `driverId`. Repetición completa API + MySQL 8 efímero exit 0 y cleanup. `bash -n`/diff-check correctos; Action posterior pendiente.
 
-## Límites de Manager y Logistics — smoke local aprobado; Action pendiente
+## Límites de Manager y Logistics — validado en Action
 
 - Manager recibe 403 en `/Users/my-team`, `/Users`, `/Roles`, creación de usuario y cambio de estado; SQL verifica que no aparece el email solicitado y el usuario objetivo conserva estado activo.
 - Logistics recibe 403 al editar, cambiar estado, reactivar y dar de baja Vehicle, y al editar/desactivar Driver o asignar/desasignar vehículo. Snapshot SQL antes/después exige que ambos registros permanezcan idénticos.
-- La primera ejecución reveló una aserción demasiado amplia que incluía una ruta previamente modificada por Manager; quedó acotada al Vehicle/Driver bajo prueba (ver `ERROR_LOG.md`). El smoke completo API + MySQL 8 descartables pasó y limpió sus fixtures; Action posterior al push pendiente.
+- La primera ejecución reveló una aserción demasiado amplia que incluía una ruta previamente modificada por Manager; quedó acotada al Vehicle/Driver bajo prueba (ver `ERROR_LOG.md`). Smoke local completo API + MySQL 8 descartables pasó y limpió sus fixtures.
+- Action `45080063668` para `fa16d05`: build Release, xUnit **111/111**, smoke HTTP/MySQL tenant, concurrencia y cleanup, todo success.

@@ -61,7 +61,7 @@
 ## 2026-11-22 — Matriz HTTP por rol ampliada
 
 - El smoke agrega la frontera Manager→Users/Roles (403, sin alta ni cambio de estado) y Logistics→Vehicles/Drivers (403 para modificación/reactivación/baja y asignaciones, con integridad SQL antes/después).
-- Se documentó y corrigió una aserción de smoke que comparaba una ruta legítimamente editada antes de comprobar la ausencia de mutaciones en Vehicle/Driver. Ejecución completa API + MySQL 8 efímero y cleanup pasaron localmente; CI pendiente.
+- Se documentó y corrigió una aserción de smoke que comparaba una ruta legítimamente editada antes de comprobar la ausencia de mutaciones en Vehicle/Driver. Ejecución completa API + MySQL 8 efímero y cleanup pasaron localmente; Action `45080063668` también pasó (build, xUnit 111/111, HTTP/MySQL y concurrencia).
 
 ## 2026-11-22 — Respetar asignación exclusiva Vehicle/Driver en rutas — VALIDADO
 

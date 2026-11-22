@@ -7,7 +7,7 @@
 - Front implementa diálogo Editar miembro y expone updateUserProfile; E2E verifica persistencia en GET /Users/my-team y edición Driver->User y User->Driver.
 - Dos corridas E2E iniciales dieron 16/18 y 17/18 por selectores/mocks frágiles, documentadas en ERROR_LOG. Tras corregirlas, la suite final pasó 18/18 en Chrome sobre API/MySQL real; run-e2e-local terminó código 0 y el esquema descartable se eliminó.
 - Errores y soluciones están al final de docs/ERROR_LOG.md.
-- Al cerrar E2E, actualizar resultados, commit/push sólo a chore/stabilize-fleet-platform y ejecutar backend CI. Luego Front refactor/route-builder y CI cruzada con commit backend. Misión general sigue abierta.
+- Commit/push backend e54d3c8, Actions 45005400763 success en build, xUnit, tenant HTTP/MySQL y concurrencia. Front commit 948b2e3 y Actions integrada 45005400590 en ejecución al último corte. Misión general sigue abierta.
 
 ## GPS y autorización Driver — backend corregido — 2026-11-22
 

@@ -609,3 +609,9 @@ Cada cambio de API debe incluir validación de compilación, migraciones si apli
 - Primera Playwright terminó 16/18: selector Driver ambiguo entre dos secciones y mock de error de Historial liberado antes del render por fetch de foco. Se agregó selector data-testid, se acotó el texto y se conserva el 503 hasta que el test ve el alert. El spec de carga pasa 2/2; la suite completa final pasó 18/18.
 - La segunda suite dio 17/18: tras recargar, otro tramo del E2E seguía buscando el username como heading, aunque el diseño muestra el nombre legal. Se reemplazó el selector por testid estable del perfil.
 - Prevención: leer configuración consumida realmente por Program.cs, ejecutar xUnit desde la solución, fijar puerto MySQL en runners y verificar selectores y mocks frente a fetches secundarios.
+
+## 2026-11-22 — Esquema de solicitud de aclaración — CORREGIDO
+
+- La primera llamada a request_user_input_async envió el campo question, pero el contrato de esta herramienta sólo acepta title y options; la llamada fue rechazada sin llegar al usuario.
+- Se reintentó con title y opciones, y la pregunta pendiente es si un Admin delegado puede asignar rol Admin.
+- Prevención: validar el esquema concreto de cada interfaz de preguntas antes de invocarla.

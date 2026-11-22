@@ -386,6 +386,12 @@ root_user_id="$(mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" -
 root_username_before="$(mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" "$db_name" \
   --batch --skip-column-names -e "SELECT Username FROM Users WHERE Id='$root_user_id';")"
 
+request PUT "/Users/$restricted_user_id/profile" '{"username":"","firstName":"Nombre válido","lastName":"Apellido válido"}' "$token"
+expect_status 400 "Rechazar username vacío al editar perfil"
+long_username="$(printf '%101s' '' | tr ' ' 'u')"
+request PUT "/Users/$restricted_user_id/profile" "$(jq -nc --arg username "$long_username" '{username:$username,firstName:"Nombre válido",lastName:"Apellido válido"}')" "$token"
+expect_status 400 "Rechazar campos de perfil mayores de 100 caracteres"
+
 request PUT "/Users/$restricted_user_id/status?isActive=false" "" "$other_token"
 expect_status 404 "Tenant B no puede desactivar un miembro de tenant A"
 request PUT "/Users/$restricted_user_id/role" '{"roleName":"Admin"}' "$other_token"

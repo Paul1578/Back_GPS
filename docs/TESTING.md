@@ -299,3 +299,4 @@ La invitación envía sólo el enlace de activación; el usuario fija su contras
 - La migración AddUserProfileNames se aplicó desde esquema vacío y ejecutó el SQL de backfill.
 - El runner run-e2e-local.sh pasó Playwright autenticado 18/18 en Chrome contra API/MySQL reales; el contenedor/esquema fueron descartados al salir.
 - Los smoke scripts respetan MYSQL_PORT; valor predeterminado 3306.
+- Actions backend 45005400763 pasó build, xUnit, smoke HTTP/MySQL de tenant y smoke de concurrencia.

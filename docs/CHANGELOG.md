@@ -4,7 +4,7 @@
 - PUT /api/Users/{id}/profile permite al Admin del tenant editar nombre, apellido y username de un miembro; no acepta cambio de correo ni edición de la cuenta raíz. Nombres se sincronizan con el Driver enlazado en la misma unidad de trabajo.
 - Las ediciones de Driver sincronizan nombres a User, con comprobación explícita de OwnerUserId.
 - Build Release 0 warnings/0 errores, xUnit 62/62. Smoke HTTP/MySQL de tenant y concurrencia pasan en esquema MySQL 8 descartable.
-- Playwright final pasó 18/18 en Chrome contra frontend, API y MySQL efímero; runner devolvió código 0 y el esquema temporal se destruyó.
+- Playwright final pasó 18/18 en Chrome contra frontend, API y MySQL efímero; runner devolvió código 0 y el esquema temporal se destruyó. Actions 45005400763 pasó build, xUnit, smoke HTTP/MySQL tenant y smoke concurrente en el commit e54d3c8.
 
 ## 2026-11-22 — E2E cross-repo de ownership Driver
 
@@ -201,3 +201,7 @@
 
 - El comando de registro permite diferir el guardado para persistir Users, Drivers y PasswordResetTokens juntos; una colisión concurrente de documento se devuelve como 409 y no deja cuenta huérfana.
 - Smoke HTTP/MySQL simultáneo y conteos de consistencia añadidos; Actions pendiente.
+
+## 2026-11-22 — Restringir el perfil a roles autorizados y validar campos
+
+- Backend smoke ahora prueba username vacío, valores mayores de 100 caracteres y conservación de datos ante 400; validación HTTP/MySQL pendiente para este incremento.

@@ -443,3 +443,4 @@ La invitación envía sólo el enlace de activación; el usuario fija su contras
 
 - `DataProtectionKeyRingTests.CertificateProtectedKeyRing_IsEncryptedAndSurvivesProviderRestart` crea certificado temporal, valida `<encryptedSecret` en el XML persistido y comprueba que un provider nuevo descifre el payload tras reinicio. Directorio único eliminado en `finally`.
 - Prueba enfocada 1/1; suite Release **86/86**; build Release 0 warnings/0 errors; Actions de este test aún pendiente.
+- Integración cruzada Front `45038687601`: checkout Backend `b625c28`; xUnit 86/86, E2E API/MySQL Front 23/23, responsive/audit/lint/build y cleanup success.

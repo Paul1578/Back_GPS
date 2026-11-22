@@ -467,3 +467,4 @@ Errores de migración, herramientas, QA y soluciones están en `docs/ERROR_LOG.m
 
 - Nueva prueba `BackEnd_Gps.Tests/DataProtectionKeyRingTests.cs`: certificado autofirmado efímero, persistencia cifrada `<encryptedSecret`, restart provider y recuperación del payload. Limpia directorio aislado en `finally`.
 - Local después del test: Release 86/86, build 0 warnings/0 errors y diff-check limpio. Falta Actions del commit; el último CI validó 85 tests y no incluía esta prueba.
+- Front Actions `45038687601` validó Front `f972e19` con checkout Backend `b625c28`: Release/xUnit 86/86, responsive 1/1, E2E API/MySQL 23/23, audit/lint/build y cleanup. Incluye el E2E de error/retry Vehicles y test backend de key ring cifrado.

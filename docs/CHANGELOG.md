@@ -326,3 +326,4 @@
 
 - Se prueba con certificado temporal que el key ring queda cifrado y sigue usable después de reiniciar el provider.
 - Release xUnit **86/86**; build 0 warnings/0 errores; Actions pendiente.
+- Front Actions `45038687601` pasó contra Backend `b625c28`: xUnit 86/86, E2E 23/23 y cleanup.

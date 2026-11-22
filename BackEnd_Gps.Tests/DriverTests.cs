@@ -157,6 +157,7 @@ public class DriverTests
         public Task AddAsync(Driver value) { AddCount++; return Task.CompletedTask; }
         public Task UpdateAsync(Driver value) { UpdateCount++; return Task.CompletedTask; }
         public Task<List<Driver>> GetAllAsync(bool? onlyActive = null) => Task.FromResult(_drivers);
+        public Task<List<Driver>> GetAssignableAsync() => Task.FromResult(_drivers.Where(driver => driver.IsActive).ToList());
     }
 
     private sealed class FakeRouteRepository(Guid driverId, RouteStatus status) : IRouteRepository

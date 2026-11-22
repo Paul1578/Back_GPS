@@ -1,4 +1,5 @@
 using fletflow.Application.Fleet.Dtos;
+using fletflow.Domain.Fleet.Entities;
 using fletflow.Domain.Fleet.Repositories;
 
 namespace fletflow.Application.Fleet.Queries;
@@ -16,8 +17,10 @@ public sealed class GetRouteAssignmentOptionsQuery
 
     public async Task<RouteAssignmentOptionsDto> Execute()
     {
-        var vehicles = await _vehicles.GetAllAsync(onlyActive: true);
-        var drivers = await _drivers.GetAllAsync(onlyActive: true);
+        var vehicles = (await _vehicles.GetAllAsync(onlyActive: true))
+            .Where(vehicle => vehicle.Status == VehicleStatus.Available)
+            .ToList();
+        var drivers = await _drivers.GetAssignableAsync();
 
         return new RouteAssignmentOptionsDto
         {

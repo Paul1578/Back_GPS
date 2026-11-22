@@ -239,3 +239,8 @@ Nota de actualización: algunos resultados históricos de registro público más
 - Nuevo `GET /Routes/assignment-options`, autorizado para Admin/Manager/Logistics, retorna vehículos y conductores activos con campos mínimos. Filtros EF Core limitan la consulta al propietario autenticado; DTO no incluye documento ni teléfono del Driver.
 - `scripts/smoke-tenant-http.sh` comprueba Logistics 200 con recursos propios, ausencia de PII, User 403 y tenant B sin recursos de tenant A.
 - Local: Release build 0 warnings/0 errors; xUnit 64/64; shell syntax/diff-check correctos. Actions `45011796536` pasó build, xUnit, smoke tenant/Logistics API/MySQL y concurrencia; cleanup correcto.
+# Siguiente hardening — opciones realmente asignables — 2026-11-22
+
+- Auditoría encontró que `GET /Routes/assignment-options` podía ofrecer vehículo `OnRoute`/Maintenance y Driver ligado a usuario inactivo. El servicio de creación rechaza ambos casos.
+- Implementación local: vehículos sólo `Available` y activos; Drivers activos sin vínculo o ligados a User activo del tenant. Query de Driver usa filtro SQL sin consultas N+1.
+- Pruebas locales: Release build 0 warnings/0 errors; xUnit 65/65; sintaxis smoke/diff-check correctos. Smoke HTTP/MySQL Actions pendiente para verificar filtros y cleanup.

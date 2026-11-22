@@ -73,6 +73,21 @@ namespace fletflow.Infrastructure.Persistence.Repositories
             var entities = await query.ToListAsync();
             return entities.Select(FleetMapper.ToDomain).ToList();
         }
+
+        public async Task<List<Driver>> GetAssignableAsync()
+        {
+            var ownerUserId = _context.CurrentOwnerUserId;
+            var entities = await _context.Drivers
+                .AsNoTracking()
+                .Where(driver => driver.IsActive &&
+                    (!driver.UserId.HasValue || _context.Users.AsNoTracking().Any(user =>
+                        user.Id == driver.UserId.Value &&
+                        user.IsActive &&
+                        (user.OwnerUserId == ownerUserId || user.Id == ownerUserId))))
+                .ToListAsync();
+
+            return entities.Select(FleetMapper.ToDomain).ToList();
+        }
         
     }
 }

@@ -637,3 +637,16 @@ Cada cambio de API debe incluir validación de compilación, migraciones si apli
 - Verificación: local Release build 0 warnings/0 errors, xUnit 64/64, `bash -n` y diff-check; Actions `45011796536` pasó build, xUnit, smoke HTTP/MySQL de tenant/Logistics y concurrencia, cleanup correcto.
 - Error de comando: la primera invocación apuntó a `fletflow.sln`, que no existe; el nombre correcto es `BackEnd_Gps.sln`. El sistema `/usr/bin/dotnet` tampoco tiene runtime utilizable; se repitió con `/home/leonardo/.dotnet/dotnet` SDK 8.0.428.
 - Prevención: consultar `rg --files -g '*.sln'` antes de invocar build y usar el SDK local conocido cuando el host de sistema no tenga runtime.
+# 2026-11-22 — Opciones de ruta incluían recursos no asignables — CORREGIDO EN CÓDIGO, CI PENDIENTE
+
+- Hallazgo auditoría backend: el endpoint nuevo sólo filtraba `IsActive`; exponía vehículos en mantenimiento/en ruta y Drivers activos con cuenta de usuario inactiva, aunque CreateRoute rechaza esas asignaciones.
+- Solución: opciones incluyen sólo vehículos activos `Available`; `IDriverRepository.GetAssignableAsync` mantiene Drivers activos sin usuario y sólo incluye Drivers vinculados a una cuenta activa del mismo tenant. La consulta usa query filters OwnerUserId y un `Any` acotado, evitando N+1.
+- Cobertura añadida: xUnit de proyección excluye estados de vehículo no disponibles; smoke HTTP/MySQL crea un Driver con cuenta luego inactiva y verifica que se excluya, prueba vehículo en mantenimiento y restauración a disponible, además de inclusión del Driver sin usuario.
+- Verificación local: Release build 0 warnings/0 errors, xUnit 65/65, `bash -n` y diff-check. MySQL/API smoke y Actions pendientes.
+- Prevención: los selectores de asignación deben representar restricciones de comandos de creación, y las pruebas deben contrastar elegibilidad del read model con persistencia real.
+
+## 2026-11-22 — Ruta de comando de vehículo asumida incorrectamente — CORREGIDO
+
+- Una inspección buscó `fletflow/Aplication/Fleet/Commands/DeleteVehicleCommand.cs`, pero el comando está bajo `Commands/CreateVehicle/`. `sed` falló sin modificar archivos.
+- Solución: localizar el archivo con `rg --files` y leer `CreateVehicle/DeleteVehicleCommand.cs`; se confirmó que la baja permite vehículos en mantenimiento si no tienen ruta activa ni Driver asignado.
+- Prevención: localizar la ruta real de clases antes de leerlas mediante un nombre de archivo supuesto.

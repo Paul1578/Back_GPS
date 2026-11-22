@@ -10,5 +10,6 @@ namespace fletflow.Domain.Fleet.Repositories
         Task AddAsync(Driver driver);
         Task UpdateAsync(Driver driver);
         Task<List<Driver>> GetAllAsync(bool? onlyActive = null);
+        Task<List<Driver>> GetAssignableAsync();
     }
 }

@@ -32,6 +32,7 @@ public class AssignDriverToVehicleTests
         public Task AddAsync(Driver value) => Task.CompletedTask;
         public Task UpdateAsync(Driver value) => Task.CompletedTask;
         public Task<List<Driver>> GetAllAsync(bool? onlyActive = null) => Task.FromResult(new List<Driver> { driver });
+        public Task<List<Driver>> GetAssignableAsync() => Task.FromResult(new List<Driver> { driver });
     }
 
     private sealed class FakeVehicles(Vehicle vehicle) : IVehicleRepository

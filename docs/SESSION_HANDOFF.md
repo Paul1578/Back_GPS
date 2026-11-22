@@ -312,3 +312,10 @@ Errores de migración, herramientas, QA y soluciones están en `docs/ERROR_LOG.m
 - Verificación local con `/home/leonardo/.dotnet/dotnet` y `BackEnd_Gps.sln`: Release build 0 warnings/0 errors, xUnit 64/64, `bash -n`, diff-check. Commit `6def8fa` publicado; Actions `45011796536` success: smoke tenant/Logistics y concurrencia, cleanup correcto.
 - Front `d41a07b` ya está publicado y corre Actions `45011806008` con Playwright completo usando backend `6def8fa`; verificarlo y documentar el resultado.
 - No marcar auditoría global como completa: CRUD/roles/responsive siguen progresivos; política Admin delegado pendiente; SMTP externo; app nativa aplazada.
+# Handoff — elegibilidad real de opciones de asignación — 2026-11-22
+
+- `chore/stabilize-fleet-platform`, HEAD base `5dc2426`; cambios locales pendientes: `IDriverRepository.GetAssignableAsync`, query asignación filtra Vehicle Available, Driver query con tenant+User activo; xUnit nuevo y smoke HTTP/MySQL ampliado.
+- Hallazgo: endpoint exponía vehículos OnRoute/Maintenance y Drivers con User inactivo, aunque `CreateRouteCommand` los rechaza. La traza del agente está en contexto del coordinador; documentada en ERROR_LOG.
+- Verificado local: `/home/leonardo/.dotnet/dotnet build BackEnd_Gps.sln -c Release` 0 warnings/errors; xUnit 65/65; bash -n/diff-check correctos. Falta Actions para smoke real MySQL.
+- Asegurar que el smoke incluye y excluye IDs correctos, que restaura Vehicle status antes de crear ruta Logistics, y cleanup del nuevo Driver vinculado.
+- `refactor/route-builder` tiene en paralelo prueba Manager UI iniciada localmente (18 E2E descubiertos); no confundir esta nueva cobertura con validación integrada.

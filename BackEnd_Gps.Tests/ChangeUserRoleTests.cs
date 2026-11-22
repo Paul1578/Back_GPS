@@ -124,6 +124,7 @@ public class ChangeUserRoleTests
         public Task AddAsync(Driver value) => Task.CompletedTask;
         public Task UpdateAsync(Driver value) => Task.CompletedTask;
         public Task<List<Driver>> GetAllAsync(bool? onlyActive = null) => Task.FromResult(driver is null ? new List<Driver>() : new List<Driver> { driver });
+        public Task<List<Driver>> GetAssignableAsync() => Task.FromResult(driver is null ? new List<Driver>() : new List<Driver> { driver });
     }
 
     private sealed class RecordingRouteRepository(bool hasActiveRoute) : IRouteRepository

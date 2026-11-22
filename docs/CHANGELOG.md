@@ -236,3 +236,7 @@
 - Se agregó `GET /Routes/assignment-options` para Admin, Manager y Logistics; el DTO expone vehículos/Drivers activos y excluye datos personales innecesarios.
 - Smokes agregados para denegar User, limitar tenant y comprobar que Logistics recibe sólo opciones de su empresa.
 - Build/xUnit local: 0 warnings/0 errors y 64/64. Actions `45011796536` pasó build, xUnit y smoke HTTP/MySQL de tenant/Logistics/concurrencia con cleanup correcto.
+# 2026-11-22 — Filtrar recursos no asignables del constructor
+
+- Opciones de rutas excluyen vehículos en ruta/mantenimiento y Drivers cuya cuenta vinculada esté inactiva; Drivers activos sin cuenta siguen disponibles.
+- Added xUnit y smoke HTTP/MySQL para condiciones de elegibilidad. Local: Release 65/65, build 0 warnings/0 errors, script válido; CI pendiente.

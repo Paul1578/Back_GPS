@@ -41,6 +41,7 @@ driver_id=""
 other_tenant_email=""
 restricted_user_email=""
 deactivated_user_email=""
+inactive_driver_user_email=""
 logistics_user_email=""
 logistics_user_id=""
 public_registration_email=""
@@ -103,6 +104,9 @@ cleanup() {
     fi
     if [[ -n "$deactivated_user_email" ]]; then
       sql+=" SET @qa_user_id=(SELECT Id FROM Users WHERE Email='$deactivated_user_email'); DELETE FROM RefreshTokens WHERE UserId=@qa_user_id; DELETE FROM PasswordResetTokens WHERE UserId=@qa_user_id; DELETE FROM UserRoles WHERE UserId=@qa_user_id; DELETE FROM Users WHERE Id=@qa_user_id;"
+    fi
+    if [[ -n "$inactive_driver_user_email" ]]; then
+      sql+=" SET @qa_user_id=(SELECT Id FROM Users WHERE Email='$inactive_driver_user_email'); DELETE FROM RefreshTokens WHERE UserId=@qa_user_id; DELETE FROM PasswordResetTokens WHERE UserId=@qa_user_id; DELETE FROM UserRoles WHERE UserId=@qa_user_id; DELETE FROM Users WHERE Id=@qa_user_id;"
     fi
     if [[ -n "$logistics_user_email" ]]; then
       sql+=" SET @qa_user_id=(SELECT Id FROM Users WHERE Email='$logistics_user_email'); DELETE FROM RefreshTokens WHERE UserId=@qa_user_id; DELETE FROM PasswordResetTokens WHERE UserId=@qa_user_id; DELETE FROM UserRoles WHERE UserId=@qa_user_id; DELETE FROM Users WHERE Id=@qa_user_id;"
@@ -277,12 +281,35 @@ logistics_refresh_token="$(jq -er '.refreshToken' "$work_dir/response.json")"
 request GET /Routes "" "$logistics_token"; expect_status 200 "Listar rutas como Logistics"
 request GET /Vehicles "" "$logistics_token"; expect_status 403 "Denegar vehículos a Logistics"
 request GET /Drivers "" "$logistics_token"; expect_status 403 "Denegar conductores a Logistics"
+
+inactive_driver_user_email="fletflow.e2e.driver.inactive.$suffix@example.test"
+inactive_driver_password="$(openssl rand -hex 24)"
+inactive_driver_document="E2EQA${suffix: -9}I"
+request POST /Users "$(jq -nc --arg email "$inactive_driver_user_email" --arg password "$inactive_driver_password" --arg username "E2E inactive Driver $suffix" --arg document "$inactive_driver_document" '{username:$username,email:$email,password:$password,roleName:"Driver",firstName:"Inactive",lastName:"Linked",documentNumber:$document,phoneNumber:"0990000099"}')" "$token"
+expect_status 200 "Crear Driver vinculado para probar cuenta inactiva"
+inactive_driver_user_id="$(jq -er '.id' "$work_dir/response.json")"
+inactive_linked_driver_id="$(jq -er '.driverId' "$work_dir/response.json")"
+mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" "$db_name" \
+  -e "UPDATE Users SET IsActive=1, MustChangePassword=0 WHERE Id='$inactive_driver_user_id';" >/dev/null
+request PUT "/Users/$inactive_driver_user_id/status?isActive=false" "" "$token"
+expect_status 200 "Desactivar cuenta de Driver enlazado"
+
+request PUT "/Vehicles/$manager_vehicle_id/status" '{"status":2}' "$token"
+expect_status 204 "Poner vehículo en mantenimiento para filtrar opciones"
 request GET /Routes/assignment-options "" "$logistics_token"
 expect_status 200 "Consultar opciones mínimas de asignación como Logistics"
-jq -e --arg vehicleId "$manager_vehicle_id" --arg driverId "$manager_driver_id" \
-  '(.vehicles | any(.[]; .id == $vehicleId and .plate != "" and has("status"))) and (.drivers | any(.[]; .id == $driverId and .firstName != "" and has("userId"))) and ((.drivers | all(.[]; (has("documentNumber") or has("phoneNumber")) | not)))' \
+jq -e --arg vehicleId "$manager_vehicle_id" --arg driverId "$manager_driver_id" --arg inactiveDriverId "$inactive_linked_driver_id" \
+  '(.vehicles | all(.[]; .status == 0)) and (.vehicles | any(.[]; .id == $vehicleId) | not) and (.drivers | any(.[]; .id == $driverId and .firstName != "" and has("userId"))) and (.drivers | any(.[]; .id == $inactiveDriverId) | not) and ((.drivers | all(.[]; (has("documentNumber") or has("phoneNumber")) | not)))' \
   "$work_dir/response.json" >/dev/null \
-  || { echo "Las opciones Logistics no contienen datos operativos mínimos o exponen campos personales." >&2; cat "$work_dir/response.json" >&2; exit 1; }
+  || { echo "Las opciones incluyen recursos no asignables, omiten recursos viables o exponen campos personales." >&2; cat "$work_dir/response.json" >&2; exit 1; }
+request PUT "/Vehicles/$manager_vehicle_id/status" '{"status":0}' "$token"
+expect_status 204 "Restaurar vehículo disponible para opciones Logistics"
+request GET /Routes/assignment-options "" "$logistics_token"
+expect_status 200 "Reconsultar opciones disponibles como Logistics"
+jq -e --arg vehicleId "$manager_vehicle_id" --arg driverId "$manager_driver_id" --arg inactiveDriverId "$inactive_linked_driver_id" \
+  '(.vehicles | any(.[]; .id == $vehicleId and .status == 0)) and (.drivers | any(.[]; .id == $driverId)) and (.drivers | any(.[]; .id == $inactiveDriverId) | not)' \
+  "$work_dir/response.json" >/dev/null \
+  || { echo "No se devolvieron recursos asignables o apareció el Driver con cuenta inactiva." >&2; cat "$work_dir/response.json" >&2; exit 1; }
 request POST /Vehicles "$(jq -nc --arg plate "BLOCK${suffix: -8}" '{plate:$plate,brand:"Blocked",model:"Blocked",year:2025}')" "$logistics_token"
 expect_status 403 "Denegar creación de vehículo a Logistics"
 request POST /Drivers '{"firstName":"Blocked","lastName":"Blocked","documentNumber":"BLOCK00001","phoneNumber":"0990000000"}' "$logistics_token"

@@ -233,3 +233,10 @@ Errores de migración, herramientas, QA y soluciones están en `docs/ERROR_LOG.m
 - Pendiente publicar ambas ramas y verificar Actions cross-branch, persistencia y cleanup.
 - Actions `44997043103` para `a7f7c4e` success: build, xUnit 61/61, smokes tenant/concurrencia con MySQL efímero y cierre de servicios; la validación Front cross-branch sigue.
 - Actions `44997054375` validó cross-branch con Front `1bb7d71`: backend `a7f7c4e`, xUnit 61/61, E2E 16/16, responsive 1/1 y cleanup completos. Se probó rechazo de documento duplicado 409 antes de crear cuenta. Continuar los criterios pendientes CRUD/roles/responsive.
+
+## Alta Driver atómica bajo concurrencia — pendiente Actions
+
+- Hallazgo: el comando de registro confirmaba Users antes de insertar Driver y PasswordResetToken; una carrera de documento podía persistir una cuenta sin conductor.
+- `RegisterUserCommand.Execute` permite diferir el commit; UsersController crea user/Driver/token y confirma una vez. AuthService agrupa user/Driver antes del flujo de token. Unique-document conflict posterior al precheck se devuelve como 409.
+- `smoke-tenant-http.sh` envía dos `POST /Users` paralelos con un documento y verifica HTTP 201/409 + conteos MySQL `1:1:1`; limpieza incluye ambos emails/driver.
+- Release local 61/61, shell syntax y diff-check pasan. El smoke MySQL de Actions queda pendiente.

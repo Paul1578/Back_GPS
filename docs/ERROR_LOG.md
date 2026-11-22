@@ -558,3 +558,16 @@ Cada cambio de API debe incluir validación de compilación, migraciones si apli
 - Un intento de `apply_patch` dentro de la herramienta `exec` incluyó una comilla invertida sin escapar en una cadena template literal; JavaScript reportó `SyntaxError` antes de ejecutar herramientas o editar archivos.
 - Corrección: aplicar el reemplazo con un script Python heredoc y comprobar el diff.
 - Prevención: evitar interpolación de template literals al transportar parches que contengan backticks.
+
+## 2026-11-22 — Contratos de persistencia buscados bajo carpetas equivocadas — CORREGIDO
+
+- La interfaz `IUnitOfWork` y contratos de Driver/PasswordResetToken/User se buscaron bajo `Infrastructure/Persistence/Contracts`; el código los tiene en `Aplication/Common/Interfaces` o `Domain/*/Repositories`, así que esos paths devolvieron archivo inexistente.
+- Corrección: localizar las fuentes con `rg --files fletflow` y leer los contratos desde sus rutas reales. No hubo cambios de archivos ni datos por los comandos fallidos.
+- Prevención: buscar primero el nombre de interfaz o contrato, no asumir que comparte carpeta con su implementación.
+
+
+## 2026-11-22 — Bloque de documentación añadió EOF en blanco extra — CORREGIDO
+
+- `git diff --check` señaló líneas en blanco al final de seis archivos después de concatenar secciones sobre la alta Driver atómica.
+- Corrección: normalizar cada archivo a una sola línea final y repetir diff-check.
+- Prevención: añadir secciones con EOF normalizado en el mismo script y comprobar whitespace inmediatamente.

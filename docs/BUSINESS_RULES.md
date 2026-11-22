@@ -66,3 +66,5 @@
 ## Sesiones después de cambiar contraseña — 2026-11-21
 
 Cambiar, restablecer o activar una contraseña incrementa `User.TokenVersion`, revoca refresh tokens y hace que JWT previos sean rechazados en la siguiente solicitud autenticada. El usuario debe volver a iniciar sesión. Se persiste en `Users.TokenVersion`, default 0 para conservar compatibilidad de registros existentes; la migración aditiva se aplica antes de usar la versión nueva de la API.
+
+- El alta administrativa de una cuenta Driver, su entidad Driver y token de activación se persisten en una única llamada de guardado; si el índice único del documento detecta una carrera, no queda usuario parcial y la API devuelve HTTP 409.

@@ -13,7 +13,14 @@ namespace fletflow.Application.Auth.Commands
             _unitOfWork = unitOfWork;
         }
 
-        public async Task<User> Execute(string username, string email, string password, string roleName, Guid? ownerUserId = null, bool mustChangePassword = false)
+        public async Task<User> Execute(
+            string username,
+            string email,
+            string password,
+            string roleName,
+            Guid? ownerUserId = null,
+            bool mustChangePassword = false,
+            bool saveChanges = true)
         {
             // 1) Verificar si el usuario ya existe
             var existingUser = await _unitOfWork.Users.GetByEmailAsync(email);
@@ -29,7 +36,6 @@ namespace fletflow.Application.Auth.Commands
             {
                 role = new Role { Id = Guid.NewGuid(), Name = roleName };
                 await _unitOfWork.Roles.AddAsync(role);
-                await _unitOfWork.CommitAsync(); // asegura Role.Id persistido
             }
 
             // 4) Crear usuario de dominio
@@ -55,7 +61,8 @@ namespace fletflow.Application.Auth.Commands
 
             // 6) Guardar usuario
             await _unitOfWork.Users.AddAsync(user);
-            await _unitOfWork.CommitAsync();
+            if (saveChanges)
+                await _unitOfWork.CommitAsync();
 
             return user;
         }

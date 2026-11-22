@@ -56,6 +56,9 @@ logistics_route_id=""
 logistics_route_name=""
 restricted_user_id=""
 root_user_id=""
+driver_race_email_a=""
+driver_race_email_b=""
+driver_race_document=""
 
 cleanup() {
   local status=$?
@@ -79,6 +82,7 @@ cleanup() {
     fi
     if [[ -n "$driver_id" ]]; then sql+=" DELETE FROM Drivers WHERE Id='$driver_id';"
     elif [[ -n "$document_number" ]]; then sql+=" DELETE FROM Drivers WHERE DocumentNumber='$document_number';"; fi
+    if [[ -n "$driver_race_document" ]]; then sql+=" DELETE FROM Drivers WHERE DocumentNumber='$driver_race_document';"; fi
     if [[ -n "$manager_driver_id" ]]; then sql+=" DELETE FROM Drivers WHERE Id='$manager_driver_id';"; fi
     if [[ -n "$vehicle_id" ]]; then sql+=" DELETE FROM Vehicles WHERE Id='$vehicle_id';"
     elif [[ -n "$plate" ]]; then sql+=" DELETE FROM Vehicles WHERE Plate='$plate';"; fi
@@ -89,6 +93,12 @@ cleanup() {
     fi
     if [[ -n "$restricted_user_email" ]]; then
       sql+=" SET @qa_user_id=(SELECT Id FROM Users WHERE Email='$restricted_user_email'); DELETE FROM RefreshTokens WHERE UserId=@qa_user_id; DELETE FROM PasswordResetTokens WHERE UserId=@qa_user_id; DELETE FROM UserRoles WHERE UserId=@qa_user_id; DELETE FROM Users WHERE Id=@qa_user_id;"
+    fi
+    if [[ -n "$driver_race_email_a" ]]; then
+      sql+=" SET @qa_user_id=(SELECT Id FROM Users WHERE Email='$driver_race_email_a'); DELETE FROM RefreshTokens WHERE UserId=@qa_user_id; DELETE FROM PasswordResetTokens WHERE UserId=@qa_user_id; DELETE FROM UserRoles WHERE UserId=@qa_user_id; DELETE FROM Users WHERE Id=@qa_user_id;"
+    fi
+    if [[ -n "$driver_race_email_b" ]]; then
+      sql+=" SET @qa_user_id=(SELECT Id FROM Users WHERE Email='$driver_race_email_b'); DELETE FROM RefreshTokens WHERE UserId=@qa_user_id; DELETE FROM PasswordResetTokens WHERE UserId=@qa_user_id; DELETE FROM UserRoles WHERE UserId=@qa_user_id; DELETE FROM Users WHERE Id=@qa_user_id;"
     fi
     if [[ -n "$deactivated_user_email" ]]; then
       sql+=" SET @qa_user_id=(SELECT Id FROM Users WHERE Email='$deactivated_user_email'); DELETE FROM RefreshTokens WHERE UserId=@qa_user_id; DELETE FROM PasswordResetTokens WHERE UserId=@qa_user_id; DELETE FROM UserRoles WHERE UserId=@qa_user_id; DELETE FROM Users WHERE Id=@qa_user_id;"
@@ -393,6 +403,33 @@ expect_status 400 "Alias de roles tampoco modifica al propietario raíz"
 root_state="$(mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" "$db_name" \
   --batch --skip-column-names -e "SELECT CONCAT(CASE WHEN u.IsActive THEN '1' ELSE '0' END, ':', LOWER(r.Name)) FROM Users u JOIN UserRoles ur ON ur.UserId=u.Id JOIN Roles r ON r.Id=ur.RoleId WHERE u.Id='$root_user_id';")"
 [[ "$root_state" == "1:admin" ]] || { echo "Los intentos de cambiar propietario alteraron estado/rol ($root_state)." >&2; exit 1; }
+
+driver_race_email_a="fletflow.e2e.driver.race.a.$suffix@example.test"
+driver_race_email_b="fletflow.e2e.driver.race.b.$suffix@example.test"
+driver_race_document="RACE${suffix: -8}"
+driver_race_password="$(openssl rand -hex 24)"
+driver_race_payload_a="$(jq -nc --arg username "E2E Driver race A $suffix" --arg email "$driver_race_email_a" --arg password "$driver_race_password" --arg document "$driver_race_document" \
+  '{username:$username,email:$email,password:$password,roleName:"Driver",firstName:"Race A",lastName:"Driver",documentNumber:$document,phoneNumber:"0990000001"}')"
+driver_race_payload_b="$(jq -nc --arg username "E2E Driver race B $suffix" --arg email "$driver_race_email_b" --arg password "$driver_race_password" --arg document "$driver_race_document" \
+  '{username:$username,email:$email,password:$password,roleName:"Driver",firstName:"Race B",lastName:"Driver",documentNumber:$document,phoneNumber:"0990000002"}')"
+curl -sS --max-time 60 -o "$work_dir/driver_race_a.json" -w '%{http_code}' -X POST \
+  -H "Authorization: Bearer $token" -H 'Content-Type: application/json' -d "$driver_race_payload_a" \
+  "$api_base/Users" >"$work_dir/driver_race_a.status" & driver_race_pid_a=$!
+curl -sS --max-time 60 -o "$work_dir/driver_race_b.json" -w '%{http_code}' -X POST \
+  -H "Authorization: Bearer $token" -H 'Content-Type: application/json' -d "$driver_race_payload_b" \
+  "$api_base/Users" >"$work_dir/driver_race_b.status" & driver_race_pid_b=$!
+wait "$driver_race_pid_a"
+wait "$driver_race_pid_b"
+driver_race_status_a="$(cat "$work_dir/driver_race_a.status")"
+driver_race_status_b="$(cat "$work_dir/driver_race_b.status")"
+if ! { [[ "$driver_race_status_a" == 201 && "$driver_race_status_b" == 409 ]] || [[ "$driver_race_status_a" == 409 && "$driver_race_status_b" == 201 ]]; }; then
+  echo "Alta Driver concurrente esperaba 201 y 409; recibió $driver_race_status_a y $driver_race_status_b." >&2
+  cat "$work_dir/driver_race_a.json" "$work_dir/driver_race_b.json" >&2
+  exit 1
+fi
+driver_race_counts="$(mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" "$db_name" \
+  --batch --skip-column-names -e "SELECT CONCAT((SELECT COUNT(*) FROM Users WHERE Email IN ('$driver_race_email_a','$driver_race_email_b')), ':', (SELECT COUNT(*) FROM Drivers WHERE DocumentNumber='$driver_race_document'), ':', (SELECT COUNT(*) FROM PasswordResetTokens WHERE UserId IN (SELECT Id FROM Users WHERE Email IN ('$driver_race_email_a','$driver_race_email_b'))));")"
+[[ "$driver_race_counts" == "1:1:1" ]] || { echo "Alta Driver concurrente dejó persistencia parcial (Users:Drivers:ActivationTokens=$driver_race_counts)." >&2; exit 1; }
 
 request POST /Vehicles "$(jq -nc --arg plate "$plate" '{plate:$plate,brand:"CI QA",model:"Tenant",year:2025}')"
 expect_status 201 "Crear vehículo tenant A"

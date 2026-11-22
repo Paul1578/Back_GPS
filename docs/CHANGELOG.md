@@ -172,3 +172,8 @@
 
 - El smoke ahora prueba HTTP 404 al modificar estado/rol de un usuario de otra empresa, incluidos alias legado; Admin no puede desactivar ni degradar su cuenta raíz (400). MySQL verifica que rol/estado siguen intactos.
 - Actions `45000893415` pasó: xUnit 61/61, smokes tenant/roles/usuarios/concurrencia y cleanup.
+
+## 2026-11-22 — Alta de Driver atómica ante concurrencia
+
+- El comando de registro permite diferir el guardado para persistir Users, Drivers y PasswordResetTokens juntos; una colisión concurrente de documento se devuelve como 409 y no deja cuenta huérfana.
+- Smoke HTTP/MySQL simultáneo y conteos de consistencia añadidos; Actions pendiente.

@@ -181,3 +181,10 @@ Nota de actualización: algunos resultados históricos de registro público más
 - Integridad de conductores: crear Driver, alta de User con rol Driver y editar documento duplicado responden HTTP 409 con mensaje claro. Release local pasó 61/61; CI integrado pendiente.
 - Actions `44997043103` para `a7f7c4e` terminó success: build, xUnit 61/61, smokes HTTP/MySQL tenant y concurrencia; servicios desechables se cerraron correctamente.
 - La integración Front `1bb7d71` + Back `a7f7c4e` pasó Actions `44997054375`: 61/61 xUnit, responsive 1/1, 16/16 E2E y cleanup success; se verificó documento Driver duplicado como HTTP 409 sin cuenta parcial.
+
+## Atomicidad de alta Driver concurrente — en validación
+
+- Auditoría de backend detectó que `RegisterUserCommand` guardaba al usuario antes de insertar Driver y token, por lo que una carrera de documento duplicado podía dejar una cuenta huérfana.
+- Se permite diferir el `SaveChanges` y se agrupan usuario/Driver/token en un solo commit. Si el unique index gana la carrera, se consulta el documento ya persistido y se convierte el error en conflicto 409. AuthService también agrupa user/Driver antes de emitir sesión.
+- Smoke HTTP lanza dos POST `/Users` concurrentes con correos distintos y el mismo documento; espera un 201/409 y valida MySQL `Users:Drivers:ActivationTokens = 1:1:1`, con cleanup temporal.
+- Release local 61/61; bash syntax y diff-check pasan. Actions con MySQL real pendiente.

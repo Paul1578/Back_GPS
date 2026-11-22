@@ -284,3 +284,9 @@ La invitación envía sólo el enlace de activación; el usuario fija su contras
 
 - Actions `44997054375` hizo checkout exacto de backend `a7f7c4e`, pasó xUnit 61/61, responsive 1/1 y Playwright 16/16. El caso crea Driver, repite documento con correo distinto y confirma 409 y ausencia del nuevo correo en My Team.
 - Audit/lint/build y cleanup del workflow terminaron success.
+
+## Alta Driver concurrente — pendiente Actions
+
+- Dos solicitudes HTTP simultáneas a `POST /Users` usan correos distintos y el mismo documento en el tenant. La API debe producir un 201 y un 409 independientemente de cuál gane.
+- MySQL debe conservar exactamente una cuenta, un Driver y un token de activación; el cleanup elimina ambos correos y el documento de prueba.
+- Esta prueba de integración detecta persistencia parcial ante violación concurrente del unique index; `bash -n`, diff-check y xUnit Release 61/61 pasan localmente.

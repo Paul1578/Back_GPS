@@ -11,6 +11,7 @@ using fletflow.Infrastructure.Services;
 using fletflow.Infrastructure.Persistence.Contracts;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 
 namespace fletflow.Api.Controllers
@@ -200,7 +201,8 @@ namespace fletflow.Api.Controllers
                 temporaryPassword,
                 request.RoleName,
                 ownerId,
-                mustChangePassword: true
+                mustChangePassword: true,
+                saveChanges: false
             );
 
             // Auto-crear Driver si el rol es Driver
@@ -231,7 +233,20 @@ namespace fletflow.Api.Controllers
             var encoded = Uri.EscapeDataString(plainToken);
             var activationLink = $"{activationBase}?token={encoded}";
 
-            await _unitOfWork.CommitAsync();
+            try
+            {
+                await _unitOfWork.CommitAsync();
+            }
+            catch (DbUpdateException)
+            {
+                // A competing request may pass the pre-check first. SaveChanges is
+                // atomic for user, Driver and activation token; map a duplicate index
+                // race to the same conflict as the normal pre-check path.
+                if (isDriver && await _unitOfWork.Drivers.GetByDocumentAsync(request.DocumentNumber!.Trim()) is not null)
+                    throw new fletflow.Domain.Fleet.Exceptions.BusinessConflictException(
+                        "Ya existe un conductor con ese documento en la empresa.");
+                throw;
+            }
 
             var invitationSent = true;
             try

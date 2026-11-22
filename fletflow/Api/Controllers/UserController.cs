@@ -157,7 +157,8 @@ namespace fletflow.Api.Controllers
         /// </summary>
         /// <param name="request">Datos del usuario.</param>
         /// <response code="200">Usuario creado correctamente.</response>
-        /// <response code="400">Datos inválidos o usuario ya existe.</response>
+        /// <response code="400">Datos inválidos.</response>
+        /// <response code="409">El documento de conductor ya pertenece a otro conductor de la empresa.</response>
         [HttpPost]
         public async Task<IActionResult> CreateUserWithRole([FromBody] CreateUserWithRoleRequest request)
         {
@@ -190,7 +191,7 @@ namespace fletflow.Api.Controllers
             {
                 var existingDriver = await _unitOfWork.Drivers.GetByDocumentAsync(request.DocumentNumber!.Trim());
                 if (existingDriver is not null)
-                    return BadRequest("Ya existe un conductor con ese documento en la empresa.");
+                    return Conflict(new { message = "Ya existe un conductor con ese documento en la empresa." });
             }
 
             var user = await _registerUserCommand.Execute(

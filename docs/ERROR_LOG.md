@@ -501,3 +501,9 @@ Cada cambio de API debe incluir validación de compilación, migraciones si apli
 
 - `/usr/bin/dotnet test` terminó antes de compilar porque `/usr/lib64/dotnet/host/fxr` no tiene runtime.
 - Solución: usar `DOTNET_ROOT=/home/leonardo/.dotnet` y `/home/leonardo/.dotnet/dotnet` (SDK 8.0.428). La suite Release terminó 59/59; ningún test fue omitido.
+
+## 2026-11-22 — Documento Driver duplicado respondía 400 y texto técnico — CORREGIDO, CI PENDIENTE
+
+- CreateDriver y UpdateDriver detectaban documento repetido pero usaban InvalidOperationException, que middleware transformaba en 400. El endpoint `POST /Users` prevalidaba duplicado y devolvía 400; semántica inconsistente con conflicto de identidad y la UI no tenía un estado estable para conflicto.
+- Corrección: usar BusinessConflictException/HTTP 409 y un mensaje español uniforme también en UserController, antes de crear la cuenta. Pruebas unitarias prueban rechazo sin mutación/commit; E2E agregado comprueba sin usuario parcial.
+- Suite backend Release local: 61/61; lint/build/discovery Front local: 16 casos. CI integrado pendiente.

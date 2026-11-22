@@ -162,3 +162,5 @@ Actualización de estabilidad: duplicados de placa en creación/edición ahora s
 - El primer intento tuvo un falso fallo de verificación porque el warning MySQL contaminó stdout; corrección y repetición aprobada en `docs/ERROR_LOG.md`. Actions `44990525889` confirmó el ciclo y xUnit 57/57. Se añadió fallback de cleanup por nombre; Actions `44991032520` para `da53081` volvió a pasar build, xUnit 57/57 y smoke cleanup `0:0:0`.
 
 - Actions `44995681296` para `6ec5315` terminó success: build, xUnit, smoke tenant/roles HTTP+MySQL y concurrencia; MySQL/servicios temporales se limpiaron.
+
+- Integridad de conductores: crear Driver, alta de User con rol Driver y editar documento duplicado responden HTTP 409 con mensaje claro. Release local pasó 61/61; CI integrado pendiente.

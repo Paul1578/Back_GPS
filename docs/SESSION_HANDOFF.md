@@ -208,3 +208,9 @@ Errores de migración, herramientas, QA y soluciones están en `docs/ERROR_LOG.m
 - Frontend añadió E2E móvil que intenta crear una segunda unidad con la misma placa, espera HTTP 409, verifica el mensaje y que quede una sola tarjeta. Lint/build/discovery 16 pasaron; CI integrado sigue pendiente.
 - Siguiente: revisar diff, publicar backend y verificar Actions; publicar luego el E2E frontend y comprobar ambos branches integrados con API/MySQL.
 - Actions `44995681296` terminó success en `6ec5315`: build, xUnit y smokes tenant/concurrencia HTTP+MySQL completados y recursos temporales detenidos.
+
+## Integridad de documento de Driver — 2026-11-22
+
+- CreateDriver/UpdateDriver y `POST /Users` ahora devuelven HTTP 409 para documento duplicado, sin crear usuario parcial, en vez de 400. Mensaje uniforme en español.
+- xUnit Release local 61/61; E2E Admin móvil agregado para mismo documento/otro correo: comprueba 409 y ausencia de email parcial. Front lint/build/discovery 16 correctos.
+- Pendiente publicar ambas ramas y verificar Actions cross-branch, persistencia y cleanup.

@@ -259,3 +259,9 @@ La invitación envía sólo el enlace de activación; el usuario fija su contras
 - Dos pruebas unitarias verifican que crear o editar con placa ya utilizada devuelve `BusinessConflictException` y no persiste cambios.
 - Frontend lint/build/discovery pasó con 16 E2E; la ejecución navegador/API/MySQL del nuevo rechazo visual queda pendiente del Actions cross-branch.
 - Confirmación backend: Actions `44995681296` en `6ec5315` terminó success con build, xUnit y smokes de aislamiento tenant y concurrencia sobre MySQL temporal.
+
+## Documento de Driver duplicado — 2026-11-22
+
+- Release local con SDK 8.0.428: `dotnet test BackEnd_Gps.sln --configuration Release --no-restore`, **61/61**, 0 fallidas/omitidas.
+- Unit tests validan que CreateDriver y UpdateDriver generan conflicto sin insertar, mutar ni hacer commit cuando el documento ya pertenece a otro Driver.
+- E2E frontend local lint/build/discovery 16 pasan; Actions integrado pendiente.

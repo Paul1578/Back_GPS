@@ -1,5 +1,6 @@
 using fletflow.Application.Fleet.Dtos;
 using fletflow.Application.Fleet.Mappings;
+using fletflow.Domain.Fleet.Exceptions;
 using fletflow.Domain.Fleet.Repositories;
 using fletflow.Infrastructure.Persistence.Contracts;
 
@@ -32,7 +33,7 @@ public class UpdateDriverCommand
             ?? throw new KeyNotFoundException("Conductor no encontrado.");
         var existing = await _drivers.GetByDocumentAsync(documentNumber);
         if (existing is not null && existing.Id != id)
-            throw new InvalidOperationException("Ya existe un conductor con ese documento en la empresa.");
+            throw new BusinessConflictException("Ya existe otro conductor con ese documento en la empresa.");
 
         driver.Update(firstName, lastName, documentNumber, phoneNumber);
         await _drivers.UpdateAsync(driver);

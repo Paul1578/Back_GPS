@@ -3,6 +3,7 @@ using System.Linq;
 using fletflow.Application.Fleet.Dtos;
 using fletflow.Application.Fleet.Mappings;
 using fletflow.Domain.Fleet.Entities;
+using fletflow.Domain.Fleet.Exceptions;
 using fletflow.Domain.Fleet.Repositories;
 using fletflow.Infrastructure.Persistence.Contracts;
 
@@ -31,7 +32,7 @@ namespace fletflow.Application.Fleet.Commands
 
             var existing = await _drivers.GetByDocumentAsync(documentNumber);
             if (existing is not null)
-                throw new InvalidOperationException($"A driver with document {documentNumber} already exists.");
+                throw new BusinessConflictException($"Ya existe un conductor con el documento {documentNumber} en esta empresa.");
 
             if (userId.HasValue)
             {

@@ -327,4 +327,5 @@ Nota de actualización: algunos resultados históricos de registro público más
 # Smoke de CreatedAtUtc: comparación estabilizada
 
 - Actions `45029094282` falló sólo en el smoke HTTP que compara timestamp API/MySQL después de editar; build y xUnit pasaron. La prueba anterior normalizaba fracciones largas, pero no añadía ceros cuando JSON omitía ceros de precisión.
-- El helper ahora normaliza siempre a seis decimales, como MySQL `datetime(6)`, y el fallo imprime los cuatro valores para diagnóstico. Shell syntax/diff-check y Actions de repetición pendientes.
+- El helper ahora normaliza siempre a seis decimales, como MySQL `datetime(6)`, y el fallo imprime los cuatro valores para diagnóstico.
+- La repetición pasó en Actions `45029374847` para Backend `5103b51`: build Release, xUnit 78/78, smoke tenant/outbox HTTP/MySQL, concurrencia de rutas y cleanup success.

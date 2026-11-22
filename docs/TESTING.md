@@ -395,4 +395,5 @@ La invitación envía sólo el enlace de activación; el usuario fija su contras
 # Incidente CI — precisión de `CreatedAtUtc`
 
 - Actions `45029094282`: build/tests pasaron, smoke HTTP falló en assert API/MySQL luego de editar ruta.
-- Ajuste de prueba: helper compara timestamp con seis decimales, completando fracciones cortas y eliminando exceso; el mensaje ahora imprime API antes/después y DB antes/después. Repetición CI pendiente.
+- Ajuste de prueba: helper compara timestamp con seis decimales, completando fracciones cortas y eliminando exceso; el mensaje ahora imprime API antes/después y DB antes/después. El normalizador pasó casos locales sin fracción, `.1234` y `.123456789`.
+- Actions `45029374847` confirmó smoke y cleanup completos; xUnit **78/78**.

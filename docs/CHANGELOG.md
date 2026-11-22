@@ -298,4 +298,4 @@
 
 - `ChangeRouteStatusCommand` vuelve a validar el Driver solicitante después de adquirir locks y recargar la ruta, cerrando TOCTOU por reasignación concurrente.
 - Agregada regresión unitaria que reasigna durante lock; el Driver anterior no puede cancelar ni actualizar la ruta.
-- Suite Release local: 78/78.
+- Suite Release local: 78/78. Actions `45029374847` pasó build, xUnit, smoke HTTP/MySQL, concurrencia y cleanup.

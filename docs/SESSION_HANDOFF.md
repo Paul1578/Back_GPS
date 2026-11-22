@@ -1,5 +1,12 @@
 # Handoff — 2026-11-22
 
+## Estado vigente — actualización concurrente Driver
+
+- Rama backend `chore/stabilize-fleet-platform`; Front `refactor/route-builder`; no tocar main.
+- Front Actions `45082924174` y `45083215716` vieron SQL `Drivers.VehicleId=NULL` tras asignación exitosa. La causa fue `UpdateDriverCommand` guardando una lectura vieja mientras `DriverRepository.UpdateAsync` copia el `VehicleId`. Fix local usa lock compartido, relee Driver y hace rollback en error.
+- Regresión xUnit simula una asignación ocurrida después de la lectura inicial y antes del lock; el nuevo reread conserva la relación. Release xUnit **113/113** con `/tmp/fletflow-dotnet/dotnet`; el dotnet global de esta máquina carece de runtime.
+- Pendiente: `git diff --check`, smoke HTTP/MySQL descartable o CI backend y frontend integradas, actualizar documentación con resultados, commit/push ambas ramas y revisar fallos. No marcar objetivo completo hasta continuar matriz CRUD/roles/responsive.
+
 - `76c2cc8` pasó Action `45077658712`; `229076d` pasó Action `45078321298` (Release build, xUnit 111/111, HTTP/MySQL tenant, concurrencia y cleanup), incluidos los 403 y la ausencia de mutaciones User en Users/Roles.
 - Durante la revisión estática se detectó una comilla faltante en el JSON del POST Driver usado por el nuevo smoke; se corrigió antes de ejecutar la prueba. Detalle y prevención en `docs/ERROR_LOG.md`.
 - `fa16d05` publica el camino Driver propio (SQL `3:0:1:<VehicleId>`) y límites Manager/User y Logistics en endpoints de flota. Primera repetición de Manager llamó un helper que esperaba nombre/estado inicial de una ruta ya editada/baja legítimamente; ahora compara solo Vehicle/Driver. Action `45080063668` pasó build, xUnit 111/111, smoke HTTP/MySQL, concurrencia y cleanup.

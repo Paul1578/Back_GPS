@@ -1,3 +1,11 @@
+# 2026-11-22 — Edición de Driver podía sobrescribir asignación concurrente — CORREGIDO; CI PENDIENTE
+
+- La Action frontend `45082924174` (configurada con un worker) y `45083215716` leyeron `Drivers.VehicleId=NULL` en MySQL tras un resultado visual exitoso de asignación. Esto confirmó que limitar los workers no resolvía el defecto.
+- Hallazgo: `UpdateDriverCommand` leía Driver sin tracking y sin tomar el lock común; `DriverRepository.UpdateAsync` copiaba luego todos sus campos, incluido el `VehicleId` obsoleto. Una edición concurrente con asignación podía dejar el valor anterior y borrar la relación.
+- Corrección: `UpdateDriverCommand` toma `LockRouteAssignmentAsync`, reconsulta el Driver después del lock y captura errores para hacer rollback. Prueba Release reproduce interleaving (lectura inicial null, asignación antes de lock, reread) y confirma que el perfil actualizado conserva el VehicleId.
+- Validación local: `/tmp/fletflow-dotnet/dotnet test BackEnd_Gps.sln --configuration Release --no-restore`: **113/113**. Falta publicar y confirmar CI integrada/API/MySQL.
+- Prevención: todo comando que guarde la entidad Driver completa debe serializarse con las asignaciones y basarse en una lectura posterior al lock; probar en MySQL, no sólo con repositorios fake.
+
 # 2026-11-22 — Dar de baja cuenta Driver bloqueaba una ruta pendiente — CORREGIDO Y VALIDADO
 
 - Auditoría descubrió que `PUT /Users/{id}/status?isActive=false` sólo rechazaba rutas `InProgress`. Para una ruta `Pending`, el User quedaba inactivo mientras Driver seguía activo y asignado, dejando el trabajo sin poder iniciar y con su vehículo retenido.

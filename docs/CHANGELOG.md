@@ -1,3 +1,9 @@
+# 2026-11-22 — Serializar edición Driver y asignación Vehicle
+
+- `UpdateDriverCommand` comparte lock de asignación, vuelve a leer Driver bajo transacción y revierte si falla una validación/escritura.
+- Nueva regresión reproduce actualización perdida cuando otra operación asigna Vehicle después de la primera lectura.
+- Verificación local: Release xUnit **113/113**; smoke/CI integrados pendientes.
+
 # 2026-11-22 — Bloquear baja de cuenta Driver con ruta activa — VALIDADO EN CI
 
 - Desactivar una cuenta vinculada a un Driver ahora rechaza con conflicto si tiene rutas `Pending` o `InProgress`, igual que el cambio de rol y la desasignación.

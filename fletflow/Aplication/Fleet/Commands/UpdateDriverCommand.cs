@@ -33,31 +33,46 @@ public class UpdateDriverCommand
         if (documentNumber.Length > 20 || phoneNumber.Length > 20)
             throw new ArgumentException("Documento y teléfono no pueden exceder 20 caracteres.");
 
-        var driver = await _drivers.GetByIdAsync(id)
-            ?? throw new KeyNotFoundException("Conductor no encontrado.");
-        var existing = await _drivers.GetByDocumentAsync(documentNumber);
-        if (existing is not null && existing.Id != id)
-            throw new BusinessConflictException("Ya existe otro conductor con ese documento en la empresa.");
-
-        driver.Update(firstName, lastName, documentNumber, phoneNumber);
-        await _drivers.UpdateAsync(driver);
-        if (driver.UserId.HasValue)
+        try
         {
-            var driverOwnerId = await _context.Drivers
-                .Where(candidate => candidate.Id == id)
-                .Select(candidate => candidate.OwnerUserId)
-                .FirstOrDefaultAsync();
-            var linkedUser = driverOwnerId.HasValue
-                ? await _context.Users.FirstOrDefaultAsync(user =>
-                    user.Id == driver.UserId.Value && user.OwnerUserId == driverOwnerId)
-                : null;
-            if (linkedUser is not null)
+            var initialDriver = await _drivers.GetByIdAsync(id)
+                ?? throw new KeyNotFoundException("Conductor no encontrado.");
+
+            // Assignment, unassignment and route changes lock these same rows.
+            // Re-read after locking so a profile edit cannot write a stale VehicleId.
+            await _uow.LockRouteAssignmentAsync(initialDriver.VehicleId, id);
+            var driver = await _drivers.GetByIdAsync(id)
+                ?? throw new KeyNotFoundException("Conductor no encontrado.");
+            var existing = await _drivers.GetByDocumentAsync(documentNumber);
+            if (existing is not null && existing.Id != id)
+                throw new BusinessConflictException("Ya existe otro conductor con ese documento en la empresa.");
+
+            driver.Update(firstName, lastName, documentNumber, phoneNumber);
+            await _drivers.UpdateAsync(driver);
+            if (driver.UserId.HasValue)
             {
-                linkedUser.FirstName = firstName;
-                linkedUser.LastName = lastName;
+                var driverOwnerId = await _context.Drivers
+                    .Where(candidate => candidate.Id == id)
+                    .Select(candidate => candidate.OwnerUserId)
+                    .FirstOrDefaultAsync();
+                var linkedUser = driverOwnerId.HasValue
+                    ? await _context.Users.FirstOrDefaultAsync(user =>
+                        user.Id == driver.UserId.Value && user.OwnerUserId == driverOwnerId)
+                    : null;
+                if (linkedUser is not null)
+                {
+                    linkedUser.FirstName = firstName;
+                    linkedUser.LastName = lastName;
+                }
             }
+
+            await _uow.CommitAsync();
+            return DriverApplicationMapper.ToDto(driver);
         }
-        await _uow.CommitAsync();
-        return DriverApplicationMapper.ToDto(driver);
+        catch
+        {
+            _uow.Rollback();
+            throw;
+        }
     }
 }

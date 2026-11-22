@@ -1,3 +1,9 @@
+# Corrección de escritura concurrente Driver — validación local
+
+- `/tmp/fletflow-dotnet/dotnet test BackEnd_Gps.sln --configuration Release --no-restore`: **113 passed, 0 failed, 0 skipped**.
+- La prueba `UpdateDriver_RereadsAssignmentAfterLockAndPreservesConcurrentVehicleAssignment` modela una asignación entre la lectura inicial y el lock de edición; el VehicleId permanece en el Driver actualizado.
+- Falta smoke real HTTP/MySQL y Action tras publicar el cambio.
+
 # Bloqueo de baja de cuenta enlazada a Driver con ruta activa — 2026-11-22
 
 - `dotnet test BackEnd_Gps.sln --configuration Release --no-restore -m:1`: **111/111**, incluyendo ruta Pending e InProgress.

@@ -104,6 +104,29 @@ public class DriverTests
     }
 
     [Fact]
+    public async Task UpdateDriver_RereadsAssignmentAfterLockAndPreservesConcurrentVehicleAssignment()
+    {
+        var vehicleId = Guid.NewGuid();
+        var repository = new ConcurrentAssignmentDriverRepository();
+        var unitOfWork = new FakeUnitOfWork
+        {
+            OnLockRouteAssignment = () => repository.AssignVehicle(vehicleId)
+        };
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseInMemoryDatabase($"driver-update-assignment-{Guid.NewGuid()}")
+            .Options;
+        await using var context = new AppDbContext(options);
+        var command = new UpdateDriverCommand(unitOfWork, repository, context);
+
+        await command.Execute(repository.DriverId, "Updated", "Name", "DOC-CONCURRENT", "0990000000");
+
+        Assert.Equal(vehicleId, repository.PersistedVehicleId);
+        Assert.Equal(1, repository.UpdateCount);
+        Assert.Equal(1, unitOfWork.CommitCount);
+        Assert.Equal(repository.DriverId, unitOfWork.LockedDriverId);
+    }
+
+    [Fact]
     public async Task UpdateDriver_SynchronizesLinkedUserNames()
     {
         var userId = Guid.NewGuid();
@@ -245,6 +268,31 @@ public class DriverTests
         public Task<List<Driver>> GetAssignableAsync() => Task.FromResult(_drivers.Where(driver => driver.IsActive).ToList());
     }
 
+    private sealed class ConcurrentAssignmentDriverRepository : IDriverRepository
+    {
+        private Guid? _vehicleId;
+        public Guid DriverId { get; } = Guid.NewGuid();
+        public Guid? PersistedVehicleId => _vehicleId;
+        public int UpdateCount { get; private set; }
+
+        public Task<Driver?> GetByIdAsync(Guid id) => Task.FromResult<Driver?>(id == DriverId
+            ? Driver.CreateExisting(DriverId, "Before", "Name", "DOC-CONCURRENT", "0990000000", true, _vehicleId, null)
+            : null);
+        public Task<Driver?> GetByDocumentAsync(string documentNumber) => Task.FromResult<Driver?>(null);
+        public Task<Driver?> GetByUserIdAsync(Guid userId) => Task.FromResult<Driver?>(null);
+        public Task<Driver?> GetOtherAssignedToVehicleAsync(Guid vehicleId, Guid excludedDriverId) => Task.FromResult<Driver?>(null);
+        public Task AddAsync(Driver value) => Task.CompletedTask;
+        public Task UpdateAsync(Driver value)
+        {
+            UpdateCount++;
+            _vehicleId = value.VehicleId;
+            return Task.CompletedTask;
+        }
+        public Task<List<Driver>> GetAllAsync(bool? onlyActive = null) => Task.FromResult(new List<Driver>());
+        public Task<List<Driver>> GetAssignableAsync() => Task.FromResult(new List<Driver>());
+        public void AssignVehicle(Guid vehicleId) => _vehicleId = vehicleId;
+    }
+
     private sealed class FakeRouteRepository(Guid driverId, RouteStatus status) : IRouteRepository
     {
         public Task<RouteE?> GetByIdAsync(Guid id) => Task.FromResult<RouteE?>(null);
@@ -264,6 +312,8 @@ public class DriverTests
     private sealed class FakeUnitOfWork : IUnitOfWork
     {
         public int CommitCount { get; private set; }
+        public Action? OnLockRouteAssignment { get; init; }
+        public Guid? LockedDriverId { get; private set; }
         public IUserRepository Users => null!;
         public IRoleRepository Roles => null!;
         public IRefreshTokenRepository RefreshTokens => null!;
@@ -273,6 +323,12 @@ public class DriverTests
         public IRouteRepository Routes => null!;
         public IRoutePositionRepository RoutePositions => null!;
         public Task<int> CommitAsync() { CommitCount++; return Task.FromResult(1); }
+        public Task LockRouteAssignmentAsync(Guid? vehicleId, Guid? driverId, Guid? routeId = null)
+        {
+            LockedDriverId = driverId;
+            OnLockRouteAssignment?.Invoke();
+            return Task.CompletedTask;
+        }
         public void Rollback() { }
     }
 }

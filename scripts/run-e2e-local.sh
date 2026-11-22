@@ -22,9 +22,10 @@ if [[ -f "$frontend_env_file" ]]; then
 fi
 api_origin="${api_origin:-http://localhost:5048}"
 MYSQL_HOST="${MYSQL_HOST:-127.0.0.1}"
+MYSQL_PORT="${MYSQL_PORT:-3306}"
 MYSQL_USER="${MYSQL_USER:-${DB_USER:-root}}"
 MYSQL_PWD="${MYSQL_PWD:-${MYSQL_ROOT_PASSWORD:-${DB_PASSWORD:-}}}"
-export MYSQL_HOST MYSQL_USER MYSQL_PWD
+export MYSQL_HOST MYSQL_PORT MYSQL_USER MYSQL_PWD
 
 if [[ "${FLETFLOW_E2E_ALLOW_MUTATIONS:-}" != "true" ]]; then
   echo "Define FLETFLOW_E2E_ALLOW_MUTATIONS=true sólo para una base local/QA descartable." >&2
@@ -76,7 +77,7 @@ fi
 cleanup() {
   local status=$?
   trap - EXIT
-  if ! mysql --protocol=TCP --host="$MYSQL_HOST" --user="$MYSQL_USER" "$DB_NAME" \
+  if ! mysql --protocol=TCP --host="$MYSQL_HOST" --port="$MYSQL_PORT" --user="$MYSQL_USER" "$DB_NAME" \
     < "$backend_dir/scripts/cleanup-e2e.sql" >/dev/null 2>&1; then
     echo "No se pudieron limpiar los fixtures E2E de MySQL." >&2
     status=1
@@ -156,11 +157,11 @@ NODE
 )"
 export FLETFLOW_E2E_DRIVER_ID
 
-mysql --protocol=TCP --host="$MYSQL_HOST" --user="$MYSQL_USER" "$DB_NAME" \
+mysql --protocol=TCP --host="$MYSQL_HOST" --port="$MYSQL_PORT" --user="$MYSQL_USER" "$DB_NAME" \
   -e "UPDATE Users SET IsActive=1, MustChangePassword=0 WHERE Email='$FLETFLOW_E2E_OTHER_TENANT_EMAIL';" \
   >/dev/null 2>&1
 
-mysql --protocol=TCP --host="$MYSQL_HOST" --user="$MYSQL_USER" "$DB_NAME" \
+mysql --protocol=TCP --host="$MYSQL_HOST" --port="$MYSQL_PORT" --user="$MYSQL_USER" "$DB_NAME" \
   -e "UPDATE Users SET IsActive=1, MustChangePassword=0 WHERE Email IN ('$FLETFLOW_E2E_USER_EMAIL', '$FLETFLOW_E2E_DRIVER_EMAIL');" \
   >/dev/null 2>&1
 

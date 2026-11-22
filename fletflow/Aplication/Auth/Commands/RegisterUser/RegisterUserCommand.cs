@@ -20,7 +20,9 @@ namespace fletflow.Application.Auth.Commands
             string roleName,
             Guid? ownerUserId = null,
             bool mustChangePassword = false,
-            bool saveChanges = true)
+            bool saveChanges = true,
+            string? firstName = null,
+            string? lastName = null)
         {
             // 1) Verificar si el usuario ya existe
             var existingUser = await _unitOfWork.Users.GetByEmailAsync(email);
@@ -43,6 +45,8 @@ namespace fletflow.Application.Auth.Commands
             {
                 Id = Guid.NewGuid(),
                 Username = username,
+                FirstName = string.IsNullOrWhiteSpace(firstName) ? null : firstName.Trim(),
+                LastName = string.IsNullOrWhiteSpace(lastName) ? null : lastName.Trim(),
                 Email = email,
                 PasswordHash = BCrypt.Net.BCrypt.HashPassword(password),
                 IsActive = true,

@@ -383,26 +383,32 @@ restricted_user_id="$(mysql --protocol=TCP --host="$mysql_host" --port="$mysql_p
 root_user_id="$(mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" "$db_name" \
   --batch --skip-column-names -e "SELECT Id FROM Users WHERE Email='$admin_email';")"
 [[ -n "$restricted_user_id" && -n "$root_user_id" ]] || { echo "No se encontraron las cuentas QA para verificar el límite de usuarios." >&2; exit 1; }
+root_username_before="$(mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" "$db_name" \
+  --batch --skip-column-names -e "SELECT Username FROM Users WHERE Id='$root_user_id';")"
 
 request PUT "/Users/$restricted_user_id/status?isActive=false" "" "$other_token"
 expect_status 404 "Tenant B no puede desactivar un miembro de tenant A"
 request PUT "/Users/$restricted_user_id/role" '{"roleName":"Admin"}' "$other_token"
 expect_status 404 "Tenant B no puede cambiar el rol de un miembro de tenant A"
+request PUT "/Users/$restricted_user_id/profile" '{"username":"altered-cross-tenant","firstName":"Alterado","lastName":"Ajeno"}' "$other_token"
+expect_status 404 "Tenant B no puede editar el perfil de un miembro de tenant A"
 request POST "/Users/$restricted_user_id/roles/Admin" "" "$other_token"
 expect_status 404 "Alias de roles no cruza tenants"
 user_state="$(mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" "$db_name" \
-  --batch --skip-column-names -e "SELECT CONCAT(CASE WHEN u.IsActive THEN '1' ELSE '0' END, ':', LOWER(r.Name)) FROM Users u JOIN UserRoles ur ON ur.UserId=u.Id JOIN Roles r ON r.Id=ur.RoleId WHERE u.Id='$restricted_user_id';")"
-[[ "$user_state" == "1:user" ]] || { echo "Los intentos cross-tenant alteraron estado/rol del miembro ($user_state)." >&2; exit 1; }
+  --batch --skip-column-names -e "SELECT CONCAT(CASE WHEN u.IsActive THEN '1' ELSE '0' END, ':', LOWER(r.Name), ':', u.Username, ':', COALESCE(u.FirstName,''), ':', COALESCE(u.LastName,'')) FROM Users u JOIN UserRoles ur ON ur.UserId=u.Id JOIN Roles r ON r.Id=ur.RoleId WHERE u.Id='$restricted_user_id';")"
+[[ "$user_state" == "1:user:E2E CI restricted $suffix::" ]] || { echo "Los intentos cross-tenant alteraron estado, rol o perfil del miembro ($user_state)." >&2; exit 1; }
 
 request PUT "/Users/$root_user_id/status?isActive=false" "" "$token"
 expect_status 400 "No se puede desactivar el propietario raíz"
 request PUT "/Users/$root_user_id/role" '{"roleName":"User"}' "$token"
 expect_status 400 "No se puede cambiar el rol del propietario raíz"
+request PUT "/Users/$root_user_id/profile" '{"username":"altered-root","firstName":"Alterado","lastName":"Propietario"}' "$token"
+expect_status 400 "No se puede editar el perfil raíz desde Gestión de Equipo"
 request POST "/Users/$root_user_id/roles/User" "" "$token"
 expect_status 400 "Alias de roles tampoco modifica al propietario raíz"
 root_state="$(mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" "$db_name" \
-  --batch --skip-column-names -e "SELECT CONCAT(CASE WHEN u.IsActive THEN '1' ELSE '0' END, ':', LOWER(r.Name)) FROM Users u JOIN UserRoles ur ON ur.UserId=u.Id JOIN Roles r ON r.Id=ur.RoleId WHERE u.Id='$root_user_id';")"
-[[ "$root_state" == "1:admin" ]] || { echo "Los intentos de cambiar propietario alteraron estado/rol ($root_state)." >&2; exit 1; }
+  --batch --skip-column-names -e "SELECT CONCAT(CASE WHEN u.IsActive THEN '1' ELSE '0' END, ':', LOWER(r.Name), ':', u.Username) FROM Users u JOIN UserRoles ur ON ur.UserId=u.Id JOIN Roles r ON r.Id=ur.RoleId WHERE u.Id='$root_user_id';")"
+[[ "$root_state" == "1:admin:$root_username_before" ]] || { echo "Los intentos de cambiar propietario alteraron estado, rol o perfil ($root_state)." >&2; exit 1; }
 
 driver_race_email_a="fletflow.e2e.driver.race.a.$suffix@example.test"
 driver_race_email_b="fletflow.e2e.driver.race.b.$suffix@example.test"

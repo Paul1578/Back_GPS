@@ -290,3 +290,12 @@ La invitación envía sólo el enlace de activación; el usuario fija su contras
 - Dos solicitudes HTTP simultáneas a `POST /Users` usan correos distintos y el mismo documento en el tenant. La API debe producir un 201 y un 409 independientemente de cuál gane.
 - MySQL debe conservar exactamente una cuenta, un Driver y un token de activación; el cleanup elimina ambos correos y el documento de prueba.
 - Esta prueba de integración detecta persistencia parcial ante violación concurrente del unique index; `bash -n`, diff-check y xUnit Release 61/61 pasan localmente.
+
+## Perfil de miembros y validación MySQL — 2026-11-22
+
+- Backend Release build: 0 warnings, 0 errores. xUnit: 62/62.
+- En MySQL 8 efímero: smoke-tenant-http.sh pasó, incluyendo tenant ajeno 404, raíz 400, operaciones de ruta y cleanup verificado con cero fixtures.
+- smoke-route-concurrency.sh pasó con verificación de conflictos y consistencia concurrente.
+- La migración AddUserProfileNames se aplicó desde esquema vacío y ejecutó el SQL de backfill.
+- El runner run-e2e-local.sh pasó Playwright autenticado 18/18 en Chrome contra API/MySQL reales; el contenedor/esquema fueron descartados al salir.
+- Los smoke scripts respetan MYSQL_PORT; valor predeterminado 3306.

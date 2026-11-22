@@ -4,6 +4,11 @@ using fletflow.Domain.Fleet.Repositories;
 using fletflow.Infrastructure.Persistence.Contracts;
 using fletflow.Application.Fleet.Commands;
 using fletflow.Domain.Auth.Repositories;
+using fletflow.Infrastructure.Persistence.Context;
+using fletflow.Infrastructure.Persistence.Entities;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Http;
+using System.Security.Claims;
 
 namespace BackEnd_Gps.Tests;
 
@@ -32,7 +37,11 @@ public class DriverTests
         var existing = Driver.Create("Existing", "Driver", "DOC-002", "0990000001");
         var repository = new FakeDriverRepository(current, existing);
         var unitOfWork = new FakeUnitOfWork();
-        var command = new UpdateDriverCommand(unitOfWork, repository);
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseInMemoryDatabase($"driver-update-{Guid.NewGuid()}")
+            .Options;
+        await using var context = new AppDbContext(options);
+        var command = new UpdateDriverCommand(unitOfWork, repository, context);
 
         var error = await Assert.ThrowsAsync<BusinessConflictException>(() =>
             command.Execute(current.Id, "Current", "Driver", "DOC-002", "0990000000"));
@@ -41,6 +50,59 @@ public class DriverTests
         Assert.Equal("DOC-001", current.DocumentNumber);
         Assert.Equal(0, repository.UpdateCount);
         Assert.Equal(0, unitOfWork.CommitCount);
+    }
+
+    [Fact]
+    public async Task UpdateDriver_SynchronizesLinkedUserNames()
+    {
+        var userId = Guid.NewGuid();
+        var ownerUserId = Guid.NewGuid();
+        var driver = Driver.Create("Before", "Name", "DOC-010", "0990000010", userId);
+        var repository = new FakeDriverRepository(driver);
+        var unitOfWork = new FakeUnitOfWork();
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseInMemoryDatabase($"driver-profile-{Guid.NewGuid()}")
+            .Options;
+        var accessor = new HttpContextAccessor
+        {
+            HttpContext = new DefaultHttpContext
+            {
+                User = new ClaimsPrincipal(new ClaimsIdentity(
+                    [new Claim("owner_id", ownerUserId.ToString())],
+                    authenticationType: "test"))
+            }
+        };
+        await using var context = new AppDbContext(options, accessor);
+        context.Users.Add(new UserEntity
+        {
+            Id = userId,
+            Username = "driver",
+            Email = "driver@example.test",
+            PasswordHash = "test-hash",
+            FirstName = "Before",
+            LastName = "Name",
+            OwnerUserId = ownerUserId
+        });
+        context.Drivers.Add(new DriverEntity
+        {
+            Id = driver.Id,
+            UserId = userId,
+            OwnerUserId = ownerUserId,
+            FirstName = driver.FirstName,
+            LastName = driver.LastName,
+            DocumentNumber = driver.DocumentNumber,
+            PhoneNumber = driver.PhoneNumber,
+            IsActive = true
+        });
+        await context.SaveChangesAsync();
+        var command = new UpdateDriverCommand(unitOfWork, repository, context);
+
+        await command.Execute(driver.Id, " After ", " Name ", " DOC-010 ", " 0990000010 ");
+
+        var linkedUser = await context.Users.FindAsync(userId);
+        Assert.Equal("After", linkedUser!.FirstName);
+        Assert.Equal("Name", linkedUser.LastName);
+        Assert.Equal(1, unitOfWork.CommitCount);
     }
 
     [Fact]

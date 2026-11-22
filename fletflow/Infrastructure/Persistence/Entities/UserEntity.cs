@@ -5,6 +5,8 @@ namespace fletflow.Infrastructure.Persistence.Entities
     {
         public Guid Id { get; set; } = Guid.NewGuid();
         public string Username { get; set; } = default!;
+        public string? FirstName { get; set; }
+        public string? LastName { get; set; }
         public string Email { get; set; } = default!;
         public string PasswordHash { get; set; } = default!;
         public int TokenVersion { get; set; }

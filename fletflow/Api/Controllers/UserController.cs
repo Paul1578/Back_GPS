@@ -22,6 +22,7 @@ namespace fletflow.Api.Controllers
     public class UsersController : ControllerBase
     {
         private readonly UpdateUserCommand _updateUserCommand;
+        private readonly UpdateUserProfileCommand _updateUserProfileCommand;
         private readonly ChangeUserRoleCommand _changeUserRoleCommand;
         private readonly RegisterUserCommand _registerUserCommand;
         private readonly GetMyTeamUsersQuery _getMyTeamUsersQuery;
@@ -34,6 +35,7 @@ namespace fletflow.Api.Controllers
         public UsersController(
             GetMyTeamUsersQuery getMyTeamUsersQuery,
             UpdateUserCommand updateUserCommand,
+            UpdateUserProfileCommand updateUserProfileCommand,
             ChangeUserRoleCommand changeUserRoleCommand,
             RegisterUserCommand registerUserCommand,
             PasswordResetTokenFactory passwordResetTokenFactory,
@@ -43,6 +45,7 @@ namespace fletflow.Api.Controllers
             ILogger<UsersController> logger)
         {
             _updateUserCommand = updateUserCommand;
+            _updateUserProfileCommand = updateUserProfileCommand;
             _changeUserRoleCommand = changeUserRoleCommand;
             _registerUserCommand = registerUserCommand;
             _getMyTeamUsersQuery = getMyTeamUsersQuery;
@@ -110,6 +113,28 @@ namespace fletflow.Api.Controllers
             if (!await BelongsToCurrentOwner(id)) return NotFound();
             await _updateUserCommand.Execute(id, isActive);
             return Ok(new { Message = "Estado del usuario actualizado." });
+        }
+
+        [HttpPut("{id:guid}/profile")]
+        public async Task<IActionResult> UpdateProfile(Guid id, [FromBody] UpdateUserProfileRequest request)
+        {
+            if (id == GetCurrentOwnerId())
+                return BadRequest("No se puede editar el perfil raíz desde la gestión del equipo.");
+            if (!await BelongsToCurrentOwner(id)) return NotFound();
+
+            var username = request.Username?.Trim();
+            var firstName = request.FirstName?.Trim();
+            var lastName = request.LastName?.Trim();
+            if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(firstName) ||
+                string.IsNullOrWhiteSpace(lastName))
+                return BadRequest("Usuario, nombres y apellidos son obligatorios.");
+            if (username.Length > 100 || firstName.Length > 100 || lastName.Length > 100)
+                return BadRequest("Usuario, nombres y apellidos no pueden exceder 100 caracteres.");
+
+            await _updateUserProfileCommand.Execute(id, username, firstName, lastName);
+            var updated = (await _getMyTeamUsersQuery.Execute(GetCurrentOwnerId()))
+                .SingleOrDefault(user => user.Id == id);
+            return updated is null ? NotFound() : Ok(updated);
         }
 
         [HttpPut("{id:guid}/role")]
@@ -202,7 +227,9 @@ namespace fletflow.Api.Controllers
                 request.RoleName,
                 ownerId,
                 mustChangePassword: true,
-                saveChanges: false
+                saveChanges: false,
+                firstName: request.FirstName,
+                lastName: request.LastName
             );
 
             // Auto-crear Driver si el rol es Driver

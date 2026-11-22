@@ -23,6 +23,8 @@ namespace fletflow.Application.Users.Queries
                 {
                     Id = u.Id,
                     Username = u.Username,
+                    FirstName = u.FirstName,
+                    LastName = u.LastName,
                     Email = u.Email,
                     DriverId = _context.Drivers
                         .Where(d => d.UserId == u.Id)

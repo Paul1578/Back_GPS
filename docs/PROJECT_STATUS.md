@@ -1,3 +1,7 @@
+## Actualización — edición de perfil de usuarios — 2026-11-22
+
+Backend implementa persistencia de nombres, endpoint Admin para edición de nombre/apellido/username, migración con backfill desde Drivers y sincronización bilateral User/Driver bajo tenant. Email sigue inmutable. Release build 0 warnings/errores; xUnit 62/62; smoke HTTP/MySQL de tenant y concurrencia pasan en MySQL efímero. Playwright integrado pasó 18/18 en Chrome sobre API/MySQL efímero y cleanup del runner. Auditoría integral abierta.
+
 ## Autorización de Driver cerrada por ejecución — 2026-11-22
 
 - Backend `41c01e7` bloquea detalle y GPS a perfiles Driver inactivos; Release/xUnit 61/61 y Actions backend `45002562048` success.

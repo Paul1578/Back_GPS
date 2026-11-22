@@ -599,3 +599,13 @@ Cada cambio de API debe incluir validación de compilación, migraciones si apli
 - Causa: la consulta cruzó el repositorio hermano sin cambiar el directorio de trabajo.
 - Solución: volver a ejecutar con `workdir=/home/leonardo/Back_GPS` y confirmar la ruta con `rg --files`.
 - Prevención: toda inspección entre repositorios debe fijar su raíz explícitamente; registrar errores de cwd y continuar desde el repo dueño del archivo.
+
+## 2026-11-22 — Fallos de runner y primera prueba de edición de perfil — CORREGIDOS Y VERIFICADOS (Playwright 18/18)
+
+- Una prueba intentó usar el MySQL persistente de desarrollo con un password root distinto al configurado en su inicialización. Acceso rechazado; no se alteró esa base. Se sustituyó por MySQL 8 efímero en puerto 13306 y esquema descartable; smoke tenant y concurrencia pasaron.
+- El primer arranque API recibió ConnectionStrings__DefaultConnection, pero Program.cs consume DB_HOST/DB_PORT/DB_NAME/DB_USER/DB_PASSWORD. Se corrigió el entorno del proceso.
+- dotnet test sobre BackEnd_Gps.csproj terminó sin ejecutar pruebas porque no es test project. Además, el cambio de constructor de UpdateDriverCommand dejó un test sin AppDbContext. Se corrigió y ahora dotnet test BackEnd_Gps.sln pasa 62/62.
+- smoke-route-concurrency.sh ignoraba MYSQL_PORT y conectaba al MySQL persistente. Se corrigió para pasar el puerto; ambas pruebas pasaron en instancia efímera.
+- Primera Playwright terminó 16/18: selector Driver ambiguo entre dos secciones y mock de error de Historial liberado antes del render por fetch de foco. Se agregó selector data-testid, se acotó el texto y se conserva el 503 hasta que el test ve el alert. El spec de carga pasa 2/2; la suite completa final pasó 18/18.
+- La segunda suite dio 17/18: tras recargar, otro tramo del E2E seguía buscando el username como heading, aunque el diseño muestra el nombre legal. Se reemplazó el selector por testid estable del perfil.
+- Prevención: leer configuración consumida realmente por Program.cs, ejecutar xUnit desde la solución, fijar puerto MySQL en runners y verificar selectores y mocks frente a fetches secundarios.

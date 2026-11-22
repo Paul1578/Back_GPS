@@ -20,3 +20,7 @@ El conductor cambia estado con `PUT /api/Routes/{id}/points/{index}/status` y ad
 - Las operaciones de baja de Vehicle/Route y desasignación de Driver comparten transacciones/locks antes de validar rutas/asignaciones.
 - `ChangeUserRoleCommand` bloquea la asignación Driver/Vehicle al cambiar el rol; `UserRepository.GetByIdAsync` usa `AsNoTracking` para que la relectura posterior al lock refleje el estado ya confirmado por una solicitud concurrente.
 - `JwtBearerEvents.OnTokenValidated` compara el único rol persistido con el claim de rol firmado. El cambio de rol también revoca refresh tokens en la misma transacción de persistencia.
+
+## Perfil de usuario de equipo — 2026-11-22
+
+PUT /api/Users/{id}/profile valida rol, propietario, raíz, campos y longitudes en UsersController, y ejecuta UpdateUserProfileCommand para cambiar User y Driver enlazado en el mismo AppDbContext/commit. El correo no forma parte del contrato. Al actualizar un Driver, UpdateDriverCommand sincroniza el User vinculado sólo si ambos registros comparten OwnerUserId.

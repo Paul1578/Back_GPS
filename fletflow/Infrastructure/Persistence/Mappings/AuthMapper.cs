@@ -18,6 +18,8 @@ namespace fletflow.Infrastructure.Persistence.Mappings
             {
                 Id = entity.Id,
                 Username = entity.Username,
+                FirstName = entity.FirstName,
+                LastName = entity.LastName,
                 Email = entity.Email,
                 PasswordHash = entity.PasswordHash,
                 TokenVersion = entity.TokenVersion,
@@ -74,6 +76,8 @@ namespace fletflow.Infrastructure.Persistence.Mappings
             {
                 Id = domain.Id,
                 Username = domain.Username,
+                FirstName = domain.FirstName,
+                LastName = domain.LastName,
                 Email = domain.Email,
                 PasswordHash = domain.PasswordHash,
                 TokenVersion = domain.TokenVersion,

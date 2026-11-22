@@ -1,3 +1,14 @@
+## Trabajo actual — CRUD de perfil de miembro — 2026-11-22
+
+- Backend añade campos nullable FirstName/LastName a User, DTO y mapper. Migración AddUserProfileNames copia los nombres existentes desde Drivers enlazados, sin reemplazar valores no vacíos.
+- PUT /api/Users/{id}/profile valida rol, propietario, raíz, campos y longitudes <=100; bloquea la cuenta raíz. Email permanece inmutable. Los nombres cambian sincronizados User y Driver en una única unidad de trabajo.
+- UpdateDriverCommand sincroniza User sólo si ambos registros comparten OwnerUserId.
+- Build Release pasa 0 warnings/0 errores y xUnit 62/62. smoke-tenant-http.sh y smoke-route-concurrency.sh pasaron contra MySQL 8 efímero; el primero confirma cross-tenant 404, raíz 400 y cleanup sin residuos.
+- Front implementa diálogo Editar miembro y expone updateUserProfile; E2E verifica persistencia en GET /Users/my-team y edición Driver->User y User->Driver.
+- Dos corridas E2E iniciales dieron 16/18 y 17/18 por selectores/mocks frágiles, documentadas en ERROR_LOG. Tras corregirlas, la suite final pasó 18/18 en Chrome sobre API/MySQL real; run-e2e-local terminó código 0 y el esquema descartable se eliminó.
+- Errores y soluciones están al final de docs/ERROR_LOG.md.
+- Al cerrar E2E, actualizar resultados, commit/push sólo a chore/stabilize-fleet-platform y ejecutar backend CI. Luego Front refactor/route-builder y CI cruzada con commit backend. Misión general sigue abierta.
+
 ## GPS y autorización Driver — backend corregido — 2026-11-22
 
 - Auditor independiente (solo lectura) confirmó el ownership de lista/detalle/estado/paradas/evidencia y filtros tenant, pero halló que GPS no validaba `Driver.IsActive` y faltaban pruebas HTTP de ruta ajena por Driver para paradas/evidencia/GPS.

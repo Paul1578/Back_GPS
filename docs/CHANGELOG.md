@@ -1,3 +1,11 @@
+## 2026-11-22 — Edición de perfil de miembros del equipo
+
+- Users.FirstName/LastName se guardan y exponen en equipo; migración aditiva con backfill desde Drivers existentes.
+- PUT /api/Users/{id}/profile permite al Admin del tenant editar nombre, apellido y username de un miembro; no acepta cambio de correo ni edición de la cuenta raíz. Nombres se sincronizan con el Driver enlazado en la misma unidad de trabajo.
+- Las ediciones de Driver sincronizan nombres a User, con comprobación explícita de OwnerUserId.
+- Build Release 0 warnings/0 errores, xUnit 62/62. Smoke HTTP/MySQL de tenant y concurrencia pasan en esquema MySQL 8 descartable.
+- Playwright final pasó 18/18 en Chrome contra frontend, API y MySQL efímero; runner devolvió código 0 y el esquema temporal se destruyó.
+
 ## 2026-11-22 — E2E cross-repo de ownership Driver
 
 - Actions Front `45002920723` + Back `41c01e7` pasó 18/18, incluyendo aislamiento por Driver y perfil inactivo, junto con Release/xUnit 61/61.

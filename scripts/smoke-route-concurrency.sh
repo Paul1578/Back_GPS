@@ -6,6 +6,7 @@ admin_email="${FLETFLOW_E2E_ADMIN_EMAIL:-}"
 admin_password="${FLETFLOW_E2E_ADMIN_PASSWORD:-}"
 db_name="${DB_NAME:-}"
 mysql_host="${MYSQL_HOST:-127.0.0.1}"
+mysql_port="${MYSQL_PORT:-3306}"
 mysql_user="${MYSQL_USER:-root}"
 
 if [[ "${FLETFLOW_E2E_ALLOW_MUTATIONS:-}" != "true" || ! "$api_base" =~ ^http://(127\.0\.0\.1|localhost):[0-9]{2,5}/api$ ]]; then
@@ -32,7 +33,7 @@ cleanup() {
   local status=$?
   trap - EXIT
   if [[ -n "$token" ]]; then
-    mysql --protocol=TCP --host="$mysql_host" --user="$mysql_user" "$db_name" <<SQL >/dev/null 2>&1 || status=1
+    mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" "$db_name" <<SQL >/dev/null 2>&1 || status=1
 START TRANSACTION;
 DELETE rp FROM RoutePositions rp JOIN Routes r ON r.Id=rp.RouteId WHERE r.Name LIKE '${prefix}%';
 DELETE FROM Routes WHERE Name LIKE '${prefix}%';
@@ -162,7 +163,7 @@ concurrent_request PUT "/Routes/$route_status_b/status" '{"status":1}' start_sta
 wait "$p1"
 wait "$p2"
 assert_one_created_one_conflict start_status_a start_status_b "Inicio concurrente de rutas del mismo vehículo" 204
-started_routes="$(mysql --protocol=TCP --host="$mysql_host" --user="$mysql_user" --batch --skip-column-names "$db_name" \
+started_routes="$(mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" --batch --skip-column-names "$db_name" \
   -e "SELECT CONCAT(SUM(r.Status=1), ':', SUM(r.Status=0), ':', CAST(v.Status AS UNSIGNED)) FROM Routes r JOIN Vehicles v ON v.Id=r.VehicleId WHERE r.Id IN ('${route_status_a}','${route_status_b}') GROUP BY v.Status;")"
 if [[ "$started_routes" != "1:1:1" ]]; then
   echo "Inicio concurrente dejó estado incoherente (InProgress:Pending:VehicleStatus=$started_routes)." >&2
@@ -183,7 +184,7 @@ if ! { [[ "$start_status" == 204 && "$deactivate_status" == 409 ]] || [[ "$start
   cat "$work_dir/start_vs_deactivate.json" "$work_dir/deactivate_driver.json" >&2
   exit 1
 fi
-route_state="$(mysql --protocol=TCP --host="$mysql_host" --user="$mysql_user" --batch --skip-column-names "$db_name" \
+route_state="$(mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" --batch --skip-column-names "$db_name" \
   -e "SELECT CONCAT(r.Status, ':', CAST(d.IsActive AS UNSIGNED), ':', CAST(v.Status AS UNSIGNED)) FROM Routes r JOIN Drivers d ON d.Id=r.DriverId JOIN Vehicles v ON v.Id=r.VehicleId WHERE r.Id='${route_deactivation}';")"
 if [[ "$route_state" != "1:1:1" && "$route_state" != "0:0:0" ]]; then
   echo "Inicio/desactivación dejó estado incoherente (RouteStatus:DriverIsActive:VehicleStatus=$route_state)." >&2
@@ -197,7 +198,7 @@ request POST /Users "$(jq -nc --arg email "$role_race_user_email" --arg password
 expect 200 "Crear Driver para carrera cambio de rol/inicio"
 role_race_user_id="$(jq -er '.id' "$work_dir/response.json")"
 role_race_driver_id="$(jq -er '.driverId' "$work_dir/response.json")"
-mysql --protocol=TCP --host="$mysql_host" --user="$mysql_user" "$db_name" \
+mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" "$db_name" \
   -e "UPDATE Users SET IsActive=1, MustChangePassword=0 WHERE Id='$role_race_user_id';" >/dev/null
 role_race_vehicle="$(create_vehicle "${prefix}RRV")"
 request POST /Auth/login "$(jq -nc --arg email "$role_race_user_email" --arg password "$role_race_password" '{email:$email,password:$password}')"
@@ -218,7 +219,7 @@ if ! { [[ "$role_start_status" == 204 && "$role_change_status" == 409 ]] || [[ "
   cat "$work_dir/start_vs_role_change.json" "$work_dir/role_change_vs_start.json" >&2
   exit 1
 fi
-role_race_state="$(mysql --protocol=TCP --host="$mysql_host" --user="$mysql_user" --batch --skip-column-names "$db_name" \
+role_race_state="$(mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" --batch --skip-column-names "$db_name" \
   -e "SELECT CONCAT(r.Status, ':', CAST(d.IsActive AS UNSIGNED), ':', CAST(v.Status AS UNSIGNED), ':', ro.Name) FROM Routes r JOIN Drivers d ON d.Id=r.DriverId JOIN Vehicles v ON v.Id=r.VehicleId JOIN Users u ON u.Id=d.UserId JOIN UserRoles ur ON ur.UserId=u.Id JOIN Roles ro ON ro.Id=ur.RoleId WHERE r.Id='$role_race_route';")"
 if [[ "$role_race_state" != "1:1:1:Driver" && "$role_race_state" != "0:0:0:Logistics" ]]; then
   echo "Carrera cambio de rol/inicio dejó estado incoherente (Route:Driver:Vehicle:Role=$role_race_state)." >&2
@@ -232,17 +233,17 @@ request PUT "/Drivers/$guard_driver/assign-vehicle" "$(jq -nc --arg vehicleId "$
 expect 204 "Asignar vehículo al Driver de protección"
 request PUT "/Routes/$guard_route/status" '{"status":1}'
 expect 204 "Iniciar ruta de protección"
-mysql --protocol=TCP --host="$mysql_host" --user="$mysql_user" "$db_name" \
+mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" "$db_name" \
   -e "UPDATE Vehicles SET IsActive=0 WHERE Id='$guard_vehicle';" >/dev/null
 request POST "/Vehicles/$guard_vehicle/reactivate"
 expect 409 "Impedir reactivar vehículo con ruta en curso"
-guard_reactivation_state="$(mysql --protocol=TCP --host="$mysql_host" --user="$mysql_user" --batch --skip-column-names "$db_name" \
+guard_reactivation_state="$(mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" --batch --skip-column-names "$db_name" \
   -e "SELECT CONCAT(r.Status, ':', CAST(v.IsActive AS UNSIGNED)) FROM Routes r JOIN Vehicles v ON v.Id=r.VehicleId WHERE r.Id='$guard_route';")"
 if [[ "$guard_reactivation_state" != "1:0" ]]; then
   echo "La reactivación de vehículo con ruta en curso alteró estado (RouteStatus:VehicleActive=$guard_reactivation_state)." >&2
   exit 1
 fi
-mysql --protocol=TCP --host="$mysql_host" --user="$mysql_user" "$db_name" \
+mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" "$db_name" \
   -e "UPDATE Vehicles SET IsActive=1 WHERE Id='$guard_vehicle';" >/dev/null
 request PUT "/Drivers/$guard_driver/unassign-vehicle" '{}'
 expect 409 "Impedir desasignar Driver en ruta"
@@ -270,11 +271,11 @@ expect 204 "Limpiar baja del vehículo de protección"
 inactive_vehicle="$(create_vehicle "${prefix}IV")"
 inactive_driver="$(create_driver "${prefix}ID")"
 inactive_route="$(create_route "${prefix}inactive_vehicle_route" "$inactive_vehicle" "$inactive_driver" "2038-04-05T10:00:00Z" "2038-04-05T11:00:00Z")"
-mysql --protocol=TCP --host="$mysql_host" --user="$mysql_user" "$db_name" \
+mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" "$db_name" \
   -e "UPDATE Vehicles SET IsActive=0 WHERE Id='$inactive_vehicle';" >/dev/null
 request PUT "/Routes/$inactive_route/status" '{"status":1}'
 expect 409 "Impedir iniciar ruta con vehículo inactivo"
-inactive_state="$(mysql --protocol=TCP --host="$mysql_host" --user="$mysql_user" --batch --skip-column-names "$db_name" \
+inactive_state="$(mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" --batch --skip-column-names "$db_name" \
   -e "SELECT CONCAT(r.Status, ':', CAST(v.IsActive AS UNSIGNED), ':', CAST(v.Status AS UNSIGNED)) FROM Routes r JOIN Vehicles v ON v.Id=r.VehicleId WHERE r.Id='${inactive_route}';")"
 if [[ "$inactive_state" != "0:0:0" ]]; then
   echo "Intentar iniciar con vehículo inactivo alteró estado (RouteStatus:VehicleActive:VehicleStatus=$inactive_state)." >&2

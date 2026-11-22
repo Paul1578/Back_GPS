@@ -292,3 +292,6 @@ Errores de migración, herramientas, QA y soluciones están en `docs/ERROR_LOG.m
 - `scripts/smoke-tenant-http.sh` tiene cambios locales no publicados en `chore/stabilize-fleet-platform`: pruebas cross-tenant de actualización de estado/evidencia de parada y ciclo positivo HTTP/MySQL Driver (CRUD/status/filter/assignment).
 - Validación local: Release 64/64; `bash -n`; MySQL 8 descartable; smoke completo aprobado y cleanup verificado. Publicar en la rama y confirmar Actions antes de contar el criterio.
 - Decisión pendiente de producto: si Admin delegado puede promover a miembro a Admin. No alterar el permiso ni escribir expectativa de test hasta definirlo.
+
+
+- Actions backend `45009348293` confirmó el smoke tenant/Driver y cross-tenant de paradas: `success`, xUnit **64/64**, build y smoke de concurrencia completos, limpieza correcta. HEAD de código `c6f74f8`.

@@ -319,3 +319,6 @@ La invitación envía sólo el enlace de activación; el usuario fija su contras
 - CRUD Driver HTTP: POST/GET, PUT y GET de verificación; status false, GET `onlyActive=false`, status true y GET; asignación/desasignación del vehículo con GET confirmatorio.
 - `bash -n scripts/smoke-tenant-http.sh`, `dotnet test BackEnd_Gps.sln -c Release --no-restore -m:1` (**64/64**) y smoke completo pasaron. La base `fletflow_ci_*` y contenedor MySQL se descartaron; cleanup confirmó cero rutas, posiciones y vehículos QA.
 - Actions `45008868471` valida la actualización documental previa. La Action que incluirá estos nuevos escenarios todavía debe ejecutarse tras publicar el cambio.
+
+
+- Confirmación remota del lote Driver/cross-tenant: Actions backend `45009348293` success para `c6f74f8`; xUnit **64/64**, Release build, smoke HTTP/MySQL y concurrencia pasaron. Cleanup de servicios efímeros completo.

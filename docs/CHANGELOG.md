@@ -219,3 +219,6 @@
 - `smoke-tenant-http.sh` verifica las mutaciones cross-tenant de estado/evidencia de parada y comprueba persistencia intacta tras 404.
 - Añade ciclo positivo HTTP Driver: alta/consulta/edición, baja/reactivación con filtro `onlyActive=false` y asignación/desasignación de vehículo con lecturas de persistencia.
 - MySQL 8 aislado smoke aprobado; Release xUnit 64/64 y `bash -n` pasan. Actions pendiente.
+
+
+- Actions backend `45009348293` para `c6f74f8` terminó success: build Release, xUnit **64/64**, smokes HTTP/MySQL tenant+Logistics y concurrencia; contenedores/DB de prueba limpiados.

@@ -190,3 +190,10 @@ Este proceso invalida los emails/token de recuperación que estén pendientes o 
 
 - Crear y editar rutas vuelven a bloquear y consultar la cuenta User enlazada después del lock de Vehicle/Driver/Route. Se evita asignar una ruta pendiente a una cuenta desactivada concurrentemente; la operación revierte con conflicto.
 - Smokes HTTP/MySQL ejercitan activate-account y reset-password con tokens vigentes, consumo único, refresh previo revocado por reset y nuevo login. CI de esta tanda pendiente.
+
+## Enumeración de cuentas en login — corregida localmente
+
+- Auditoría confirmó que login distinguía correo inexistente (400/mensaje distinto) de contraseña incorrecta (401), y exponía estado pendiente de activación.
+- Código ahora devuelve un mismo 401/mensaje para correo desconocido, password incorrecto, cuenta inactiva o pendiente. Para correo inexistente ejecuta BCrypt contra hash señuelo, con el objetivo de aproximar el coste criptográfico normal.
+- xUnit y smoke HTTP/MySQL se añadieron; CI pendiente. La mitigación reduce diferencias observables pero no reemplaza una medición temporal bajo carga.
+- Hallazgo separado pendiente: el registro público aún devuelve 409 explícito si el email ya existe. La UX actual depende de ese comportamiento; evaluar una respuesta neutral sin filtrar el estado por código/payload y ajustar el flujo de alta antes de considerar resuelta toda la enumeración.

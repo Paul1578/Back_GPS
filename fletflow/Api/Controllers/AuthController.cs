@@ -56,8 +56,8 @@ namespace fletflow.Api.Controllers
         /// <param name="dto">Credenciales de usuario.</param>
         /// <returns>Tokens de acceso y refresh.</returns>
         /// <response code="200">Login exitoso.</response>
-        /// <response code="400">El usuario no existe o la cuenta no está activada.</response>
-        /// <response code="401">Contraseña incorrecta.</response>
+        /// <response code="400">Credenciales con formato inválido.</response>
+        /// <response code="401">Credenciales inválidas o cuenta no habilitada.</response>
         [HttpPost("login")]
         [AllowAnonymous]
         public async Task<IActionResult> Login([FromBody] LoginUserDto dto)

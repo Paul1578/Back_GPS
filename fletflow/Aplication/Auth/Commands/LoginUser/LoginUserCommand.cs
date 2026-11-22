@@ -7,6 +7,8 @@ namespace fletflow.Application.Auth.Commands
 {
     public class LoginUserCommand
     {
+        private const string InvalidCredentialsMessage = "Correo o contraseña incorrectos.";
+        private static readonly string DummyPasswordHash = BCrypt.Net.BCrypt.HashPassword(Guid.NewGuid().ToString("N"));
         private readonly IUnitOfWork _unitOfWork;
 
         public LoginUserCommand(IUnitOfWork unitOfWork)
@@ -17,15 +19,11 @@ namespace fletflow.Application.Auth.Commands
         public async Task<User> Execute(string email, string password)
         {
             var user = await _unitOfWork.Users.GetByEmailAsync(email);
-            if (user == null)
-                throw new InvalidOperationException("User does not exist.");
-
-            var passwordValid = BCrypt.Net.BCrypt.Verify(password, user.PasswordHash);
-            if (!passwordValid)
-                throw new UnauthorizedAccessException("Incorrect password.");
-
-            if (user.MustChangePassword)
-                throw new InvalidOperationException("You must activate your account before logging in.");
+            // También ejecuta BCrypt si el usuario no existe para reducir la diferencia
+            // temporal entre un correo registrado y uno inexistente.
+            var passwordValid = BCrypt.Net.BCrypt.Verify(password, user?.PasswordHash ?? DummyPasswordHash);
+            if (user is null || !passwordValid || !user.IsActive || user.MustChangePassword)
+                throw new UnauthorizedAccessException(InvalidCredentialsMessage);
 
             return user;
         }

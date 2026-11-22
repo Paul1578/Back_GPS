@@ -592,4 +592,9 @@ Errores de migración, herramientas, QA y soluciones están en `docs/ERROR_LOG.m
 
 - Subagente confirmó el bug real y corrigió `ChangeUserRoleCommand`: cambiar a Driver ya no reactiva el perfil vinculado cuando `User.IsActive=false`. Test nuevo; suite Release local **104/104**.
 - Smoke `scripts/smoke-tenant-http.sh` ampliado para ejecutar Logistics→Driver en API/MySQL real y asegurar `Driver.isActive=false`. Error/causa/prevención en `docs/ERROR_LOG.md`; suite 104/104, bash syntax y diff-check pasan. Commit y Actions nuevas pendientes.
-- Action `45063802250` confirmó causa de test inválido: el cambio de rol se hizo con ruta pendiente (409 esperado). El ciclo se movió después de cancelar ruta; cleanup ahora elimina el Driver vinculado antes del vehículo para respetar FK. Action de confirmación pendiente.
+- Action `45063802250` confirmó causa de test inválido: el cambio de rol se hizo con ruta pendiente (409 esperado). El ciclo se movió después de cancelar ruta; cleanup ahora elimina el Driver vinculado antes del vehículo para respetar FK. Action `45064477054` pasó el smoke y el cleanup.
+
+## Continuación — login genérico
+
+- Seguridad read-only encontró enumeración por mensajes/estados distintos en login. `LoginUserCommand` normaliza a 401/mensaje genérico para desconocido, contraseña incorrecta, cuenta inactiva y pendiente; ejecuta BCrypt con hash señuelo si no hay usuario. Se añadió xUnit y smoke HTTP que compara código/mensaje.
+- Release build **0 warnings/0 errors**, xUnit **106/106**, bash syntax y diff-check pasan. Falta commit y Actions. El registro público sigue revelando email duplicado con 409; SECURITY.md registra el pendiente para resolver con flujo UX neutral. Revisión temporal de recovery bajo carga aún necesaria.

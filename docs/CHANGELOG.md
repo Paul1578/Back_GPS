@@ -407,3 +407,8 @@
 
 - Se corrigió `ChangeUserRoleCommand`: asignar el rol Driver sólo reactiva el perfil vinculado si User está activo. Test focal y suite Release 104/104; smoke HTTP/MySQL agregado para este ciclo real.
 - La primera prueba colocó el cambio de rol mientras había una ruta pendiente y recibió el 409 esperado; se movió tras cancelar/eliminar la ruta. El cleanup ahora elimina primero el perfil Driver para respetar la FK del vehículo.
+
+## 2026-11-22 — Login genérico contra enumeración de cuentas
+
+- Login ahora devuelve el mismo 401 y mensaje para correo inexistente, contraseña incorrecta, cuenta inactiva y cuenta pendiente de activación. Se ejecuta BCrypt contra hash señuelo cuando no existe usuario para reducir la diferencia temporal. Pruebas unitarias y smoke HTTP/MySQL agregados; CI pendiente.
+- Release build **0 warnings/0 errors** y xUnit **106/106**; `bash -n` y diff-check pasan. CI integrada pendiente.

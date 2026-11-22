@@ -380,6 +380,18 @@ assert_manager_crud_fixture_state() {
 request POST /Auth/login "$(jq -nc --arg email "$admin_email" --arg password "$admin_password" '{email:$email,password:$password}')" ""
 expect_status 200 "Login tenant A"
 token="$(jq -er '.token // .accessToken' "$work_dir/response.json")"
+
+unknown_login_email="unknown.$(date +%s%N)@example.test"
+request POST /Auth/login "$(jq -nc --arg email "$unknown_login_email" '{email:$email,password:"invalid-credential"}')" ""
+expect_status 401 "Login con correo inexistente devuelve credenciales genéricas"
+unknown_login_message="$(jq -er '.message' "$work_dir/response.json")"
+request POST /Auth/login "$(jq -nc --arg email "$admin_email" '{email:$email,password:"invalid-credential"}')" ""
+expect_status 401 "Login con contraseña incorrecta devuelve credenciales genéricas"
+wrong_password_message="$(jq -er '.message' "$work_dir/response.json")"
+[[ "$unknown_login_message" == "$wrong_password_message" ]] || {
+  echo "Login revela si existe una cuenta (mensajes distintos para usuario y contraseña)." >&2
+  exit 1
+}
 request GET /Roles "" "$token"; expect_status 200 "Consultar catálogo global de roles como Admin de tenant"
 request POST /Roles '{"name":"Admin"}' "$token"; expect_status 403 "Impedir modificar catálogo global de roles desde un tenant"
 request DELETE "/Roles/E2EQA_missing" "" "$token"; expect_status 403 "Impedir eliminar roles globales desde un tenant"

@@ -510,3 +510,7 @@ La invitación envía sólo el enlace de activación; el usuario fija su contras
 
 - Cambio de rol con cuenta Driver inactiva: xUnit Release **104/104**; smoke HTTP/MySQL cubre Logistics→Driver y comprueba que el perfil siga inactivo. Validación integrada pendiente.
 - Primera Action `45063802250` rechazó el cambio de rol con 409 porque había ruta pendiente; el test ya se ejecuta después de borrar esa ruta. También se corrigió orden de cleanup por FK restrictiva; Action nueva pendiente.
+- Action `45064477054` pasó en `1534828`: build, xUnit **104/104**, HTTP/MySQL y cleanup.
+
+- Login enum: xUnit verifica mismo 401/mensaje para email desconocido, contraseña incorrecta, cuenta inactiva y pendiente; smoke compara código y mensaje usando API/MySQL. Nuevo CI pendiente.
+- Release build **0 warnings/0 errors**, xUnit **106/106**; bash syntax y diff-check pasan localmente. La validación del smoke real y Actions aún pendiente.

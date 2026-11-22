@@ -1111,8 +1111,19 @@ Cada cambio de API debe incluir validación de compilación, migraciones si apli
 - Se consultó el run `45063487802` desde `/home/leonardo/Back_GPS`; GitHub devuelve 404 porque ese run pertenece a `Paul1578/Front_gpsR`, no al repositorio actual. No afectó código ni Actions.
 - Solución: ejecutar `gh run view` desde `/home/leonardo/Front_gpsR`; el run existe y seguía en E2E autenticado. Prevención: consultar cada workflow desde el repositorio propietario del run.
 
-## 2026-11-22 — Action Backend 45063802250 falló por orden de smoke y FK durante cleanup — CORREGIDO LOCAL; CI PENDIENTE
+## 2026-11-22 — Action Backend 45063802250 falló por orden de smoke y FK durante cleanup — CORREGIDO Y VALIDADO
 
 - El smoke quiso cambiar Driver→Logistics mientras el conductor aún tenía una ruta pendiente; la API devolvió el 409 correcto por regla de negocio. La prueba del bug de reactivación ahora corre después de cancelar/eliminar la ruta.
 - Al abortar temprano, cleanup borraba el vehículo antes que el perfil Driver vinculado; la FK `Drivers.VehicleId` rechazó el DELETE y dejó de ejecutarse el resto del bloque. Se mueve el borrado del Driver antes de vehículos, después de eliminar sus rutas. Verificar que la siguiente ejecución termine con cero fixtures.
-- La Action localmente ya había pasado build y xUnit 104/104 en la máquina; la nueva Action debe verificar la secuencia HTTP/MySQL completa y cleanup.
+- Corrección verificada por Action `45064477054` en `1534828`: smoke HTTP/MySQL y cleanup success; 104/104 xUnit.
+
+## 2026-11-22 — Login distinguía correo desconocido de contraseña incorrecta — CORREGIDO LOCAL; CI PENDIENTE
+
+- La auditoría de seguridad confirmó `POST /Auth/login` respondía 400/mensaje “User does not exist” para cuentas ausentes y 401/mensaje “Incorrect password” para cuentas existentes; también distinguía cuentas pendientes de activación. Esto permitía enumerar usuarios.
+- Login ahora valida password con BCrypt incluso para correo desconocido usando un hash señuelo, rechaza cuenta inactiva/pendiente y usa un mismo 401/mensaje genérico en todos esos casos. Se agregaron pruebas unitarias y comparación de estado/mensaje en smoke HTTP.
+- Prevención: los errores de autenticación no deben confirmar si falló el nombre de cuenta, la contraseña o el estado de la cuenta. La comprobación temporal no reemplaza medición de timing bajo carga.
+
+## 2026-11-22 — Filtro jq de estado de Action usó precedencia incorrecta — CONSULTA CORREGIDA
+
+- Una expresión `gh run view --jq` combinó arreglo y pipeline sin paréntesis; jq devolvió `expected an object but got: string`. No afectó pruebas, código ni Actions.
+- Se corrigió seleccionando propiedades y agrupando el filtro de steps como una lista. Prevención: encerrar expresiones pipeline dentro de paréntesis al componer objetos jq.

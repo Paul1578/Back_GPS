@@ -1181,3 +1181,9 @@ Cada cambio de API debe incluir validación de compilación, migraciones si apli
 - Al revisar la ampliación del smoke de autorización Driver, el body de `POST /Drivers` tenía una comilla faltante en `phoneNumber`; la petición no representaba el caso planeado y podía hacer fallar `jq` antes de comprobar autorización.
 - Corrección: cerrar correctamente el string JSON y ejecutar `bash -n`, suite Release y smoke HTTP/MySQL completo en infraestructura descartable. Resultado: xUnit 111/111; smoke exit 0 con 403 y SQL `0:0:0` para los intentos de escritura denegados.
 - Prevención: validar/ejecutar el generador `jq -nc` de cada nuevo body, además de validar sintaxis Bash; bash -n no detecta JSON inválido dentro de una cadena de shell.
+
+## 2026-11-22 — Cobertura HTTP de autorización User incompleta — CERRADA EN SMOKE LOCAL
+
+- La revisión de la matriz encontró que `UsersController` y `RolesController` declaran rol Admin, pero el smoke no probaba esa frontera con token User. No era una vulnerabilidad confirmada; faltaba evidencia HTTP y de persistencia.
+- Se añadieron GET `/Users/my-team`, `/Users`, `/Roles`, POST `/Users` y PUT de estado. Todos devuelven 403; SQL comprueba que no se creó el email intentado y que el usuario original sigue activo. API/MySQL 8 descartables, script completo y cleanup pasan; Action pendiente.
+- Prevención: al verificar autorización, ejercitar cada clase de controlador con una identidad negativa además de leer sus atributos y contrastar la ausencia de mutaciones en DB.

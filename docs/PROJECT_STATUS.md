@@ -15,7 +15,8 @@
 - Action `2045b18` [45050058627](https://github.com/Paul1578/Back_GPS/actions/runs/45050058627) pasó: Release build, xUnit **97/97**, smoke HTTP/MySQL tenant y concurrencia, incluye carrera de role/refresh y bloqueos con ruta Pending; cleanup sin fixtures.
 # Estado actual — 2026-11-22
 
-- Actualización vigente: backend `chore/stabilize-fleet-platform` amplía el smoke HTTP/MySQL para denegar a Driver acceso a Vehicles, Drivers y opciones de asignación, así como creación de Vehicle/Driver/Route. El smoke efímero pasó; xUnit Release **111/111**. CI de este cambio se ejecutará tras publicar.
+- Actualización vigente: `76c2cc8` pasó Action `45077658712`: build Release, xUnit **111/111**, smoke HTTP/MySQL tenant, concurrencia y cleanup. Incluye denegaciones Driver en APIs de flota y rutas; los POST rechazados dejaron 0 filas en MySQL.
+- Lote backend siguiente amplía el smoke para User: `GET /Users/my-team`, `/Users`, `/Roles`, alta User y cambio de estado quedan denegados con HTTP 403; SQL exige alta `0` y estado original `1`. Smoke API/MySQL efímero, `bash -n` y diff-check pasaron; commit/Action pendientes.
 - Front `refactor/route-builder` HEAD `2147be7`: Action `45076629351` pasó **37/37 E2E**, responsive **1/1**, audit/lint/build y cleanup.
 - Misión sigue abierta; continúan matrices CRUD/roles/responsive. Admin delegado y desvinculación User↔Driver esperan decisión; SMTP/infraestructura productiva son externos y móvil nativo está aplazado.
 

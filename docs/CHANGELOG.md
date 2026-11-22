@@ -453,3 +453,8 @@
 
 - El smoke tenant comprueba 403 para lecturas administrativas y POST Vehicle/Driver/Route de Driver autenticado.
 - Consulta MySQL exige que los intentos rechazados no creen ninguna fila. xUnit 111/111 y smoke API/MySQL 8 descartable pasan localmente; Action posterior al push pendiente.
+
+## 2026-11-22 — Completar denegaciones de administración para User
+
+- El smoke añade 403 para lecturas `/Users` y `/Roles`, alta User y cambio de estado. MySQL verifica que la solicitud no haya creado una cuenta ni cambiado el estado del fixture.
+- API + MySQL 8 descartables y cleanup completo pasan localmente; Action posterior al push pendiente.

@@ -555,4 +555,9 @@ La invitación envía sólo el enlace de activación; el usuario fija su contras
 - El token Driver recibe HTTP 403 en `GET /Vehicles`, `GET /Drivers`, `GET /Routes/assignment-options`, `POST /Vehicles`, `POST /Drivers` y `POST /Routes`.
 - Consulta MySQL posterior confirma `0:0:0` filas Vehicle/Driver/Route creadas por las tres peticiones POST denegadas.
 - Smoke completo `scripts/smoke-tenant-http.sh` pasó contra API .NET 8 y MySQL 8 efímero (DB `fletflow_ci_driverroles_*`, puerto 13316); cleanup borró el contenedor. La base persistente local no se usó. `bash -n` y `git diff --check` pasan.
-- Release xUnit `dotnet test BackEnd_Gps.sln --configuration Release --no-restore -m:1`: **111/111**, cero omitidas. Action del cambio actual pendiente.
+- Release xUnit `dotnet test BackEnd_Gps.sln --configuration Release --no-restore -m:1`: **111/111**, cero omitidas. Action `45077658712` para `76c2cc8` pasó build, xUnit, smoke HTTP/MySQL y concurrencia.
+
+## Denegación User en administración — validado localmente
+
+- Token User recibe 403 en `GET /Users/my-team`, `GET /Users` y `GET /Roles`; POST de alta User y PUT de cambio de estado también reciben 403.
+- MySQL confirma que el usuario solicitado no fue creado y el fixture original conserva `IsActive=1`. Smoke completo en API + MySQL 8 descartable terminó exit 0; `bash -n` y `git diff --check` pasan. Action posterior al commit pendiente.

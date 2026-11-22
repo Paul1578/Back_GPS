@@ -637,10 +637,26 @@ request GET /Vehicles "" "$restricted_user_token"; expect_status 403 "Listar veh
 request GET /Drivers "" "$restricted_user_token"; expect_status 403 "Listar conductores como User"
 request GET /Routes "" "$restricted_user_token"; expect_status 403 "Listar rutas como User"
 request GET /Routes/assignment-options "" "$restricted_user_token"; expect_status 403 "Denegar opciones de asignación a User"
+request GET /Users/my-team "" "$restricted_user_token"; expect_status 403 "Denegar lectura del equipo a User"
+request GET /Users "" "$restricted_user_token"; expect_status 403 "Denegar listado de usuarios a User"
+request GET /Roles "" "$restricted_user_token"; expect_status 403 "Denegar catálogo de roles a User"
 request POST /Vehicles "$(jq -nc --arg plate "$restricted_attempt_plate" '{plate:$plate,brand:"Blocked",model:"Blocked",year:2025}')" "$restricted_user_token"; expect_status 403 "Crear vehículo como User"
 restricted_attempt_document="E2EQA${suffix: -9}U"
 request POST /Drivers "$(jq -nc --arg document "$restricted_attempt_document" '{firstName:"Blocked",lastName:"User",documentNumber:$document,phoneNumber:"0990000000"}')" "$restricted_user_token"
 expect_status 403 "Crear conductor como User"
+restricted_attempt_user_email="fletflow.e2e.denied.user.${suffix: -9}@example.test"
+request POST /Users "$(jq -nc --arg email "$restricted_attempt_user_email" --arg username "Denied User ${suffix: -9}" '{username:$username,email:$email,roleName:"User"}')" "$restricted_user_token"
+expect_status 403 "Denegar creación de usuario a User"
+restricted_user_id="$(mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" "$db_name" \
+  --batch --skip-column-names -e "SELECT Id FROM Users WHERE Email='$restricted_user_email';")"
+request PUT "/Users/$restricted_user_id/status?isActive=false" '{"isActive":false}' "$restricted_user_token"
+expect_status 403 "Denegar cambio de estado de usuario a User"
+restricted_user_write_rows="$(mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" "$db_name" \
+  --batch --skip-column-names -e "SELECT CONCAT((SELECT COUNT(*) FROM Users WHERE Email='$restricted_attempt_user_email'), ':', (SELECT CASE WHEN IsActive=1 THEN '1' ELSE '0' END FROM Users WHERE Id='$restricted_user_id'));")"
+[[ "$restricted_user_write_rows" == "0:1" ]] || {
+  echo "La autorización User permitió persistencia no autorizada (alta:estado=$restricted_user_write_rows)." >&2
+  exit 1
+}
 
 restricted_user_new_password="$(openssl rand -hex 24)"
 request POST /Auth/change-password "$(jq -nc --arg current "$restricted_user_password" --arg next "$restricted_user_new_password" '{currentPassword:$current,newPassword:$next,confirmNewPassword:$next}')" "$restricted_user_token"

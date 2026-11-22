@@ -1,9 +1,9 @@
 # Handoff — 2026-11-22
 
-- Trabajo vigente en `chore/stabilize-fleet-platform`: smoke de roles añade cobertura HTTP para Driver (lecturas de Vehicle/Driver/opciones y POST Vehicle/Driver/Route denegados; SQL exige `0:0:0`). Unit tests Release **111/111** y smoke HTTP/MySQL 8 efímero completo pasan. Docs a actualizar/publicar y Action posterior pendiente.
+- Trabajo vigente en `chore/stabilize-fleet-platform`: `76c2cc8` pasó Action `45077658712` (build, xUnit 111/111, tenant HTTP/MySQL, concurrencia, cleanup), incluidos rechazos Driver y SQL sin filas. Lote local posterior cubre 403 de User sobre Users/Roles, alta denegada y cambio de estado denegado; smoke descartable completo pasa. Publicar y validar Action.
 - Durante la revisión estática se detectó una comilla faltante en el JSON del POST Driver usado por el nuevo smoke; se corrigió antes de ejecutar la prueba. Detalle y prevención en `docs/ERROR_LOG.md`.
 - Front `refactor/route-builder` HEAD `2147be7` pasó Action `45076629351`: E2E **37/37**, responsive 1/1, build/lint/audit y cleanup. Estado documentado en el repo Front.
-- Nunca ejecutar pruebas destructivas sobre el MySQL persistente; esta validación usó MySQL 8 temporal en puerto 13316, DB `fletflow_ci_*`, eliminados al finalizar. Próximo: documentar y publicar ambos repos; continuar cobertura CRUD/roles/responsive.
+- Nunca ejecutar pruebas destructivas sobre el MySQL persistente; las validaciones locales de roles usaron MySQL 8 temporales en puertos 13316/13317 y DB `fletflow_ci_*`, eliminados al finalizar. Próximo: publicar el lote de User-deny y continuar la matriz.
 
 - Branch backend `chore/stabilize-fleet-platform`; nuevo cambio local bloquea la desactivación de cuenta User vinculada a Driver con rutas activas `Pending`/`InProgress`, bajo locks de asignación y usuario. Test/domain y smoke HTTP/MySQL ya pasaron localmente; Action aún no lanzada hasta publicar el cambio.
 - Validación: Release xUnit 111/111, Release build 0 warnings/0 errors, `smoke-tenant-http.sh` completo sobre API + MySQL 8 descartable `fletflow_ci_user_deactivation`, cleanup correcto, bash syntax/diff-check correctos.

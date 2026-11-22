@@ -176,4 +176,4 @@ mysql --protocol=TCP --host="$MYSQL_HOST" --port="$MYSQL_PORT" --user="$MYSQL_US
 
 PLAYWRIGHT_BASE_URL="$playwright_base_url" \
 PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH="${PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH:-/usr/bin/google-chrome}" \
-  npm --prefix "$frontend_dir" run test:e2e
+  npm --prefix "$frontend_dir" run test:e2e -- "$@"

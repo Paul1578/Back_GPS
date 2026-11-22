@@ -16,6 +16,15 @@
 - Cleanup SQL confirmó cero Drivers, vehículos y miembros temporales A/B; además cero rutas, posiciones GPS y vehículos Logistics/Manager. El contenedor y API locales se detuvieron. Se observaron avisos del cliente MariaDB por alias `mysql` y TLS desactivado en conexión local de prueba; no afectaron el resultado.
 - Actions aún pendiente para este diff; la rama sigue sin commit/push, pendiente de revisión e integración.
 
+# Validación de logout vinculado al principal — 2026-11-22
+
+- `/home/leonardo/.dotnet/dotnet build BackEnd_Gps.sln --configuration Release --no-restore -m:1`: 0 warnings/0 errores.
+- `dotnet test` Release: **99/99**. Dos casos nuevos verifican no revocar refresh ajeno y revocar refresh propio.
+- `bash -n` en `smoke-tenant-http.sh`, `smoke-route-concurrency.sh`, `run-e2e-local.sh`, y `git diff --check`: correctos.
+- Smokes HTTP/API/MySQL 8 efímeros: ambos exit 0. Tenant smoke ejercitó logout cross-account y logout propio; concurrency smoke verificó agenda/asignaciones/roles. Cleanup corroboró cero fixtures.
+- Front integrado cross-repo: Playwright **33/33**, lint/build/audit (0 vulnerabilidades).
+- Actions para los nuevos commits sigue pendiente.
+
 # Pruebas backend
 
 ## Edición de perfil con scope de tenant — 2026-11-22

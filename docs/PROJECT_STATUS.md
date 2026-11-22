@@ -2,6 +2,13 @@
 - Action `2045b18` [45050058627](https://github.com/Paul1578/Back_GPS/actions/runs/45050058627) pasó: Release build, xUnit **97/97**, smoke HTTP/MySQL tenant y concurrencia, incluye carrera de role/refresh y bloqueos con ruta Pending; cleanup sin fixtures.
 # Estado actual — 2026-11-22
 
+- Rama `chore/stabilize-fleet-platform`; `main` intacta. Último backend remoto `2045b18` pasó Action `45050058627` con build/xUnit 97/97 y smokes; cambios locales actuales todavía requieren commit y Actions.
+- Logout now limita revocación al propietario autenticado del refresh. Validación local actual: Release build 0 warnings/errores, xUnit **99/99**, `smoke-tenant-http.sh` y `smoke-route-concurrency.sh` exit 0 con limpieza en MySQL 8 efímero.
+- Front local relacionado pasó **33/33** E2E, lint/build/audit 0 vulnerabilidades y cleanup; incluye creación de ruta de Manager.
+- Misión abierta: más CRUD/roles/responsive y CI de estas modificaciones. La política Admin delegado no está definida; SMTP/PFX/infraestructura productiva son externas. App nativa móvil aplazada.
+
+# Estado histórico — 2026-11-22
+
 - Rama `chore/stabilize-fleet-platform`; `main` intacta. Commit `27bf75a` pasó Action `45048795456`: build Release, xUnit **94/94**, smokes HTTP/MySQL de tenant/concurrencia y cleanup cero.
 - Cambios locales pendientes: serializar cambio de rol con refresh; bloquear desasignación/baja/cambio de rol cuando Driver tiene ruta activa Pending; unit tests **97/97**, build Release **0 warnings/0 errors**, bash syntax/diff-check correctos. Action de smokes con estas adiciones pendiente.
 - Persisten cobertura pendiente CRUD/roles/responsive y pregunta de producto sobre Admin delegado. SMTP/PFX/infra producción externos; app nativa aplazada.

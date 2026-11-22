@@ -123,7 +123,11 @@ namespace fletflow.Api.Controllers
         [Authorize]
         public async Task<IActionResult> Logout([FromBody] RefreshRequestDto dto)
         {
-            await _authService.LogoutAsync(dto.RefreshToken);
+            var userIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (!Guid.TryParse(userIdValue, out var userId))
+                return Unauthorized("Token sin identificador de usuario.");
+
+            await _authService.LogoutAsync(dto.RefreshToken, userId);
             return Ok(new { message = "Sesion cerrada." });
         }
 

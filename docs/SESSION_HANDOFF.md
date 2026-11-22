@@ -1,4 +1,13 @@
-# Continuación — Sesión y Driver con ruta Pending — 2026-11-22
+# Continuación — Logout autenticado y smokes MySQL — 2026-11-22
+
+- Branch backend `chore/stabilize-fleet-platform`, frontend `refactor/route-builder`; `main` intacta.
+- Seguridad: `/Auth/logout` compara dueño del refresh con `NameIdentifier`; foreign token no se revoca y token propio sí. Regresión xUnit agregada.
+- Validación local: Release build 0 warnings/errores, **99/99** xUnit, `smoke-tenant-http.sh` y `smoke-route-concurrency.sh` exit 0; ambos usaron MySQL 8 efímero y limpiaron recursos QA.
+- Front relacionado: **33/33** E2E API/MySQL, build/lint, audit 0 vulnerabilidades; manager constructor responsive y CRUD actualizado.
+- Error de autorización de logout y errores de ejecución del E2E Front registrados en `docs/ERROR_LOG.md`.
+- Próximo paso: commit/push de ambas ramas y ejecutar Actions para los SHAs nuevos; continuar la auditoría CRUD/roles/responsive. Admin delegado requiere decisión de producto, SMTP/PFX/infra productiva externos, nativo móvil aplazado.
+
+# Continuación histórica — Sesión y Driver con ruta Pending — 2026-11-22
 
 - Rama Backend `chore/stabilize-fleet-platform`, Front `refactor/route-builder`; no main.
 - Backend `27bf75a` pasó Action `45048795456`: build, xUnit 94/94, tenant HTTP/MySQL, route concurrency y cleanup cero.

@@ -1,3 +1,11 @@
+# 2026-11-22 — Logout podía revocar refresh de otra cuenta — CORREGIDO Y VALIDADO LOCALMENTE
+
+- Hallazgo de auditoría: `POST /api/Auth/logout` estaba autenticado, pero pasaba el refresh token del cuerpo directamente al servicio. Si un usuario obtenía el token de otra cuenta, podía revocarlo.
+- Corrección: el controlador obtiene el ID autenticado de `NameIdentifier`; `AuthService.LogoutAsync` sólo revoca cuando el `UserId` del refresh coincide. Token inexistente o de otra cuenta conserva respuesta idempotente para no revelar si existe.
+- Regresiones xUnit verifican token ajeno sin commit/revocación y token propio revocado/commit. El smoke HTTP real verificó que cuenta B no revoca refresh de A, que A aún puede rotarlo y que A sí puede revocar su refresh; suite Release **99/99**, build 0 warnings/errores.
+- `smoke-tenant-http.sh` y `smoke-route-concurrency.sh` terminaron exit 0 contra API/MySQL 8 efímeros; cleanup confirmó cero fixtures QA.
+- Prevención: para operaciones de sesión autenticadas, vincular siempre el recurso de sesión al principal del JWT, aunque el endpoint reciba además identificadores/tokens.
+
 # 2026-11-22 — Matriz HTTP CRUD Driver de Manager — CORREGIDA Y VALIDADA
 
 - La primera prueba intentó leer el Driver activo con `GET /Drivers?onlyActive=false` y obtuvo `[]`. El parámetro es un filtro exacto, no una opción “incluir inactivos”; el fixture se lee por `GET /Drivers/{id}`.

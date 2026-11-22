@@ -1,5 +1,11 @@
 # Seguridad
 
+## Hallazgo corregido — revocación de refresh por cuenta — 2026-11-22
+
+- `POST /api/Auth/logout` ahora vincula el refresh token solicitado con el ID autenticado (`NameIdentifier`). Un usuario que posea el refresh de otra cuenta no puede revocarlo; la respuesta continúa siendo idempotente y no revela la existencia del token.
+- Pruebas: xUnit valida ambos casos; el smoke HTTP/MySQL real probó B intentando revocar el refresh de A, A rotándolo después y revocando su propio sucesor. Build Release limpio, **99/99** xUnit, smokes tenant y concurrencia exit 0 con cleanup.
+- El permiso de Admin delegado para asignar/promover Admin sigue pendiente de política de producto; el hallazgo no elimina el aislamiento tenant ya aplicado.
+
 ## Controles implementados
 
 - El registro público crea una cuenta raíz `Admin` de un tenant nuevo. El backend fija ese rol e ignora `roleName` enviado por el cliente; el tenant queda limitado al `owner_id` del usuario recién creado. No otorga acceso a organizaciones existentes.

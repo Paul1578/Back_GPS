@@ -28,6 +28,37 @@ public sealed class AuthServiceSecurityTests
     }
 
     [Fact]
+    public async Task Logout_DoesNotRevokeRefreshTokenOwnedByAnotherUser()
+    {
+        var owner = new User { Email = "owner@example.test" };
+        var authenticatedUser = new User { Email = "other@example.test" };
+        var refreshToken = new RefreshToken { UserId = owner.Id };
+        var unitOfWork = new RecordingUnitOfWork(authenticatedUser);
+        unitOfWork.RefreshTokens.LookupToken = refreshToken;
+        var service = CreateService(unitOfWork, new RecordingEmailQueue());
+
+        await service.LogoutAsync("owner-refresh-token", authenticatedUser.Id);
+
+        Assert.Empty(unitOfWork.RefreshTokens.RevokedIds);
+        Assert.Equal(0, unitOfWork.CommitCount);
+    }
+
+    [Fact]
+    public async Task Logout_RevokesRefreshTokenOwnedByAuthenticatedUser()
+    {
+        var user = new User { Email = "member@example.test" };
+        var refreshToken = new RefreshToken { UserId = user.Id };
+        var unitOfWork = new RecordingUnitOfWork(user);
+        unitOfWork.RefreshTokens.LookupToken = refreshToken;
+        var service = CreateService(unitOfWork, new RecordingEmailQueue());
+
+        await service.LogoutAsync("member-refresh-token", user.Id);
+
+        Assert.Equal([refreshToken.Id], unitOfWork.RefreshTokens.RevokedIds);
+        Assert.Equal(1, unitOfWork.CommitCount);
+    }
+
+    [Fact]
     public async Task ForgotPassword_HidesAccountExistenceAndQueuesDeliveryOutOfBand()
     {
         var user = new User { Email = "known@example.test" };
@@ -106,9 +137,15 @@ public sealed class AuthServiceSecurityTests
         public sealed class RecordingRefreshTokens : IRefreshTokenRepository
         {
             public int RevokeAllCount { get; private set; }
+            public RefreshToken? LookupToken { get; set; }
+            public List<Guid> RevokedIds { get; } = [];
             public Task AddAsync(RefreshToken token) => Task.CompletedTask;
-            public Task<RefreshToken?> GetByTokenAsync(string rawToken) => Task.FromResult<RefreshToken?>(null);
-            public Task RevokeAsync(Guid id, string? replacedByTokenHash = null) => Task.CompletedTask;
+            public Task<RefreshToken?> GetByTokenAsync(string rawToken) => Task.FromResult(LookupToken);
+            public Task RevokeAsync(Guid id, string? replacedByTokenHash = null)
+            {
+                RevokedIds.Add(id);
+                return Task.CompletedTask;
+            }
         public Task<bool> TryRotateAsync(Guid currentTokenId, RefreshToken replacement) => Task.FromResult(false);
             public Task RemoveExpiredAsync() => Task.CompletedTask;
             public Task RevokeAllForUserAsync(Guid userId) { RevokeAllCount++; return Task.CompletedTask; }

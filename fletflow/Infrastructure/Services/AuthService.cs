@@ -104,10 +104,10 @@ namespace fletflow.Infrastructure.Services
             return BuildResponse(user, newRaw, newRt.ExpiresAt);
         }
 
-        public async Task LogoutAsync(string refreshTokenRaw)
+        public async Task LogoutAsync(string refreshTokenRaw, Guid authenticatedUserId)
         {
             var rt = await _unitOfWork.RefreshTokens.GetByTokenAsync(refreshTokenRaw);
-            if (rt == null) return; // idempotente
+            if (rt == null || rt.UserId != authenticatedUserId) return; // idempotente y limitado a la sesión del usuario
 
             await _unitOfWork.RefreshTokens.RevokeAsync(rt.Id);
             await _unitOfWork.CommitAsync();

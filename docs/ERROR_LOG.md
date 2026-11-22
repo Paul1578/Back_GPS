@@ -545,3 +545,16 @@ Cada cambio de API debe incluir validación de compilación, migraciones si apli
 - Corrección: habilitar `workflow_dispatch` para que la suite completa se ejecute contra el ref de trabajo elegido; el workflow frontend usa además el backend feature checkout.
 - Prevención: al exigir validación antes de merge, comprobar que la CI se pueda ejecutar sobre la rama aislada.
 - Evidencia: Actions backend `44999697740` para `3620cc2` success en build, xUnit, smoke HTTP/MySQL y concurrencia.
+
+
+## 2026-11-22 — MySQL CONCAT representó booleano como byte de control en smoke — CORREGIDO
+
+- Actions `45000671534` pasó build y 61/61 xUnit, y los endpoints cross-tenant/propietario respondieron como se esperaba. El smoke falló al comparar estado porque `CONCAT(u.IsActive, ...)` serializó el `TINYINT(1)` como byte `0x01` (`^A`) en vez del carácter `"1"`.
+- Corrección: normalizar el booleano mediante `CASE WHEN ... THEN '1' ELSE '0' END` antes de concatenar.
+- Prevención: representar booleanos explícitamente como strings en asserts SQL; repetir Actions del smoke MySQL.
+
+## 2026-11-22 — Comilla invertida sin escapar en llamada de parche JS — CORREGIDO
+
+- Un intento de `apply_patch` dentro de la herramienta `exec` incluyó una comilla invertida sin escapar en una cadena template literal; JavaScript reportó `SyntaxError` antes de ejecutar herramientas o editar archivos.
+- Corrección: aplicar el reemplazo con un script Python heredoc y comprobar el diff.
+- Prevención: evitar interpolación de template literals al transportar parches que contengan backticks.

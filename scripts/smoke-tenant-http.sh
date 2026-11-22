@@ -381,7 +381,7 @@ expect_status 404 "Tenant B no puede cambiar el rol de un miembro de tenant A"
 request POST "/Users/$restricted_user_id/roles/Admin" "" "$other_token"
 expect_status 404 "Alias de roles no cruza tenants"
 user_state="$(mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" "$db_name" \
-  --batch --skip-column-names -e "SELECT CONCAT(u.IsActive, ':', LOWER(r.Name)) FROM Users u JOIN UserRoles ur ON ur.UserId=u.Id JOIN Roles r ON r.Id=ur.RoleId WHERE u.Id='$restricted_user_id';")"
+  --batch --skip-column-names -e "SELECT CONCAT(CASE WHEN u.IsActive THEN '1' ELSE '0' END, ':', LOWER(r.Name)) FROM Users u JOIN UserRoles ur ON ur.UserId=u.Id JOIN Roles r ON r.Id=ur.RoleId WHERE u.Id='$restricted_user_id';")"
 [[ "$user_state" == "1:user" ]] || { echo "Los intentos cross-tenant alteraron estado/rol del miembro ($user_state)." >&2; exit 1; }
 
 request PUT "/Users/$root_user_id/status?isActive=false" "" "$token"
@@ -391,7 +391,7 @@ expect_status 400 "No se puede cambiar el rol del propietario raíz"
 request POST "/Users/$root_user_id/roles/User" "" "$token"
 expect_status 400 "Alias de roles tampoco modifica al propietario raíz"
 root_state="$(mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" "$db_name" \
-  --batch --skip-column-names -e "SELECT CONCAT(u.IsActive, ':', LOWER(r.Name)) FROM Users u JOIN UserRoles ur ON ur.UserId=u.Id JOIN Roles r ON r.Id=ur.RoleId WHERE u.Id='$root_user_id';")"
+  --batch --skip-column-names -e "SELECT CONCAT(CASE WHEN u.IsActive THEN '1' ELSE '0' END, ':', LOWER(r.Name)) FROM Users u JOIN UserRoles ur ON ur.UserId=u.Id JOIN Roles r ON r.Id=ur.RoleId WHERE u.Id='$root_user_id';")"
 [[ "$root_state" == "1:admin" ]] || { echo "Los intentos de cambiar propietario alteraron estado/rol ($root_state)." >&2; exit 1; }
 
 request POST /Vehicles "$(jq -nc --arg plate "$plate" '{plate:$plate,brand:"CI QA",model:"Tenant",year:2025}')"

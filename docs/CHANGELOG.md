@@ -235,4 +235,4 @@
 
 - Se agregó `GET /Routes/assignment-options` para Admin, Manager y Logistics; el DTO expone vehículos/Drivers activos y excluye datos personales innecesarios.
 - Smokes agregados para denegar User, limitar tenant y comprobar que Logistics recibe sólo opciones de su empresa.
-- Build/xUnit local: 0 warnings/0 errors y 64/64; integración HTTP/MySQL pendiente de Actions.
+- Build/xUnit local: 0 warnings/0 errors y 64/64. Actions `45011796536` pasó build, xUnit y smoke HTTP/MySQL de tenant/Logistics/concurrencia con cleanup correcto.

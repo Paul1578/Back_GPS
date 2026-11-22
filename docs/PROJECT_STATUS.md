@@ -238,4 +238,4 @@ Nota de actualización: algunos resultados históricos de registro público más
 
 - Nuevo `GET /Routes/assignment-options`, autorizado para Admin/Manager/Logistics, retorna vehículos y conductores activos con campos mínimos. Filtros EF Core limitan la consulta al propietario autenticado; DTO no incluye documento ni teléfono del Driver.
 - `scripts/smoke-tenant-http.sh` comprueba Logistics 200 con recursos propios, ausencia de PII, User 403 y tenant B sin recursos de tenant A.
-- Local: Release build 0 warnings/0 errors; xUnit 64/64; shell syntax/diff-check correctos. Falta ejecutar el smoke API/MySQL y Actions integradas antes de marcar validado.
+- Local: Release build 0 warnings/0 errors; xUnit 64/64; shell syntax/diff-check correctos. Actions `45011796536` pasó build, xUnit, smoke tenant/Logistics API/MySQL y concurrencia; cleanup correcto.

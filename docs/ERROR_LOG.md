@@ -634,6 +634,6 @@ Cada cambio de API debe incluir validación de compilación, migraciones si apli
 - Acciones previas: Logistics podía crear rutas, pero el frontend no podía consultar `/Vehicles` ni `/Drivers` (403), mientras que esos datos eran requeridos por el constructor.
 - Solución en curso: `GET /Routes/assignment-options` devuelve sólo vehículos/Drivers activos y campos operativos mínimos; Controller permite Admin/Manager/Logistics. Repositorios consultan mediante `FleetFlowDbContext`, cuyos query filters limitan `OwnerUserId` al propietario actual.
 - El smoke verifica Logistics 200 con los registros del tenant propietario sin documento/teléfono, User 403 y un segundo tenant con arrays vacíos.
-- Verificación local: Release build 0 warnings/0 errors, xUnit 64/64, `bash -n` y diff-check. Falta ejecutar smoke HTTP/MySQL y Actions tras publicar.
+- Verificación: local Release build 0 warnings/0 errors, xUnit 64/64, `bash -n` y diff-check; Actions `45011796536` pasó build, xUnit, smoke HTTP/MySQL de tenant/Logistics y concurrencia, cleanup correcto.
 - Error de comando: la primera invocación apuntó a `fletflow.sln`, que no existe; el nombre correcto es `BackEnd_Gps.sln`. El sistema `/usr/bin/dotnet` tampoco tiene runtime utilizable; se repitió con `/home/leonardo/.dotnet/dotnet` SDK 8.0.428.
 - Prevención: consultar `rg --files -g '*.sln'` antes de invocar build y usar el SDK local conocido cuando el host de sistema no tenga runtime.

@@ -51,10 +51,10 @@ Fecha de corte: 2026-11-21.
 
 ## Pendientes prioritarios
 
-1. Ampliar la matriz HTTP/MySQL de roles y permisos. El nuevo smoke de CI ya cubre aislamiento cross-tenant de Vehicles, Drivers, Routes y RoutePositions, pero no sustituye todos los flujos de rol.
+1. Seguir ampliando la matriz HTTP/MySQL de roles y permisos. Actions `44989454133` pasó una matriz parcial User/Driver/Logistics/Manager (15/15 Playwright, xUnit 57/57), pero no cubre todas las operaciones permitidas/denegadas.
 2. Configurar SMTP vigente; la credencial depende del usuario/entorno. Rotar también credenciales equivalentes en cualquier entorno remoto.
 3. Antes de producción, configurar dominio/proxy/certificado, almacenamiento de evidencia y rate limiting distribuido; el límite en memoria actual es por IP. Migrar tokens de `localStorage` a cookies HttpOnly requiere cambio coordinado backend/frontend.
-4. Ejecutar la integración de E2E frontend/API/MySQL en GitHub Actions después de publicar las ramas; ampliar casos de permisos/roles y responsive que aún no estén cubiertos.
+4. E2E frontend/API/MySQL ya corre en Actions y pasó; ampliar casos de permisos/roles y responsive que aún no estén cubiertos.
 
 ## Actualización de cobertura — 2026-11-21
 
@@ -152,3 +152,9 @@ Fecha de corte: 2026-11-21.
 - Cobertura HTTP ahora confirma creación positiva de ruta por Logistics con vehículo/Driver del mismo tenant creados por Manager, sin rutas pendientes simultáneas: Manager crea/edita/da de baja; luego Logistics crea, lee y valida persistencia, edita y vuelve a validar, y da de baja.
 - El cleanup registra IDs separados para las dos rutas soft-deleted. Smoke aislado con MySQL 8 efímero y DB `fletflow_ci_*`: aprobado; contenedor eliminado. Primer fallo de cleanup y corrección registrados en `docs/ERROR_LOG.md`.
 - Commit `43ca30c` está publicado y Actions `44988756481` terminó success; build, xUnit y smokes HTTP/MySQL de tenant, Logistics y concurrencia pasaron en recursos descartables.
+
+## Operación Logistics de inicio a cierre — 2026-11-22
+
+- Smoke HTTP ampliado localmente con paradas de tres puntos y operación PickupAndDelivery, transición InProgress, estado/evidencia de parada, GPS, Completed y devolución del vehículo a Available.
+- API temporal + MySQL 8 efímero confirmaron persistencia y cleanup de cero rutas, posiciones y vehículos QA. `bash -n`, `git diff --check` y Release build 0 warnings/errores pasaron.
+- El primer intento tuvo un falso fallo de verificación porque el warning MySQL contaminó stdout; corrección y repetición aprobada en `docs/ERROR_LOG.md`. Publicar el cambio y verificar Actions está pendiente.

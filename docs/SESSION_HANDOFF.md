@@ -177,7 +177,7 @@ Errores de migración, herramientas, QA y soluciones están en `docs/ERROR_LOG.m
 - `smoke-tenant-http.sh` prueba Logistics→User→Logistics y reenvía tokens originales; ambos siguen respondiendo 401. Se añadió `MYSQL_PORT` para DB temporales.
 - Validación local: suite Release 57/57; build 0 warnings/0 errores; smoke real API + MySQL 8 con DB `fletflow_ci_*` aprobado. El contenedor se eliminó.
 - Error del primer intento: el runner omitía el puerto y conectaba al 3306 local con credenciales temporales no válidas; no se ejecutó SQL ni se modificó DB local. Ver `docs/ERROR_LOG.md`.
-- Próximo: inspeccionar diff, commit de la corrección y reportar hash/resultados. No requiere migración; `TokenVersion` ya existe.
+- El smoke de creación por Logistics quedó publicado en `43ca30c` y pasó Actions `44988756481`; sin migración. La iteración actual extiende operaciones de estado/evidencia/GPS y tiene su propia validación local documentada abajo.
 
 ## Verificación remota de cambio de rol — 2026-11-22
 
@@ -192,3 +192,10 @@ Errores de migración, herramientas, QA y soluciones están en `docs/ERROR_LOG.m
 - El primer intento detectó un defecto del propio cleanup: el ID Logistics sobrescribía el Manager aunque la baja de Manager es lógica. Se mantienen ahora ambos IDs y el trap limpia ambas rutas; error y solución en `docs/ERROR_LOG.md`.
 - Repetición completa aprobada únicamente con MySQL 8 en contenedor y DB desechable `fletflow_ci_*`; cleanup sin fallos, contenedor eliminado y DB local intacta. `bash -n` y `git diff --check` correctos. No se ejecutaron otras suites.
 - El commit `43ca30c` ya está publicado en `chore/stabilize-fleet-platform`; Actions `44988756481` completó en success. Build, xUnit y smokes HTTP/MySQL de tenant/Logistics y concurrencia pasaron. `main` sigue intacta y la misión de estabilización global continúa abierta.
+
+## Operación Logistics de inicio a cierre — 2026-11-22
+
+- Diff local pendiente de commit en `scripts/smoke-tenant-http.sh`: extiende la ruta Logistics con operación PickupAndDelivery, transición InProgress, estado/evidencia de parada, posición GPS, Completed y verificación del vehículo Available.
+- Smoke pasó contra API temporal en 5058 y MySQL 8 efímero en 13306, DB `fletflow_ci_lifecycle_*`; 201 alta, 200 lectura/edición/parada/evidencia/GPS, 204 inicio/cierre/baja. Cleanup comprobó cero rutas, posiciones y vehículos QA.
+- Primer intento falló sólo en el assert de cleanup porque warning MySQL contaminaba stdout; se separó stderr y repetición pasó. Release build 0 warnings; `bash -n` y `git diff --check` limpios. xUnit no se ejecutó en esta iteración.
+- Próximo: revisar, publicar y esperar Actions; confirmar otra vez el smoke completo y actualizar documentación con el SHA remoto.

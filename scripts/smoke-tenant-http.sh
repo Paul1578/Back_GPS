@@ -71,7 +71,7 @@ cleanup() {
     if [[ -n "$manager_driver_id" ]]; then sql+=" DELETE FROM Drivers WHERE Id='$manager_driver_id';"; fi
     if [[ -n "$vehicle_id" ]]; then sql+=" DELETE FROM Vehicles WHERE Id='$vehicle_id';"
     elif [[ -n "$plate" ]]; then sql+=" DELETE FROM Vehicles WHERE Plate='$plate';"; fi
-    if [[ -n "$manager_vehicle_id" ]]; then sql+=" DELETE FROM Vehicles WHERE Id='$manager_vehicle_id';"; fi
+    if [[ -n "$manager_vehicle_id" ]]; then sql+=" UPDATE Vehicles SET Status=0 WHERE Id='$manager_vehicle_id'; DELETE FROM Vehicles WHERE Id='$manager_vehicle_id';"; fi
     if [[ -n "$restricted_attempt_plate" ]]; then sql+=" DELETE FROM Vehicles WHERE Plate='$restricted_attempt_plate';"; fi
     if [[ -n "$other_tenant_email" ]]; then
       sql+=" SET @qa_user_id=(SELECT Id FROM Users WHERE Email='$other_tenant_email'); DELETE FROM RefreshTokens WHERE UserId=@qa_user_id; DELETE FROM PasswordResetTokens WHERE UserId=@qa_user_id; DELETE FROM UserRoles WHERE UserId=@qa_user_id; DELETE FROM Users WHERE Id=@qa_user_id;"
@@ -93,6 +93,26 @@ cleanup() {
       echo "No se pudieron limpiar los fixtures creados por smoke-tenant-http.sh." >&2
       status=1
     }
+    if [[ -n "$manager_vehicle_id" && -n "$manager_route_id" && -n "$logistics_route_id" ]]; then
+      local remaining
+      if remaining="$(mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" \
+        --batch --skip-column-names "$db_name" -e "SELECT CONCAT((SELECT COUNT(*) FROM Routes WHERE Id IN ('$manager_route_id','$logistics_route_id')), ':', (SELECT COUNT(*) FROM RoutePositions WHERE RouteId IN ('$manager_route_id','$logistics_route_id')), ':', (SELECT COUNT(*) FROM Vehicles WHERE Id='$manager_vehicle_id'));" \
+        2>"$work_dir/cleanup_verify.stderr")"; then
+        :
+      else
+        echo "No se pudo verificar la limpieza de rutas, GPS y vehículo del smoke:" >&2
+        cat "$work_dir/cleanup_verify.stderr" >&2
+        status=1
+        remaining="unknown"
+      fi
+      if [[ "$remaining" != "0:0:0" && "$remaining" != "unknown" ]]; then
+        echo "Cleanup dejó rutas/posiciones/vehículo QA (conteos: $remaining)." >&2
+        status=1
+      fi
+      if [[ "$remaining" == "0:0:0" ]]; then
+        echo "Cleanup verificado: 0 rutas, 0 posiciones GPS y 0 vehículos Logistics/Manager." >&2
+      fi
+    fi
   fi
   rm -rf -- "$work_dir"
   exit "$status"
@@ -178,7 +198,7 @@ request GET /Drivers "" "$deactivated_access_token"; expect_status 200 "Listar c
 request GET /Routes "" "$deactivated_access_token"; expect_status 200 "Listar rutas como Manager"
 manager_plate="E2EM${suffix: -9}"
 manager_document="E2ED${suffix: -9}"
-role_points='[{"lat":-0.18,"lng":-78.46,"name":"Role origin"},{"lat":-0.19,"lng":-78.47,"name":"Role destination"}]'
+role_points='[{"lat":-0.18,"lng":-78.46,"name":"Role origin"},{"lat":-0.185,"lng":-78.465,"name":"Role pickup and delivery","operation":3},{"lat":-0.19,"lng":-78.47,"name":"Role destination"}]'
 request POST /Vehicles "$(jq -nc --arg plate "$manager_plate" '{plate:$plate,brand:"CI Manager",model:"Fleet",year:2025}')" "$deactivated_access_token"
 expect_status 201 "Crear vehículo como Manager"
 manager_vehicle_id="$(jq -er '.id' "$work_dir/response.json")"
@@ -237,7 +257,7 @@ logistics_route_id="$(jq -er '.id' "$work_dir/response.json")"
 request GET "/Routes/$logistics_route_id" "" "$logistics_token"
 expect_status 200 "Leer ruta creada por Logistics"
 jq -e --arg id "$logistics_route_id" --arg name "$logistics_route_name" --arg vehicleId "$manager_vehicle_id" --arg driverId "$manager_driver_id" \
-  '.id == $id and .name == $name and .vehicleId == $vehicleId and .driverId == $driverId and .isActive == true and (.points | length == 2)' \
+  '.id == $id and .name == $name and .vehicleId == $vehicleId and .driverId == $driverId and .isActive == true and (.points | length == 3) and .points[1].operation == 3 and .points[1].status == 0' \
   "$work_dir/response.json" >/dev/null || { echo "La ruta de Logistics no coincide con lo persistido." >&2; cat "$work_dir/response.json" >&2; exit 1; }
 logistics_route_updated_name="${logistics_route_name} updated"
 request PUT "/Routes/$logistics_route_id" "$(jq -nc --arg name "$logistics_route_updated_name" --arg vehicleId "$manager_vehicle_id" --arg driverId "$manager_driver_id" --argjson points "$role_points" '{name:$name,cargoDescription:"Logistics update",vehicleId:$vehicleId,driverId:$driverId,points:$points}')" "$logistics_token"
@@ -245,10 +265,56 @@ expect_status 200 "Editar ruta como Logistics"
 request GET "/Routes/$logistics_route_id" "" "$logistics_token"
 expect_status 200 "Confirmar edición de ruta Logistics persistida"
 jq -e --arg id "$logistics_route_id" --arg name "$logistics_route_updated_name" --arg vehicleId "$manager_vehicle_id" --arg driverId "$manager_driver_id" \
-  '.id == $id and .name == $name and .vehicleId == $vehicleId and .driverId == $driverId and .isActive == true' \
+  '.id == $id and .name == $name and .vehicleId == $vehicleId and .driverId == $driverId and .isActive == true and (.points | length == 3) and .points[1].operation == 3 and .points[1].status == 0' \
   "$work_dir/response.json" >/dev/null || { echo "La edición de Logistics no quedó persistida." >&2; cat "$work_dir/response.json" >&2; exit 1; }
+
+request PUT "/Routes/$logistics_route_id/status" '{"status":1}' "$logistics_token"
+expect_status 204 "Iniciar ruta como Logistics"
+request GET "/Routes/$logistics_route_id" "" "$logistics_token"
+expect_status 200 "Leer ruta iniciada como Logistics"
+jq -e '.status == 1 and .startedAt != null and .points[1].status == 0' "$work_dir/response.json" >/dev/null \
+  || { echo "La ruta/vehículo no reflejan correctamente el inicio." >&2; cat "$work_dir/response.json" >&2; exit 1; }
+request GET "/Vehicles/$manager_vehicle_id" "" "$token"
+expect_status 200 "Leer vehículo en ruta como Admin QA"
+jq -e '.status == 1 and .isActive == true' "$work_dir/response.json" >/dev/null \
+  || { echo "El vehículo no pasó a OnRoute al iniciar la ruta." >&2; cat "$work_dir/response.json" >&2; exit 1; }
+
+request PUT "/Routes/$logistics_route_id/points/1/status" '{"status":1}' "$logistics_token"
+expect_status 200 "Iniciar parada operativa como Logistics"
+request POST "/Routes/$logistics_route_id/points/1/evidence" \
+  "$(jq -nc --arg content "E2E QA Logistics $suffix" '{type:"note",content:$content,description:"Evidencia de entrega/recogida de smoke"}')" "$logistics_token"
+expect_status 200 "Registrar evidencia de parada como Logistics"
+request PUT "/Routes/$logistics_route_id/points/1/status" '{"status":2}' "$logistics_token"
+expect_status 200 "Completar parada operativa como Logistics"
+jq -e '.points[1].operation == 3 and .points[1].status == 2 and (.points[1].evidence | length == 1) and .points[1].evidence[0].type == "note"' \
+  "$work_dir/response.json" >/dev/null \
+  || { echo "El estado/evidencia de la parada no quedó persistido." >&2; cat "$work_dir/response.json" >&2; exit 1; }
+
+request POST "/Routes/$logistics_route_id/positions" \
+  "$(jq -nc --argjson latitude -0.186 --argjson longitude -78.466 --argjson speed 32 --argjson heading 90 '{latitude:$latitude,longitude:$longitude,speedKmh:$speed,heading:$heading}')" "$logistics_token"
+expect_status 200 "Registrar posición GPS con ruta en progreso como Logistics"
+jq -e --arg routeId "$logistics_route_id" '.routeId == $routeId and .latitude == -0.186 and .longitude == -78.466 and .speedKmh == 32 and .heading == 90' \
+  "$work_dir/response.json" >/dev/null \
+  || { echo "La respuesta GPS no coincide con la posición enviada." >&2; cat "$work_dir/response.json" >&2; exit 1; }
+request GET "/Routes/$logistics_route_id/positions" "" "$logistics_token"
+expect_status 200 "Consultar posición GPS persistida como Logistics"
+jq -e 'length == 1 and .[0].latitude == -0.186 and .[0].longitude == -78.466 and .[0].speedKmh == 32 and .[0].heading == 90' \
+  "$work_dir/response.json" >/dev/null \
+  || { echo "La posición GPS no quedó persistida." >&2; cat "$work_dir/response.json" >&2; exit 1; }
+
+request PUT "/Routes/$logistics_route_id/status" '{"status":2}' "$logistics_token"
+expect_status 204 "Completar ruta como Logistics después de cerrar parada/evidencia"
+request GET "/Routes/$logistics_route_id" "" "$logistics_token"
+expect_status 200 "Confirmar ruta completada como Logistics"
+jq -e '.status == 2 and .isActive == true and .startedAt != null and .endedAt != null and .points[1].status == 2 and (.points[1].evidence | length == 1)' \
+  "$work_dir/response.json" >/dev/null \
+  || { echo "La ruta completada no conserva estado, timestamps, parada y evidencia." >&2; cat "$work_dir/response.json" >&2; exit 1; }
+request GET "/Vehicles/$manager_vehicle_id" "" "$token"
+expect_status 200 "Leer vehículo tras completar ruta como Admin QA"
+jq -e '.status == 0 and .isActive == true' "$work_dir/response.json" >/dev/null \
+  || { echo "El vehículo no volvió a Available al completar la ruta." >&2; cat "$work_dir/response.json" >&2; exit 1; }
 request DELETE "/Routes/$logistics_route_id" "" "$logistics_token"
-expect_status 204 "Dar de baja ruta como Logistics"
+expect_status 204 "Dar de baja ruta completada como Logistics"
 request PUT "/Users/$logistics_user_id/role" '{"roleName":"User"}' "$token"
 expect_status 200 "Cambiar rol Logistics a User"
 request GET /Auth/me "" "$logistics_token"
@@ -343,4 +409,4 @@ request GET "/Routes/$route_id" "" "$token"; expect_status 200 "Confirmar ruta t
 request GET "/Drivers/$driver_id" "" "$token"; expect_status 200 "Confirmar Driver tenant A intacto"
 request GET "/Vehicles/$vehicle_id" "" "$token"; expect_status 200 "Confirmar vehículo tenant A intacto"
 
-echo "OK: aislamiento HTTP/MySQL entre tenants; autorización User/Manager/Logistics; Logistics creó/editó/leyó/eliminó ruta con fixtures Manager; revocación de sesiones; Vehicles/Drivers/Routes/RoutePositions."
+echo "OK: aislamiento HTTP/MySQL entre tenants; autorización User/Manager/Logistics; Logistics creó/editó/leyó ruta, inició operación pickup+delivery con evidencia, registró GPS, completó ruta y verificó vehículo Available; cleanup de Vehicles/Drivers/Routes/RoutePositions; revocación de sesiones."

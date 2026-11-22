@@ -242,3 +242,11 @@ La invitación envía sólo el enlace de activación; el usuario fija su contras
 - Sólo se ejecutó `smoke-tenant-http.sh` contra API local temporal + MySQL 8 en contenedor efímero, con esquema `fletflow_ci_*`. Manager creó/editó y dio de baja su ruta antes de liberar la agenda compartida; Logistics creó otra ruta con los mismos fixtures (HTTP 201), GET confirmó ID/nombre/vehículo/conductor/paradas persistidos, PUT devolvió 200 y un segundo GET confirmó el nombre actualizado, DELETE devolvió 204.
 - Primer intento: el flujo HTTP pasó, pero falló cleanup porque el ID de la ruta Logistics sobrescribió el de Manager, cuya baja es lógica. Se corrigió guardando ambos IDs y limpiando las dos rutas. La repetición terminó con código 0 y cleanup sin errores; contenedor y DB desechables eliminados. No se usó la DB local.
 - CI confirmado: Actions `44988756481` para `43ca30c` terminó success. Release build, xUnit y los smokes tenant/roles, rutas por Logistics y concurrencia HTTP/MySQL pasaron; el job detuvo los contenedores al finalizar.
+
+## Ciclo operativo de ruta como Logistics — 2026-11-22
+
+- Validación local completa con `bash scripts/smoke-tenant-http.sh`, `bash -n scripts/smoke-tenant-http.sh`, `git diff --check` y Release build (0 warnings/0 errores). API `127.0.0.1:5058`, MySQL 8 en Docker/13306 y esquema descartable `fletflow_ci_lifecycle_*`; no se usó DB local.
+- Como Logistics: crear ruta HTTP 201; leer/editar 200; iniciar 204; iniciar/cerrar parada PickupAndDelivery, agregar evidencia y escribir/leer posición GPS 200; cerrar ruta 204. GET confirmó `Completed`, tiempos `StartedAt`/`EndedAt`, operación/evidencia/GPS persistidos y vehículo de vuelta a `Available`.
+- Cleanup confirmó 0 rutas, 0 posiciones GPS y 0 vehículos QA; contenedor y API temporal detenidos.
+- Primer intento: las operaciones pasaron, pero el assert de cleanup incluyó un warning MySQL en stdout y dio un falso conteo. Se redirigió stderr por separado y la repetición pasó; detalle en `ERROR_LOG.md`.
+- xUnit no se volvió a ejecutar en esta iteración; se ejecutará en Actions al publicar el smoke.

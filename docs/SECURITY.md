@@ -77,3 +77,9 @@ El smoke anónimo solicitó rol Admin en el registro; la fila persistida conserv
 - xUnit: 54/54. Smoke HTTP de cambio de contraseña extendido para MySQL; validar en el nuevo run Actions antes de declarar verificado extremo a extremo.
 
 - Resultado Actions `44983337062` (commit `cff33c6`): migración aplicada en MySQL disposable; smoke cambió contraseña, access/refresh viejos dieron 401, el login con password anterior falló y el nuevo fue aceptado. Workflow completo success.
+
+## Matriz de autorización y operación Logistics — 2026-11-22
+
+- Actions `44989454133` del frontend ejecutó contra backend `chore/stabilize-fleet-platform` la matriz negativa User/Driver/Logistics/Manager en MySQL efímero: Playwright 15/15, sin skips; xUnit 57/57. Las operaciones de flota/rutas/administración no permitidas devolvieron los 403 esperados.
+- Smoke local descartable amplió el camino positivo Logistics: crear/editar ruta, iniciar, completar parada PickupAndDelivery con evidencia, registrar GPS y cerrar. El backend devolvió el vehículo a `Available`; MySQL confirmó persistencia y cleanup. El smoke ampliado necesita su propio Actions tras publicarse.
+- La cobertura de políticas sigue siendo parcial respecto a todas las acciones posibles; la autorización y el aislamiento deben permanecer en el servidor, no sólo en los controles UI.

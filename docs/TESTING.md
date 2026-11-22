@@ -574,3 +574,4 @@ La invitación envía sólo el enlace de activación; el usuario fija su contras
 - Logistics recibe 403 al editar, cambiar estado, reactivar y dar de baja Vehicle, y al editar/desactivar Driver o asignar/desasignar vehículo. Snapshot SQL antes/después exige que ambos registros permanezcan idénticos.
 - La primera ejecución reveló una aserción demasiado amplia que incluía una ruta previamente modificada por Manager; quedó acotada al Vehicle/Driver bajo prueba (ver `ERROR_LOG.md`). Smoke local completo API + MySQL 8 descartables pasó y limpió sus fixtures.
 - Action `45080063668` para `fa16d05`: build Release, xUnit **111/111**, smoke HTTP/MySQL tenant, concurrencia y cleanup, todo success.
+- xUnit añadido: `AssignDriverToVehicleTests.Execute_AssignsVehicleToActiveUnlinkedDriverAndCommits` cubre comando positivo sin UserId, asignación de VehicleId y Commit. Release completo **112/112** pasa localmente; Action de esta ampliación pendiente.

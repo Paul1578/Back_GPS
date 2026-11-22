@@ -3,6 +3,7 @@
 - `76c2cc8` pasó Action `45077658712`; `229076d` pasó Action `45078321298` (Release build, xUnit 111/111, HTTP/MySQL tenant, concurrencia y cleanup), incluidos los 403 y la ausencia de mutaciones User en Users/Roles.
 - Durante la revisión estática se detectó una comilla faltante en el JSON del POST Driver usado por el nuevo smoke; se corrigió antes de ejecutar la prueba. Detalle y prevención en `docs/ERROR_LOG.md`.
 - `fa16d05` publica el camino Driver propio (SQL `3:0:1:<VehicleId>`) y límites Manager/User y Logistics en endpoints de flota. Primera repetición de Manager llamó un helper que esperaba nombre/estado inicial de una ruta ya editada/baja legítimamente; ahora compara solo Vehicle/Driver. Action `45080063668` pasó build, xUnit 111/111, smoke HTTP/MySQL, concurrencia y cleanup.
+- xUnit añade cobertura positiva del comando `AssignDriverToVehicle` con Driver sin `UserId`; Release **112/112** pasa localmente, Action de este nuevo caso pendiente.
 - Front `refactor/route-builder` HEAD `2147be7` pasó Action `45076629351`: E2E **37/37**, responsive 1/1, build/lint/audit y cleanup. Estado documentado en el repo Front.
 - Nunca ejecutar pruebas destructivas sobre el MySQL persistente; las validaciones locales usaron MySQL 8 temporales en puertos 13316/13317/13319/13321 y DB `fletflow_ci_*`, eliminados al finalizar. Próximo: continuar responsive Front y seguir la Action integrada.
 

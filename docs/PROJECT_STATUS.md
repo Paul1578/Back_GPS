@@ -19,6 +19,7 @@
 - Backend `229076d` pasó Action `45078321298`: xUnit 111/111, Release build, smoke tenant HTTP/MySQL, concurrencia y cleanup; incluye 403 de User en Users/Roles y ninguna mutación.
 - Cambio local en smoke cubre camino permitido Driver sobre su propia ruta (lectura, inicio, GPS, cancelación) y confirma `Cancelled`, vehículo `Available`, una posición y asignación persistida. La primera repetición expuso una expectativa obsoleta de lista vacía; corregida a aislamiento por Driver. Repetición MySQL 8 efímero exit 0, Action posterior pendiente.
 - El smoke amplía también 403 de Manager sobre Users/Roles y de Logistics sobre PUT/DELETE/reactivar Vehicle y editar/desactivar/asignar Driver; snapshots SQL antes/después permanecen idénticos. Primera repetición falló en un helper que comparaba una ruta Manager ya editada/desactivada; se acotó al Vehicle/Driver relevante. Action `45080063668` para `fa16d05` pasó Release build, xUnit 111/111, smoke HTTP/MySQL, concurrencia y cleanup.
+- Se añadió prueba unitaria positiva de asignación a Driver sin UserId; Release xUnit completo pasa **112/112**, Action actualizada pendiente.
 - Front `refactor/route-builder` HEAD `2147be7`: Action `45076629351` pasó **37/37 E2E**, responsive **1/1**, audit/lint/build y cleanup.
 - Misión sigue abierta; continúan matrices CRUD/roles/responsive. Admin delegado y desvinculación User↔Driver esperan decisión; SMTP/infraestructura productiva son externos y móvil nativo está aplazado.
 

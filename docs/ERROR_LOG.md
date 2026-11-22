@@ -1200,3 +1200,9 @@ Cada cambio de API debe incluir validación de compilación, migraciones si apli
 - Se reemplazó esa llamada por snapshots SQL limitados al Vehicle/Driver fixture protegido. Las nuevas operaciones de Manager sobre Users/Roles devuelven 403; las de Logistics sobre editar, cambiar estado, reactivar o dar de baja Vehicle y editar, desactivar, asignar o desasignar Driver devuelven 403. Snapshots antes/después deben ser idénticos.
 - Repetición completa API + MySQL 8 descartables exit 0 y cleanup correcto. Action posterior al push pendiente.
 - Prevención: en pruebas de autorización, comparar únicamente las entidades dentro del alcance de la operación denegada; no reutilizar aserciones agregadas que incluyan fixtures modificados válidamente antes.
+
+## 2026-11-22 — Fake de asignación no incluía repositorio de rutas — CORREGIDO EN LA PRUEBA
+
+- La prueba positiva nueva del comando `AssignDriverToVehicle` falló con `NullReferenceException` en la consulta de rutas activas. `FakeUnitOfWork.Routes` era null; los tests negativos existentes rechazaban el vehículo antes de llegar a esa dependencia y ocultaban la omisión.
+- Se agregó `FakeRoutes` vacío al fake de UoW para cubrir el camino exitoso y permitir verificar `VehicleId` y Commit. Repetir la suite Release completa.
+- Prevención: al probar caminos positivos, proporcionar todas las dependencias alcanzadas por el flujo completo; no inferirlo desde tests negativos que retornan temprano.

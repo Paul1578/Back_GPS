@@ -10,6 +10,23 @@ namespace BackEnd_Gps.Tests;
 public class AssignDriverToVehicleTests
 {
     [Fact]
+    public async Task Execute_AssignsVehicleToActiveUnlinkedDriverAndCommits()
+    {
+        var driver = Driver.Create("Test", "Driver", "QA-099", "0990000000");
+        var vehicle = Vehicle.Create("QA-099", "Test", "Van", 2025, null);
+        var uow = new FakeUnitOfWork();
+        var command = new AssignDriverToVehicleCommand(
+            uow,
+            new FakeDrivers(driver),
+            new FakeVehicles(vehicle));
+
+        await command.Execute(driver.Id, vehicle.Id);
+
+        Assert.Equal(vehicle.Id, driver.VehicleId);
+        Assert.Equal(1, uow.CommitCount);
+    }
+
+    [Fact]
     public async Task Execute_RejectsVehicleInMaintenance()
     {
         var driver = Driver.Create("Test", "Driver", "QA-100", "0990000000");
@@ -76,10 +93,22 @@ public class AssignDriverToVehicleTests
         public IPasswordResetTokenRepository PasswordResetTokens => null!;
         public IVehicleRepository Vehicles => null!;
         public IDriverRepository Drivers => null!;
-        public IRouteRepository Routes => null!;
+        public IRouteRepository Routes { get; } = new FakeRoutes();
         public IRoutePositionRepository RoutePositions => null!;
         public int CommitCount { get; private set; }
         public Task<int> CommitAsync() { CommitCount++; return Task.FromResult(1); }
         public void Rollback() { }
+    }
+
+    private sealed class FakeRoutes : IRouteRepository
+    {
+        public Task<RouteE?> GetByIdAsync(Guid id) => Task.FromResult<RouteE?>(null);
+        public Task AddAsync(RouteE route) => Task.CompletedTask;
+        public Task UpdateAsync(RouteE route) => Task.CompletedTask;
+        public Task<List<RouteE>> GetAllAsync(
+            Guid? vehicleId = null,
+            Guid? driverId = null,
+            RouteStatus? status = null,
+            bool? onlyActive = null) => Task.FromResult(new List<RouteE>());
     }
 }

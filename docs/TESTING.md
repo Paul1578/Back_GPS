@@ -249,4 +249,5 @@ La invitación envía sólo el enlace de activación; el usuario fija su contras
 - Como Logistics: crear ruta HTTP 201; leer/editar 200; iniciar 204; iniciar/cerrar parada PickupAndDelivery, agregar evidencia y escribir/leer posición GPS 200; cerrar ruta 204. GET confirmó `Completed`, tiempos `StartedAt`/`EndedAt`, operación/evidencia/GPS persistidos y vehículo de vuelta a `Available`.
 - Cleanup confirmó 0 rutas, 0 posiciones GPS y 0 vehículos QA; contenedor y API temporal detenidos.
 - Primer intento: las operaciones pasaron, pero el assert de cleanup incluyó un warning MySQL en stdout y dio un falso conteo. Se redirigió stderr por separado y la repetición pasó; detalle en `ERROR_LOG.md`.
-- xUnit no se volvió a ejecutar en esta iteración; se ejecutará en Actions al publicar el smoke.
+- Actions `44990525889` para `d58c5ab` pasó el smoke ampliado y xUnit **57/57**; el log confirma operación Logistics y cleanup `0:0:0`.
+- Tras la revisión se añadió fallback de cleanup por nombre QA. La repetición local posterior, con Release build 0 warnings y MySQL 8 desechable, pasó; el código actualizado aún necesita su propia ejecución de Actions.

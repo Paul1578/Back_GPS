@@ -157,4 +157,4 @@ Fecha de corte: 2026-11-21.
 
 - Smoke HTTP ampliado localmente con paradas de tres puntos y operación PickupAndDelivery, transición InProgress, estado/evidencia de parada, GPS, Completed y devolución del vehículo a Available.
 - API temporal + MySQL 8 efímero confirmaron persistencia y cleanup de cero rutas, posiciones y vehículos QA. `bash -n`, `git diff --check` y Release build 0 warnings/errores pasaron.
-- El primer intento tuvo un falso fallo de verificación porque el warning MySQL contaminó stdout; corrección y repetición aprobada en `docs/ERROR_LOG.md`. Publicar el cambio y verificar Actions está pendiente.
+- El primer intento tuvo un falso fallo de verificación porque el warning MySQL contaminó stdout; corrección y repetición aprobada en `docs/ERROR_LOG.md`. Actions `44990525889` confirmó el ciclo y xUnit 57/57. Un fallback de cleanup por nombre, añadido tras revisión, pasó localmente y espera su propia Actions.

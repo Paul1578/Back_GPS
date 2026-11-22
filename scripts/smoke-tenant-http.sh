@@ -50,6 +50,7 @@ restricted_attempt_plate=""
 document_number=""
 manager_vehicle_id=""
 manager_driver_id=""
+manager_route_name=""
 manager_route_id=""
 logistics_route_id=""
 logistics_route_name=""
@@ -64,8 +65,16 @@ cleanup() {
     elif [[ -n "$route_name" ]]; then
       sql+=" DELETE rp FROM RoutePositions rp JOIN Routes r ON r.Id=rp.RouteId WHERE r.Name='$route_name'; DELETE FROM Routes WHERE Name='$route_name';"
     fi
-    if [[ -n "$manager_route_id" ]]; then sql+=" DELETE FROM RoutePositions WHERE RouteId='$manager_route_id'; DELETE FROM Routes WHERE Id='$manager_route_id';"; fi
-    if [[ -n "$logistics_route_id" ]]; then sql+=" DELETE FROM RoutePositions WHERE RouteId='$logistics_route_id'; DELETE FROM Routes WHERE Id='$logistics_route_id';"; fi
+    if [[ -n "$manager_route_id" ]]; then
+      sql+=" DELETE FROM RoutePositions WHERE RouteId='$manager_route_id'; DELETE FROM Routes WHERE Id='$manager_route_id';"
+    elif [[ -n "$manager_route_name" ]]; then
+      sql+=" DELETE rp FROM RoutePositions rp JOIN Routes r ON r.Id=rp.RouteId WHERE r.Name='$manager_route_name'; DELETE FROM Routes WHERE Name='$manager_route_name';"
+    fi
+    if [[ -n "$logistics_route_id" ]]; then
+      sql+=" DELETE FROM RoutePositions WHERE RouteId='$logistics_route_id'; DELETE FROM Routes WHERE Id='$logistics_route_id';"
+    elif [[ -n "$logistics_route_name" ]]; then
+      sql+=" DELETE rp FROM RoutePositions rp JOIN Routes r ON r.Id=rp.RouteId WHERE r.Name='$logistics_route_name'; DELETE FROM Routes WHERE Name='$logistics_route_name';"
+    fi
     if [[ -n "$driver_id" ]]; then sql+=" DELETE FROM Drivers WHERE Id='$driver_id';"
     elif [[ -n "$document_number" ]]; then sql+=" DELETE FROM Drivers WHERE DocumentNumber='$document_number';"; fi
     if [[ -n "$manager_driver_id" ]]; then sql+=" DELETE FROM Drivers WHERE Id='$manager_driver_id';"; fi
@@ -93,10 +102,11 @@ cleanup() {
       echo "No se pudieron limpiar los fixtures creados por smoke-tenant-http.sh." >&2
       status=1
     }
-    if [[ -n "$manager_vehicle_id" && -n "$manager_route_id" && -n "$logistics_route_id" ]]; then
+    if [[ -n "$manager_vehicle_id" && (-n "$manager_route_id" || -n "$manager_route_name") && \
+      (-n "$logistics_route_id" || -n "$logistics_route_name") ]]; then
       local remaining
       if remaining="$(mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" \
-        --batch --skip-column-names "$db_name" -e "SELECT CONCAT((SELECT COUNT(*) FROM Routes WHERE Id IN ('$manager_route_id','$logistics_route_id')), ':', (SELECT COUNT(*) FROM RoutePositions WHERE RouteId IN ('$manager_route_id','$logistics_route_id')), ':', (SELECT COUNT(*) FROM Vehicles WHERE Id='$manager_vehicle_id'));" \
+        --batch --skip-column-names "$db_name" -e "SELECT CONCAT((SELECT COUNT(*) FROM Routes WHERE Id IN ('$manager_route_id','$logistics_route_id') OR Name IN ('$manager_route_name','$logistics_route_name')), ':', (SELECT COUNT(*) FROM RoutePositions rp JOIN Routes r ON r.Id=rp.RouteId WHERE r.Id IN ('$manager_route_id','$logistics_route_id') OR r.Name IN ('$manager_route_name','$logistics_route_name')), ':', (SELECT COUNT(*) FROM Vehicles WHERE Id='$manager_vehicle_id'));" \
         2>"$work_dir/cleanup_verify.stderr")"; then
         :
       else

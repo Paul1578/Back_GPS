@@ -477,3 +477,9 @@ Cada cambio de API debe incluir validación de compilación, migraciones si apli
 - Al ampliar el smoke al ciclo completo de Logistics, la primera ejecución pasó las operaciones HTTP y aserciones de ruta/vehículo, pero el conteo de cleanup falló porque MySQL emitió un warning en stdout junto a la fila numérica.
 - Corrección: capturar stderr del query de verificación en un archivo temporal separado, mostrarlo sólo si el query falla y comparar stdout sólo con `0:0:0`. El cleanup fuerza el Vehicle a Available antes de borrarlo y verifica que no queden rutas ni posiciones.
 - Repetición: `bash scripts/smoke-tenant-http.sh` contra API `127.0.0.1:5058`, MySQL 8 efímero en puerto 13306 y DB `fletflow_ci_lifecycle_*`. Logistics recibió 201 al crear; 200 en lectura/edición/parada/evidencia/GPS; 204 al iniciar/completar/baja. Lectura final confirmó `Completed` y vehículo `Available`. Cleanup confirmó 0 rutas, 0 posiciones y 0 vehículos. API y contenedor temporales eliminados.
+
+## 2026-11-22 — Cleanup no tenía fallback si una respuesta POST no traía el ID — ENDURECIDO
+
+- Revisión estática encontró que si un POST creaba la ruta pero la extracción del ID fallaba, `cleanup()` no tenía el ID y tampoco corría la aserción de cero residuos.
+- Corrección: guardar el nombre QA antes del POST y usarlo como alternativa para borrar ruta/posiciones y para la consulta final cuando no se extrajo el ID. Se aplica a Manager y Logistics.
+- Un primer intento de QA delegado no inició pruebas porque `/usr/bin/dotnet` no tenía un host SDK (`host/fxr` vacío); no creó base ni contenedor y no tocó MySQL. Repetición con `DOTNET_ROOT=/home/leonardo/.dotnet` compiló y ejecutó el smoke contra MySQL 8 descartable; el ciclo pasó y cleanup confirmó `0:0:0`. El camino de fallback por nombre estático no se indujo por separado.

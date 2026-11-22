@@ -429,3 +429,10 @@ La invitación envía sólo el enlace de activación; el usuario fija su contras
 - Expected status: listado 200 vacío; detalle/GPS 403; escrituras/estado/parada/evidencia 404. Admin verifica que la ruta permanezca InProgress, sin evidencia nueva, y que GPS siga en una fila.
 - El fixture es el Driver ganador de la carrera HTTP de unicidad ya existente; sus filas tienen cleanup por email/documento. `bash -n` y diff-check locales pasan.
 - Actions `45029798323` pasó con API/MySQL reales: el step de isolation, el smoke concurrente, los 78 xUnit y cleanup completo finalizaron success.
+
+## Auditoría de seguridad: rate limit, correo diagnóstico y Data Protection
+
+- `SimpleRateLimitMiddlewareTests.ConcurrentRequests_CannotExceedSixtyAcceptedRequestsPerWindow`: ráfaga paralela de 200 requests desde la misma IP; resultado 60 aceptadas y 140 HTTP 429.
+- `AuthControllerTests` verifica que el endpoint de email diagnóstico da 404 fuera de Development; en Development rechaza destinatario distinto del email autenticado y sólo invoca el sender para la cuenta propia.
+- `dotnet test BackEnd_Gps.sln --configuration Release --no-restore -m:1`: 85/85; build Release: 0 warnings/0 errors. Actions integrado pendiente para la rama actualizada.
+- Producción requiere configuración de key ring persistente y certificado de cifrado; su disponibilidad depende de secretos/infraestructura externa y no se simuló con credenciales productivas.

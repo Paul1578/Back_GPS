@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Logging.Abstractions;
 using System.Net;
+using System.Threading;
 
 namespace BackEnd_Gps.Tests;
 
@@ -57,6 +58,34 @@ public class SimpleRateLimitMiddlewareTests
         Assert.Equal(60, nextCalls);
         Assert.NotNull(lastContext);
         Assert.Equal(StatusCodes.Status429TooManyRequests, lastContext.Response.StatusCode);
+    }
+
+    [Fact]
+    public async Task ConcurrentRequests_CannotExceedSixtyAcceptedRequestsPerWindow()
+    {
+        var middleware = new SimpleRateLimitMiddleware(
+            NullLogger<SimpleRateLimitMiddleware>.Instance,
+            new TestWebHostEnvironment("Production"));
+        var remoteAddress = new IPAddress(Guid.NewGuid().ToByteArray());
+        var accepted = 0;
+        var rejected = 0;
+
+        await Task.WhenAll(Enumerable.Range(0, 200).Select(async _ =>
+        {
+            var context = new DefaultHttpContext();
+            context.Connection.RemoteIpAddress = remoteAddress;
+            await middleware.InvokeAsync(context, _ =>
+            {
+                Interlocked.Increment(ref accepted);
+                return Task.CompletedTask;
+            });
+
+            if (context.Response.StatusCode == StatusCodes.Status429TooManyRequests)
+                Interlocked.Increment(ref rejected);
+        }));
+
+        Assert.Equal(60, accepted);
+        Assert.Equal(140, rejected);
     }
 
     private sealed class TestWebHostEnvironment(string environmentName) : IWebHostEnvironment

@@ -1,4 +1,5 @@
 using System;
+using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using fletflow.Application.Auth.Commands;
 using fletflow.Application.Auth.Commands.ActivateAccount;
@@ -6,6 +7,7 @@ using fletflow.Application.Auth.Commands.ResetPassword;
 using fletflow.Application.DTOs.Auth;
 using fletflow.Infrastructure.Services;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
 
 namespace fletflow.Api.Controllers
@@ -18,13 +20,15 @@ namespace fletflow.Api.Controllers
         private readonly IUserRegistrationService _registrationService;
         private readonly IEmailSender _emailService;
         private readonly ActivateAccountCommand _activateAccountCommand;
+        private readonly IWebHostEnvironment _environment;
 
-        public AuthController(AuthService authService, IUserRegistrationService registrationService, IEmailSender emailService, ActivateAccountCommand activateAccountCommand)
+        public AuthController(AuthService authService, IUserRegistrationService registrationService, IEmailSender emailService, ActivateAccountCommand activateAccountCommand, IWebHostEnvironment environment)
         {
             _authService = authService;
             _registrationService = registrationService;
             _emailService = emailService;
             _activateAccountCommand = activateAccountCommand;
+            _environment = environment;
         }
 
         /// <summary>
@@ -223,13 +227,22 @@ namespace fletflow.Api.Controllers
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> TestEmail([FromQuery] string to)
         {
+            if (!_environment.IsDevelopment())
+                return NotFound();
+
             if (string.IsNullOrWhiteSpace(to))
                 return BadRequest(new { message = "Debe enviar ?to=email@dominio.com" });
+
+            var authenticatedEmail = User.FindFirstValue(JwtRegisteredClaimNames.Email)
+                ?? User.FindFirstValue(ClaimTypes.Email);
+            if (string.IsNullOrWhiteSpace(authenticatedEmail) ||
+                !string.Equals(to.Trim(), authenticatedEmail, StringComparison.OrdinalIgnoreCase))
+                return Forbid();
 
             var plainToken = $"test-{Guid.NewGuid():N}";
             var encoded = Uri.EscapeDataString(plainToken);
             var testLink = $"https://example.com/reset?token={encoded}";
-            await _emailService.SendPasswordResetEmailAsync(to, testLink, plainToken);
+            await _emailService.SendPasswordResetEmailAsync(authenticatedEmail, testLink, plainToken);
             return Ok(new { message = "Correo de prueba enviado (si SMTP se configuro correctamente)." });
         }
     }

@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Hosting;
 using System.Net;
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Linq;
 using System.Threading;
@@ -41,25 +42,26 @@ namespace fletflow.Api.Middleware
             var now = DateTime.UtcNow;
             if ((Interlocked.Increment(ref _cleanupCounter) & 1023) == 0)
             {
-                foreach (var stale in Requests.Where(entry => now - entry.Value.WindowStart > WINDOW * 2))
-                    Requests.TryRemove(stale.Key, out _);
+                var staleEntries = Requests
+                    .Where(entry => now - entry.Value.WindowStart > WINDOW * 2)
+                    .ToArray();
+                var entries = (ICollection<KeyValuePair<string, (int Count, DateTime WindowStart)>>)Requests;
+                foreach (var stale in staleEntries)
+                    entries.Remove(stale);
             }
-            var (count, windowStart) = Requests.GetOrAdd(key, _ => (0, now));
+            var requestState = Requests.AddOrUpdate(
+                key,
+                _ => (Count: 1, WindowStart: now),
+                (_, current) => now - current.WindowStart >= WINDOW
+                    ? (Count: 1, WindowStart: now)
+                    : (Count: current.Count + 1, WindowStart: current.WindowStart));
 
-            if (now - windowStart > WINDOW)
+            if (requestState.Count > LIMIT)
             {
-                Requests[key] = (1, now);
-            }
-            else
-            {
-                if (count >= LIMIT)
-                {
-                    _logger.LogWarning("[RateLimit] IP {IP} superó el límite de {Limit} req/min", key, LIMIT);
-                    context.Response.StatusCode = StatusCodes.Status429TooManyRequests;
-                    await context.Response.WriteAsync($"Rate limit exceeded: {LIMIT} requests per minute");
-                    return;
-                }
-                Requests[key] = (count + 1, windowStart);
+                _logger.LogWarning("[RateLimit] IP {IP} superó el límite de {Limit} req/min", key, LIMIT);
+                context.Response.StatusCode = StatusCodes.Status429TooManyRequests;
+                await context.Response.WriteAsync($"Rate limit exceeded: {LIMIT} requests per minute");
+                return;
             }
             await next(context);
         }

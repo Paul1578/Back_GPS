@@ -903,3 +903,13 @@ Cada cambio de API debe incluir validación de compilación, migraciones si apli
 - Solución: cada escenario de update y doble inicio usa ahora vehículos/conductores propios, evitando acoplar el resultado a qué petición concurrente ganó.
 - Actions `45032172895` pasó Release xUnit 82/82, smoke tenant y smoke de concurrencia. Confirmó ambos HTTP 409, estado SQL intacto y cleanup del runner.
 - Prevención: escenarios de concurrencia deben tener recursos QA aislados por invariante y no depender de la identidad del ganador previo.
+
+## 2026-11-22 — Auditoría de seguridad: rate limit concurrente, correo de prueba y key ring — CORREGIDO LOCAL; ACTIONS PENDIENTE
+
+- Hallazgos estáticos: el rate limiter leía y escribía el contador en pasos separados, por lo que requests paralelas podían perder incrementos; `GET /api/Auth/test-email?to=` permitía a cualquier Admin enviar a un destinatario arbitrario; el key ring de Data Protection se persistía sin cifrado explícito.
+- Rate limit: reemplazada la secuencia get/set por `ConcurrentDictionary.AddOrUpdate`, y la limpieza elimina sólo la versión exacta observada del entry. Un burst de 200 requests concurrentes desde la misma IP acepta exactamente 60 y responde 429 a 140.
+- Email de prueba: endpoint habilitado sólo en Development y únicamente al email del principal autenticado; pruebas con sender registrado demuestran 404 en Production, `Forbid` para destinatario ajeno y envío sólo al mismo email.
+- Data Protection: producción ahora exige key ring persistente y certificado PFX configurados mediante `FLETFLOW_DATA_PROTECTION_KEYS_PATH`, `FLETFLOW_DATA_PROTECTION_CERT_PATH` y `FLETFLOW_DATA_PROTECTION_CERT_PASSWORD`; las claves se protegen con el certificado. `.env.example` documenta nombres sin valores.
+- Validación local: Release xUnit **85/85**, Release build **0 warnings/0 errors**, test concurrente enfocado 1/1 y `git diff --check` correcto.
+- Actions/MySQL integrado pendiente para estos cambios. Límites externos: certificado/secretos y volumen de producción deben provisionarse en despliegue. El rate limiter sigue siendo por proceso; varias réplicas requieren almacenamiento/limitador distribuido.
+- Prevención: las operaciones de límite deben ser atómicas de extremo a extremo; endpoints de diagnóstico SMTP deben limitar entorno y destinatario; nunca persistir claves criptográficas de producción sin proveedor de protección explícito.

@@ -6,6 +6,7 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
 using System.Security.Claims;
+using System.Security.Cryptography.X509Certificates;
 
 using fletflow.Api.Controllers;
 using fletflow.Api.Middleware;
@@ -35,12 +36,30 @@ Env.NoClobber().Load();
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddHttpContextAccessor();
 var keyRingPath = Environment.GetEnvironmentVariable("FLETFLOW_DATA_PROTECTION_KEYS_PATH");
+var keyEncryptionCertificatePath = Environment.GetEnvironmentVariable("FLETFLOW_DATA_PROTECTION_CERT_PATH");
+var keyEncryptionCertificatePassword = Environment.GetEnvironmentVariable("FLETFLOW_DATA_PROTECTION_CERT_PASSWORD");
 var dataProtection = builder.Services.AddDataProtection().SetApplicationName("FletFlow");
+if (!builder.Environment.IsDevelopment() && string.IsNullOrWhiteSpace(keyRingPath))
+    throw new InvalidOperationException(
+        "Producción requiere FLETFLOW_DATA_PROTECTION_KEYS_PATH persistente para los tokens del outbox de correo.");
+if (!builder.Environment.IsDevelopment() && string.IsNullOrWhiteSpace(keyEncryptionCertificatePath))
+    throw new InvalidOperationException(
+        "Producción requiere FLETFLOW_DATA_PROTECTION_CERT_PATH para cifrar el key ring de Data Protection.");
 if (!string.IsNullOrWhiteSpace(keyRingPath))
 {
     var fullKeyRingPath = Path.GetFullPath(keyRingPath);
     Directory.CreateDirectory(fullKeyRingPath);
     dataProtection.PersistKeysToFileSystem(new DirectoryInfo(fullKeyRingPath));
+}
+if (!string.IsNullOrWhiteSpace(keyEncryptionCertificatePath))
+{
+    var certificate = new X509Certificate2(
+        Path.GetFullPath(keyEncryptionCertificatePath),
+        keyEncryptionCertificatePassword,
+        X509KeyStorageFlags.EphemeralKeySet);
+    if (!certificate.HasPrivateKey)
+        throw new InvalidOperationException("El certificado de Data Protection debe incluir su clave privada.");
+    dataProtection.ProtectKeysWithCertificate(certificate);
 }
 
 // =====================

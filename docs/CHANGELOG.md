@@ -310,3 +310,10 @@
 
 - Agregados casos SQLite que ejecutan EmailOutboxWorker para entrega/descifrado exitosos y dead-letter al intento 12.
 - Suite Release 80/80; build 0 warnings/0 errors. Actions `45030208849` pasó también con smoke API/MySQL y cleanup.
+
+## 2026-11-22 — Correcciones de auditoría de seguridad
+
+- Rate limit por IP ahora contabiliza en forma atómica bajo concurrencia.
+- Email diagnóstico restringido a Development y al email autenticado.
+- Producción requiere key ring Data Protection persistente y certificado para cifrarlo.
+- xUnit Release 85/85 y build 0 warnings/0 errors; Actions pendiente.

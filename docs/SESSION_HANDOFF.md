@@ -447,3 +447,12 @@ Errores de migración, herramientas, QA y soluciones están en `docs/ERROR_LOG.m
 - Outbox automatizado adicional: dos pruebas SQLite ejecutan EmailOutboxWorker real con sender controlado y verifican entrega/descifrado, marcación enviada y dead-letter en intento 12. Actions `45030208849` pasó para `43c074d`: suite **80/80**, build, HTTP/MySQL y cleanup.
 - Actions `45029094282` (Backend `813cedb`) detectó el normalizador frágil de timestamp del smoke `CreatedAtUtc`: build/tests pasaron, HTTP smoke falló al comparar luego de editar. Script canoniza seis decimales y agrega diagnósticos; Backend `5103b51`, Actions `45029374847` pasó build, xUnit 78/78, HTTP/MySQL y concurrencia, cleanup success.
 - Actions `45029798323` validó el smoke ampliado en Backend `ec3ce52`: actor Driver de mismo tenant fue denegado en rutas/estado/paradas/evidencia/GPS ajenos; Admin confirmó que no hubo mutaciones. Release, xUnit 78/78, smoke y cleanup success.
+
+## Hallazgos de seguridad para el siguiente corte — 2026-11-22
+
+- Backend `chore/stabilize-fleet-platform` tiene cambios locales sin commit para tres findings: rate limit race, `Auth/test-email` arbitrario y cifrado del key ring. xUnit Release 85/85, build 0 warnings/0 errors, test enfocado de 200 requests concurrentes pasó 60 accepted/140 throttled; revisar diff, ejecutar smoke/Actions y documentar antes de publicar.
+- Production ahora requiere key ring persistente + certificado PFX (env `FLETFLOW_DATA_PROTECTION_KEYS_PATH`, `FLETFLOW_DATA_PROTECTION_CERT_PATH`, opcional password); registrar que la provisión de secretos/volumen depende del entorno externo.
+- Auditoría subagente de solo lectura: encontró permiso Admin delegado sin política resuelta; `GET Auth/test-email` de destinatario arbitrario (fix local); rate limit counter race (fix local); keys Data Protection sin protección explícita (fix local). No detectó IDOR cross-tenant en superficies inspeccionadas; JWT/refresh/CORS tienen controles revisados.
+- Pregunta de política enviada al usuario: si sólo cuenta raíz puede otorgar Admin o cualquier Admin. No modificar UserController hasta respuesta; continuar trabajo independiente.
+- Front: `a75914f` publicado. Actions `45036249291` pasó para `4e3ddc8` (E2E 21/21); `45036661541` valida `a75914f` con el nuevo E2E de error/retry dashboard Logistics, aún en curso al último chequeo.
+- No marcar misión completa; seguir con Actions, seguridad, CRUD/responsive pendiente. SMTP real necesita credenciales externas y móvil nativo fue aplazado.

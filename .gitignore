@@ -3,3 +3,6 @@ obj/
 .env
 .env.*
 !.env.example
+*.pfx
+*.p12
+/data-protection-keys/

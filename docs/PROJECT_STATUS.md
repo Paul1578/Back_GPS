@@ -361,3 +361,10 @@ Nota de actualización: algunos resultados históricos de registro público más
 - Caso de éxito comprueba descifrado de correo/link/token, llamada al sender, `SentAtUtc` y liberación del lease.
 - Caso de fallo inicia en el intento 11 y confirma llamada al sender, `AttemptCount=12`, dead-letter, failure type y lease liberado.
 - Suite Release local: **80/80**; build Release 0 warnings/0 errors. Actions `45030208849` pasó para Backend `43c074d`: 80/80, HTTP/MySQL tenant/outbox/same-tenant Driver, concurrencia y cleanup success.
+
+## Seguridad — revisión del 2026-11-22
+
+- Corregidos localmente tres hallazgos: actualización no atómica del rate limit, endpoint de email diagnóstico para destinatarios arbitrarios y key ring de Data Protection sin cifrado explícito.
+- Rate limiter ahora incrementa atómicamente; 200 requests paralelas producen 60 aceptadas/140 rechazadas. El endpoint test-email queda sólo en Development y restringido al correo autenticado. Production exige path persistente y PFX para proteger las claves.
+- Backend Release tests 85/85 y build 0 warnings/0 errors. Validación Actions pendiente.
+- Pendiente decisión de política: Admin delegado puede crear/promover Admin. También falta provisionar certificado/key ring en infraestructura productiva; el límite distribuido por IP requiere un servicio externo antes de escalar a varias réplicas.

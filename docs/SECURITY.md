@@ -142,3 +142,15 @@ El smoke anónimo solicitó rol Admin en el registro; la fila persistida conserv
 - `EmailOutboxWorkerTests` ejecuta el BackgroundService real sobre SQLite: comprueba descifrado/entrega, marca `SentAtUtc` y libera lease; ante fallo en intento 12 verifica dead-letter y `LastFailureType`. Actions `45030208849` pasó Release build, xUnit **80/80**, smoke HTTP/MySQL y concurrencia; Actions `45030428079` volvió a pasar después del cambio documental.
 - El envío de correo todavía no puede comprobarse con proveedor real mientras falten credenciales SMTP. La protección durable, el retry y el dead-letter sí quedaron probados.
 - Pendientes de seguridad/plataforma: decidir si Admin delegado puede asignar Admin; habilitar SMTP y almacenamiento persistente/compartido de Data Protection keys en despliegue; mover evidencia JSON a object storage y rate limiting a almacenamiento distribuido antes de escalar.
+
+## Correcciones de auditoría de seguridad — 2026-11-22
+
+- `GET /api/Auth/test-email` sólo está disponible en Development. Incluso allí, el destinatario debe coincidir sin distinguir mayúsculas con el email autenticado; no se usa como relay de correo para terceros. El servicio de invitaciones y recuperación sigue intacto.
+- `SimpleRateLimitMiddleware` incrementa el contador mediante `ConcurrentDictionary.AddOrUpdate`; entradas vencidas se remueven comparando el par exacto para no borrar una ventana recién renovada por una solicitud concurrente. El límite actual es 60/minuto por IP y proceso; para múltiples réplicas se necesita un rate limiter/almacenamiento distribuido.
+- En Production el arranque exige `FLETFLOW_DATA_PROTECTION_KEYS_PATH` (volumen persistente) y `FLETFLOW_DATA_PROTECTION_CERT_PATH` (PFX que incluye clave privada); `FLETFLOW_DATA_PROTECTION_CERT_PASSWORD` suministra la contraseña si aplica. Data Protection cifra el key ring con el certificado. Nunca versionar el PFX ni su contraseña. En Development estas variables son opcionales.
+- xUnit local: release **85/85**; build Release 0 warnings/0 errors; Actions integrado pendiente.
+
+## Hallazgos de autorización aún abiertos
+
+- Un Admin delegado puede crear o promover otros Admin dentro de su tenant. La implementación está aislada por propietario y no se encontró IDOR, pero falta definir si este permiso debe quedar reservado a la cuenta raíz. No cambiar hasta resolver política de producto.
+- La clave/contraseña PFX y el volumen persistente cifrado deben provisionarse por el entorno de despliegue; no hay material de producción disponible en el repositorio para validar su instalación.

@@ -345,3 +345,10 @@
 - El inicio vuelve a validar que la cuenta User vinculada siga activa después de adquirir locks de asignación. Desactivar cuenta de un Driver usa el mismo orden de locks y devuelve 409 si su ruta está en progreso.
 - Nuevos tests xUnit verifican inicio denegado sin mutar ruta/vehículo y baja denegada sin revocar la cuenta durante operación activa. El smoke HTTP/MySQL cubre ambos estados y confirma persistencia SQL y cleanup.
 - Local: xUnit Release **88/88**, build 0 warnings/errors, shell syntax y diff-check pasan. Backend `190f284` pasó Actions `45045070288`: HTTP/MySQL tenant+flota, concurrencia, xUnit **88/88** y cleanup.
+
+
+## 2026-11-22 — Cancelación pendiente preserva Maintenance
+
+- `ChangeRouteStatusCommand` sólo cambia Vehicle a Available cuando la ruta estaba InProgress; cancelar una ruta Pending no altera el estado operacional del vehículo.
+- Regresión SQLite confirma route Cancelled y vehicle Maintenance. `smoke-tenant-http.sh` añade una segunda ruta Pending, pone el vehículo en Maintenance, cancela esa ruta y consulta SQL antes de reanudar la ruta principal.
+- Test focal 1/1; Release xUnit 89/89; bash syntax/diff-check pasan. Nueva Actions con smoke MySQL pendiente.

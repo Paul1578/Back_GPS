@@ -36,6 +36,7 @@ fi
 work_dir="$(mktemp -d)"
 token=""
 route_id=""
+maintenance_route_id=""
 vehicle_id=""
 driver_id=""
 other_tenant_email=""
@@ -89,6 +90,9 @@ cleanup() {
       sql+=" DELETE FROM RoutePositions WHERE RouteId='$route_id'; DELETE FROM Routes WHERE Id='$route_id';"
     elif [[ -n "$route_name" ]]; then
       sql+=" DELETE rp FROM RoutePositions rp JOIN Routes r ON r.Id=rp.RouteId WHERE r.Name='$route_name'; DELETE FROM Routes WHERE Name='$route_name';"
+    fi
+    if [[ -n "$maintenance_route_id" ]]; then
+      sql+=" DELETE FROM RoutePositions WHERE RouteId='$maintenance_route_id'; DELETE FROM Routes WHERE Id='$maintenance_route_id';"
     fi
     if [[ -n "$manager_route_id" ]]; then
       sql+=" DELETE FROM RoutePositions WHERE RouteId='$manager_route_id'; DELETE FROM Routes WHERE Id='$manager_route_id';"
@@ -1026,6 +1030,27 @@ points='[{"lat":-0.18,"lng":-78.46,"name":"CI origin","operation":0,"status":0},
 request POST /Routes "$(jq -nc --arg name "$route_name" --arg vehicleId "$vehicle_id" --arg driverId "$driver_id" --argjson points "$points" '{name:$name,cargoDescription:"CI tenant isolation",vehicleId:$vehicleId,driverId:$driverId,points:$points}')"
 expect_status 201 "Crear ruta tenant A"
 route_id="$(jq -er '.id' "$work_dir/response.json")"
+
+# Cancelling a route that never started must preserve a vehicle's Maintenance state.
+maintenance_route_name="${route_name} pending maintenance cancellation"
+request POST /Routes "$(jq -nc --arg name "$maintenance_route_name" --arg vehicleId "$vehicle_id" --arg driverId "$driver_id" --argjson points "$points" '{name:$name,cargoDescription:"Verify pending cancellation preserves maintenance",vehicleId:$vehicleId,driverId:$driverId,points:$points}')"
+expect_status 201 "Crear ruta pendiente de regresión de mantenimiento"
+maintenance_route_id="$(jq -er '.id' "$work_dir/response.json")"
+request PUT "/Vehicles/$vehicle_id/status" '{"status":2}' "$token"
+expect_status 204 "Poner vehículo en mantenimiento con rutas pendientes"
+request PUT "/Routes/$maintenance_route_id/status" '{"status":3}' "$token"
+expect_status 204 "Cancelar ruta pendiente sin liberar vehículo en mantenimiento"
+maintenance_status_after_cancel="$(mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" "$db_name" \
+  --batch --skip-column-names -e "SELECT Status FROM Vehicles WHERE Id='$vehicle_id';")"
+[[ "$maintenance_status_after_cancel" == "2" ]] || {
+  echo "Cancelar una ruta pendiente alteró el vehículo en mantenimiento (Status=$maintenance_status_after_cancel)." >&2
+  exit 1
+}
+request PUT "/Vehicles/$vehicle_id/status" '{"status":0}' "$token"
+expect_status 204 "Restaurar vehículo disponible para la ruta operativa"
+request DELETE "/Routes/$maintenance_route_id" "" "$token"
+expect_status 204 "Eliminar ruta temporal de regresión"
+maintenance_route_id=""
 
 request PUT "/Routes/$route_id/status" '{"status":1}'
 expect_status 204 "Iniciar ruta tenant A"

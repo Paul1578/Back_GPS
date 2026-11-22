@@ -104,8 +104,8 @@ namespace fletflow.Application.Fleet.Commands
 
                     vehicle.SetStatus(VehicleStatus.OnRoute);
                 }
-                else if (status is RouteStatus.Completed or RouteStatus.Cancelled ||
-                         status == RouteStatus.Pending && route.Status == RouteStatus.InProgress)
+                else if (route.Status == RouteStatus.InProgress &&
+                         status is RouteStatus.Pending or RouteStatus.Completed or RouteStatus.Cancelled)
                 {
                     var otherInProgressRoutes = await _routes.GetAllAsync(
                         vehicleId: route.VehicleId,

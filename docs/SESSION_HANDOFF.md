@@ -1,3 +1,12 @@
+# Continuación — Backend y autorización operacional — 2026-11-22
+
+- Rama `chore/stabilize-fleet-platform`. Cambio no publicado: arreglar Cancelled de ruta Pending que liberaba vehículo Maintenance; modifica `fletflow/Aplication/Fleet/Commands/ChangeRouteStatusCommand.cs`, test `BackEnd_Gps.Tests/CreateRouteCommandTests.cs` y smoke `scripts/smoke-tenant-http.sh`. Local: test focal 1/1, Release xUnit 89/89, `bash -n` y diff-check correctos. El run integrado posterior y cleanup aún deben confirmarse.
+- El SDK de sistema `/usr/bin/dotnet` no encuentra runtime en `/usr/lib64/dotnet/host/fxr`; instalé .NET SDK 8.0.428 de forma aislada en `/tmp/fletflow-dotnet`. No cambiar setup global.
+- Backend code previo `190f284` pasó Actions `45045070288` (xUnit 88/88 + smoke tenant/concurrency); docs `e24e371` pasó `45045329470`.
+- Auditoría de solo lectura sugiere posibles carreras: refresh token vs cambio contraseña/baja; reset token reutilizado concurrentemente; registro GPS de Driver después de reasignación. Revisar estado de archivos/locks actuales antes de cambios: varios hallazgos históricos resultaron obsoletos porque ya estaban implementados.
+- Antes se confirmó la validación post-lock de Driver para cambio de estado, el control same-tenant en `smoke-tenant-http.sh`, tests worker outbox/rotación de certificado y sincronización real del rate limit. Verificar HEAD antes de actuar.
+- Actualizar documentación tras cada lote. Pendiente de producto: política de Admin delegado. SMTP real/PFX e infraestructura productiva dependen de configuración externa; mobile nativo aplazado.
+
 # Sesión actual — CRUD HTTP de Driver como Manager — 2026-11-22
 
 - Rama `chore/stabilize-fleet-platform`, base HEAD `4718f04`; cambios locales sin commit/push, no tocar `main`.

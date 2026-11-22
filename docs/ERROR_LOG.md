@@ -973,3 +973,11 @@ Cada cambio de API debe incluir validación de compilación, migraciones si apli
 - Backend commit `190f284` pasó Actions `45045070288`: Release build/test, xUnit **88/88**, smoke HTTP/MySQL tenant/flota y smoke de concurrencia; cleanup de servicios correcto. SHA exacto validado.
 - Durante la auditoría dos búsquedas intentaron abrir `AppDbContext.cs` y `fletflow/Program.cs` en ubicaciones que no existen; el output confirmó rutas no encontradas. Solución: localizar las clases con `rg -n 'class AppDbContext'` / `rg --files | rg 'Program.cs'` antes de abrirlas; no hubo cambios ni impacto.
 - El primer `git diff --check` encontró una línea vacía extra al final de `docs/CHANGELOG.md`; se recortó el EOF y la repetición pasó.
+
+
+## 2026-11-22 — Cancelar ruta pendiente liberaba vehículo de mantenimiento — CORREGIDO; CI PENDIENTE
+
+- La transición de ruta trataba toda cancelación como liberación de vehículo. Una ruta Pending puede coexistir con vehículo puesto en Maintenance, por lo que cancelarla cambiaba erróneamente el estado a Available.
+- Corrección: liberar sólo si el estado previo era InProgress y el destino es Pending/Completed/Cancelled.
+- Regresión SQLite y smoke HTTP/MySQL: route Pending + vehicle Maintenance → cancelar → route Cancelled y SQL `Vehicles.Status=2`; se restablece Available para continuar el smoke. Test enfocado 1/1 y suite Release 89/89; Actions del nuevo smoke pendiente.
+- El `dotnet` global falló porque `/usr/lib64/dotnet/host/fxr` está vacío. Solución: instalar SDK 8.0.428 en `/tmp/fletflow-dotnet`; tests enfocado y completo pasan, sin alterar setup del sistema. Prevención: verificar `dotnet --info` y usar SDK local aislado cuando no haya runtime registrado.

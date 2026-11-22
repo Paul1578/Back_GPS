@@ -1,3 +1,10 @@
+# Estado actual de estabilización — 2026-11-22
+
+- Rama `chore/stabilize-fleet-platform`; no se modifica `main`.
+- Backend `190f284` pasó Actions `45045070288` (build/xUnit Release **88/88**, smoke tenant/flota, concurrencia y cleanup); documentación `e24e371` pasó `45045329470`.
+- Lote local sin commit: corregida transición que liberaba Vehicle en Maintenance al cancelar Route Pending. SQLite test focal 1/1 y Release xUnit **89/89** pasan con SDK 8.0.428 aislado en `/tmp/fletflow-dotnet`; `bash -n`/diff-check pasan. La nueva verificación HTTP/MySQL está agregada al smoke; Actions posterior aún pendiente.
+- Auditoría actual detectó asuntos de concurrencia en reset/refresh y GPS bajo reasignación; validar y corregir en próximos cambios. Cierre de Admin delegado requiere decisión de política; correo SMTP/PFX productivo e infraestructura externos. Mobile nativo aplazado.
+
 # Estado de esta iteración — CRUD Driver para Manager — 2026-11-22
 
 - En `chore/stabilize-fleet-platform` (base `4718f04`) se amplió sólo el smoke HTTP/MySQL y documentación. Sin cambios a código de producto ni a `main`.

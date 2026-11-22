@@ -15,6 +15,7 @@
 - Mantenimiento bloquea nuevas asignaciones.
 - Un conductor puede tener cero o un vehículo asignado.
 - Un vehículo puede tener como máximo un conductor asignado. Para cambiarlo, se desasigna primero el conductor actual; las asignaciones concurrentes se serializan y una de ellas recibe conflicto.
+- Crear o editar una ruta respeta la misma exclusividad: no puede asociar un vehículo que siga asignado a otro conductor. La operación responde conflicto sin alterar ruta ni asignaciones.
 
 ## Rutas
 

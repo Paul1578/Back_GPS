@@ -866,3 +866,10 @@ Cada cambio de API debe incluir validación de compilación, migraciones si apli
 
 - Auditoría: smoke backend sólo probaba acceso a rutas ajenas mediante un Admin de otro tenant; no ejercitaba un Driver válido del mismo tenant contra la ruta de otro conductor. El frontend sí tenía E2E real, pero la brecha del smoke backend persistía.
 - Corrección: smoke ahora usa la cuenta Driver ganadora de la prueba concurrente de documento/email y prueba list/detail/status/stop/evidence/GPS denegados, seguido de lecturas Admin que verifican ausencia de mutaciones. Falta confirmar en MySQL/API efímeros por CI.
+# 2026-11-22 — Rutas omitían exclusividad de asignación conductor/vehículo
+
+- Auditoría de `CreateRouteCommand` y `UpdateRouteCommand` encontró una vía indirecta que eludía `AssignDriverToVehicleCommand`: ambos podían ligar a una ruta un vehículo todavía asignado a otro conductor.
+- Solución: después del lock y de releer las entidades, ambos comandos consultan `GetOtherAssignedToVehicleAsync`; si existe otro conductor, devuelven `BusinessConflictException` (HTTP 409) antes de guardar. Las pruebas SQLite cubren creación y edición rechazadas y comprueban que asignaciones/ruta no cambian.
+- La primera suite Release completa falló en una prueba que creaba dos rutas futuras con el mismo vehículo y conductores distintos para luego probar el doble inicio. La expectativa contradice la regla vigente de exclusividad; el escenario se cambió a dos rutas del mismo conductor/vehículo para aislar la regla que la prueba realmente busca (sólo una puede estar en progreso).
+- Se añadió cobertura HTTP/MySQL al smoke para creación y edición fallidas, incluyendo consultas SQL de integridad. Pendiente ejecutar smoke local/Actions con MySQL descartable.
+- Prevención: al cambiar reglas de consistencia, revisar también los fixtures de agenda/concurrencia y mantener cada prueba enfocada en una sola invariante.

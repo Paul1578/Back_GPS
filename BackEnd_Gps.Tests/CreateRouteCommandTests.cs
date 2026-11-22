@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using fletflow.Application.Fleet.Commands;
 using fletflow.Domain.Fleet.Entities;
+using fletflow.Domain.Fleet.Exceptions;
 using fletflow.Api.Middleware;
 using fletflow.Infrastructure.Persistence;
 using fletflow.Infrastructure.Persistence.Context;
@@ -58,6 +59,103 @@ public class CreateRouteCommandTests
         Assert.Equal(vehicle.Id, persistedDriver!.VehicleId);
         Assert.Equal(driver.Id, persistedRoute.DriverId);
         Assert.Equal(vehicle.Id, persistedRoute.VehicleId);
+    }
+
+    [Fact]
+    public async Task Execute_RejectsVehicleAlreadyAssignedToAnotherDriver_WithoutChanges()
+    {
+        var ownerId = Guid.NewGuid();
+        using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder<AppDbContext>().UseSqlite(connection).Options;
+        var http = new DefaultHttpContext();
+        http.User = new ClaimsPrincipal(new ClaimsIdentity([new Claim("owner_id", ownerId.ToString())], "test"));
+        await using var context = new AppDbContext(options, new HttpContextAccessor { HttpContext = http });
+        await context.Database.EnsureCreatedAsync();
+
+        var vehicles = new VehicleRepository(context);
+        var drivers = new DriverRepository(context);
+        var routes = new RouteRepository(context);
+        var vehicle = Vehicle.Create("QA-EXCLUSIVE", "Test", "Van", 2025, null);
+        var assignedDriver = Driver.Create("Assigned", "Driver", "QA-ASSIGNED", "0990000001");
+        var requestedDriver = Driver.Create("Requested", "Driver", "QA-REQUESTED", "0990000002");
+        assignedDriver.AssignToVehicle(vehicle.Id);
+        await vehicles.AddAsync(vehicle);
+        await drivers.AddAsync(assignedDriver);
+        await drivers.AddAsync(requestedDriver);
+        await context.SaveChangesAsync();
+
+        var command = new CreateRouteCommand(
+            new UnitOfWork(context, null!, null!, null!, null!, vehicles, drivers, routes, null!),
+            routes, vehicles, drivers);
+
+        await Assert.ThrowsAsync<BusinessConflictException>(() => command.Execute(
+            vehicle.Id,
+            requestedDriver.Id,
+            "Conflicting route",
+            [RoutePoint.Create(-0.2, -78.5, "Origin"), RoutePoint.Create(-0.21, -78.51, "Destination")],
+            null,
+            null,
+            null));
+
+        Assert.Empty(await routes.GetAllAsync());
+        Assert.Equal(vehicle.Id, (await drivers.GetByIdAsync(assignedDriver.Id))!.VehicleId);
+        Assert.Null((await drivers.GetByIdAsync(requestedDriver.Id))!.VehicleId);
+    }
+
+    [Fact]
+    public async Task Update_RejectsVehicleAlreadyAssignedToAnotherDriver_WithoutChanges()
+    {
+        var ownerId = Guid.NewGuid();
+        using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder<AppDbContext>().UseSqlite(connection).Options;
+        var http = new DefaultHttpContext();
+        http.User = new ClaimsPrincipal(new ClaimsIdentity([new Claim("owner_id", ownerId.ToString())], "test"));
+        await using var context = new AppDbContext(options, new HttpContextAccessor { HttpContext = http });
+        await context.Database.EnsureCreatedAsync();
+
+        var vehicles = new VehicleRepository(context);
+        var drivers = new DriverRepository(context);
+        var routes = new RouteRepository(context);
+        var sourceVehicle = Vehicle.Create("QA-SOURCE", "Test", "Van", 2025, null);
+        var assignedVehicle = Vehicle.Create("QA-TARGET", "Test", "Van", 2025, null);
+        var routeDriver = Driver.Create("Route", "Driver", "QA-ROUTE-DRIVER", "0990000003");
+        var assignedDriver = Driver.Create("Assigned", "Driver", "QA-TARGET-DRIVER", "0990000004");
+        await vehicles.AddAsync(sourceVehicle);
+        await vehicles.AddAsync(assignedVehicle);
+        await drivers.AddAsync(routeDriver);
+        await drivers.AddAsync(assignedDriver);
+        await context.SaveChangesAsync();
+
+        var uow = new UnitOfWork(context, null!, null!, null!, null!, vehicles, drivers, routes, null!);
+        var points = new[]
+        {
+            RoutePoint.Create(-0.2, -78.5, "Origin"),
+            RoutePoint.Create(-0.21, -78.51, "Destination")
+        };
+        var existing = await new CreateRouteCommand(uow, routes, vehicles, drivers).Execute(
+            sourceVehicle.Id, routeDriver.Id, "Existing route", points, null, null, null);
+        assignedDriver.AssignToVehicle(assignedVehicle.Id);
+        await drivers.UpdateAsync(assignedDriver);
+        await context.SaveChangesAsync();
+
+        var command = new UpdateRouteCommand(uow, routes, vehicles, drivers);
+        await Assert.ThrowsAsync<BusinessConflictException>(() => command.Execute(
+            existing.Id,
+            assignedVehicle.Id,
+            routeDriver.Id,
+            "Conflicting edit",
+            points,
+            null,
+            null,
+            null));
+
+        var persistedRoute = await routes.GetByIdAsync(existing.Id);
+        Assert.Equal(sourceVehicle.Id, persistedRoute!.VehicleId);
+        Assert.Equal(routeDriver.Id, persistedRoute.DriverId);
+        Assert.Equal(sourceVehicle.Id, (await drivers.GetByIdAsync(routeDriver.Id))!.VehicleId);
+        Assert.Equal(assignedVehicle.Id, (await drivers.GetByIdAsync(assignedDriver.Id))!.VehicleId);
     }
 
     [Fact]
@@ -140,10 +238,8 @@ public class CreateRouteCommandTests
         var uow = new UnitOfWork(context, null!, null!, null!, null!, vehicles, drivers, routes, null!);
         var vehicle = Vehicle.Create("QA-ONE-ROUTE", "Test", "Van", 2025, null);
         var firstDriver = Driver.Create("First", "Driver", "QA-FIRST", "0990000001");
-        var secondDriver = Driver.Create("Second", "Driver", "QA-SECOND", "0990000002");
         await vehicles.AddAsync(vehicle);
         await drivers.AddAsync(firstDriver);
-        await drivers.AddAsync(secondDriver);
         await context.SaveChangesAsync();
 
         var create = new CreateRouteCommand(uow, routes, vehicles, drivers);
@@ -155,7 +251,7 @@ public class CreateRouteCommandTests
         var first = await create.Execute(vehicle.Id, firstDriver.Id, "First route", points, null,
             new DateTime(2035, 1, 1, 10, 0, 0, DateTimeKind.Utc),
             new DateTime(2035, 1, 1, 11, 0, 0, DateTimeKind.Utc));
-        var second = await create.Execute(vehicle.Id, secondDriver.Id, "Second route", points, null,
+        var second = await create.Execute(vehicle.Id, firstDriver.Id, "Second route", points, null,
             new DateTime(2035, 1, 2, 10, 0, 0, DateTimeKind.Utc),
             new DateTime(2035, 1, 2, 11, 0, 0, DateTimeKind.Utc));
 

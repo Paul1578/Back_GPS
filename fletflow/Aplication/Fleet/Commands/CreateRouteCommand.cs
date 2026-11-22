@@ -80,6 +80,11 @@ namespace fletflow.Application.Fleet.Commands
                 if (!driver.IsActive)
                     throw new BusinessConflictException("El conductor ya no está disponible para asignarlo a una ruta.");
 
+                var assignedDriver = await _drivers.GetOtherAssignedToVehicleAsync(vehicleId, driverId);
+                if (assignedDriver is not null)
+                    throw new BusinessConflictException(
+                        "El vehículo ya está asignado a otro conductor. Desasígnalo antes de crear la ruta.");
+
                 var activeVehicleRoutes = await _routes.GetAllAsync(vehicleId: vehicleId, onlyActive: true);
                 var activeDriverRoutes = await _routes.GetAllAsync(driverId: driverId, onlyActive: true);
                 if (HasScheduleConflict(activeVehicleRoutes, plannedStart, plannedEnd) ||

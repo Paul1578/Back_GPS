@@ -1,3 +1,11 @@
+## Iteración actual — exclusividad de asignación al crear/editar ruta — 2026-11-22
+
+- Auditoría read-only encontró que `CreateRouteCommand` y `UpdateRouteCommand` podían asociar un Vehicle todavía asignado a otro Driver, aunque la asignación directa ya devolvía conflicto.
+- Ambos comandos ahora vuelven a comprobar `GetOtherAssignedToVehicleAsync` después del lock/reload y lanzan `BusinessConflictException` antes de modificar datos. xUnit Release **82/82** pasa; dos regresiones SQLite comprueban que creación/edición conflictiva no mutan ruta/asignaciones.
+- `smoke-route-concurrency.sh` verifica HTTP 409 en ambas entradas y estado SQL intacto; `bash -n` y `git diff --check` pasan. Aún falta ejecutar MySQL descartable y Actions.
+- La primera suite completa falló 81/82 porque el caso de doble inicio construía dos conductores asignados al mismo vehículo, contrario a la regla documentada. Se actualizó el fixture a mismo Driver/Vehicle con agendas separadas; el resultado final fue 82/82. Registrado en `ERROR_LOG.md`.
+- Front también filtra la opción ya asignada y añade E2E de ciclo de visibilidad. Mantener ambas ramas aisladas y no cerrar la auditoría global.
+
 ## Trabajo actual — CRUD de perfil de miembro — 2026-11-22
 
 - Backend añade campos nullable FirstName/LastName a User, DTO y mapper. Migración AddUserProfileNames copia los nombres existentes desde Drivers enlazados, sin reemplazar valores no vacíos.

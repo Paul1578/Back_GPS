@@ -24,6 +24,11 @@
 
 # Changelog
 
+## 2026-11-22 — Respetar asignación exclusiva Vehicle/Driver en rutas
+
+- CreateRoute/UpdateRoute validan después de adquirir locks y releer entidades. El conflicto devuelve HTTP 409 antes de persistir.
+- Añadidas regresiones SQLite para estado intacto y comprobaciones SQL al smoke de concurrencia. Release xUnit 82/82 local; integración MySQL/Actions pendiente.
+
 ## 2026-11-22 — Defensa de tenant en comando de edición de perfil
 
 - El comando ahora requiere `CurrentOwnerUserId` y filtra explícitamente User y Driver por propietario además del query filter global.

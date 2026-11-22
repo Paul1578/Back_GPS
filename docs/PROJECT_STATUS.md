@@ -1,3 +1,9 @@
+## Iteración actual — exclusividad de asignación en rutas — 2026-11-22
+
+- CreateRoute/UpdateRoute validan relación Vehicle/Driver bajo locks y devuelven 409 si el vehículo sigue asignado a otro conductor.
+- Dos regresiones SQLite y suite Release completa pasaron: **82/82**. `bash -n`/diff-check pasan.
+- Smoke HTTP/MySQL añadido para creación/edición y persistencia intacta; MySQL descartable y Actions pendientes.
+
 ## Contrato de filtros de GPS — Actions validado — 2026-11-22
 
 - El smoke tenant fija `RecordedAt` conocido y consulta rango inclusivo con `from=to`, límite solo `from`, límite solo `to` e intervalo invertido. Incluye además rango sin resultados; las respuestas esperadas son HTTP 200 y colección vacía cuando el dato queda fuera del filtro o el intervalo está invertido.

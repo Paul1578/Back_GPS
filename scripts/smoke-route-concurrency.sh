@@ -130,6 +130,36 @@ if [[ "$assigned_driver_count" != "1" ]]; then
   echo "Asignaciones concurrentes dejaron $assigned_driver_count Drivers asociados al mismo vehículo; esperado 1." >&2
   exit 1
 fi
+assigned_driver_id="$(mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" --batch --skip-column-names "$db_name" \
+  -e "SELECT Id FROM Drivers WHERE VehicleId='$assignment_vehicle';")"
+if [[ "$assigned_driver_id" == "$assignment_driver_a" ]]; then
+  unassigned_driver_id="$assignment_driver_b"
+else
+  unassigned_driver_id="$assignment_driver_a"
+fi
+
+exclusive_create_payload="$(jq -nc --arg name "${prefix}exclusive_create" --arg vehicle "$assignment_vehicle" --arg driver "$unassigned_driver_id" --argjson points '[{"lat":-0.18,"lng":-78.46,"name":"Origin"},{"lat":-0.19,"lng":-78.47,"name":"Destination"}]' '{name:$name,vehicleId:$vehicle,driverId:$driver,points:$points}')"
+request POST /Routes "$exclusive_create_payload"
+expect 409 "Denegar creación de ruta con vehículo asignado a otro Driver"
+exclusive_create_routes="$(mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" --batch --skip-column-names "$db_name" \
+  -e "SELECT COUNT(*) FROM Routes WHERE Name='${prefix}exclusive_create';")"
+exclusive_create_assignments="$(mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" --batch --skip-column-names "$db_name" \
+  -e "SELECT CONCAT(SUM(Id='$assigned_driver_id' AND VehicleId='$assignment_vehicle'), ':', SUM(Id='$unassigned_driver_id' AND VehicleId IS NULL)) FROM Drivers WHERE Id IN ('$assigned_driver_id','$unassigned_driver_id');")"
+if [[ "$exclusive_create_routes" != "0" || "$exclusive_create_assignments" != "1:1" ]]; then
+  echo "CreateRoute conflict alteró la ruta o las asignaciones (routes=$exclusive_create_routes, assignments=$exclusive_create_assignments)." >&2
+  exit 1
+fi
+
+exclusive_update_route="$(create_route "${prefix}exclusive_update" "$v4" "$d4" "2030-04-07T10:00:00Z" "2030-04-07T11:00:00Z")"
+exclusive_update_payload="$(jq -nc --arg name "${prefix}exclusive_update" --arg vehicle "$assignment_vehicle" --arg driver "$d4" --argjson points '[{"lat":-0.18,"lng":-78.46,"name":"Origin"},{"lat":-0.19,"lng":-78.47,"name":"Destination"}]' '{name:$name,vehicleId:$vehicle,driverId:$driver,points:$points}')"
+request PUT "/Routes/$exclusive_update_route" "$exclusive_update_payload"
+expect 409 "Denegar edición de ruta con vehículo asignado a otro Driver"
+exclusive_update_state="$(mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" --batch --skip-column-names "$db_name" \
+  -e "SELECT CONCAT(r.VehicleId, ':', r.DriverId, ':', d.VehicleId) FROM Routes r JOIN Drivers d ON d.Id=r.DriverId WHERE r.Id='$exclusive_update_route';")"
+if [[ "$exclusive_update_state" != "$v4:$d4:$v4" ]]; then
+  echo "UpdateRoute conflict alteró la ruta o la asignación anterior: $exclusive_update_state" >&2
+  exit 1
+fi
 
 start_create="2031-04-05T10:00:00Z"
 end_create="2031-04-05T12:00:00Z"

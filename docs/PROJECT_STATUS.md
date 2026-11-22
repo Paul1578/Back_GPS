@@ -333,5 +333,5 @@ Nota de actualización: algunos resultados históricos de registro público más
 ## Matriz HTTP de Driver contra ruta ajena del mismo tenant — en validación
 
 - El auditor independiente confirmó que el E2E frontend cubre Driver ajeno, pero el smoke backend sólo probaba rutas de otro tenant.
-- `smoke-tenant-http.sh` ahora autentica el Driver creado por la carrera de unicidad y comprueba filtro/listado, detalle, estado, parada, evidencia y GET/POST GPS sobre una ruta asignada a otro Driver del mismo tenant.
-- Admin vuelve a consultar ruta/GPS y confirma que estado, evidencia y posición persistida no cambiaron. `bash -n` y `git diff --check` pasan; falta ejecución real HTTP/MySQL en Actions.
+- `smoke-tenant-http.sh` autentica el Driver creado por la carrera de unicidad y comprueba filtro/listado, detalle, estado, parada, evidencia y GET/POST GPS sobre una ruta asignada a otro Driver del mismo tenant.
+- Admin vuelve a consultar ruta/GPS y confirma que estado, evidencia y posición persistida no cambiaron. Actions `45029798323` pasó en Backend `ec3ce52`: Release build, xUnit 78/78, smoke HTTP/MySQL, concurrencia y cleanup success (0 fixtures QA).

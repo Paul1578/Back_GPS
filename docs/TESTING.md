@@ -401,4 +401,5 @@ La invitación envía sólo el enlace de activación; el usuario fija su contras
 
 - Con un JWT Driver real del tenant propietario, el smoke prueba `GET /Routes?driverId=...`, detalle, cambio de estado, estado de parada, evidencia y GET/POST posiciones contra una ruta de otro Driver.
 - Expected status: listado 200 vacío; detalle/GPS 403; escrituras/estado/parada/evidencia 404. Admin verifica que la ruta permanezca InProgress, sin evidencia nueva, y que GPS siga en una fila.
-- El fixture es el Driver ganador de la carrera HTTP de unicidad ya existente; sus filas tienen cleanup por email/documento. `bash -n` y diff-check locales pasan. Resultado MySQL/API pendiente.
+- El fixture es el Driver ganador de la carrera HTTP de unicidad ya existente; sus filas tienen cleanup por email/documento. `bash -n` y diff-check locales pasan.
+- Actions `45029798323` pasó con API/MySQL reales: el step de isolation, el smoke concurrente, los 78 xUnit y cleanup completo finalizaron success.

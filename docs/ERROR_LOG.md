@@ -637,12 +637,12 @@ Cada cambio de API debe incluir validación de compilación, migraciones si apli
 - Verificación: local Release build 0 warnings/0 errors, xUnit 64/64, `bash -n` y diff-check; Actions `45011796536` pasó build, xUnit, smoke HTTP/MySQL de tenant/Logistics y concurrencia, cleanup correcto.
 - Error de comando: la primera invocación apuntó a `fletflow.sln`, que no existe; el nombre correcto es `BackEnd_Gps.sln`. El sistema `/usr/bin/dotnet` tampoco tiene runtime utilizable; se repitió con `/home/leonardo/.dotnet/dotnet` SDK 8.0.428.
 - Prevención: consultar `rg --files -g '*.sln'` antes de invocar build y usar el SDK local conocido cuando el host de sistema no tenga runtime.
-# 2026-11-22 — Opciones de ruta incluían recursos no asignables — CORREGIDO EN CÓDIGO, CI PENDIENTE
+# 2026-11-22 — Opciones de ruta incluían recursos no asignables — CORREGIDO Y VERIFICADO
 
 - Hallazgo auditoría backend: el endpoint nuevo sólo filtraba `IsActive`; exponía vehículos en mantenimiento/en ruta y Drivers activos con cuenta de usuario inactiva, aunque CreateRoute rechaza esas asignaciones.
 - Solución: opciones incluyen sólo vehículos activos `Available`; `IDriverRepository.GetAssignableAsync` mantiene Drivers activos sin usuario y sólo incluye Drivers vinculados a una cuenta activa del mismo tenant. La consulta usa query filters OwnerUserId y un `Any` acotado, evitando N+1.
 - Cobertura añadida: xUnit de proyección excluye estados de vehículo no disponibles; smoke HTTP/MySQL crea un Driver con cuenta luego inactiva y verifica que se excluya, prueba vehículo en mantenimiento y restauración a disponible, además de inclusión del Driver sin usuario.
-- Verificación local: Release build 0 warnings/0 errors, xUnit 65/65, `bash -n` y diff-check. MySQL/API smoke y Actions pendientes.
+- Verificación local: Release build 0 warnings/0 errors, xUnit 65/65, `bash -n` y diff-check. Actions backend `45014146500` pasó smoke HTTP/MySQL de filtros/tenant y concurrencia; cleanup Driver/User dejó cero filas. Actions Front integrada `45014430986` pasó 18/18 y cleanup.
 - Prevención: los selectores de asignación deben representar restricciones de comandos de creación, y las pruebas deben contrastar elegibilidad del read model con persistencia real.
 
 ## 2026-11-22 — Ruta de comando de vehículo asumida incorrectamente — CORREGIDO
@@ -651,8 +651,9 @@ Cada cambio de API debe incluir validación de compilación, migraciones si apli
 - Solución: localizar el archivo con `rg --files` y leer `CreateVehicle/DeleteVehicleCommand.cs`; se confirmó que la baja permite vehículos en mantenimiento si no tienen ruta activa ni Driver asignado.
 - Prevención: localizar la ruta real de clases antes de leerlas mediante un nombre de archivo supuesto.
 
-## 2026-11-22 — Smoke no eliminaba Driver vinculado al usuario de QA — CORREGIDO, CI REPETICIÓN PENDIENTE
+## 2026-11-22 — Smoke no eliminaba Driver vinculado al usuario de QA — CORREGIDO Y VERIFICADO
 
 - Actions backend `45013922679`: build y xUnit 65/65 pasaron; el smoke HTTP/MySQL hizo todas las aserciones de negocio, pero el cleanup falló con MySQL 1451 porque `Drivers.UserId` restringe borrar el User de prueba mientras permanezca el Driver enlazado.
 - Solución: guardar el `driverId` de la respuesta, borrar primero ese Driver durante cleanup y comprobar que queden cero filas Driver/User. La verificación tolera errores de conexión reportándolos y conserva el estado de fallo.
 - Prevención: al ampliar fixtures con entidades enlazadas, documentar orden de borrado respetando FK y verificar también que cada fila de prueba desaparezca.
+- Repetición: Actions backend `45014146500` pasó, incluyendo la comprobación de cero Driver/User residuales.

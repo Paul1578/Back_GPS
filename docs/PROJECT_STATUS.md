@@ -243,4 +243,4 @@ Nota de actualización: algunos resultados históricos de registro público más
 
 - Auditoría encontró que `GET /Routes/assignment-options` podía ofrecer vehículo `OnRoute`/Maintenance y Driver ligado a usuario inactivo. El servicio de creación rechaza ambos casos.
 - Implementación local: vehículos sólo `Available` y activos; Drivers activos sin vínculo o ligados a User activo del tenant. Query de Driver usa filtro SQL sin consultas N+1.
-- Pruebas locales: Release build 0 warnings/0 errors; xUnit 65/65; sintaxis smoke/diff-check correctos. Actions `45013922679` confirmó filtros vía HTTP/MySQL, pero su cleanup falló por FK del Driver enlazado; el orden de eliminación quedó corregido y Actions debe repetirse.
+- Pruebas: Release build 0 warnings/0 errors; xUnit 65/65; Actions `45014146500` pasó filtros HTTP/MySQL, aislamiento/concurrencia y cleanup Driver/User sin residuos.

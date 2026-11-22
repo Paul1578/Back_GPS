@@ -239,4 +239,5 @@
 # 2026-11-22 — Filtrar recursos no asignables del constructor
 
 - Opciones de rutas excluyen vehículos en ruta/mantenimiento y Drivers cuya cuenta vinculada esté inactiva; Drivers activos sin cuenta siguen disponibles.
-- Added xUnit y smoke HTTP/MySQL para condiciones de elegibilidad. Local: Release 65/65, build 0 warnings/0 errors, script válido; CI pendiente.
+- Añadidos xUnit y smoke HTTP/MySQL para condiciones de elegibilidad. Local: Release 65/65, build 0 warnings/0 errors, script válido.
+- Actions `45014146500` pasó Release build, xUnit 65/65, smoke HTTP/MySQL de asignabilidad/tenant/concurrencia y cleanup sin residuos.

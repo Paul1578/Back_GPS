@@ -314,8 +314,9 @@ Errores de migración, herramientas, QA y soluciones están en `docs/ERROR_LOG.m
 - No marcar auditoría global como completa: CRUD/roles/responsive siguen progresivos; política Admin delegado pendiente; SMTP externo; app nativa aplazada.
 # Handoff — elegibilidad real de opciones de asignación — 2026-11-22
 
-- `chore/stabilize-fleet-platform`, HEAD base `5dc2426`; cambios locales pendientes: `IDriverRepository.GetAssignableAsync`, query asignación filtra Vehicle Available, Driver query con tenant+User activo; xUnit nuevo y smoke HTTP/MySQL ampliado.
+- `chore/stabilize-fleet-platform`, HEAD de código `648b23f`; `IDriverRepository.GetAssignableAsync` filtra elegibilidad por estado y cuenta activa dentro del tenant.
 - Hallazgo: endpoint exponía vehículos OnRoute/Maintenance y Drivers con User inactivo, aunque `CreateRouteCommand` los rechaza. La traza del agente está en contexto del coordinador; documentada en ERROR_LOG.
-- Verificado local: `/home/leonardo/.dotnet/dotnet build BackEnd_Gps.sln -c Release` 0 warnings/errors; xUnit 65/65; bash -n/diff-check correctos. Actions `45013922679` confirmó filtros HTTP/MySQL, pero cleanup falló por borrar User antes del Driver enlazado.
-- Fix local no publicado: el cleanup borra Driver por ID antes del User y verifica cero filas residuales. Validar `bash -n`, publicar fix y repetir Actions completa; Front run `45013936721` también usa backend remoto anterior y puede fallar al cleanup.
-- `refactor/route-builder` tiene en paralelo prueba Manager UI iniciada localmente (18 E2E descubiertos); no confundir esta nueva cobertura con validación integrada.
+- Local: `/home/leonardo/.dotnet/dotnet build BackEnd_Gps.sln -c Release` 0 warnings/errors; xUnit 65/65; bash -n/diff-check correctos.
+- Actions `45014146500` success en `648b23f`: smoke HTTP/MySQL confirma sólo opciones asignables, aislamiento/concurrencia y cleanup de cero rutas/posiciones/vehículo/Driver/User QA.
+- Actions Front integrada `45014430986` success en `7bf1955` con Back `648b23f`: backend Release/xUnit, audit/lint/build, responsive 1/1, E2E 18/18 y cleanup completo.
+- Continuar auditoría; Manager y Logistics ahora tienen rol UI separado. Otros CRUD/responsive pendientes, Admin delegado sin política aprobada, SMTP externo y app nativa pospuesta.

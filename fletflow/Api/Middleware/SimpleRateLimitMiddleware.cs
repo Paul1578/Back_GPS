@@ -54,7 +54,7 @@ namespace fletflow.Api.Middleware
                 _ => (Count: 1, WindowStart: now),
                 (_, current) => now - current.WindowStart >= WINDOW
                     ? (Count: 1, WindowStart: now)
-                    : (Count: current.Count + 1, WindowStart: current.WindowStart));
+                    : (Count: Math.Min(current.Count + 1, LIMIT + 1), WindowStart: current.WindowStart));
 
             if (requestState.Count > LIMIT)
             {

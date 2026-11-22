@@ -456,3 +456,5 @@ Errores de migración, herramientas, QA y soluciones están en `docs/ERROR_LOG.m
 - Pregunta de política enviada al usuario: si sólo cuenta raíz puede otorgar Admin o cualquier Admin. No modificar UserController hasta respuesta; continuar trabajo independiente.
 - Front: `a75914f` publicado. Actions `45036249291` pasó para `4e3ddc8` (E2E 21/21); `45036661541` valida `a75914f` con el nuevo E2E de error/retry dashboard Logistics, aún en curso al último chequeo.
 - No marcar misión completa; seguir con Actions, seguridad, CRUD/responsive pendiente. SMTP real necesita credenciales externas y móvil nativo fue aplazado.
+
+- Revisión local posterior al primer commit de seguridad agregó saturación del contador en 61 para evitar overflow bajo una ráfaga extrema; Release xUnit **85/85** y build **0 warnings/0 errors** volvieron a pasar. Esta pequeña corrección está pendiente de commit y de la próxima Action.

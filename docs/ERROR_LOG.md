@@ -743,9 +743,11 @@ Cada cambio de API debe incluir validación de compilación, migraciones si apli
 - Solución: `dotnet-ef` 9.0.10 se ejecuta con `PATH=/home/leonardo/.dotnet:$PATH`, `DOTNET_ROOT` y `DOTNET_ROOT_X64` apuntando a `/home/leonardo/.dotnet` y `DOTNET_MULTILEVEL_LOOKUP=0`; la migración se generó correctamente.
 - Prevención: este entorno necesita esas variables también para la metadata de MSBuild, no sólo para consultar la versión del apphost.
 
-## 2026-11-22 — Smoke comparaba timestamps con precisión distinta — CORREGIDO LOCAL; ACTIONS POR REPETIR
+## 2026-11-22 — Smoke comparaba timestamps con precisión distinta — CORREGIDO Y VALIDADO
 
 - Actions `45019828759` pasó build/xUnit, pero falló el smoke al comparar el `CreatedAtUtc` devuelto al crear con el devuelto tras editar.
 - Causa: la respuesta inicial tenía precisión de DateTime .NET (100 ns); MySQL `datetime(6)` conserva microsegundos. El test comparaba strings exactos aunque ambas marcas coincidían a la precisión persistida.
 - Solución: normalizar la respuesta API a seis decimales y comparar ambos reads con `DATE_FORMAT(CreatedAtUtc)` de MySQL antes y después de editar.
 - Prevención: verificar timestamps a la precisión real de la columna y contrastar el valor persistido.
+
+- Resolución confirmada por Actions `45020146775`: migración y smoke MySQL pasaron, incluyendo comparación a precisión `datetime(6)` antes/después de editar.

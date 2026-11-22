@@ -258,4 +258,4 @@
 # 2026-11-22 — Fecha real de creación de rutas
 
 - `Routes` almacena `CreatedAtUtc` nullable mediante migración aditiva; rutas nuevas fijan hora UTC al crear, editar conserva el valor, DTO lo expone y consultas ordenan por fecha real con fallback de operación para históricos.
-- Smoke HTTP/MySQL verifica persistencia y que editar no cambie `CreatedAtUtc`. Release/xUnit local **73/73**, shell syntax y diff-check pasan. Actions integrado pendiente.
+- Smoke HTTP/MySQL verifica persistencia y que editar no cambie `CreatedAtUtc`. Release/xUnit local **73/73**, shell syntax y diff-check pasan. Actions backend `45020146775` terminó success: migración aplicada en MySQL efímero, smoke HTTP/DB y concurrencia correctos, cleanup completo.

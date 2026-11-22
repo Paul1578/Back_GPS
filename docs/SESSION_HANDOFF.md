@@ -336,3 +336,11 @@ Errores de migración, herramientas, QA y soluciones están en `docs/ERROR_LOG.m
 - Cerrado en `8d19118`; Actions `45017642439` success: Release/xUnit 73/73, smokes HTTP/MySQL de tenant, roles y operación, asignación simultánea con unicidad persistida y cleanup completo. Próximo: mantener auditoría abierta y cubrir brechas restantes.
 - Trabajo local nuevo: fecha real `CreatedAtUtc` aditiva (nullable para legacy), UTC al crear, preservada al editar, DTO/repository ordenan datos. `smoke-tenant-http.sh` exige timestamp en respuesta/MySQL y compara respuesta antes/después de editar. Release 73/73; Front lint/build/discovery 18. Publicar ambos y exigir Actions integrado antes de cerrar.
 - Actions `45019828759` detectó comparación string falsa negativa por precisión: .NET puede devolver ticks de 100 ns, MySQL `datetime(6)` persiste microsegundos. El smoke ahora normaliza API a seis decimales y compara además `DATE_FORMAT` en DB antes/después de editar. Repetir `bash -n`, commit/push y Actions.
+
+
+## Fecha real de creación — backend validado — 2026-11-22
+
+- Backend `e31e3cc` corrige el test de precisión; Actions `45020146775` terminó success: Release build, xUnit **73/73**, migración `CreatedAtUtc` aplicada en MySQL, smoke HTTP/API contra valor persistido, edición preserva timestamp, concurrencia y cleanup.
+- Error del primer run `45019828759` documentado y resuelto normalizando a microsegundos según `datetime(6)`.
+- Front `cacb72e` ya publicado; Actions integrada `45020301540` ejecuta audit/lint/build, responsive y E2E Chrome/API/MySQL. Revisar resultado antes de cerrar fecha real en frontend.
+- Continúa pendiente política de Admin delegado; trabajar brechas independientes.

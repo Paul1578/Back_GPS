@@ -1004,3 +1004,9 @@ Cada cambio de API debe incluir validación de compilación, migraciones si apli
 - Corrección: antes del envío, el worker calcula el hash del token descifrado y consulta que exista para ese usuario con `UsedAt IS NULL` y `ExpiresAt > now`. Si no, cierra mensaje sin enviar y registra `ResetTokenInactive` como estado terminal, intento SMTP intacto.
 - Regresión SQLite: token usado no llega al remitente, queda DeadLettered con tipo exacto, sin `SentAt`, sin lock y con cero intentos. Worker 3/3, suite 92/92 y build limpio. Actions del SHA posterior pendientes.
 - Prevención: los workers de correo deben comprobar vigencia/propiedad del token justo antes de una operación externa irreversible; no basta con que el payload esté cifrado.
+
+## 2026-11-22 — SESSION_HANDOFF tuvo churn de finales de línea — CORREGIDO
+
+- Al añadir el resumen actual con escritura de texto Python, se normalizó el formato histórico CRLF del handoff y el commit mostró 830 líneas alteradas aunque sólo se necesitaba anteponer el estado.
+- Solución: restaurar el contenido exacto del commit base y añadir el encabezado conservando sus bytes de newline. El diff neto quedó en 10 líneas nuevas; no se perdió historial.
+- Prevención: antes de escribir documentación histórica, detectar/preservar el newline original y revisar `git diff --stat` por archivo, no sólo `git diff --check`.

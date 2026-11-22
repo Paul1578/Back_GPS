@@ -134,3 +134,8 @@
 ## Validación CI — 2026-11-22
 
 - `3f3b004` pasó Actions `44986173700`: 57 pruebas Release y smokes HTTP/MySQL tenant, roles, sesiones y concurrencia.
+
+## 2026-11-22 — Creación de rutas por Logistics en smoke HTTP
+
+- El smoke valida el ciclo crear/leer/editar/leer/dar de baja de una ruta como Logistics con los fixtures de vehículo y conductor creados por Manager; el ciclo Manager se da de baja antes para evitar solapamiento de agenda.
+- Cleanup conserva y elimina por separado las rutas lógicamente dadas de baja de ambos roles. Smoke API/MySQL efímero completo aprobado.

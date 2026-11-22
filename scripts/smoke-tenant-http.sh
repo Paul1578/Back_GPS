@@ -51,6 +51,8 @@ document_number=""
 manager_vehicle_id=""
 manager_driver_id=""
 manager_route_id=""
+logistics_route_id=""
+logistics_route_name=""
 
 cleanup() {
   local status=$?
@@ -63,6 +65,7 @@ cleanup() {
       sql+=" DELETE rp FROM RoutePositions rp JOIN Routes r ON r.Id=rp.RouteId WHERE r.Name='$route_name'; DELETE FROM Routes WHERE Name='$route_name';"
     fi
     if [[ -n "$manager_route_id" ]]; then sql+=" DELETE FROM RoutePositions WHERE RouteId='$manager_route_id'; DELETE FROM Routes WHERE Id='$manager_route_id';"; fi
+    if [[ -n "$logistics_route_id" ]]; then sql+=" DELETE FROM RoutePositions WHERE RouteId='$logistics_route_id'; DELETE FROM Routes WHERE Id='$logistics_route_id';"; fi
     if [[ -n "$driver_id" ]]; then sql+=" DELETE FROM Drivers WHERE Id='$driver_id';"
     elif [[ -n "$document_number" ]]; then sql+=" DELETE FROM Drivers WHERE DocumentNumber='$document_number';"; fi
     if [[ -n "$manager_driver_id" ]]; then sql+=" DELETE FROM Drivers WHERE Id='$manager_driver_id';"; fi
@@ -86,7 +89,7 @@ cleanup() {
       sql+=" SET @qa_user_id=(SELECT Id FROM Users WHERE Email='$public_registration_email'); DELETE FROM RefreshTokens WHERE UserId=@qa_user_id; DELETE FROM PasswordResetTokens WHERE UserId=@qa_user_id; DELETE FROM UserRoles WHERE UserId=@qa_user_id; DELETE FROM Users WHERE Id=@qa_user_id;"
     fi
     sql+=" COMMIT;"
-    mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" "$db_name" -e "$sql" >/dev/null 2>&1 || {
+    mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" "$db_name" -e "$sql" >/dev/null || {
       echo "No se pudieron limpiar los fixtures creados por smoke-tenant-http.sh." >&2
       status=1
     }
@@ -189,6 +192,8 @@ expect_status 201 "Crear ruta como Manager"
 manager_route_id="$(jq -er '.id' "$work_dir/response.json")"
 request PUT "/Routes/$manager_route_id" "$(jq -nc --arg name "$manager_route_name updated" --arg vehicleId "$manager_vehicle_id" --arg driverId "$manager_driver_id" --argjson points "$role_points" '{name:$name,cargoDescription:"Role matrix updated",vehicleId:$vehicleId,driverId:$driverId,points:$points}')" "$deactivated_access_token"
 expect_status 200 "Editar ruta como Manager"
+request DELETE "/Routes/$manager_route_id" "" "$deactivated_access_token"
+expect_status 204 "Dar de baja ruta como Manager antes de reutilizar agenda"
 request POST /Routes "$manager_route_payload" "$restricted_user_token"
 expect_status 403 "Denegar creación de ruta a User"
 request PUT "/Users/$deactivated_user_id/status?isActive=false" "" "$token"
@@ -224,9 +229,25 @@ request POST /Auth/login "$(jq -nc --arg email "$logistics_user_email" --arg pas
 expect_status 200 "Nueva sesión Logistics para probar cambio de rol"
 logistics_token="$(jq -er '.token // .accessToken' "$work_dir/response.json")"
 logistics_refresh_token="$(jq -er '.refreshToken' "$work_dir/response.json")"
-request PUT "/Routes/$manager_route_id" "$(jq -nc --arg name "${manager_route_name} logistics" --arg vehicleId "$manager_vehicle_id" --arg driverId "$manager_driver_id" --argjson points "$role_points" '{name:$name,cargoDescription:"Logistics update",vehicleId:$vehicleId,driverId:$driverId,points:$points}')" "$logistics_token"
+logistics_route_name="${manager_route_name} logistics"
+logistics_route_payload="$(jq -nc --arg name "$logistics_route_name" --arg vehicleId "$manager_vehicle_id" --arg driverId "$manager_driver_id" --argjson points "$role_points" '{name:$name,cargoDescription:"Logistics create",vehicleId:$vehicleId,driverId:$driverId,points:$points}')"
+request POST /Routes "$logistics_route_payload" "$logistics_token"
+expect_status 201 "Crear ruta como Logistics con agenda liberada por Manager"
+logistics_route_id="$(jq -er '.id' "$work_dir/response.json")"
+request GET "/Routes/$logistics_route_id" "" "$logistics_token"
+expect_status 200 "Leer ruta creada por Logistics"
+jq -e --arg id "$logistics_route_id" --arg name "$logistics_route_name" --arg vehicleId "$manager_vehicle_id" --arg driverId "$manager_driver_id" \
+  '.id == $id and .name == $name and .vehicleId == $vehicleId and .driverId == $driverId and .isActive == true and (.points | length == 2)' \
+  "$work_dir/response.json" >/dev/null || { echo "La ruta de Logistics no coincide con lo persistido." >&2; cat "$work_dir/response.json" >&2; exit 1; }
+logistics_route_updated_name="${logistics_route_name} updated"
+request PUT "/Routes/$logistics_route_id" "$(jq -nc --arg name "$logistics_route_updated_name" --arg vehicleId "$manager_vehicle_id" --arg driverId "$manager_driver_id" --argjson points "$role_points" '{name:$name,cargoDescription:"Logistics update",vehicleId:$vehicleId,driverId:$driverId,points:$points}')" "$logistics_token"
 expect_status 200 "Editar ruta como Logistics"
-request DELETE "/Routes/$manager_route_id" "" "$logistics_token"
+request GET "/Routes/$logistics_route_id" "" "$logistics_token"
+expect_status 200 "Confirmar edición de ruta Logistics persistida"
+jq -e --arg id "$logistics_route_id" --arg name "$logistics_route_updated_name" --arg vehicleId "$manager_vehicle_id" --arg driverId "$manager_driver_id" \
+  '.id == $id and .name == $name and .vehicleId == $vehicleId and .driverId == $driverId and .isActive == true' \
+  "$work_dir/response.json" >/dev/null || { echo "La edición de Logistics no quedó persistida." >&2; cat "$work_dir/response.json" >&2; exit 1; }
+request DELETE "/Routes/$logistics_route_id" "" "$logistics_token"
 expect_status 204 "Dar de baja ruta como Logistics"
 request PUT "/Users/$logistics_user_id/role" '{"roleName":"User"}' "$token"
 expect_status 200 "Cambiar rol Logistics a User"
@@ -322,4 +343,4 @@ request GET "/Routes/$route_id" "" "$token"; expect_status 200 "Confirmar ruta t
 request GET "/Drivers/$driver_id" "" "$token"; expect_status 200 "Confirmar Driver tenant A intacto"
 request GET "/Vehicles/$vehicle_id" "" "$token"; expect_status 200 "Confirmar vehículo tenant A intacto"
 
-echo "OK: aislamiento HTTP/MySQL entre tenants; autorización User/Manager/Logistics; revocación de sesiones; Vehicles/Drivers/Routes/RoutePositions."
+echo "OK: aislamiento HTTP/MySQL entre tenants; autorización User/Manager/Logistics; Logistics creó/editó/leyó/eliminó ruta con fixtures Manager; revocación de sesiones; Vehicles/Drivers/Routes/RoutePositions."

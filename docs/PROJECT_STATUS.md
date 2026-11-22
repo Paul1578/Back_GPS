@@ -146,3 +146,8 @@ Fecha de corte: 2026-11-21.
 
 - Commit `3f3b004`, Actions `44986173700`: success. Build Release 0 warnings/0 errors y suite xUnit 57/57.
 - Los smokes HTTP/tenant/roles y concurrencia pasaron con MySQL descartable. Se comprobó que access y refresh tokens viejos sigan rechazados al restaurar el rol original.
+
+## Smoke de creación Logistics — 2026-11-22
+
+- Cobertura HTTP ahora confirma creación positiva de ruta por Logistics con vehículo/Driver del mismo tenant creados por Manager, sin rutas pendientes simultáneas: Manager crea/edita/da de baja; luego Logistics crea, lee y valida persistencia, edita y vuelve a validar, y da de baja.
+- El cleanup registra IDs separados para las dos rutas soft-deleted. Smoke aislado con MySQL 8 efímero y DB `fletflow_ci_*`: aprobado; contenedor eliminado. Primer fallo de cleanup y corrección registrados en `docs/ERROR_LOG.md`.

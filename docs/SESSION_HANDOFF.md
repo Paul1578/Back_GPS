@@ -185,3 +185,10 @@ Errores de migración, herramientas, QA y soluciones están en `docs/ERROR_LOG.m
 - CI: Release build 0 warnings/0 errors, xUnit **57/57**, smoke tenant/roles/MySQL y smoke de concurrencia aprobados.
 - Confirmado en API con MySQL desechable: tokens access y refresh previos siguen en 401 tras Logistics→User→Logistics. La DB y el contenedor temporales se eliminaron.
 - La rama está limpia y sincronizada con origin; `main` intacta.
+
+## Smoke de creación de rutas como Logistics — 2026-11-22
+
+- Rama backend `chore/stabilize-fleet-platform`. `scripts/smoke-tenant-http.sh` cubre Logistics creando una ruta con el mismo vehículo y Driver del tenant que creó Manager. Manager crea/edita y da de baja primero; después Logistics crea (201), obtiene el recurso (200) y valida ID/nombre/IDs de asignación/paradas, edita (200), vuelve a leer para verificar nombre persistido y da de baja (204).
+- El primer intento detectó un defecto del propio cleanup: el ID Logistics sobrescribía el Manager aunque la baja de Manager es lógica. Se mantienen ahora ambos IDs y el trap limpia ambas rutas; error y solución en `docs/ERROR_LOG.md`.
+- Repetición completa aprobada únicamente con MySQL 8 en contenedor y DB desechable `fletflow_ci_*`; cleanup sin fallos, contenedor eliminado y DB local intacta. `bash -n` y `git diff --check` correctos. No se ejecutaron otras suites.
+- Pendiente inmediato: commit en esta rama y confirmar estado limpio. La misión de estabilización global sigue abierta.

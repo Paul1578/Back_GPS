@@ -235,3 +235,9 @@ La invitación envía sólo el enlace de activación; el usuario fija su contras
 
 - Actions `44986173700` para `3f3b004`: Release 57/57, build sin warnings y smokes reales HTTP/MySQL de tenant/roles y concurrencia en verde. El ciclo Logistics→User→Logistics mantuvo access/refresh originales en 401.
 - La base y el contenedor temporales se eliminaron al completar la verificación.
+
+## Creación de rutas por Logistics — 2026-11-22
+
+- `bash -n scripts/smoke-tenant-http.sh` y `git diff --check`: correctos.
+- Sólo se ejecutó `smoke-tenant-http.sh` contra API local temporal + MySQL 8 en contenedor efímero, con esquema `fletflow_ci_*`. Manager creó/editó y dio de baja su ruta antes de liberar la agenda compartida; Logistics creó otra ruta con los mismos fixtures (HTTP 201), GET confirmó ID/nombre/vehículo/conductor/paradas persistidos, PUT devolvió 200 y un segundo GET confirmó el nombre actualizado, DELETE devolvió 204.
+- Primer intento: el flujo HTTP pasó, pero falló cleanup porque el ID de la ruta Logistics sobrescribió el de Manager, cuya baja es lógica. Se corrigió guardando ambos IDs y limpiando las dos rutas. La repetición terminó con código 0 y cleanup sin errores; contenedor y DB desechables eliminados. No se usó la DB local.

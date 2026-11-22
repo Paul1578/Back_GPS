@@ -157,3 +157,11 @@ El smoke anónimo solicitó rol Admin en el registro; la fila persistida conserv
 - Verificación local fail-fast: con entorno `Production`, key ring configurado y certificado ausente, el proceso se negó a iniciar con mensaje explícito; no llegó a conectarse a DB ni creó core file en el repositorio.
 - Validación remota `45037399332` sobre `94c3e90`: build limpio, 85/85 xUnit, aislamiento/roles y ciclo de flota HTTP/MySQL, smoke concurrente y cleanup correctos. La configuración productiva con certificado real continúa pendiente de secretos/infraestructura de despliegue.
 - Nueva prueba con certificado autofirmado efímero confirma que el XML del key ring contiene `<encryptedSecret` y que un provider reiniciado puede descifrar payload con el mismo certificado. Suite Release actual: **86/86**, build limpio.
+
+## Rotación de certificado Data Protection — 2026-11-22
+
+- `FLETFLOW_DATA_PROTECTION_CERT_PATH` y su contraseña identifican el certificado actual; las claves nuevas se cifran con este PFX.
+- Durante la transición, `FLETFLOW_DATA_PROTECTION_PREVIOUS_CERT_PATH` y `FLETFLOW_DATA_PROTECTION_PREVIOUS_CERT_PASSWORD` cargan el certificado anterior con clave privada para descifrar claves ya persistidas. Son opcionales cuando no hay rotación.
+- No retirar ni destruir el certificado anterior mientras existan claves/payloads protegidos con él en el key ring. Los PFX y contraseñas se provisionan mediante secretos de despliegue y nunca se versionan. `.env.example` contiene únicamente nombres vacíos.
+- La prueba de rotación conserva key ring y payload generados con el certificado anterior, abre un provider con actual + anterior, descifra el payload anterior y protege/descifra un payload nuevo.
+- La regresión de rotación valida certificado anterior para lectura y certificado actual para claves nuevas; backend local Release **86/86** y build **0 warnings/0 errores**. Actions del nuevo commit pendiente.

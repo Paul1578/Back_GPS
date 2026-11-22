@@ -38,7 +38,10 @@ builder.Services.AddHttpContextAccessor();
 var keyRingPath = Environment.GetEnvironmentVariable("FLETFLOW_DATA_PROTECTION_KEYS_PATH");
 var keyEncryptionCertificatePath = Environment.GetEnvironmentVariable("FLETFLOW_DATA_PROTECTION_CERT_PATH");
 var keyEncryptionCertificatePassword = Environment.GetEnvironmentVariable("FLETFLOW_DATA_PROTECTION_CERT_PASSWORD");
+var previousKeyEncryptionCertificatePath = Environment.GetEnvironmentVariable("FLETFLOW_DATA_PROTECTION_PREVIOUS_CERT_PATH");
+var previousKeyEncryptionCertificatePassword = Environment.GetEnvironmentVariable("FLETFLOW_DATA_PROTECTION_PREVIOUS_CERT_PASSWORD");
 var dataProtection = builder.Services.AddDataProtection().SetApplicationName("FletFlow");
+X509Certificate2? keyEncryptionCertificate = null;
 if (!builder.Environment.IsDevelopment() && string.IsNullOrWhiteSpace(keyRingPath))
     throw new InvalidOperationException(
         "Producción requiere FLETFLOW_DATA_PROTECTION_KEYS_PATH persistente para los tokens del outbox de correo.");
@@ -53,13 +56,26 @@ if (!string.IsNullOrWhiteSpace(keyRingPath))
 }
 if (!string.IsNullOrWhiteSpace(keyEncryptionCertificatePath))
 {
-    var certificate = new X509Certificate2(
+    keyEncryptionCertificate = new X509Certificate2(
         Path.GetFullPath(keyEncryptionCertificatePath),
         keyEncryptionCertificatePassword,
         X509KeyStorageFlags.EphemeralKeySet);
-    if (!certificate.HasPrivateKey)
+    if (!keyEncryptionCertificate.HasPrivateKey)
         throw new InvalidOperationException("El certificado de Data Protection debe incluir su clave privada.");
-    dataProtection.ProtectKeysWithCertificate(certificate);
+    dataProtection.ProtectKeysWithCertificate(keyEncryptionCertificate);
+}
+if (!string.IsNullOrWhiteSpace(previousKeyEncryptionCertificatePath))
+{
+    var previousCertificate = new X509Certificate2(
+        Path.GetFullPath(previousKeyEncryptionCertificatePath),
+        previousKeyEncryptionCertificatePassword,
+        X509KeyStorageFlags.EphemeralKeySet);
+    if (!previousCertificate.HasPrivateKey)
+        throw new InvalidOperationException("El certificado anterior de Data Protection debe incluir su clave privada.");
+    X509Certificate2[] decryptionCertificates = keyEncryptionCertificate is null
+        ? [previousCertificate]
+        : [keyEncryptionCertificate, previousCertificate];
+    dataProtection.UnprotectKeysWithAnyCertificate(decryptionCertificates);
 }
 
 // =====================

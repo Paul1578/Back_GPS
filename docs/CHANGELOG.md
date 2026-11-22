@@ -327,3 +327,15 @@
 - Se prueba con certificado temporal que el key ring queda cifrado y sigue usable después de reiniciar el provider.
 - Release xUnit **86/86**; build 0 warnings/0 errores; Actions pendiente.
 - Front Actions `45038687601` pasó contra Backend `b625c28`: xUnit 86/86, E2E 23/23 y cleanup.
+
+## 2026-11-22 — Regresión concurrente y rotación Data Protection
+
+- La prueba de 200 requests sincroniza el inicio con barrera, demuestra solapamiento real y conserva el límite 60 aceptadas / 140 rechazadas.
+- Production acepta certificado actual y certificado anterior para descifrar key rings existentes; `.env.example` y SECURITY documentan las variables nuevas y la retención del PFX anterior.
+- Prueba de rotación verifica descifrado de payload previo y round-trip nuevo con provider configurado con ambos certificados.
+
+## 2026-11-22 — Estabilización del rate limit y rotación Data Protection
+
+- El test del rate limit fuerza solapamiento real de 200 solicitudes; verifica 60 aceptadas y 140 rechazadas por la misma IP.
+- Se permite mantener el certificado anterior como fallback de descifrado durante rotación; el actual protege las claves nuevas. Se añadieron pruebas de payload previo y nuevo.
+- Tests Release 86/86, build Release 0 warnings/0 errors. Actions backend del commit resultante pendiente.

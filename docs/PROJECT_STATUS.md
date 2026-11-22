@@ -371,3 +371,10 @@ Nota de actualización: algunos resultados históricos de registro público más
 - Cierre CI backend `94c3e90`: Actions `45037399332` pasó build (0 warnings/0 errors), xUnit 85/85, smokes tenant/roles/flota y concurrencia MySQL, cleanup success. Cambios de seguridad locales ya integrados.
 - Seguridad Data Protection: prueba nueva verifica cifrado real del XML del key ring y descifrado tras reiniciar provider. Suite local backend 86/86; build 0 warnings/0 errors; CI de la prueba pendiente.
 - Revalidación Front actual `45038687601` pasó con Backend exacto `b625c28`: xUnit 86/86, E2E API/MySQL 23/23, responsive 1/1, audit/lint/build y cleanup success.
+
+## Subtarea de estabilidad backend — en verificación (2026-11-22)
+
+- Rate limit: prueba sincroniza 200 solicitudes concurrentes por una IP, comprueba solapamiento y resultado 60/140.
+- Data Protection: certificado previo opcional para descifrar key ring rotado; certificado actual sigue cifrando claves nuevas. Variables documentadas: `FLETFLOW_DATA_PROTECTION_PREVIOUS_CERT_PATH` y `FLETFLOW_DATA_PROTECTION_PREVIOUS_CERT_PASSWORD`.
+- Test de rotación cubre payload anterior y round-trip de payload nuevo con provider actual + anterior; no escribe XML cifrado a logs.
+- Tests enfocados pasaron 2/2; rotación aislada 1/1; suite Release **86/86**; build Release **0 warnings/0 errors**. `git diff --check` limpio. Commit/Actions de esta subtarea aún pendientes; sin push y sin cambios de roles.

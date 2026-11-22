@@ -439,8 +439,17 @@ La invitación envía sólo el enlace de activación; el usuario fija su contras
 - Arranque de configuración Production: sin certificado y con ruta de key ring especificada, la API rechazó el inicio con `Producción requiere FLETFLOW_DATA_PROTECTION_CERT_PATH`; la comprobación enfocada posterior pasó. No se creó core file en el repositorio.
 - Actions [`45037399332`](https://github.com/Paul1578/Back_GPS/actions/runs/45037399332) validó Backend `94c3e90`: Release build 0 warnings/0 errors; xUnit **85/85**; smoke HTTP/MySQL tenant/roles/flota y smoke de concurrencia de asignación; cleanup success.
 
-## Data Protection: cifrado y persistencia del key ring
+## Data Protection: cifrado, persistencia y rotación del key ring
 
-- `DataProtectionKeyRingTests.CertificateProtectedKeyRing_IsEncryptedAndSurvivesProviderRestart` crea certificado temporal, valida `<encryptedSecret` en el XML persistido y comprueba que un provider nuevo descifre el payload tras reinicio. Directorio único eliminado en `finally`.
-- Prueba enfocada 1/1; suite Release **86/86**; build Release 0 warnings/0 errors; Actions de este test aún pendiente.
-- Integración cruzada Front `45038687601`: checkout Backend `b625c28`; xUnit 86/86, E2E API/MySQL Front 23/23, responsive/audit/lint/build y cleanup success.
+- `DataProtectionKeyRingTests.CertificateRotation_PreviousCertificateCanDecryptExistingKeyRingAndPayload` crea key ring/payload con certificado anterior; un provider configurado con certificado actual + anterior descifra el payload legado, crea una clave nueva y valida el round-trip nuevo. Comprueba `<encryptedSecret` en ambos archivos y limpia el directorio temporal en `finally`.
+- La prueba enfocada de rotación pasó 1/1; pruebas de rotación y rate limit concurrente 2/2; suite Release **86/86**; build Release **0 warnings/0 errors**.
+- Suite local: `/home/leonardo/.dotnet/dotnet test BackEnd_Gps.sln --configuration Release --no-restore`; build: `/home/leonardo/.dotnet/dotnet build BackEnd_Gps.sln --configuration Release --no-restore -m:1`.
+- Integración cruzada Front `45039605708` usó Backend `b625c28`: xUnit 86/86, E2E API/MySQL Front 23/23, responsive/audit/lint/build y cleanup success. La configuración de rotación y su nueva prueba aún requieren Actions backend del commit resultante.
+
+## Regresiones de concurrencia y rotación de certificados — 2026-11-22
+
+- `SimpleRateLimitMiddlewareTests.ConcurrentRequests_CannotExceedSixtyAcceptedRequestsPerWindow` prepara 200 solicitudes en una barrera async, las libera juntas desde la misma IP y confirma ejecución solapada, 60 aceptadas y 140 HTTP 429.
+- `DataProtectionKeyRingTests.CertificateRotation_PreviousCertificateCanDecryptExistingKeyRingAndPayload` crea key ring/payload con certificado anterior y verifica descifrado y uso posterior con provider configurado con certificado actual + anterior.
+- Pruebas enfocadas: `/home/leonardo/.dotnet/dotnet test BackEnd_Gps.Tests/BackEnd_Gps.Tests.csproj --configuration Release --no-restore -m:1 --filter "FullyQualifiedName~SimpleRateLimitMiddlewareTests.ConcurrentRequests|FullyQualifiedName~DataProtectionKeyRingTests.CertificateRotation"`.
+- Suite completa: `/home/leonardo/.dotnet/dotnet test BackEnd_Gps.sln --configuration Release --no-restore -m:1`.
+- Resultado: tests enfocados 2/2, suite completa 86/86, build Release 0 warnings/0 errores.

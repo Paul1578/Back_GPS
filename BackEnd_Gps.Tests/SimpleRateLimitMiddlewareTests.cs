@@ -69,23 +69,58 @@ public class SimpleRateLimitMiddlewareTests
         var remoteAddress = new IPAddress(Guid.NewGuid().ToByteArray());
         var accepted = 0;
         var rejected = 0;
+        var activeRequests = 0;
+        var peakActiveRequests = 0;
+        var readyRequests = 0;
+        var allRequestsReady = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var releaseRequests = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
 
-        await Task.WhenAll(Enumerable.Range(0, 200).Select(async _ =>
+        var requests = Enumerable.Range(0, 200).Select(async _ =>
         {
+            if (Interlocked.Increment(ref readyRequests) == 200)
+                allRequestsReady.TrySetResult();
+            await releaseRequests.Task;
+
             var context = new DefaultHttpContext();
             context.Connection.RemoteIpAddress = remoteAddress;
-            await middleware.InvokeAsync(context, _ =>
+            await middleware.InvokeAsync(context, async _ =>
             {
                 Interlocked.Increment(ref accepted);
-                return Task.CompletedTask;
+                var currentActive = Interlocked.Increment(ref activeRequests);
+                UpdateMaximum(ref peakActiveRequests, currentActive);
+                try
+                {
+                    await Task.Yield();
+                }
+                finally
+                {
+                    Interlocked.Decrement(ref activeRequests);
+                }
             });
 
             if (context.Response.StatusCode == StatusCodes.Status429TooManyRequests)
                 Interlocked.Increment(ref rejected);
-        }));
+        }).ToArray();
+
+        await allRequestsReady.Task.WaitAsync(TimeSpan.FromSeconds(10));
+        releaseRequests.SetResult();
+        await Task.WhenAll(requests);
 
         Assert.Equal(60, accepted);
         Assert.Equal(140, rejected);
+        Assert.True(peakActiveRequests > 1, "Las solicitudes aceptadas deben solaparse para probar concurrencia real.");
+    }
+
+    private static void UpdateMaximum(ref int maximum, int candidate)
+    {
+        var observed = Volatile.Read(ref maximum);
+        while (candidate > observed)
+        {
+            var prior = Interlocked.CompareExchange(ref maximum, candidate, observed);
+            if (prior == observed)
+                return;
+            observed = prior;
+        }
     }
 
     private sealed class TestWebHostEnvironment(string environmentName) : IWebHostEnvironment

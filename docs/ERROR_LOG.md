@@ -937,3 +937,29 @@ Cada cambio de API debe incluir validación de compilación, migraciones si apli
 - Se agregó `DataProtectionKeyRingTests`: genera certificado temporal, persiste una clave, comprueba `<encryptedSecret` en el XML y reinicia el provider con el mismo key ring/certificado para descifrar el payload.
 - Resultado: prueba enfocada 1/1; suite Release **86/86**; build 0 warnings/0 errors; diff-check limpio.
 - El test usa un key ring temporal único y lo borra en `finally`; no usa ni modifica certificados/datos locales de producción.
+
+## 2026-11-22 — Test de rotación y concurrencia real — CORREGIDO
+
+- La revisión encontró que `ConcurrentRequests` sólo enumeraba tareas y el delegate downstream podía completar sin solapamiento efectivo. Se sustituyó por una barrera async de 200 solicitudes y medición de handlers activos; exige solapamiento y resultado exacto 60/140.
+- Una aserción secundaria probó abrir el key ring mixto con sólo el certificado actual. Falló al procesar la clave protegida por el certificado previo; ese escenario no representa la configuración de rotación, que debe poder leer todo el key ring existente.
+- Solución: el provider de rotación declara certificado actual + anterior para descifrado; descifra payload previo, persiste clave nueva y realiza round-trip del payload nuevo después de reiniciar el provider. Se quitó la aserción incorrecta de current-only. Prueba enfocada de rate limit/rotación: 2/2; suite serial: 86/86.
+- Se eliminó la salida temporal del XML cifrado. La prueba no vuelca el contenido del key ring en logs.
+- Se documentaron `FLETFLOW_DATA_PROTECTION_PREVIOUS_CERT_PATH` y `FLETFLOW_DATA_PROTECTION_PREVIOUS_CERT_PASSWORD`; se conserva el PFX anterior mientras claves/payloads persistidos puedan depender de él.
+
+## 2026-11-22 — Runtime local de .NET no resolvía SDK por PATH — RESUELTO
+
+- `dotnet test BackEnd_Gps.sln --configuration Release` falló antes de ejecutar pruebas: `/usr/lib64/dotnet/host/fxr` no contiene runtime versionado.
+- El host `/usr/bin/dotnet` no corresponde al SDK instalado que usa este entorno. Se repitió con `/home/leonardo/.dotnet/dotnet`; suite Release **86/86** y build Release **0 warnings/0 errores**.
+- Prevención: usar el path explícito `/home/leonardo/.dotnet/dotnet` en comandos locales de backend.
+
+## 2026-11-22 — Resultado inconsistente durante test backend concurrente — RESUELTO / NO REPRODUCIDO
+
+- Una ejecución completa intercalada con la iteración/build del test de certificado informó 85/86 y `CryptographicException: Unable to retrieve the decryption key`; el número de línea del stack no correspondía con el fuente actual. La prueba de rotación aislada pasó después y la suite serial completa pasó 86/86.
+- Causa probable: compilación/test simultáneos escribieron artefactos `bin/obj` compartidos, dejando símbolos/código desalineados; no se reprodujo con los comandos seriales posteriores.
+- Prevención: evitar varios procesos `dotnet test/build` sobre el mismo checkout; usar `-m:1` para verificaciones seriales. Mantener la prueba de rotación actual + anterior para impedir regresión real.
+
+## 2026-11-22 — Consulta de Actions en repositorio incorrecto — RESUELTO
+
+- `gh run view 45039605708` se lanzó desde `/home/leonardo/Back_GPS`; ese ID pertenece a `Paul1578/Front_gpsR` y la CLI respondió HTTP 404.
+- No se alteró ningún recurso. Se consultó desde `/home/leonardo/Front_gpsR` y se confirmó que el run terminó success.
+- Prevención: consultar IDs de Actions desde el checkout dueño del workflow.

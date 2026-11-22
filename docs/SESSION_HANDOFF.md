@@ -468,3 +468,16 @@ Errores de migración, herramientas, QA y soluciones están en `docs/ERROR_LOG.m
 - Nueva prueba `BackEnd_Gps.Tests/DataProtectionKeyRingTests.cs`: certificado autofirmado efímero, persistencia cifrada `<encryptedSecret`, restart provider y recuperación del payload. Limpia directorio aislado en `finally`.
 - Local después del test: Release 86/86, build 0 warnings/0 errors y diff-check limpio. Falta Actions del commit; el último CI validó 85 tests y no incluía esta prueba.
 - Front Actions `45038687601` validó Front `f972e19` con checkout Backend `b625c28`: Release/xUnit 86/86, responsive 1/1, E2E API/MySQL 23/23, audit/lint/build y cleanup. Incluye el E2E de error/retry Vehicles y test backend de key ring cifrado.
+
+## Subtarea backend — concurrencia real y rotación de certificado — 2026-11-22
+
+- Scope exclusivo: Backend `/home/leonardo/Back_GPS`, branch `chore/stabilize-fleet-platform`; no push ni cambios frontend.
+- `ConcurrentRequests` alinea 200 solicitudes a una barrera async por una misma IP, mide solapamiento en handlers y exige 60 aceptadas / 140 rechazadas.
+- `Program.cs` acepta opcionalmente `FLETFLOW_DATA_PROTECTION_PREVIOUS_CERT_PATH` y `_PASSWORD` para descifrar las claves previas; el certificado de `FLETFLOW_DATA_PROTECTION_CERT_PATH` protege claves nuevas. Variables vacías añadidas a `.env.example`.
+- La prueba de rotación escribe key ring/payload con certificado anterior y abre provider con actual + anterior; verifica payload legado y round-trip nuevo.
+- Política Admin delegado sigue pendiente; esta subtarea no cambia roles.
+- Un primer escenario de test intentó leer el key ring mixto usando sólo certificado actual y falló por no cargar el fallback; corregido para el provider actual + anterior. Se retiró `Console.WriteLine` del XML cifrado.
+- Pruebas enfocadas 2/2; suite Release `/home/leonardo/.dotnet/dotnet test BackEnd_Gps.sln --configuration Release --no-restore` **86/86**; build Release `--no-restore -m:1` 0 warnings/0 errores; `git diff --check` limpio. Pendiente revisar/commitear estos cambios y validar Actions backend.
+- La primera ejecución local con `dotnet` del PATH no inició porque `/usr/lib64/dotnet/host/fxr` está vacío. Solución: usar el SDK instalado en `/home/leonardo/.dotnet/dotnet`.
+- Una primera prueba de suite durante la iteración del test de rotación devolvió `CryptographicException` con mapeo de línea distinto al fuente actual; el test enfocado serializado y luego la suite completa pasaron. Evitar builds/tests simultáneos que escriban los mismos `bin/obj`; repetir con `-m:1` para confirmar.
+- Se consultó el Actions `45039605708` desde el checkout Backend, donde `gh` apunta a `Paul1578/Back_GPS`; devolvió 404 sin modificar estado. Solución: consultar desde `/home/leonardo/Front_gpsR`, repo dueño de esa corrida.

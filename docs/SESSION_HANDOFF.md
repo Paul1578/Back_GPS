@@ -178,3 +178,10 @@ Errores de migración, herramientas, QA y soluciones están en `docs/ERROR_LOG.m
 - Validación local: suite Release 57/57; build 0 warnings/0 errores; smoke real API + MySQL 8 con DB `fletflow_ci_*` aprobado. El contenedor se eliminó.
 - Error del primer intento: el runner omitía el puerto y conectaba al 3306 local con credenciales temporales no válidas; no se ejecutó SQL ni se modificó DB local. Ver `docs/ERROR_LOG.md`.
 - Próximo: inspeccionar diff, commit de la corrección y reportar hash/resultados. No requiere migración; `TokenVersion` ya existe.
+
+## Verificación remota de cambio de rol — 2026-11-22
+
+- Commit backend `3f3b004` publicado en `chore/stabilize-fleet-platform`; Actions `44986173700` terminó `success`.
+- CI: Release build 0 warnings/0 errors, xUnit **57/57**, smoke tenant/roles/MySQL y smoke de concurrencia aprobados.
+- Confirmado en API con MySQL desechable: tokens access y refresh previos siguen en 401 tras Logistics→User→Logistics. La DB y el contenedor temporales se eliminaron.
+- La rama está limpia y sincronizada con origin; `main` intacta.

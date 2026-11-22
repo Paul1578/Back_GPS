@@ -141,3 +141,8 @@ Fecha de corte: 2026-11-21.
 - Suite Release actualizada: **56/56**, 0 fallidas/omitidas. La integración MySQL/HTTP ya pasó en Actions `44983337062`; esta ampliación xUnit queda pendiente de CI en el próximo commit.
 
 - CI confirmado tras esta ampliación: backend Actions `44983763612` success, xUnit **56/56**, smoke tenant/roles/sesiones y smoke concurrencia en MySQL desechable.
+
+## CI de revocación tras cambio de rol — 2026-11-22
+
+- Commit `3f3b004`, Actions `44986173700`: success. Build Release 0 warnings/0 errors y suite xUnit 57/57.
+- Los smokes HTTP/tenant/roles y concurrencia pasaron con MySQL descartable. Se comprobó que access y refresh tokens viejos sigan rechazados al restaurar el rol original.

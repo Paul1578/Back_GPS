@@ -230,3 +230,8 @@ La invitación envía sólo el enlace de activación; el usuario fija su contras
 - `bash -n scripts/smoke-tenant-http.sh` y `git diff --check`: correctos.
 - `smoke-tenant-http.sh` con API local y MySQL 8 en contenedor temporal, DB `fletflow_ci_*`: aprobado. Logistics→User→Logistics mantuvo 401 para access/refresh originales. El contenedor se eliminó al terminar.
 - El primer intento no completó porque faltaba soporte para puerto MySQL configurable; la conexión al MySQL local falló por credenciales antes de ejecutar SQL. Se documentó el incidente y se añadió `MYSQL_PORT`; la repetición aislada pasó.
+
+## Revocación de JWT tras cambio y restauración de rol — CI 2026-11-22
+
+- Actions `44986173700` para `3f3b004`: Release 57/57, build sin warnings y smokes reales HTTP/MySQL de tenant/roles y concurrencia en verde. El ciclo Logistics→User→Logistics mantuvo access/refresh originales en 401.
+- La base y el contenedor temporales se eliminaron al completar la verificación.

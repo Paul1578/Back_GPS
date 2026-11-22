@@ -130,3 +130,7 @@
 - Un cambio efectivo de rol incrementa `TokenVersion` junto al reemplazo de rol y revoca todos los refresh tokens; un JWT anterior no puede volver a ser válido aunque se restaure su rol.
 - xUnit cubre cambio efectivo y no-op. El smoke tenant prueba Logistics→User→Logistics y verifica 401 persistente para access/refresh originales.
 - El smoke HTTP acepta `MYSQL_PORT` para usar una instancia MySQL desechable sin tocar la DB local.
+
+## Validación CI — 2026-11-22
+
+- `3f3b004` pasó Actions `44986173700`: 57 pruebas Release y smokes HTTP/MySQL tenant, roles, sesiones y concurrencia.

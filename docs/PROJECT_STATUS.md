@@ -249,3 +249,5 @@ Nota de actualización: algunos resultados históricos de registro público más
 
 - `CreateDriverCommand` valida campos requeridos y limita documento/teléfono a 20 caracteres antes de consultar o persistir.
 - Release build local: 0 warnings/0 errors. xUnit: 68/68, incluidos rechazo de 21 caracteres y aceptación del límite exacto. Falta smoke HTTP/MySQL en Actions.
+- El commit `24a9703` pasó Actions `45016257332`: Release, xUnit **68/68**, aislamiento HTTP/MySQL y concurrencia. Cuatro casos adicionales de campos requeridos y null-safe se añadieron después; validar el nuevo SHA.
+- En el diff actual, Release vuelve a compilar con 0 warnings/0 errores y xUnit queda **72/72**; los cuatro nuevos casos vacíos pasan. Actions nuevo SHA pendiente.

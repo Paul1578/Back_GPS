@@ -30,7 +30,7 @@ namespace fletflow.Application.Fleet.Commands
         {
             firstName = firstName?.Trim() ?? string.Empty;
             lastName = lastName?.Trim() ?? string.Empty;
-            documentNumber = documentNumber.Trim();
+            documentNumber = documentNumber?.Trim() ?? string.Empty;
             phoneNumber = phoneNumber?.Trim() ?? string.Empty;
 
             if (string.IsNullOrWhiteSpace(firstName) || string.IsNullOrWhiteSpace(lastName) ||

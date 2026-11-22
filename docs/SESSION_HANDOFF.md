@@ -325,3 +325,5 @@ Errores de migración, herramientas, QA y soluciones están en `docs/ERROR_LOG.m
 
 - Rama `chore/stabilize-fleet-platform`: modificación local en `CreateDriverCommand` normaliza y valida campos requeridos y límite de 20 antes de persistir; `DriverTests` suma casos de 20/21 caracteres.
 - Validación local actual: Release 0 warnings/0 errors; xUnit 68/68; `git diff --check` pasa. Actions/smoke HTTP/MySQL pendiente después del commit.
+- Actions `45016257332` confirmó el SHA base `24a9703`: build/test y smokes tenant/concurrencia pasan (xUnit 68/68). Después agregué la normalización null-safe de documento y cuatro casos de campos obligatorios; repetir build/test y Actions con este diff.
+- Repetición local para el diff actual: Release build 0 warnings/0 errores y xUnit **72/72**. Falta commit/push y Actions integradas.

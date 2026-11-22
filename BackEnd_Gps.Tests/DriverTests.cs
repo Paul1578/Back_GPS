@@ -62,6 +62,25 @@ public class DriverTests
         Assert.Equal(1, unitOfWork.CommitCount);
     }
 
+    [Theory]
+    [InlineData("", "Paz", "DOC-001", "0990000000")]
+    [InlineData("Ana", " ", "DOC-001", "0990000000")]
+    [InlineData("Ana", "Paz", " ", "0990000000")]
+    [InlineData("Ana", "Paz", "DOC-001", "")]
+    public async Task CreateDriver_RejectsMissingRequiredFields(string firstName, string lastName, string documentNumber, string phoneNumber)
+    {
+        var repository = new FakeDriverRepository();
+        var unitOfWork = new FakeUnitOfWork();
+        var command = new CreateDriverCommand(unitOfWork, repository);
+
+        var error = await Assert.ThrowsAsync<ArgumentException>(() =>
+            command.Execute(firstName, lastName, documentNumber, phoneNumber));
+
+        Assert.Contains("son obligatorios", error.Message);
+        Assert.Equal(0, repository.AddCount);
+        Assert.Equal(0, unitOfWork.CommitCount);
+    }
+
     [Fact]
     public async Task UpdateDriver_RejectsDocumentOwnedByAnotherDriver()
     {

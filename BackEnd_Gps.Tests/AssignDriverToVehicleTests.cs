@@ -1,6 +1,7 @@
 using fletflow.Application.Fleet.Commands;
 using fletflow.Domain.Auth.Repositories;
 using fletflow.Domain.Fleet.Entities;
+using fletflow.Domain.Fleet.Exceptions;
 using fletflow.Domain.Fleet.Repositories;
 using fletflow.Infrastructure.Persistence.Contracts;
 
@@ -24,15 +25,37 @@ public class AssignDriverToVehicleTests
         Assert.Equal(0, uow.CommitCount);
     }
 
-    private sealed class FakeDrivers(Driver driver) : IDriverRepository
+    [Fact]
+    public async Task Execute_RejectsVehicleAlreadyAssignedToAnotherDriver()
     {
-        public Task<Driver?> GetByIdAsync(Guid id) => Task.FromResult(id == driver.Id ? driver : null);
+        var currentDriver = Driver.Create("Current", "Driver", "QA-101", "0990000001");
+        var assignedDriver = Driver.Create("Assigned", "Driver", "QA-102", "0990000002");
+        var vehicle = Vehicle.Create("QA-101", "Test", "Van", 2025, null);
+        assignedDriver.AssignToVehicle(vehicle.Id);
+        var drivers = new FakeDrivers(currentDriver, assignedDriver);
+        var uow = new FakeUnitOfWork();
+        var command = new AssignDriverToVehicleCommand(uow, drivers, new FakeVehicles(vehicle));
+
+        var error = await Assert.ThrowsAsync<BusinessConflictException>(
+            () => command.Execute(currentDriver.Id, vehicle.Id));
+
+        Assert.Contains("ya está asignado a otro conductor", error.Message);
+        Assert.Null(currentDriver.VehicleId);
+        Assert.Equal(vehicle.Id, assignedDriver.VehicleId);
+        Assert.Equal(0, uow.CommitCount);
+    }
+
+    private sealed class FakeDrivers(params Driver[] drivers) : IDriverRepository
+    {
+        public Task<Driver?> GetByIdAsync(Guid id) => Task.FromResult(drivers.FirstOrDefault(driver => driver.Id == id));
         public Task<Driver?> GetByDocumentAsync(string documentNumber) => Task.FromResult<Driver?>(null);
         public Task<Driver?> GetByUserIdAsync(Guid userId) => Task.FromResult<Driver?>(null);
+        public Task<Driver?> GetOtherAssignedToVehicleAsync(Guid vehicleId, Guid excludedDriverId) =>
+            Task.FromResult(drivers.FirstOrDefault(driver => driver.Id != excludedDriverId && driver.VehicleId == vehicleId));
         public Task AddAsync(Driver value) => Task.CompletedTask;
         public Task UpdateAsync(Driver value) => Task.CompletedTask;
-        public Task<List<Driver>> GetAllAsync(bool? onlyActive = null) => Task.FromResult(new List<Driver> { driver });
-        public Task<List<Driver>> GetAssignableAsync() => Task.FromResult(new List<Driver> { driver });
+        public Task<List<Driver>> GetAllAsync(bool? onlyActive = null) => Task.FromResult(drivers.ToList());
+        public Task<List<Driver>> GetAssignableAsync() => Task.FromResult(drivers.ToList());
     }
 
     private sealed class FakeVehicles(Vehicle vehicle) : IVehicleRepository

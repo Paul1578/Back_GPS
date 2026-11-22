@@ -250,3 +250,8 @@ Nota de actualización: algunos resultados históricos de registro público más
 - `CreateDriverCommand` valida campos requeridos y limita documento/teléfono a 20 caracteres antes de consultar o persistir.
 - Release build local: 0 warnings/0 errors. xUnit **72/72**, incluidos rechazo de 21 caracteres, aceptación del límite exacto y cuatro campos vacíos.
 - Actions `45016639356` para `8c28ccb` pasó: build, xUnit **72/72**, smoke HTTP/MySQL de tenant/roles/operación y concurrencia; cleanup temporal correcto.
+## Asignación exclusiva de vehículo a Driver — en validación
+
+- Hallazgo de auditoría: faltaba impedir que dos Drivers conservaran el mismo vehículo. El comando consulta otras asignaciones del tenant bajo el lock de vehículo.
+- xUnit y smoke de concurrencia añadidos para dos asignaciones paralelas, conflicto 409 y verificación SQL de una sola relación. Build/Actions pendientes.
+- Release build local: 0 warnings/0 errors; xUnit 73/73; bash syntax y diff-check correctos. Smoke MySQL/Actions del nuevo SHA pendiente.

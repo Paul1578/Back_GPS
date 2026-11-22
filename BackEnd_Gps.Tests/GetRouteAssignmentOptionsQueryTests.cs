@@ -45,6 +45,7 @@ public sealed class GetRouteAssignmentOptionsQueryTests
         public Task<Driver?> GetByIdAsync(Guid id) => Task.FromResult(drivers.FirstOrDefault(driver => driver.Id == id));
         public Task<Driver?> GetByDocumentAsync(string documentNumber) => Task.FromResult<Driver?>(null);
         public Task<Driver?> GetByUserIdAsync(Guid userId) => Task.FromResult<Driver?>(null);
+        public Task<Driver?> GetOtherAssignedToVehicleAsync(Guid vehicleId, Guid excludedDriverId) => Task.FromResult<Driver?>(null);
         public Task AddAsync(Driver driver) => Task.CompletedTask;
         public Task UpdateAsync(Driver driver) => Task.CompletedTask;
         public Task<List<Driver>> GetAllAsync(bool? onlyActive = null) => Task.FromResult(drivers.ToList());

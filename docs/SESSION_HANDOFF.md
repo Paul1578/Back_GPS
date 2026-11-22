@@ -327,3 +327,9 @@ Errores de migración, herramientas, QA y soluciones están en `docs/ERROR_LOG.m
 - Validación local actual: Release 0 warnings/0 errors; xUnit 68/68; `git diff --check` pasa. Actions/smoke HTTP/MySQL pendiente después del commit.
 - Actions `45016257332` confirmó el SHA base `24a9703`: build/test y smokes tenant/concurrencia pasan (xUnit 68/68). Después agregué la normalización null-safe de documento y cuatro casos de campos obligatorios; repetir build/test y Actions con este diff.
 - Repetición local para `8c28ccb`: Release build 0 warnings/0 errores y xUnit **72/72**. Actions `45016639356` pasó build/tests y smokes HTTP/MySQL de aislamiento, roles, operación Logistics, concurrencia y cleanup.
+## Asignación única de vehículo a Driver — 2026-11-22
+
+- Auditor backend detectó una violación reproducible: dos Drivers podían apuntar al mismo vehículo porque el command tomaba lock pero omitía consulta de ocupación.
+- Cambio local: nuevo método tenant-filtered de IDriverRepository, llamado después de adquirir lock; conflicto explicativo si hay otro Driver asignado. Regla documenta desasignar antes de reasignar.
+- Cobertura: xUnit y smoke smoke-route-concurrency.sh con dos PUT simultáneos y SQL que exige una relación. Ejecutar Release/test, shell syntax, smoke local efímero y Actions; registrar errores.
+- Estado local: Release build 0 warnings/0 errors; xUnit 73/73; script pasa bash -n y diff-check. Ejecutar Actions sobre este cambio para la prueba concurrente MySQL y registrar resultado.

@@ -248,3 +248,8 @@
 - Añadidos tests para rechazar cada campo en 21 caracteres y permitir ambos en 20. Local: Release 0 warnings/0 errors, xUnit 68/68; Actions pendiente.
 - Actions `45016257332` validó el commit `24a9703`: Release, xUnit 68/68, smoke HTTP/MySQL tenant y concurrencia. Los casos de campos obligatorios añadidos después todavía esperan CI.
 - Suite local: Release 0 warnings/0 errores, xUnit 72/72. Actions `45016639356` pasó build/xUnit y smokes HTTP/MySQL tenant/roles/Logistics/concurrencia, cleanup correcto.
+# 2026-11-22 — Una asignación actual por vehículo
+
+- Se impide que un segundo perfil Driver conserve el mismo VehicleId; para reasignar se desasigna primero al actual. Consulta bajo el lock tenant-scoped del vehículo.
+- xUnit prueba rechazo; smoke MySQL prueba dos asignaciones concurrentes, un éxito/un conflicto y unicidad persistida. Validación pendiente.
+- Verificación local: Release build 0 warnings/0 errors, xUnit 73/73, bash syntax y diff-check; Actions MySQL pendiente.

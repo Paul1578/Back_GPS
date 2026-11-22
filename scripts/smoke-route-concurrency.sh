@@ -115,6 +115,22 @@ v3="$(create_vehicle "${prefix}V3")"
 d3="$(create_driver "${prefix}D3")"
 v4="$(create_vehicle "${prefix}V4")"
 d4="$(create_driver "${prefix}D4")"
+assignment_vehicle="$(create_vehicle "${prefix}AV")"
+assignment_driver_a="$(create_driver "${prefix}AD1")"
+assignment_driver_b="$(create_driver "${prefix}AD2")"
+
+concurrent_request PUT "/Drivers/$assignment_driver_a/assign-vehicle" "$(jq -nc --arg vehicleId "$assignment_vehicle" '{vehicleId:$vehicleId}')" assign_vehicle_a & p1=$!
+concurrent_request PUT "/Drivers/$assignment_driver_b/assign-vehicle" "$(jq -nc --arg vehicleId "$assignment_vehicle" '{vehicleId:$vehicleId}')" assign_vehicle_b & p2=$!
+wait "$p1"
+wait "$p2"
+assert_one_created_one_conflict assign_vehicle_a assign_vehicle_b "Asignación concurrente de un vehículo a dos Drivers" 204
+assigned_driver_count="$(mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" --batch --skip-column-names "$db_name" \
+  -e "SELECT COUNT(*) FROM Drivers WHERE VehicleId='$assignment_vehicle';")"
+if [[ "$assigned_driver_count" != "1" ]]; then
+  echo "Asignaciones concurrentes dejaron $assigned_driver_count Drivers asociados al mismo vehículo; esperado 1." >&2
+  exit 1
+fi
+
 start_create="2031-04-05T10:00:00Z"
 end_create="2031-04-05T12:00:00Z"
 points='[{"lat":-0.18,"lng":-78.46,"name":"Origin"},{"lat":-0.19,"lng":-78.47,"name":"Destination"}]'
@@ -309,4 +325,4 @@ jq -e '(.points[1].status == 1 or .points[1].status == "InProgress") and (.point
   exit 1
 }
 
-echo "OK: concurrencia de agenda, roles, rutas y paradas; protección de Driver/vehículo, vehículo inactivo y ciclo baja/reactivación; MySQL/API conserva estados coherentes."
+echo "OK: concurrencia de agenda/asignaciones, roles, rutas y paradas; cada vehículo conserva como máximo un Driver, y los estados/ciclos operativos permanecen coherentes."

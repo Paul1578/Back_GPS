@@ -47,6 +47,11 @@ namespace fletflow.Application.Fleet.Commands
                 if (vehicle.Status != VehicleStatus.Available)
                     throw new InvalidOperationException("No se puede asignar un vehículo que no esté disponible.");
 
+                var assignedDriver = await _drivers.GetOtherAssignedToVehicleAsync(vehicleId, driverId);
+                if (assignedDriver is not null)
+                    throw new fletflow.Domain.Fleet.Exceptions.BusinessConflictException(
+                        "El vehículo ya está asignado a otro conductor. Desasígnalo antes de reasignarlo.");
+
                 var inProgressRoutes = await _uow.Routes.GetAllAsync(
                     driverId: driverId,
                     status: RouteStatus.InProgress,

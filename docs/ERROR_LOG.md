@@ -670,3 +670,15 @@ Cada cambio de API debe incluir validación de compilación, migraciones si apli
 - Una inspección ejecutada desde `/home/leonardo/Back_GPS` intentó leer `src/Context/AuthContext.tsx`, que pertenece al frontend; `sed` devolvió error sin modificar archivos.
 - Solución: repetir la lectura desde `/home/leonardo/Front_gpsR`. En la misma inspección de Back sí se confirmó que `cleanup-e2e.sql` elimina Drivers antes de Vehicles usando prefijos E2EQA.
 - Prevención: leer cada archivo relativo desde el repositorio que lo contiene.
+## 2026-11-22 — Dos Drivers podían conservar el mismo vehículo — CORREGIDO
+
+- Auditoría confirmó que AssignDriverToVehicleCommand bloqueaba el vehículo, pero no comprobaba si otro Driver conservaba VehicleId; no hay índice único en esa columna. Dos llamadas concurrentes podían dejar dos perfiles apuntando al mismo vehículo.
+- Bajo el lock de fila, el command ahora busca otra asignación dentro del tenant y responde conflicto antes de cambiar el perfil. Para reasignar se desasigna primero el Driver actual.
+- xUnit cubre el rechazo. El smoke MySQL crea dos Drivers, lanza ambas asignaciones en paralelo, exige 204/409 y verifica por SQL que sólo uno quede asociado.
+- Verificación local: Release build 0 warnings/0 errors, xUnit 73/73, bash -n y diff-check pasan. Falta smoke HTTP/MySQL de asignaciones en Actions.
+
+### Error de prueba — namespace ambiguo — CORREGIDO
+
+- La primera compilación del test de asignación se refirió a BusinessConflictException con namespace global completo, pero el proyecto de pruebas tiene raíz BackEnd_Gps; el compilador lo resolvió como BackEnd_Gps.fletflow y falló CS0234.
+- Se añadió using fletflow.Domain.Fleet.Exceptions y se usó el tipo importado. Producción compiló sin errores en ese intento; repetir build/test completo.
+- Prevención: preferir imports explícitos cuando el nombre de raíz del proyecto puede prefijar un namespace global.

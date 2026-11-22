@@ -14,7 +14,7 @@
 - Estados de vehículo: disponible, en ruta y mantenimiento.
 - Mantenimiento bloquea nuevas asignaciones.
 - Un conductor puede tener cero o un vehículo asignado.
-- No debe haber asignaciones contradictorias.
+- Un vehículo puede tener como máximo un conductor asignado. Para cambiarlo, se desasigna primero el conductor actual; las asignaciones concurrentes se serializan y una de ellas recibe conflicto.
 
 ## Rutas
 

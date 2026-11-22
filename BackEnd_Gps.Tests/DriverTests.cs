@@ -205,6 +205,7 @@ public class DriverTests
         public Task<Driver?> GetByDocumentAsync(string documentNumber) =>
             Task.FromResult(_drivers.FirstOrDefault(driver => string.Equals(driver.DocumentNumber, documentNumber, StringComparison.OrdinalIgnoreCase)));
         public Task<Driver?> GetByUserIdAsync(Guid userId) => Task.FromResult<Driver?>(null);
+        public Task<Driver?> GetOtherAssignedToVehicleAsync(Guid vehicleId, Guid excludedDriverId) => Task.FromResult<Driver?>(null);
         public Task AddAsync(Driver value) { AddCount++; return Task.CompletedTask; }
         public Task UpdateAsync(Driver value) { UpdateCount++; return Task.CompletedTask; }
         public Task<List<Driver>> GetAllAsync(bool? onlyActive = null) => Task.FromResult(_drivers);

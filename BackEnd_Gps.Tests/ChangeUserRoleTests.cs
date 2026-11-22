@@ -121,6 +121,7 @@ public class ChangeUserRoleTests
         public Task<Driver?> GetByIdAsync(Guid id) => Task.FromResult(driver?.Id == id ? driver : null);
         public Task<Driver?> GetByDocumentAsync(string documentNumber) => Task.FromResult<Driver?>(null);
         public Task<Driver?> GetByUserIdAsync(Guid userId) => Task.FromResult(driver?.UserId == userId ? driver : null);
+        public Task<Driver?> GetOtherAssignedToVehicleAsync(Guid vehicleId, Guid excludedDriverId) => Task.FromResult<Driver?>(null);
         public Task AddAsync(Driver value) => Task.CompletedTask;
         public Task UpdateAsync(Driver value) => Task.CompletedTask;
         public Task<List<Driver>> GetAllAsync(bool? onlyActive = null) => Task.FromResult(driver is null ? new List<Driver>() : new List<Driver> { driver });

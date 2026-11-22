@@ -10,7 +10,7 @@ Nota de actualización: algunos resultados históricos de registro público más
 
 - La pantalla pública prometía registrar a la empresa como Gerente, pero AuthController forzaba `User`; una cuenta recién registrada no podía gestionar su flota.
 - Corrección local: el servidor asigna siempre rol Admin como raíz de un tenant nuevo, sin aceptar `roleName` del request. El token usa su propio ID como `owner_id`, conservando filtros de aislamiento de datos.
-- xUnit Release local y Actions 61/61; smoke HTTP/tenant y concurrencia MySQL Actions success. El test/runner ya no eleva manualmente el rol del segundo tenant para esconder el resultado del registro. E2E UI integrado de Front aún en ejecución.
+- xUnit Release local y Actions 61/61; smoke HTTP/tenant y concurrencia MySQL Actions success. El test/runner ya no eleva manualmente el rol del segundo tenant para esconder el resultado del registro. Actions Front cross-branch `44999716080` confirmó alta móvil y consumidores API con Backend `3620cc2`: responsive 1/1, Playwright 18/18 y cleanup MySQL success.
 
 ## Estado operativo
 

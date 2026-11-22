@@ -4,6 +4,7 @@
 - La prueba `UpdateDriver_RereadsAssignmentAfterLockAndPreservesConcurrentVehicleAssignment` modela una asignación entre la lectura inicial y el lock de edición; el VehicleId permanece en el Driver actualizado.
 - Action `45084368819` pasó Release build/xUnit 113/113, smoke tenant HTTP/MySQL, concurrencia y cleanup.
 - `run-e2e-local.sh` expone `FLETFLOW_E2E_DRIVER_USER_ID`; Action `45084501616` para ese cambio pasó. La Action Front debe comprobar explícitamente que Manager mapa no esté skipped.
+- Para `manager-map.spec.ts`, el runner provisiona un Manager temporal y un Driver de ruta único, separados de los fixtures de otros casos. `cleanup-e2e.sql` limpia esa cuenta y los prefijos de Driver/Vehicle/Ruta.
 
 # Bloqueo de baja de cuenta enlazada a Driver con ruta activa — 2026-11-22
 

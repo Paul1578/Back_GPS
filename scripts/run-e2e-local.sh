@@ -95,6 +95,8 @@ export FLETFLOW_E2E_DRIVER_EMAIL="fletflow.e2e.driver.$user_suffix@example.test"
 export FLETFLOW_E2E_DRIVER_PASSWORD="$(openssl rand -hex 24)"
 export FLETFLOW_E2E_ROUTE_DRIVER_EMAIL="fletflow.e2e.driver.route.$user_suffix@example.test"
 export FLETFLOW_E2E_ROUTE_DRIVER_PASSWORD="$(openssl rand -hex 24)"
+export FLETFLOW_E2E_MANAGER_MAP_EMAIL="fletflow.e2e.manager.map.$user_suffix@example.test"
+export FLETFLOW_E2E_MANAGER_MAP_PASSWORD="$(openssl rand -hex 24)"
 export FLETFLOW_E2E_OTHER_TENANT_EMAIL="fletflow.e2e.admin.other.$user_suffix@example.test"
 export FLETFLOW_E2E_OTHER_TENANT_PASSWORD="$(openssl rand -hex 24)"
 
@@ -174,26 +176,55 @@ const routeDriver = await createUser({
   phoneNumber: "0990000001",
 });
 if (!routeDriver.driverId) throw new Error("El fixture Driver de operación no devolvió DriverId.");
+const mapManager = await createUser({
+  username: "E2E QA Map Manager",
+  email: process.env.FLETFLOW_E2E_MANAGER_MAP_EMAIL,
+  password: process.env.FLETFLOW_E2E_MANAGER_MAP_PASSWORD,
+  roleName: "Manager",
+  firstName: "E2E QA Map",
+  lastName: "Manager",
+});
+const mapDriverResponse = await fetch(`${api}/Drivers`, {
+  method: "POST",
+  headers: {
+    Authorization: `Bearer ${token}`,
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({
+    firstName: "E2E QA Map",
+    lastName: "Route Driver",
+    documentNumber: `E2EQA${Date.now().toString().slice(-10)}M`,
+    phoneNumber: "0990000002",
+  }),
+});
+if (!mapDriverResponse.ok) throw new Error(`Alta Driver fixture del mapa: HTTP ${mapDriverResponse.status}`);
+const mapDriver = await mapDriverResponse.json();
 process.stdout.write(JSON.stringify({
   driverId: driver.driverId,
   driverUserId: driver.id,
   routeDriverId: routeDriver.driverId,
+  mapManagerId: mapManager.id,
+  mapRouteDriverId: mapDriver.id,
 }));
 NODE
 )"
 FLETFLOW_E2E_DRIVER_ID="$(node -e 'process.stdout.write(JSON.parse(process.argv[1]).driverId)' "$FLETFLOW_E2E_DRIVER_IDS")"
 FLETFLOW_E2E_DRIVER_USER_ID="$(node -e 'process.stdout.write(JSON.parse(process.argv[1]).driverUserId)' "$FLETFLOW_E2E_DRIVER_IDS")"
 FLETFLOW_E2E_ROUTE_DRIVER_ID="$(node -e 'process.stdout.write(JSON.parse(process.argv[1]).routeDriverId)' "$FLETFLOW_E2E_DRIVER_IDS")"
+FLETFLOW_E2E_MAP_MANAGER_ID="$(node -e 'process.stdout.write(JSON.parse(process.argv[1]).mapManagerId)' "$FLETFLOW_E2E_DRIVER_IDS")"
+FLETFLOW_E2E_MAP_ROUTE_DRIVER_ID="$(node -e 'process.stdout.write(JSON.parse(process.argv[1]).mapRouteDriverId)' "$FLETFLOW_E2E_DRIVER_IDS")"
 export FLETFLOW_E2E_DRIVER_ID
 export FLETFLOW_E2E_DRIVER_USER_ID
 export FLETFLOW_E2E_ROUTE_DRIVER_ID
+export FLETFLOW_E2E_MAP_MANAGER_ID
+export FLETFLOW_E2E_MAP_ROUTE_DRIVER_ID
 
 mysql --protocol=TCP --host="$MYSQL_HOST" --port="$MYSQL_PORT" --user="$MYSQL_USER" "$DB_NAME" \
   -e "UPDATE Users SET IsActive=1, MustChangePassword=0 WHERE Email='$FLETFLOW_E2E_OTHER_TENANT_EMAIL';" \
   >/dev/null 2>&1
 
 mysql --protocol=TCP --host="$MYSQL_HOST" --port="$MYSQL_PORT" --user="$MYSQL_USER" "$DB_NAME" \
-  -e "UPDATE Users SET IsActive=1, MustChangePassword=0 WHERE Email IN ('$FLETFLOW_E2E_USER_EMAIL', '$FLETFLOW_E2E_DEACTIVATION_EMAIL', '$FLETFLOW_E2E_DRIVER_EMAIL', '$FLETFLOW_E2E_ROUTE_DRIVER_EMAIL');" \
+  -e "UPDATE Users SET IsActive=1, MustChangePassword=0 WHERE Email IN ('$FLETFLOW_E2E_USER_EMAIL', '$FLETFLOW_E2E_DEACTIVATION_EMAIL', '$FLETFLOW_E2E_DRIVER_EMAIL', '$FLETFLOW_E2E_ROUTE_DRIVER_EMAIL', '$FLETFLOW_E2E_MANAGER_MAP_EMAIL');" \
   >/dev/null 2>&1
 
 PLAYWRIGHT_BASE_URL="$playwright_base_url" \

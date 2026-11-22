@@ -4,6 +4,7 @@
 - Nueva regresión reproduce actualización perdida cuando otra operación asigna Vehicle después de la primera lectura.
 - Verificación local: Release xUnit **113/113**; smoke/CI integrados pendientes.
 - Runner E2E exporta también el UserId de la cuenta Driver QA que necesita la prueba de Manager mapa.
+- Tras fallos del mapa, runner ahora provisiona Manager y Driver de ruta exclusivos para aislar rol/asignación; cleanup cubre la cuenta Manager temporal.
 
 # 2026-11-22 — Bloquear baja de cuenta Driver con ruta activa — VALIDADO EN CI
 

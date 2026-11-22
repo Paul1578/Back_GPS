@@ -1,3 +1,10 @@
+# 2026-11-22 — Fixture del E2E Manager mapa compartía rol y no se limpiaba tras timeout — CORREGIDO LOCALMENTE
+
+- Front Actions `45084368342`/`45084699175` pasaron 38/39; el único fallo fue el E2E de mapa que reutilizaba una cuenta Driver, cambiaba su rol y podía expirar antes de restaurarlo. El siguiente retry veía `Manager` y fallaba esperando `Driver`; también quedaban ruta y vehículo QA.
+- `run-e2e-local.sh` ahora crea un usuario Manager y un Driver de ruta exclusivos para ese spec, exporta sus IDs/credenciales y los deja en prefijos del cleanup. `cleanup-e2e.sql` elimina la cuenta Manager temporal.
+- La prueba usa navegación desktop directa y el sufijo estable por worker elimina fixtures creados en un retry anterior. Validar con nueva Action Front; `bash -n` y diff-check pasan local.
+- Prevención: no cambiar el rol de fixtures compartidos entre escenarios; usar identidades temporales por caso y cleanup idempotente ante retries.
+
 # 2026-11-22 — Runner no exponía UserId requerido por E2E Manager de mapa — CORREGIDO LOCALMENTE
 
 - La prueba Manager del Front necesita la cuenta Driver de QA para cambiar temporalmente su rol y validar mapa/ruta como Manager. El runner sólo exportaba `FLETFLOW_E2E_DRIVER_ID`; el test también requiere el `UserId` de la cuenta, por lo que habría quedado en skipped aunque la suite figurase verde.

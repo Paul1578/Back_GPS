@@ -458,3 +458,9 @@
 
 - El smoke añade 403 para lecturas `/Users` y `/Roles`, alta User y cambio de estado. MySQL verifica que la solicitud no haya creado una cuenta ni cambiado el estado del fixture.
 - API + MySQL 8 descartables y cleanup completo pasan localmente; Action posterior al push pendiente.
+- Action `45078321298` sobre `229076d` pasó Release build, xUnit 111/111, smoke HTTP/MySQL tenant, concurrencia y cleanup.
+
+## 2026-11-22 — Probar camino permitido del rol Driver
+
+- El smoke crea una ruta asignada y valida como Driver listado/detalle, inicio, escritura/lectura GPS y cancelación. MySQL confirma ruta `Cancelled`, vehículo `Available`, posición y asignación intactos.
+- Se conservan las denegaciones sobre flota, asignación ajena y ruta ajena. La primera corrida tuvo una expectativa antigua de lista vacía; corregida a aislamiento por conductor. Repetición efímera completa exit 0; Action posterior pendiente.

@@ -560,4 +560,10 @@ La invitación envía sólo el enlace de activación; el usuario fija su contras
 ## Denegación User en administración — validado localmente
 
 - Token User recibe 403 en `GET /Users/my-team`, `GET /Users` y `GET /Roles`; POST de alta User y PUT de cambio de estado también reciben 403.
-- MySQL confirma que el usuario solicitado no fue creado y el fixture original conserva `IsActive=1`. Smoke completo en API + MySQL 8 descartable terminó exit 0; `bash -n` y `git diff --check` pasan. Action posterior al commit pendiente.
+- MySQL confirma que el usuario solicitado no fue creado y el fixture original conserva `IsActive=1`. Smoke completo API + MySQL 8 descartable exit 0; `bash -n`/diff-check pasan. Action `45078321298` para `229076d` pasó build Release, xUnit 111/111, tenant HTTP/MySQL, concurrencia y cleanup.
+
+## Operación Driver sobre ruta propia — smoke local aprobado; Action pendiente
+
+- Con vehículo asignado, token Driver lista su ruta (200), lee el detalle (200), la inicia (204), registra/consulta GPS (200) y cancela la ruta (204).
+- MySQL confirma estado `Cancelled`, vehículo `Available`, una posición persistida y asignación conservada. El filtro HTTP manipulado devuelve únicamente la ruta propia; la ruta de otro Driver sigue inaccesible.
+- Primera corrida falló en una aserción obsoleta que suponía lista vacía al existir una ruta propia; se corrigió para comprobar exclusión por `driverId`. Repetición completa API + MySQL 8 efímero exit 0 y cleanup. `bash -n`/diff-check correctos; Action posterior pendiente.

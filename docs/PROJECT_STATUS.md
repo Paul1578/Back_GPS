@@ -16,7 +16,8 @@
 # Estado actual — 2026-11-22
 
 - Actualización vigente: `76c2cc8` pasó Action `45077658712`: build Release, xUnit **111/111**, smoke HTTP/MySQL tenant, concurrencia y cleanup. Incluye denegaciones Driver en APIs de flota y rutas; los POST rechazados dejaron 0 filas en MySQL.
-- Lote backend siguiente amplía el smoke para User: `GET /Users/my-team`, `/Users`, `/Roles`, alta User y cambio de estado quedan denegados con HTTP 403; SQL exige alta `0` y estado original `1`. Smoke API/MySQL efímero, `bash -n` y diff-check pasaron; commit/Action pendientes.
+- Backend `229076d` pasó Action `45078321298`: xUnit 111/111, Release build, smoke tenant HTTP/MySQL, concurrencia y cleanup; incluye 403 de User en Users/Roles y ninguna mutación.
+- Cambio local en smoke cubre camino permitido Driver sobre su propia ruta (lectura, inicio, GPS, cancelación) y confirma `Cancelled`, vehículo `Available`, una posición y asignación persistida. La primera repetición expuso una expectativa obsoleta de lista vacía; corregida a aislamiento por Driver. Repetición MySQL 8 efímero exit 0, Action posterior pendiente.
 - Front `refactor/route-builder` HEAD `2147be7`: Action `45076629351` pasó **37/37 E2E**, responsive **1/1**, audit/lint/build y cleanup.
 - Misión sigue abierta; continúan matrices CRUD/roles/responsive. Admin delegado y desvinculación User↔Driver esperan decisión; SMTP/infraestructura productiva son externos y móvil nativo está aplazado.
 

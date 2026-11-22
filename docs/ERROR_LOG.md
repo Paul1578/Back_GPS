@@ -1187,3 +1187,9 @@ Cada cambio de API debe incluir validación de compilación, migraciones si apli
 - La revisión de la matriz encontró que `UsersController` y `RolesController` declaran rol Admin, pero el smoke no probaba esa frontera con token User. No era una vulnerabilidad confirmada; faltaba evidencia HTTP y de persistencia.
 - Se añadieron GET `/Users/my-team`, `/Users`, `/Roles`, POST `/Users` y PUT de estado. Todos devuelven 403; SQL comprueba que no se creó el email intentado y que el usuario original sigue activo. API/MySQL 8 descartables, script completo y cleanup pasan; Action pendiente.
 - Prevención: al verificar autorización, ejercitar cada clase de controlador con una identidad negativa además de leer sus atributos y contrastar la ausencia de mutaciones en DB.
+
+## 2026-11-22 — Aserción de aislamiento Driver esperaba lista vacía tras añadir ruta propia — CORREGIDO
+
+- La primera ejecución local de la nueva prueba positiva Driver pasó la creación, listado, lectura, inicio, GPS y cancelación propios, pero falló al llegar a la regresión de filtro: el test antiguo aún esperaba cero rutas, ahora había una ruta válida asignada al principal.
+- Se ajustó la aserción para exigir exactamente su ruta propia, que todos los elementos tengan el `driverId` autenticado y que la ruta de otro Driver no aparezca. Repetición completa del smoke HTTP/MySQL 8 efímero terminó exit 0 y cleanup correcto.
+- Prevención: ampliar pruebas positivas sin borrar sus controles negativos; las aserciones negativas deben probar aislamiento/exclusión del recurso ajeno, no asumir ausencia de todo recurso.

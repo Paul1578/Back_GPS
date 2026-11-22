@@ -89,6 +89,11 @@ driver_race_email_b=""
 driver_race_document=""
 same_tenant_driver_email=""
 same_tenant_driver_token=""
+same_tenant_driver_id=""
+driver_positive_route_id=""
+driver_positive_route_name=""
+driver_positive_vehicle_id=""
+driver_positive_vehicle_plate=""
 activation_user_email=""
 reset_user_email=""
 manual_link_user_email=""
@@ -105,6 +110,11 @@ cleanup() {
       sql+=" DELETE FROM RoutePositions WHERE RouteId='$route_id'; DELETE FROM Routes WHERE Id='$route_id';"
     elif [[ -n "$route_name" ]]; then
       sql+=" DELETE rp FROM RoutePositions rp JOIN Routes r ON r.Id=rp.RouteId WHERE r.Name='$route_name'; DELETE FROM Routes WHERE Name='$route_name';"
+    fi
+    if [[ -n "$driver_positive_route_id" ]]; then
+      sql+=" DELETE FROM RoutePositions WHERE RouteId='$driver_positive_route_id'; DELETE FROM Routes WHERE Id='$driver_positive_route_id';"
+    elif [[ -n "$driver_positive_route_name" ]]; then
+      sql+=" DELETE rp FROM RoutePositions rp JOIN Routes r ON r.Id=rp.RouteId WHERE r.Name='$driver_positive_route_name'; DELETE FROM Routes WHERE Name='$driver_positive_route_name';"
     fi
     if [[ -n "$maintenance_route_id" ]]; then
       sql+=" DELETE FROM RoutePositions WHERE RouteId='$maintenance_route_id'; DELETE FROM Routes WHERE Id='$maintenance_route_id';"
@@ -126,6 +136,7 @@ cleanup() {
     elif [[ -n "$inactive_driver_route_name" ]]; then
       sql+=" DELETE rp FROM RoutePositions rp JOIN Routes r ON r.Id=rp.RouteId WHERE r.Name='$inactive_driver_route_name'; DELETE FROM Routes WHERE Name='$inactive_driver_route_name';"
     fi
+    if [[ -n "$same_tenant_driver_id" ]]; then sql+=" UPDATE Drivers SET VehicleId=NULL WHERE Id='$same_tenant_driver_id';"; fi
     if [[ -n "$driver_id" ]]; then sql+=" DELETE FROM Drivers WHERE Id='$driver_id';"
     elif [[ -n "$document_number" ]]; then sql+=" DELETE FROM Drivers WHERE DocumentNumber='$document_number';"; fi
     if [[ -n "$maintenance_driver_id" ]]; then sql+=" DELETE FROM Drivers WHERE Id='$maintenance_driver_id';"
@@ -141,6 +152,8 @@ cleanup() {
     elif [[ -n "$manual_link_driver_document" ]]; then sql+=" DELETE FROM Drivers WHERE DocumentNumber='$manual_link_driver_document';"; fi
     if [[ -n "$vehicle_id" ]]; then sql+=" DELETE FROM Vehicles WHERE Id='$vehicle_id';"
     elif [[ -n "$plate" ]]; then sql+=" DELETE FROM Vehicles WHERE Plate='$plate';"; fi
+    if [[ -n "$driver_positive_vehicle_id" ]]; then sql+=" UPDATE Vehicles SET Status=0 WHERE Id='$driver_positive_vehicle_id'; DELETE FROM Vehicles WHERE Id='$driver_positive_vehicle_id';"
+    elif [[ -n "$driver_positive_vehicle_plate" ]]; then sql+=" DELETE FROM Vehicles WHERE Plate='$driver_positive_vehicle_plate';"; fi
     if [[ -n "$duplicate_vehicle_id" ]]; then sql+=" DELETE FROM Vehicles WHERE Id='$duplicate_vehicle_id';"
     elif [[ -n "$duplicate_vehicle_plate" ]]; then sql+=" DELETE FROM Vehicles WHERE Plate='$duplicate_vehicle_plate';"; fi
     if [[ -n "$maintenance_vehicle_id" ]]; then sql+=" UPDATE Vehicles SET Status=0 WHERE Id='$maintenance_vehicle_id'; DELETE FROM Vehicles WHERE Id='$maintenance_vehicle_id';"
@@ -1527,6 +1540,44 @@ mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_us
 request POST /Auth/login "$(jq -nc --arg email "$same_tenant_driver_email" --arg password "$driver_race_password" '{email:$email,password:$password}')" ""
 expect_status 200 "Autenticar Driver del mismo tenant"
 same_tenant_driver_token="$(jq -er '.token // .accessToken' "$work_dir/response.json")"
+same_tenant_driver_id="$(mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" "$db_name" \
+  --batch --skip-column-names -e "SELECT d.Id FROM Drivers d JOIN Users u ON u.Id=d.UserId WHERE u.Email='$same_tenant_driver_email';")"
+[[ -n "$same_tenant_driver_id" ]] || { echo "No se encontró el perfil Driver vinculado para la prueba positiva." >&2; exit 1; }
+driver_positive_vehicle_plate="E2EQA${suffix: -8}P"
+request POST /Vehicles "$(jq -nc --arg plate "$driver_positive_vehicle_plate" '{plate:$plate,brand:"CI QA",model:"Driver route",year:2025}')" "$token"
+expect_status 201 "Crear vehículo temporal para ruta propia Driver"
+driver_positive_vehicle_id="$(jq -er '.id' "$work_dir/response.json")"
+request PUT "/Drivers/$same_tenant_driver_id/assign-vehicle" "$(jq -nc --arg vehicleId "$driver_positive_vehicle_id" '{vehicleId:$vehicleId}')" "$token"
+expect_status 204 "Asignar vehículo a Driver de ruta propia"
+driver_positive_route_name="E2E QA ruta Driver propia ${suffix: -9}"
+request POST /Routes "$(jq -nc --arg name "$driver_positive_route_name" --arg vehicleId "$driver_positive_vehicle_id" --arg driverId "$same_tenant_driver_id" --argjson points "$points" '{name:$name,cargoDescription:"Driver assigned route authorization",vehicleId:$vehicleId,driverId:$driverId,points:$points}')" "$token"
+expect_status 201 "Crear ruta asignada al Driver autenticado"
+driver_positive_route_id="$(jq -er '.id' "$work_dir/response.json")"
+request GET /Routes "" "$same_tenant_driver_token"
+expect_status 200 "Driver puede listar sus rutas asignadas"
+jq -e --arg id "$driver_positive_route_id" 'any(.[]; .id == $id)' "$work_dir/response.json" >/dev/null \
+  || { echo "La lista del Driver no incluyó su ruta asignada." >&2; cat "$work_dir/response.json" >&2; exit 1; }
+request GET "/Routes/$driver_positive_route_id" "" "$same_tenant_driver_token"
+expect_status 200 "Driver puede leer su ruta asignada"
+jq -e --arg id "$driver_positive_route_id" '.id == $id and .status == 0' "$work_dir/response.json" >/dev/null \
+  || { echo "El detalle del Driver no coincidió con su ruta pendiente." >&2; cat "$work_dir/response.json" >&2; exit 1; }
+request PUT "/Routes/$driver_positive_route_id/status" '{"status":1}' "$same_tenant_driver_token"
+expect_status 204 "Driver puede iniciar su propia ruta"
+request POST "/Routes/$driver_positive_route_id/positions" \
+  "$(jq -nc '{latitude:-0.18,longitude:-78.46,recordedAt:(now|todateiso8601),speedKmh:0,heading:0}')" "$same_tenant_driver_token"
+expect_status 200 "Driver puede registrar GPS en su propia ruta"
+request GET "/Routes/$driver_positive_route_id/positions" "" "$same_tenant_driver_token"
+expect_status 200 "Driver puede consultar GPS de su propia ruta"
+jq -e 'length == 1' "$work_dir/response.json" >/dev/null \
+  || { echo "La consulta GPS del Driver no devolvió la posición registrada." >&2; cat "$work_dir/response.json" >&2; exit 1; }
+request PUT "/Routes/$driver_positive_route_id/status" '{"status":3}' "$same_tenant_driver_token"
+expect_status 204 "Driver puede cancelar su propia ruta en curso"
+driver_positive_persisted_state="$(mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" "$db_name" \
+  --batch --skip-column-names -e "SELECT CONCAT((SELECT Status FROM Routes WHERE Id='$driver_positive_route_id'), ':', (SELECT Status FROM Vehicles WHERE Id='$driver_positive_vehicle_id'), ':', (SELECT COUNT(*) FROM RoutePositions WHERE RouteId='$driver_positive_route_id'), ':', (SELECT COALESCE(CAST(VehicleId AS CHAR),'NULL') FROM Drivers WHERE Id='$same_tenant_driver_id'));")"
+[[ "$driver_positive_persisted_state" == "3:0:1:$driver_positive_vehicle_id" ]] || {
+  echo "La ruta propia del Driver no persistió Cancelled/Available/GPS/asignación coherentes (estado=$driver_positive_persisted_state)." >&2
+  exit 1
+}
 request GET /Vehicles "" "$same_tenant_driver_token"; expect_status 403 "Denegar listado de vehículos a Driver"
 request GET /Drivers "" "$same_tenant_driver_token"; expect_status 403 "Denegar listado de conductores a Driver"
 request GET /Routes/assignment-options "" "$same_tenant_driver_token"; expect_status 403 "Denegar opciones de asignación a Driver"
@@ -1546,8 +1597,9 @@ denied_driver_mutation_rows="$(mysql --protocol=TCP --host="$mysql_host" --port=
 }
 request GET "/Routes?driverId=$driver_id" "" "$same_tenant_driver_token"
 expect_status 200 "Driver no puede ampliar su filtro a otra asignación"
-jq -e 'length == 0' "$work_dir/response.json" >/dev/null \
-  || { echo "El Driver del mismo tenant recibió una ruta que no tiene asignada." >&2; cat "$work_dir/response.json" >&2; exit 1; }
+jq -e --arg driverId "$same_tenant_driver_id" --arg foreignRouteId "$route_id" \
+  'length == 1 and all(.[]; .driverId == $driverId) and all(.[]; .id != $foreignRouteId)' "$work_dir/response.json" >/dev/null \
+  || { echo "El Driver del mismo tenant amplió el filtro y recibió una ruta ajena o perdió su propia ruta." >&2; cat "$work_dir/response.json" >&2; exit 1; }
 request GET "/Routes/$route_id" "" "$same_tenant_driver_token"
 expect_status 403 "Denegar detalle de ruta de otro Driver del mismo tenant"
 request PUT "/Routes/$route_id/status" '{"status":3}' "$same_tenant_driver_token"
@@ -1733,4 +1785,4 @@ if [[ "$refresh_logout_race_status" == "200" ]]; then
   expect_status 401 "Logout-all revoca el sucesor de refresh concurrente"
 fi
 
-echo "OK: aislamiento HTTP/MySQL entre tenants en Users/my-team, Vehicles/Drivers/Routes y asignaciones/reactivación; autorización User/Driver/Manager/Logistics; altas/ediciones inválidas no mutan Vehicles/Drivers; vínculo manual User->Driver persiste en API/MySQL; email duplicado concurrente 200/409 sin persistencia parcial; Logistics completó operación pickup+delivery con evidencia/GPS y vehículo Available; cleanup de fixtures y revocación de sesiones."
+echo "OK: aislamiento HTTP/MySQL entre tenants en Users/my-team, Vehicles/Drivers/Routes y asignaciones/reactivación; autorización User/Driver/Manager/Logistics; Driver operó su propia ruta (inicio, GPS, cancelación) y no accedió a la ajena; altas/ediciones inválidas no mutan Vehicles/Drivers; vínculo manual User->Driver persiste en API/MySQL; email duplicado concurrente 200/409 sin persistencia parcial; Logistics completó operación pickup+delivery con evidencia/GPS y vehículo Available; cleanup de fixtures y revocación de sesiones."

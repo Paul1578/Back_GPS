@@ -25,6 +25,7 @@ public class PasswordRecoveryCommandTests
         Assert.Equal(1, scenario.User.TokenVersion);
         Assert.Equal(1, scenario.RefreshTokens.RevokeAllCount);
         Assert.Equal(1, scenario.CommitCount);
+        Assert.Equal(1, scenario.LockUserSessionCount);
     }
 
     [Fact]
@@ -60,6 +61,7 @@ public class PasswordRecoveryCommandTests
         Assert.NotNull(scenario.Token.UsedAt);
         Assert.Equal(1, scenario.RefreshTokens.RevokeAllCount);
         Assert.Equal(1, scenario.CommitCount);
+        Assert.Equal(1, scenario.LockUserSessionCount);
     }
 
     [Fact]
@@ -119,6 +121,7 @@ public class PasswordRecoveryCommandTests
         public TokenRepository Tokens { get; }
         public RefreshTokenRepository RefreshTokens { get; } = new();
         public int CommitCount { get; private set; }
+        public int LockUserSessionCount { get; private set; }
 
         public RecoveryScenario()
         {
@@ -141,6 +144,7 @@ public class PasswordRecoveryCommandTests
         IRouteRepository IUnitOfWork.Routes => throw new NotSupportedException();
         IRoutePositionRepository IUnitOfWork.RoutePositions => throw new NotSupportedException();
         public Task<int> CommitAsync() { CommitCount++; return Task.FromResult(1); }
+        public Task LockUserSessionAsync(Guid userId) { LockUserSessionCount++; return Task.CompletedTask; }
         public void Rollback() { }
 
         public sealed class UserRepository(User user) : IUserRepository
@@ -175,7 +179,12 @@ public class PasswordRecoveryCommandTests
             public Task<PasswordResetToken?> GetByRawTokenAsync(string rawToken) => Task.FromResult<PasswordResetToken?>(null);
             public Task<PasswordResetToken?> GetByTokenHashAsync(string tokenHash) =>
                 Task.FromResult<PasswordResetToken?>(token.TokenHash == tokenHash ? token : null);
-            public Task MarkUsedAsync(Guid id) { token.UsedAt = DateTime.UtcNow; return Task.CompletedTask; }
+            public Task<bool> MarkUsedAsync(Guid id)
+            {
+                if (token.Id != id || !token.IsActive) return Task.FromResult(false);
+                token.UsedAt = DateTime.UtcNow;
+                return Task.FromResult(true);
+            }
             public Task InvalidateAllForUserAsync(Guid userId) => Task.CompletedTask;
         }
 

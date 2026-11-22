@@ -38,21 +38,34 @@ namespace fletflow.Application.Auth.Commands.ActivateAccount
             var rawToken = token.Trim().Replace(" ", "+");
             var tokenHash = TokenHashing.Sha256(rawToken);
 
-            var resetToken = await _passwordResetTokenRepository.GetByTokenHashAsync(tokenHash)
+            var initialToken = await _passwordResetTokenRepository.GetByTokenHashAsync(tokenHash)
                 ?? throw new UnauthorizedAccessException("Token invalido.");
 
-            if (!resetToken.IsActive)
+            if (!initialToken.IsActive)
                 throw new UnauthorizedAccessException("Token expirado o usado.");
 
-            var user = await _userRepository.GetByIdAsync(resetToken.UserId)
-                ?? throw new KeyNotFoundException("Usuario no encontrado.");
+            await _unitOfWork.LockUserSessionAsync(initialToken.UserId);
+            try
+            {
+                var resetToken = await _passwordResetTokenRepository.GetByTokenHashAsync(tokenHash)
+                    ?? throw new UnauthorizedAccessException("Token invalido.");
+                if (!resetToken.IsActive || !await _passwordResetTokenRepository.MarkUsedAsync(resetToken.Id))
+                    throw new UnauthorizedAccessException("Token expirado o usado.");
 
-            var newPasswordHash = _passwordHasher.Hash(newPassword);
-            await _userRepository.UpdatePasswordAndClearFlagAsync(user.Id, newPasswordHash, clearMustChangePassword: true);
-            await _passwordResetTokenRepository.MarkUsedAsync(resetToken.Id);
-            await _unitOfWork.RefreshTokens.RevokeAllForUserAsync(user.Id);
+                var user = await _userRepository.GetByIdAsync(resetToken.UserId)
+                    ?? throw new KeyNotFoundException("Usuario no encontrado.");
 
-            await _unitOfWork.CommitAsync();
+                var newPasswordHash = _passwordHasher.Hash(newPassword);
+                await _userRepository.UpdatePasswordAndClearFlagAsync(user.Id, newPasswordHash, clearMustChangePassword: true);
+                await _unitOfWork.RefreshTokens.RevokeAllForUserAsync(user.Id);
+
+                await _unitOfWork.CommitAsync();
+            }
+            catch
+            {
+                _unitOfWork.Rollback();
+                throw;
+            }
         }
     }
 }

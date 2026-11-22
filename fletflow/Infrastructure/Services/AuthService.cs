@@ -198,19 +198,26 @@ namespace fletflow.Infrastructure.Services
             if (!prt.IsActive)
                 throw new UnauthorizedAccessException("Token expirado o usado.");
 
-            var user = await _unitOfWork.Users.GetByIdAsync(prt.UserId)
-                ?? throw new KeyNotFoundException("Usuario no encontrado.");
+            await _unitOfWork.LockUserSessionAsync(prt.UserId);
+            try
+            {
+                prt = await _unitOfWork.PasswordResetTokens.GetByRawTokenAsync(rawToken)
+                    ?? throw new UnauthorizedAccessException("Token invalido.");
+                if (!prt.IsActive || !await _unitOfWork.PasswordResetTokens.MarkUsedAsync(prt.Id))
+                    throw new UnauthorizedAccessException("Token expirado o usado.");
 
-            // generar hash y persistirlo mediante el repositorio
-            var newHash = BCrypt.Net.BCrypt.HashPassword(newPassword);
-            await _unitOfWork.Users.UpdatePasswordHashAsync(user.Id, newHash);
-
-            // marcar token como usado
-            await _unitOfWork.PasswordResetTokens.MarkUsedAsync(prt.Id);
-
-            await _unitOfWork.RefreshTokens.RevokeAllForUserAsync(user.Id);
-
-            await _unitOfWork.CommitAsync();
+                var user = await _unitOfWork.Users.GetByIdAsync(prt.UserId)
+                    ?? throw new KeyNotFoundException("Usuario no encontrado.");
+                var newHash = BCrypt.Net.BCrypt.HashPassword(newPassword);
+                await _unitOfWork.Users.UpdatePasswordHashAsync(user.Id, newHash);
+                await _unitOfWork.RefreshTokens.RevokeAllForUserAsync(user.Id);
+                await _unitOfWork.CommitAsync();
+            }
+            catch
+            {
+                _unitOfWork.Rollback();
+                throw;
+            }
         }
 
         // ---- helpers ----

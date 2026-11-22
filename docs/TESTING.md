@@ -454,3 +454,10 @@ La invitación envía sólo el enlace de activación; el usuario fija su contras
 - Pruebas enfocadas: `/home/leonardo/.dotnet/dotnet test BackEnd_Gps.Tests/BackEnd_Gps.Tests.csproj --configuration Release --no-restore -m:1 --filter "FullyQualifiedName~SimpleRateLimitMiddlewareTests.ConcurrentRequests|FullyQualifiedName~DataProtectionKeyRingTests.CertificateRotation"`.
 - Suite completa: `/home/leonardo/.dotnet/dotnet test BackEnd_Gps.sln --configuration Release --no-restore -m:1`.
 - Resultado: tests enfocados 2/2, suite completa 86/86, build Release 0 warnings/0 errores.
+
+
+## Seguridad de sesión, reset y GPS — validación local 2026-11-22
+
+- `/tmp/fletflow-dotnet/dotnet test BackEnd_Gps.sln --configuration Release --no-restore`: **91/91**, 0 omitidas. `dotnet build BackEnd_Gps.csproj --configuration Release --no-restore`: 0 warnings/0 errores. El path `/tmp` responde al entorno de esta sesión donde `/usr/bin/dotnet` no encuentra runtime; no es una ruta requerida para otros desarrolladores.
+- Unit tests: bloqueo de cambio de contraseña antes de revocar; reset/activación consumen token sólo una vez; repositorio SQLite devuelve true en primer consumo y false en el segundo; GPS Driver reasignado en lock no registra posición.
+- `bash -n scripts/smoke-tenant-http.sh` y `git diff --check`: correctos. Próxima Actions debe validar en MySQL el smoke de mantenimiento y el workflow backend completo.

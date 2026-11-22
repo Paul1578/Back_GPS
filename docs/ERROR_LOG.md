@@ -981,3 +981,18 @@ Cada cambio de API debe incluir validación de compilación, migraciones si apli
 - Corrección: liberar sólo si el estado previo era InProgress y el destino es Pending/Completed/Cancelled.
 - Regresión SQLite y smoke HTTP/MySQL: route Pending + vehicle Maintenance → cancelar → route Cancelled y SQL `Vehicles.Status=2`; se restablece Available para continuar el smoke. Test enfocado 1/1 y suite Release 89/89; Actions del nuevo smoke pendiente.
 - El `dotnet` global falló porque `/usr/lib64/dotnet/host/fxr` está vacío. Solución: instalar SDK 8.0.428 en `/tmp/fletflow-dotnet`; tests enfocado y completo pasan, sin alterar setup del sistema. Prevención: verificar `dotnet --info` y usar SDK local aislado cuando no haya runtime registrado.
+
+
+## 2026-11-22 — Fixture de regresión de mantenimiento chocaba con agenda existente — CORREGIDO
+
+- Actions backend `45046324866` falló al crear la segunda ruta de regresión: el smoke reutilizaba el vehículo y Driver de otra ruta pendiente, y la validación de agenda devolvió 409 (`El vehículo o conductor ya tiene una ruta activa en ese horario`).
+- Solución: escenario aislado con Vehicle, Driver y Route propios; la limpieza restaura el estado del vehículo, borra asociaciones y verifica por SQL que Driver:Vehicle:Route quede `0:0:0`. Repetir Action en el siguiente SHA.
+- Prevención: fixtures que prueban transición deben tener recursos/agenda independientes; no relajar la regla de negocio para facilitar el test.
+
+
+## 2026-11-22 — Carrera de revocación de refresh, consumo doble reset y GPS tras reasignación — CORREGIDO; CI PENDIENTE
+
+- Refresh rotation bloqueaba fila User, pero los cambios de contraseña, recuperación/activación y baja de algunas cuentas no siempre compartían ese lock. Un refresh podía insertar reemplazo después de una revocación masiva. Solución: operaciones que actualizan contraseña, revocan sesiones o cambian estado toman el lock User antes de releer estado y persistir; todas serializan con `TryRotateAsync`.
+- Reset token se leía activo y luego se marcaba usado sin condición; dos solicitudes podían avanzar a la vez. `MarkUsedAsync` ahora hace UPDATE atómico sólo si `UsedAt IS NULL` y `ExpiresAt > now`, devuelve éxito/fallo; ResetPassword/ActivateAccount releen tras lock y abortan sin cambiar password si no lo consumen. SQLite verifica primera llamada true, segunda false.
+- GPS Driver se autorizaba en controller y se escribía después de cargar ruta sin lock/revalidación. Reasignación entre ambos pasos permitía que el Driver anterior guardara GPS. Command y consulta toman locks de asignación, recargan y vuelven a verificar Driver activo/asignado antes de crear/leer posiciones; unitaria simula reasignación y exige cero escrituras.
+- Validación local Release xUnit **91/91**, build 0 warnings/0 errors; integración MySQL/HTTP de esta tanda pendiente de Actions.

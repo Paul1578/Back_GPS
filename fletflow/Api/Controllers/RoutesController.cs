@@ -315,11 +315,18 @@ namespace fletflow.Api.Controllers
             Guid routeId,
             [FromBody] RegisterRoutePositionRequest request)
         {
+            Guid? requestingDriverId = null;
+            Guid? requestingUserId = null;
             if (User.IsInRole("Driver"))
             {
                 var route = await _unitOfWork.Routes.GetByIdAsync(routeId);
                 if (route is null) return NotFound();
                 if (!await IsCurrentDriverAssigned(route)) return Forbid();
+
+                requestingUserId = GetUserIdFromClaims();
+                if (!requestingUserId.HasValue) return Forbid();
+                requestingDriverId = await ResolveDriverIdAsync(requestingUserId.Value);
+                if (!requestingDriverId.HasValue) return Forbid();
             }
 
             var result = await _registerPosition.Execute(
@@ -328,7 +335,9 @@ namespace fletflow.Api.Controllers
                 request.Longitude,
                 request.RecordedAt,
                 request.SpeedKmh,
-                request.Heading
+                request.Heading,
+                requestingDriverId,
+                requestingUserId
             );
 
             return Ok(result);
@@ -342,15 +351,52 @@ namespace fletflow.Api.Controllers
             [FromQuery] DateTime? from,
             [FromQuery] DateTime? to)
         {
+            Guid? requestingDriverId = null;
+            Guid? requestingUserId = null;
             if (User.IsInRole("Driver"))
             {
                 var route = await _unitOfWork.Routes.GetByIdAsync(routeId);
                 if (route is null) return NotFound();
                 if (!await IsCurrentDriverAssigned(route)) return Forbid();
+
+                requestingUserId = GetUserIdFromClaims();
+                if (!requestingUserId.HasValue) return Forbid();
+                requestingDriverId = await ResolveDriverIdAsync(requestingUserId.Value);
+                if (!requestingDriverId.HasValue) return Forbid();
+
+                try
+                {
+                    await _unitOfWork.LockRouteAssignmentAsync(route.VehicleId, route.DriverId, routeId);
+                    route = await _unitOfWork.Routes.GetByIdAsync(routeId);
+                    if (route is null || !await IsCurrentDriverAssigned(route))
+                    {
+                        _unitOfWork.Rollback();
+                        return Forbid();
+                    }
+                }
+                catch
+                {
+                    _unitOfWork.Rollback();
+                    throw;
+                }
             }
 
-            var result = await _getPositions.Execute(routeId, from, to);
-            return Ok(result);
+            if (requestingDriverId.HasValue)
+            {
+                try
+                {
+                    var driverResult = await _getPositions.Execute(routeId, from, to);
+                    await _unitOfWork.CommitAsync();
+                    return Ok(driverResult);
+                }
+                catch
+                {
+                    _unitOfWork.Rollback();
+                    throw;
+                }
+            }
+
+            return Ok(await _getPositions.Execute(routeId, from, to));
         }
 
         private Guid? GetUserIdFromClaims()

@@ -47,6 +47,13 @@ namespace fletflow.Application.Users.Commands
                                 "No se puede desactivar la cuenta mientras el conductor tenga una ruta en curso.");
                     }
                 }
+                else
+                {
+                    // Serialize user state changes with refresh-token rotation, which locks
+                    // this same row before inserting a replacement token.
+                    await _unitOfWork.LockUserSessionAsync(userId);
+                    await _context.Entry(user).ReloadAsync();
+                }
 
                 if (user.IsActive == isActive)
                 {

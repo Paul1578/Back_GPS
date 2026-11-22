@@ -120,7 +120,7 @@ public sealed class AuthServiceSecurityTests
             public Task AddAsync(PasswordResetToken token) { Added.Add(token); return Task.CompletedTask; }
             public Task<PasswordResetToken?> GetByRawTokenAsync(string rawToken) => Task.FromResult<PasswordResetToken?>(null);
             public Task<PasswordResetToken?> GetByTokenHashAsync(string tokenHash) => Task.FromResult<PasswordResetToken?>(null);
-            public Task MarkUsedAsync(Guid id) => Task.CompletedTask;
+            public Task<bool> MarkUsedAsync(Guid id) => Task.FromResult(true);
             public Task InvalidateAllForUserAsync(Guid userId) => Task.CompletedTask;
         }
     }

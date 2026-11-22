@@ -45,26 +45,33 @@ namespace fletflow.Application.Auth.Commands.ResetPassword
             var rawToken = (requestToken ?? string.Empty).Trim().Replace(" ", "+");
             var tokenHash = TokenHashing.Sha256(rawToken);
 
-            var resetToken = await _passwordResetTokenRepository.GetByTokenHashAsync(tokenHash)
+            var initialToken = await _passwordResetTokenRepository.GetByTokenHashAsync(tokenHash)
                 ?? throw new UnauthorizedAccessException("Token invalido.");
 
-            if (!resetToken.IsActive)
+            if (!initialToken.IsActive)
                 throw new UnauthorizedAccessException("Token expirado o usado.");
 
-            var user = await _userRepository.GetByIdAsync(resetToken.UserId)
-                ?? throw new KeyNotFoundException("Usuario no encontrado.");
+            await _unitOfWork.LockUserSessionAsync(initialToken.UserId);
+            try
+            {
+                var resetToken = await _passwordResetTokenRepository.GetByTokenHashAsync(tokenHash)
+                    ?? throw new UnauthorizedAccessException("Token invalido.");
+                if (!resetToken.IsActive || !await _passwordResetTokenRepository.MarkUsedAsync(resetToken.Id))
+                    throw new UnauthorizedAccessException("Token expirado o usado.");
 
-            // Validaciones superadas: generar hash y persistirlo
-            var newPasswordHash = _passwordHasher.Hash(newPassword);
-            await _userRepository.UpdatePasswordHashAsync(user.Id, newPasswordHash);
+                var user = await _userRepository.GetByIdAsync(resetToken.UserId)
+                    ?? throw new KeyNotFoundException("Usuario no encontrado.");
 
-            // Marcar token como usado solo despues de actualizar la contrasena
-            await _passwordResetTokenRepository.MarkUsedAsync(resetToken.Id);
-
-            // Un cambio de contraseña debe invalidar sesiones anteriores.
-            await _refreshTokenRepository.RevokeAllForUserAsync(user.Id);
-
-            await _unitOfWork.CommitAsync();
+                var newPasswordHash = _passwordHasher.Hash(newPassword);
+                await _userRepository.UpdatePasswordHashAsync(user.Id, newPasswordHash);
+                await _refreshTokenRepository.RevokeAllForUserAsync(user.Id);
+                await _unitOfWork.CommitAsync();
+            }
+            catch
+            {
+                _unitOfWork.Rollback();
+                throw;
+            }
         }
     }
 }

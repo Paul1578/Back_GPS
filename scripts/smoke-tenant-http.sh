@@ -37,6 +37,11 @@ work_dir="$(mktemp -d)"
 token=""
 route_id=""
 maintenance_route_id=""
+maintenance_route_name=""
+maintenance_vehicle_id=""
+maintenance_vehicle_plate=""
+maintenance_driver_id=""
+maintenance_driver_document=""
 vehicle_id=""
 driver_id=""
 other_tenant_email=""
@@ -93,6 +98,8 @@ cleanup() {
     fi
     if [[ -n "$maintenance_route_id" ]]; then
       sql+=" DELETE FROM RoutePositions WHERE RouteId='$maintenance_route_id'; DELETE FROM Routes WHERE Id='$maintenance_route_id';"
+    elif [[ -n "$maintenance_route_name" ]]; then
+      sql+=" DELETE rp FROM RoutePositions rp JOIN Routes r ON r.Id=rp.RouteId WHERE r.Name='$maintenance_route_name'; DELETE FROM Routes WHERE Name='$maintenance_route_name';"
     fi
     if [[ -n "$manager_route_id" ]]; then
       sql+=" DELETE FROM RoutePositions WHERE RouteId='$manager_route_id'; DELETE FROM Routes WHERE Id='$manager_route_id';"
@@ -111,6 +118,8 @@ cleanup() {
     fi
     if [[ -n "$driver_id" ]]; then sql+=" DELETE FROM Drivers WHERE Id='$driver_id';"
     elif [[ -n "$document_number" ]]; then sql+=" DELETE FROM Drivers WHERE DocumentNumber='$document_number';"; fi
+    if [[ -n "$maintenance_driver_id" ]]; then sql+=" DELETE FROM Drivers WHERE Id='$maintenance_driver_id';"
+    elif [[ -n "$maintenance_driver_document" ]]; then sql+=" DELETE FROM Drivers WHERE DocumentNumber='$maintenance_driver_document';"; fi
     if [[ -n "$foreign_driver_id" ]]; then sql+=" DELETE FROM Drivers WHERE Id='$foreign_driver_id';"; fi
     if [[ -n "$driver_race_document" ]]; then sql+=" DELETE FROM Drivers WHERE DocumentNumber='$driver_race_document';"; fi
     if [[ -n "$other_tenant_driver_id" ]]; then sql+=" DELETE FROM Drivers WHERE Id='$other_tenant_driver_id';"; fi
@@ -119,6 +128,8 @@ cleanup() {
     if [[ -n "$manager_driver_id" ]]; then sql+=" DELETE FROM Drivers WHERE Id='$manager_driver_id';"; fi
     if [[ -n "$vehicle_id" ]]; then sql+=" DELETE FROM Vehicles WHERE Id='$vehicle_id';"
     elif [[ -n "$plate" ]]; then sql+=" DELETE FROM Vehicles WHERE Plate='$plate';"; fi
+    if [[ -n "$maintenance_vehicle_id" ]]; then sql+=" UPDATE Vehicles SET Status=0 WHERE Id='$maintenance_vehicle_id'; DELETE FROM Vehicles WHERE Id='$maintenance_vehicle_id';"
+    elif [[ -n "$maintenance_vehicle_plate" ]]; then sql+=" DELETE FROM Vehicles WHERE Plate='$maintenance_vehicle_plate';"; fi
     if [[ -n "$foreign_reactivate_vehicle_id" ]]; then sql+=" DELETE FROM Vehicles WHERE Id='$foreign_reactivate_vehicle_id';"; fi
     if [[ -n "$foreign_vehicle_id" ]]; then sql+=" DELETE FROM Vehicles WHERE Id='$foreign_vehicle_id';"; fi
     if [[ -n "$manager_crud_vehicle_id" ]]; then sql+=" UPDATE Vehicles SET Status=0 WHERE Id='$manager_crud_vehicle_id'; DELETE FROM Vehicles WHERE Id='$manager_crud_vehicle_id';"
@@ -162,6 +173,20 @@ cleanup() {
       echo "No se pudieron limpiar los fixtures creados por smoke-tenant-http.sh." >&2
       status=1
     }
+    if [[ -n "$maintenance_driver_id" || -n "$maintenance_driver_document" || -n "$maintenance_vehicle_id" || -n "$maintenance_vehicle_plate" ]]; then
+      local maintenance_fixture_remaining
+      maintenance_fixture_remaining="$(mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" \
+        --batch --skip-column-names "$db_name" \
+        -e "SELECT CONCAT((SELECT COUNT(*) FROM Drivers WHERE Id='$maintenance_driver_id' OR DocumentNumber='$maintenance_driver_document'), ':', (SELECT COUNT(*) FROM Vehicles WHERE Id='$maintenance_vehicle_id' OR Plate='$maintenance_vehicle_plate'), ':', (SELECT COUNT(*) FROM Routes WHERE Id='$maintenance_route_id' OR Name='$maintenance_route_name')); ")" || {
+        echo "No se pudo verificar cleanup de fixtures de mantenimiento." >&2
+        status=1
+        maintenance_fixture_remaining="unknown"
+      }
+      if [[ "$maintenance_fixture_remaining" != "0:0:0" && "$maintenance_fixture_remaining" != "unknown" ]]; then
+        echo "Cleanup dejó fixtures de mantenimiento (Driver:Vehicle:Route=$maintenance_fixture_remaining)." >&2
+        status=1
+      fi
+    fi
     if [[ -n "$manager_vehicle_id" && (-n "$manager_route_id" || -n "$manager_route_name") && \
       (-n "$logistics_route_id" || -n "$logistics_route_name") ]]; then
       local remaining
@@ -1032,25 +1057,39 @@ expect_status 201 "Crear ruta tenant A"
 route_id="$(jq -er '.id' "$work_dir/response.json")"
 
 # Cancelling a route that never started must preserve a vehicle's Maintenance state.
-maintenance_route_name="${route_name} pending maintenance cancellation"
-request POST /Routes "$(jq -nc --arg name "$maintenance_route_name" --arg vehicleId "$vehicle_id" --arg driverId "$driver_id" --argjson points "$points" '{name:$name,cargoDescription:"Verify pending cancellation preserves maintenance",vehicleId:$vehicleId,driverId:$driverId,points:$points}')"
+maintenance_vehicle_plate="E2EQA${suffix: -9}M"
+request POST /Vehicles "$(jq -nc --arg plate "$maintenance_vehicle_plate" '{plate:$plate,brand:"CI maintenance",model:"Pending cancellation",year:2025}')"
+expect_status 201 "Crear vehículo de regresión de mantenimiento"
+maintenance_vehicle_id="$(jq -er '.id' "$work_dir/response.json")"
+maintenance_driver_document="E2EQA${suffix: -9}M"
+request POST /Drivers "$(jq -nc --arg document "$maintenance_driver_document" '{firstName:"CI maintenance",lastName:"Driver",documentNumber:$document,phoneNumber:"0990000001"}')"
+expect_status 201 "Crear Driver de regresión de mantenimiento"
+maintenance_driver_id="$(jq -er '.id' "$work_dir/response.json")"
+maintenance_route_name="E2E QA ruta mantenimiento ${suffix: -9}"
+request POST /Routes "$(jq -nc --arg name "$maintenance_route_name" --arg vehicleId "$maintenance_vehicle_id" --arg driverId "$maintenance_driver_id" --argjson points "$points" '{name:$name,cargoDescription:"Verify pending cancellation preserves maintenance",vehicleId:$vehicleId,driverId:$driverId,points:$points}')"
 expect_status 201 "Crear ruta pendiente de regresión de mantenimiento"
 maintenance_route_id="$(jq -er '.id' "$work_dir/response.json")"
-request PUT "/Vehicles/$vehicle_id/status" '{"status":2}' "$token"
+request PUT "/Vehicles/$maintenance_vehicle_id/status" '{"status":2}' "$token"
 expect_status 204 "Poner vehículo en mantenimiento con rutas pendientes"
 request PUT "/Routes/$maintenance_route_id/status" '{"status":3}' "$token"
 expect_status 204 "Cancelar ruta pendiente sin liberar vehículo en mantenimiento"
 maintenance_status_after_cancel="$(mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" "$db_name" \
-  --batch --skip-column-names -e "SELECT Status FROM Vehicles WHERE Id='$vehicle_id';")"
+  --batch --skip-column-names -e "SELECT Status FROM Vehicles WHERE Id='$maintenance_vehicle_id';")"
 [[ "$maintenance_status_after_cancel" == "2" ]] || {
   echo "Cancelar una ruta pendiente alteró el vehículo en mantenimiento (Status=$maintenance_status_after_cancel)." >&2
   exit 1
 }
-request PUT "/Vehicles/$vehicle_id/status" '{"status":0}' "$token"
-expect_status 204 "Restaurar vehículo disponible para la ruta operativa"
+request PUT "/Vehicles/$maintenance_vehicle_id/status" '{"status":0}' "$token"
+expect_status 204 "Restaurar vehículo de regresión a disponible"
 request DELETE "/Routes/$maintenance_route_id" "" "$token"
 expect_status 204 "Eliminar ruta temporal de regresión"
 maintenance_route_id=""
+request PUT "/Drivers/$maintenance_driver_id/unassign-vehicle" "" "$token"
+expect_status 204 "Desasignar vehículo del Driver temporal"
+request PUT "/Drivers/$maintenance_driver_id/status" '{"isActive":false}' "$token"
+expect_status 204 "Desactivar Driver temporal de regresión"
+request DELETE "/Vehicles/$maintenance_vehicle_id" "" "$token"
+expect_status 204 "Eliminar vehículo temporal de regresión"
 
 request PUT "/Routes/$route_id/status" '{"status":1}'
 expect_status 204 "Iniciar ruta tenant A"

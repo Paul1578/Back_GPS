@@ -352,3 +352,13 @@
 - `ChangeRouteStatusCommand` sólo cambia Vehicle a Available cuando la ruta estaba InProgress; cancelar una ruta Pending no altera el estado operacional del vehículo.
 - Regresión SQLite confirma route Cancelled y vehicle Maintenance. `smoke-tenant-http.sh` añade una segunda ruta Pending, pone el vehículo en Maintenance, cancela esa ruta y consulta SQL antes de reanudar la ruta principal.
 - Test focal 1/1; Release xUnit 89/89; bash syntax/diff-check pasan. Nueva Actions con smoke MySQL pendiente.
+
+- Actions Front `45046312974` pasó Front `d05dcf8`: responsive 1/1, E2E API/MySQL 26/26, backend Release, audit/lint/build y cleanup.
+
+
+## 2026-11-22 — Serializar revocación de sesiones, reset y acceso GPS
+
+- Cambio contraseña, reset, activación y cambio de estado de usuario ahora toman el lock de fila de sesión compartido con refresh rotation antes de mutar o revocar refresh tokens. UpdateUser relee estado después del lock para cuentas no Driver.
+- Consumo de PasswordResetToken se vuelve condicional a `UsedAt IS NULL` y no expirado; los flujos ResetPassword/ActivateAccount vuelven a cargar el token tras obtener el lock y sólo guardan password/revocan refresh si lo consumen.
+- Registro GPS vuelve a cargar la ruta tras tomar lock de ruta/asignación y verifica Driver activo y dueño actual; lectura GPS de Driver mantiene lock durante la consulta. Añadida regresión de reasignación durante lock con cero posiciones escritas.
+- Tests Release **91/91**, build **0 warnings/0 errors** y test SQLite de consumo único. El smoke MySQL de mantenimiento se corrigió luego del 409 de fixture por agenda; requiere Actions nueva.

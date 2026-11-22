@@ -502,3 +502,10 @@ Errores de migración, herramientas, QA y soluciones están en `docs/ERROR_LOG.m
 - Errores de exploración/build docs: se intentó abrir `AppDbContext.cs` y `fletflow/Program.cs` por rutas supuestas; clase real está en `Context/FleetFlowDbContext.cs`, entrypoint fuera de esas rutas. `git diff --check` encontró línea vacía extra al final de CHANGELOG; EOF recortado y diff-check pasó. Quedó documentado en ERROR_LOG.
 - Próximo: commit/push de estos docs; disparar revalidación Front integrada contra el backend nuevo `190f284` y registrar ambos runs. Front Action `45043898907` ya confirmó Driver tablet 26/26 y responsive 1/1 para SHA Front `0dd5099` contra backend anterior `a18a34f`.
 - No cerrar misión: CRUD/responsive residual, Admin delegado sin policy, SMTP y provisionamiento PFX/key ring productivo externos; móvil nativo diferido.
+
+## Seguridad adicional implementada — pendiente CI — 2026-11-22
+
+- Refresh: `ChangePasswordCommand`, `ResetPasswordCommand`, `ActivateAccountCommand`, `AuthService.ResetPasswordAsync` y `UpdateUserCommand` toman el lock de User antes de modificar password/estado y revocar. Se comparte con el lock de `TryRotateAsync`; Accounts con Driver siguen usando lock conjunto ruta/usuario.
+- Reset token: repositorio tiene consumo compare-and-set por `Id`, activo y no expirado; flows vuelven a leer token bajo lock y abortan si otro ya lo usó. Test SQLite de 1er consumo/2do rechazo.
+- GPS: `RegisterRoutePositionCommand` bloquea ruta/asignación y valida Driver solicitante después de recargar. `GET positions` mantiene lock y revalida hasta terminar la lectura. Test falso reasigna al adquirir lock, espera excepción, 0 posiciones y sin commit.
+- Validación local posterior: xUnit Release 91/91, build 0 warnings/0 errores. Backend smoke último Action `45046324866` falló por fixture de ruta de mantenimiento compartiendo agenda; script corregido a Vehicle/Driver propios, con limpieza y conteo SQL. Próximo paso: commit/push de todos los cambios, inspeccionar Actions y reparar cualquier fallo; luego disparar Front integrado contra backend nuevo.

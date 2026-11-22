@@ -16,21 +16,26 @@ namespace fletflow.Application.Auth.Commands
 
         public async Task Execute(Guid userId, string currentPassword, string newPassword)
         {
-            var user = await _users.GetByIdAsync(userId)
-                ?? throw new KeyNotFoundException("User not found.");
+            await _uow.LockUserSessionAsync(userId);
+            try
+            {
+                var user = await _users.GetByIdAsync(userId)
+                    ?? throw new KeyNotFoundException("User not found.");
 
-            if (!BCrypt.Net.BCrypt.Verify(currentPassword, user.PasswordHash))
-                throw new UnauthorizedAccessException("Current password is incorrect.");
+                if (!BCrypt.Net.BCrypt.Verify(currentPassword, user.PasswordHash))
+                    throw new UnauthorizedAccessException("Current password is incorrect.");
 
-            var newHash = BCrypt.Net.BCrypt.HashPassword(newPassword);
+                var newHash = BCrypt.Net.BCrypt.HashPassword(newPassword);
 
-            // actualización sobre la entidad EF
-            await _users.UpdatePasswordHashAsync(userId, newHash);
-
-            await _uow.RefreshTokens.RevokeAllForUserAsync(user.Id);
-
-            // commit con UnitOfWork
-            await _uow.CommitAsync();
+                await _users.UpdatePasswordHashAsync(userId, newHash);
+                await _uow.RefreshTokens.RevokeAllForUserAsync(user.Id);
+                await _uow.CommitAsync();
+            }
+            catch
+            {
+                _uow.Rollback();
+                throw;
+            }
         }
     }
 }

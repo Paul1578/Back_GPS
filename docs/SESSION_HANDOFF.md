@@ -1,3 +1,11 @@
+# Sesión actual — CRUD HTTP de Driver como Manager — 2026-11-22
+
+- Rama `chore/stabilize-fleet-platform`, base HEAD `4718f04`; cambios locales sin commit/push, no tocar `main`.
+- Sólo se modificaron `scripts/smoke-tenant-http.sh` y documentación. Fixture Manager usa un Driver/Vehicle dedicado y no reusa los recursos que soportan la ruta Manager ni las rutas Logistics.
+- CRUD probado como Manager: edit HTTP 200; baja/reactivación HTTP 204; asignar/desasignar vehículo HTTP 204. Tras cada operación GET Driver/Vehicle y SQL comprueban estado. También se comparan por API y SQL snapshots de `manager_driver`, `manager_vehicle` y `manager_route` para detectar cambios colaterales.
+- Build Release 0 warnings/0 errores; xUnit **82/82** con `/home/leonardo/.dotnet/dotnet`; `bash -n`, `git diff --check`, smoke completo con API local + MySQL 8 descartable exit 0. Cleanup confirma cero Driver y Vehicle CRUD Manager y limpieza general. Servicio/contenedor descartables detenidos.
+- Las dos fallas de aserciones de desarrollo y sus arreglos están documentados en `docs/ERROR_LOG.md`. Actions backend aún pendiente; revisar diff y CI antes de integrar. No declarar terminada la misión general.
+
 # Sesión actual — smoke tenant Users/asignaciones — 2026-11-22
 
 - Rama backend: `chore/stabilize-fleet-platform`, base `d3ac953`; sin cambios en `main`, sin commit/push.

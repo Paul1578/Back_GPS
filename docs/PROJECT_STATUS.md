@@ -1,3 +1,9 @@
+# Estado de esta iteración — CRUD Driver para Manager — 2026-11-22
+
+- En `chore/stabilize-fleet-platform` (base `4718f04`) se amplió sólo el smoke HTTP/MySQL y documentación. Sin cambios a código de producto ni a `main`.
+- Driver de Manager verificado por HTTP/API/SQL en edición, baja/reactivación, asignación y desasignación de vehículo. Tras cada mutación se validan estado persistido y snapshot sin cambios de Driver/Vehicle/Route Manager preexistentes.
+- Release build: 0 warnings/0 errores. xUnit **82/82**, `bash -n`, `git diff --check` y smoke completo con API/MySQL 8 desechables pasan; cleanup confirmó cero fixtures CRUD Driver/Vehicle. Actions pendiente para este diff; sin commit/push, pendiente revisión.
+
 # Estado de esta iteración — cobertura tenant HTTP/MySQL — 2026-11-22
 
 - Rama `chore/stabilize-fleet-platform`. Smoke amplía aislamiento de `GET /Users` y `/Users/my-team`, opciones de asignación y operaciones cross-tenant sobre Drivers/Vehicles.

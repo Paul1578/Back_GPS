@@ -54,6 +54,11 @@ restricted_attempt_plate=""
 document_number=""
 manager_vehicle_id=""
 manager_driver_id=""
+manager_crud_vehicle_id=""
+manager_crud_driver_id=""
+manager_crud_vehicle_plate=""
+manager_crud_driver_document=""
+manager_tenant_owner_id=""
 other_tenant_driver_id=""
 foreign_driver_id=""
 foreign_vehicle_id=""
@@ -96,11 +101,15 @@ cleanup() {
     if [[ -n "$foreign_driver_id" ]]; then sql+=" DELETE FROM Drivers WHERE Id='$foreign_driver_id';"; fi
     if [[ -n "$driver_race_document" ]]; then sql+=" DELETE FROM Drivers WHERE DocumentNumber='$driver_race_document';"; fi
     if [[ -n "$other_tenant_driver_id" ]]; then sql+=" DELETE FROM Drivers WHERE Id='$other_tenant_driver_id';"; fi
+    if [[ -n "$manager_crud_driver_id" ]]; then sql+=" DELETE FROM Drivers WHERE Id='$manager_crud_driver_id';"
+    elif [[ -n "$manager_crud_driver_document" ]]; then sql+=" DELETE FROM Drivers WHERE DocumentNumber='$manager_crud_driver_document';"; fi
     if [[ -n "$manager_driver_id" ]]; then sql+=" DELETE FROM Drivers WHERE Id='$manager_driver_id';"; fi
     if [[ -n "$vehicle_id" ]]; then sql+=" DELETE FROM Vehicles WHERE Id='$vehicle_id';"
     elif [[ -n "$plate" ]]; then sql+=" DELETE FROM Vehicles WHERE Plate='$plate';"; fi
     if [[ -n "$foreign_reactivate_vehicle_id" ]]; then sql+=" DELETE FROM Vehicles WHERE Id='$foreign_reactivate_vehicle_id';"; fi
     if [[ -n "$foreign_vehicle_id" ]]; then sql+=" DELETE FROM Vehicles WHERE Id='$foreign_vehicle_id';"; fi
+    if [[ -n "$manager_crud_vehicle_id" ]]; then sql+=" UPDATE Vehicles SET Status=0 WHERE Id='$manager_crud_vehicle_id'; DELETE FROM Vehicles WHERE Id='$manager_crud_vehicle_id';"
+    elif [[ -n "$manager_crud_vehicle_plate" ]]; then sql+=" DELETE FROM Vehicles WHERE Plate='$manager_crud_vehicle_plate';"; fi
     if [[ -n "$manager_vehicle_id" ]]; then sql+=" UPDATE Vehicles SET Status=0 WHERE Id='$manager_vehicle_id'; DELETE FROM Vehicles WHERE Id='$manager_vehicle_id';"; fi
     if [[ -n "$restricted_attempt_plate" ]]; then sql+=" DELETE FROM Vehicles WHERE Plate='$restricted_attempt_plate';"; fi
     if [[ -n "$other_tenant_email" ]]; then
@@ -157,6 +166,22 @@ cleanup() {
       fi
       if [[ "$remaining" == "0:0:0" ]]; then
         echo "Cleanup verificado: 0 rutas, 0 posiciones GPS y 0 vehículos Logistics/Manager." >&2
+      fi
+    fi
+    if [[ -n "$manager_crud_driver_id" || -n "$manager_crud_driver_document" || -n "$manager_crud_vehicle_id" || -n "$manager_crud_vehicle_plate" ]]; then
+      local manager_crud_remaining
+      manager_crud_remaining="$(mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" \
+        --batch --skip-column-names "$db_name" \
+        -e "SELECT CONCAT((SELECT COUNT(*) FROM Drivers WHERE Id='$manager_crud_driver_id' OR DocumentNumber='$manager_crud_driver_document'), ':', (SELECT COUNT(*) FROM Vehicles WHERE Id='$manager_crud_vehicle_id' OR Plate='$manager_crud_vehicle_plate'));")" || {
+        echo "No se pudo verificar cleanup de los fixtures CRUD Manager:" >&2
+        status=1
+        manager_crud_remaining="unknown"
+      }
+      if [[ "$manager_crud_remaining" != "0:0" && "$manager_crud_remaining" != "unknown" ]]; then
+        echo "Cleanup dejó fixtures CRUD Manager (conteos Driver:Vehicle=$manager_crud_remaining)." >&2
+        status=1
+      elif [[ "$manager_crud_remaining" == "0:0" ]]; then
+        echo "Cleanup verificado: cero Driver y Vehicle CRUD de Manager." >&2
       fi
     fi
     if [[ -n "$duplicate_email_race" ]]; then
@@ -240,6 +265,62 @@ assert_foreign_assignment_state_unchanged() {
     echo "$label mutó VehicleId/IsActive u ownership (esperado $expected, recibido $state)." >&2
     exit 1
   }
+}
+
+assert_manager_crud_fixture_state() {
+  local api_driver_state sql_driver_state sql_vehicle_state protected_sql_after
+  request GET "/Drivers/$manager_crud_driver_id" "" "$deactivated_access_token"
+  expect_status 200 "Leer Driver CRUD dedicado como Manager después de mutación"
+  api_driver_state="$(jq -er '[.firstName,.lastName,.documentNumber,.phoneNumber,(.isActive|tostring),(.vehicleId // "NULL")] | join(":")' "$work_dir/response.json")" || {
+    echo "La lectura API Manager no devolvió el estado del Driver CRUD dedicado." >&2; cat "$work_dir/response.json" >&2; exit 1;
+  }
+  [[ "$api_driver_state" == "$manager_crud_expected_api_driver_state" ]] || {
+    echo "Estado API inesperado para Driver CRUD: $api_driver_state (esperado $manager_crud_expected_api_driver_state)." >&2
+    exit 1
+  }
+  sql_driver_state="$(mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" "$db_name" \
+    --batch --skip-column-names -e "SELECT CONCAT(FirstName,':',LastName,':',DocumentNumber,':',PhoneNumber,':',CASE WHEN IsActive=1 THEN 'true' ELSE 'false' END,':',COALESCE(CAST(VehicleId AS CHAR),'NULL'),':',CAST(OwnerUserId AS CHAR)) FROM Drivers WHERE Id='$manager_crud_driver_id';")"
+  [[ "$sql_driver_state" == "$manager_crud_expected_sql_driver_state" ]] || {
+    echo "Estado MySQL inesperado para Driver CRUD: $sql_driver_state (esperado $manager_crud_expected_sql_driver_state)." >&2
+    exit 1
+  }
+  request GET "/Vehicles/$manager_crud_vehicle_id" "" "$deactivated_access_token"
+  expect_status 200 "Leer vehículo CRUD dedicado como Manager después de mutación"
+  jq -e --arg id "$manager_crud_vehicle_id" --arg plate "$manager_crud_vehicle_plate" \
+    '.id == $id and .plate == $plate and .isActive == true and .status == 0' "$work_dir/response.json" >/dev/null || {
+      echo "El vehículo CRUD dedicado cambió inesperadamente por una operación de Driver." >&2; cat "$work_dir/response.json" >&2; exit 1;
+    }
+  sql_vehicle_state="$(mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" "$db_name" \
+    --batch --skip-column-names -e "SELECT CONCAT(Plate,':',CASE WHEN IsActive=1 THEN 'true' ELSE 'false' END,':',Status,':',CAST(OwnerUserId AS CHAR)) FROM Vehicles WHERE Id='$manager_crud_vehicle_id';")"
+  [[ "$sql_vehicle_state" == "$manager_crud_vehicle_plate:true:0:$manager_tenant_owner_id" ]] || {
+    echo "El estado SQL del vehículo CRUD cambió inesperadamente: $sql_vehicle_state." >&2
+    exit 1
+  }
+  protected_sql_after="$(mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" "$db_name" \
+    --batch --skip-column-names -e "SELECT CONCAT((SELECT CONCAT_WS(':',DocumentNumber,FirstName,LastName,PhoneNumber,IsActive,COALESCE(CAST(VehicleId AS CHAR),'NULL'),CAST(OwnerUserId AS CHAR)) FROM Drivers WHERE Id='$manager_driver_id'),'#',(SELECT CONCAT_WS(':',Plate,Status,IsActive,CAST(OwnerUserId AS CHAR)) FROM Vehicles WHERE Id='$manager_vehicle_id'),'#',(SELECT CONCAT_WS(':',Name,Status,IsActive,CAST(VehicleId AS CHAR),CAST(DriverId AS CHAR)) FROM Routes WHERE Id='$manager_route_id')); ")"
+  [[ "$protected_sql_after" == "$manager_protected_sql_before" ]] || {
+    echo "Una operación CRUD aislada alteró al Driver/vehículo/ruta existentes del Manager (antes=$manager_protected_sql_before; después=$protected_sql_after)." >&2
+    exit 1
+  }
+  request GET "/Drivers/$manager_driver_id" "" "$deactivated_access_token"
+  expect_status 200 "Confirmar Driver Manager preexistente intacto"
+  jq -e --arg id "$manager_driver_id" --arg document "$manager_document" \
+    '.id == $id and .documentNumber == $document and .isActive == true' "$work_dir/response.json" >/dev/null || {
+      echo "El Driver Manager preexistente cambió durante CRUD aislado." >&2; cat "$work_dir/response.json" >&2; exit 1;
+    }
+  request GET "/Vehicles/$manager_vehicle_id" "" "$deactivated_access_token"
+  expect_status 200 "Confirmar vehículo Manager preexistente intacto"
+  jq -e --arg id "$manager_vehicle_id" --arg plate "$manager_plate" \
+    '.id == $id and .plate == $plate and .isActive == true and .status == 0' "$work_dir/response.json" >/dev/null || {
+      echo "El vehículo Manager preexistente cambió durante CRUD aislado." >&2; cat "$work_dir/response.json" >&2; exit 1;
+    }
+  request GET "/Routes/$manager_route_id" "" "$deactivated_access_token"
+  expect_status 200 "Confirmar ruta Manager preexistente intacta"
+  jq -e --arg id "$manager_route_id" --arg name "$manager_route_name" --arg vehicleId "$manager_vehicle_id" --arg driverId "$manager_driver_id" \
+    '.id == $id and .name == $name and .vehicleId == $vehicleId and .driverId == $driverId and .isActive == true and .status == 0' \
+    "$work_dir/response.json" >/dev/null || {
+      echo "La ruta Manager preexistente cambió durante CRUD aislado." >&2; cat "$work_dir/response.json" >&2; exit 1;
+    }
 }
 
 request POST /Auth/login "$(jq -nc --arg email "$admin_email" --arg password "$admin_password" '{email:$email,password:$password}')" ""
@@ -454,6 +535,62 @@ normalize_mysql_datetime() {
   printf '%s.%sZ' "$whole" "${fraction:0:6}"
 }
 [[ "$(normalize_mysql_datetime "$manager_route_created_at")" == "$manager_route_created_at_db" ]] || { echo "CreatedAtUtc de API no coincide con el valor MySQL." >&2; exit 1; }
+
+# Driver CRUD fixture dedicated to Manager: never reuse the Driver/Vehicle that
+# already back the route and later Logistics scenarios.
+manager_protected_sql_before="$(mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" "$db_name" \
+  --batch --skip-column-names -e "SELECT CONCAT((SELECT CONCAT_WS(':',DocumentNumber,FirstName,LastName,PhoneNumber,IsActive,COALESCE(CAST(VehicleId AS CHAR),'NULL'),CAST(OwnerUserId AS CHAR)) FROM Drivers WHERE Id='$manager_driver_id'),'#',(SELECT CONCAT_WS(':',Plate,Status,IsActive,CAST(OwnerUserId AS CHAR)) FROM Vehicles WHERE Id='$manager_vehicle_id'),'#',(SELECT CONCAT_WS(':',Name,Status,IsActive,CAST(VehicleId AS CHAR),CAST(DriverId AS CHAR)) FROM Routes WHERE Id='$manager_route_id')); ")"
+manager_crud_vehicle_plate="E2EMV${suffix: -8}"
+request POST /Vehicles "$(jq -nc --arg plate "$manager_crud_vehicle_plate" '{plate:$plate,brand:"Manager CRUD",model:"Isolated fixture",year:2025}')" "$deactivated_access_token"
+expect_status 201 "Crear vehículo aislado para CRUD Driver de Manager"
+manager_crud_vehicle_id="$(jq -er '.id' "$work_dir/response.json")"
+manager_crud_driver_document="E2EMD${suffix: -8}"
+manager_crud_first_name="Manager CRUD"
+manager_crud_last_name="Fixture"
+manager_crud_phone="0990000101"
+request POST /Drivers "$(jq -nc --arg first "$manager_crud_first_name" --arg last "$manager_crud_last_name" --arg document "$manager_crud_driver_document" --arg phone "$manager_crud_phone" '{firstName:$first,lastName:$last,documentNumber:$document,phoneNumber:$phone}')" "$deactivated_access_token"
+expect_status 201 "Crear Driver aislado para CRUD de Manager"
+manager_crud_driver_id="$(jq -er '.id' "$work_dir/response.json")"
+manager_crud_expected_api_driver_state="$manager_crud_first_name:$manager_crud_last_name:$manager_crud_driver_document:$manager_crud_phone:true:NULL"
+manager_tenant_owner_id="$(mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" "$db_name" \
+  --batch --skip-column-names -e "SELECT COALESCE(CAST(OwnerUserId AS CHAR),CAST(Id AS CHAR)) FROM Users WHERE Id='$deactivated_user_id';")"
+manager_crud_expected_sql_driver_state="$manager_crud_expected_api_driver_state:$manager_tenant_owner_id"
+assert_manager_crud_fixture_state
+
+manager_crud_first_name="Manager CRUD editado"
+manager_crud_last_name="Fixture actualizado"
+manager_crud_driver_document="E2EMU${suffix: -8}"
+manager_crud_phone="0990000102"
+request PUT "/Drivers/$manager_crud_driver_id" "$(jq -nc --arg first "$manager_crud_first_name" --arg last "$manager_crud_last_name" --arg document "$manager_crud_driver_document" --arg phone "$manager_crud_phone" '{firstName:$first,lastName:$last,documentNumber:$document,phoneNumber:$phone}')" "$deactivated_access_token"
+expect_status 200 "Editar Driver dedicado como Manager"
+manager_crud_expected_api_driver_state="$manager_crud_first_name:$manager_crud_last_name:$manager_crud_driver_document:$manager_crud_phone:true:NULL"
+manager_crud_expected_sql_driver_state="$manager_crud_expected_api_driver_state:$manager_tenant_owner_id"
+assert_manager_crud_fixture_state
+
+request PUT "/Drivers/$manager_crud_driver_id/status" '{"isActive":false}' "$deactivated_access_token"
+expect_status 204 "Dar de baja Driver dedicado como Manager"
+manager_crud_expected_api_driver_state="$manager_crud_first_name:$manager_crud_last_name:$manager_crud_driver_document:$manager_crud_phone:false:NULL"
+manager_crud_expected_sql_driver_state="$manager_crud_expected_api_driver_state:$manager_tenant_owner_id"
+assert_manager_crud_fixture_state
+
+request PUT "/Drivers/$manager_crud_driver_id/status" '{"isActive":true}' "$deactivated_access_token"
+expect_status 204 "Reactivar Driver dedicado como Manager"
+manager_crud_expected_api_driver_state="$manager_crud_first_name:$manager_crud_last_name:$manager_crud_driver_document:$manager_crud_phone:true:NULL"
+manager_crud_expected_sql_driver_state="$manager_crud_expected_api_driver_state:$manager_tenant_owner_id"
+assert_manager_crud_fixture_state
+
+request PUT "/Drivers/$manager_crud_driver_id/assign-vehicle" "$(jq -nc --arg id "$manager_crud_vehicle_id" '{vehicleId:$id}')" "$deactivated_access_token"
+expect_status 204 "Asignar vehículo aislado al Driver como Manager"
+manager_crud_expected_api_driver_state="$manager_crud_first_name:$manager_crud_last_name:$manager_crud_driver_document:$manager_crud_phone:true:$manager_crud_vehicle_id"
+manager_crud_expected_sql_driver_state="$manager_crud_expected_api_driver_state:$manager_tenant_owner_id"
+assert_manager_crud_fixture_state
+
+request PUT "/Drivers/$manager_crud_driver_id/unassign-vehicle" "" "$deactivated_access_token"
+expect_status 204 "Desasignar vehículo aislado del Driver como Manager"
+manager_crud_expected_api_driver_state="$manager_crud_first_name:$manager_crud_last_name:$manager_crud_driver_document:$manager_crud_phone:true:NULL"
+manager_crud_expected_sql_driver_state="$manager_crud_expected_api_driver_state:$manager_tenant_owner_id"
+assert_manager_crud_fixture_state
+
 request PUT "/Routes/$manager_route_id" "$(jq -nc --arg name "$manager_route_name updated" --arg vehicleId "$manager_vehicle_id" --arg driverId "$manager_driver_id" --argjson points "$role_points" '{name:$name,cargoDescription:"Role matrix updated",vehicleId:$vehicleId,driverId:$driverId,points:$points}')" "$deactivated_access_token"
 expect_status 200 "Editar ruta como Manager"
 manager_route_updated_created_at="$(jq -er '.createdAtUtc' "$work_dir/response.json")"

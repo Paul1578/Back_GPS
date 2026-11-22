@@ -1,3 +1,12 @@
+# CRUD Driver como Manager con aislamiento de fixtures — validado local — 2026-11-22
+
+- `scripts/smoke-tenant-http.sh` crea un Driver y Vehicle dedicados bajo el token Manager. `PUT /Drivers/{id}` edita el Driver (HTTP 200); `PUT /status` baja/reactiva (204); `PUT /assign-vehicle` y `/unassign-vehicle` asignan/desasignan (204).
+- Después de cada operación, `GET /Drivers/{id}` y `GET /Vehicles/{id}` verifican el estado de API; SQL comprueba los campos del Driver (`FirstName`, `LastName`, `DocumentNumber`, `PhoneNumber`, `IsActive`, `VehicleId`, `OwnerUserId`) y Vehicle (`Plate`, `IsActive`, `Status`, `OwnerUserId`).
+- Cada paso compara además snapshot SQL/API del `manager_driver`, `manager_vehicle` y `manager_route` preexistentes para asegurar que la matriz aislada no los modifica. El fixture dedicado no se usa en rutas ni escenarios Logistics.
+- Cleanup elimina Driver/Vehicle dedicados y comprueba conteo `0:0`; el smoke completo contra API local + MySQL 8 descartable terminó exit 0. Comandos: `/home/leonardo/.dotnet/dotnet build BackEnd_Gps.csproj -c Release --no-restore -m:1`, `bash -n scripts/smoke-tenant-http.sh`, `git diff --check`, `bash scripts/smoke-tenant-http.sh`.
+- Durante el desarrollo, una lectura de colección con `onlyActive=false` no incluyó Driver activo porque el parámetro filtra exactamente inactivos; se cambió a consulta por ID. Otra expectativa SQL utilizó owner antes de inicializarlo; el test ahora lo consulta por la cuenta Manager. Detalles en `ERROR_LOG.md`.
+- No se modificó código de producto. `/home/leonardo/.dotnet/dotnet test BackEnd_Gps.sln --configuration Release --no-restore` pasó **82/82**; Actions aún pendiente para este diff. Rama sin commit/push, pendiente de revisión.
+
 # Aislamiento Users y asignaciones A/B por HTTP/MySQL — validado local — 2026-11-22
 
 - `GET /api/Users` y `GET /api/Users/my-team` con JWT de B devuelven HTTP 200, incluyen el miembro B y excluyen todos los IDs que MySQL identifica como pertenecientes a A (`Id` raíz o `OwnerUserId` de A). Consultas SQL antes/después confirman `OwnerUserId` intacto.

@@ -1,3 +1,11 @@
+# 2026-11-22 — Matriz HTTP CRUD Driver de Manager — CORREGIDA Y VALIDADA
+
+- La primera prueba intentó leer el Driver activo con `GET /Drivers?onlyActive=false` y obtuvo `[]`. El parámetro es un filtro exacto, no una opción “incluir inactivos”; el fixture se lee por `GET /Drivers/{id}`.
+- La segunda corrida comparó `OwnerUserId` contra `root_user_id` antes de que ese valor se inicializara en otra fase del smoke. La expectativa ahora deriva el tenant owner del usuario Manager desde MySQL.
+- Solución/cobertura: fixture aislado Manager Driver + Vehicle; tras editar, desactivar, reactivar, asignar y desasignar, el smoke valida HTTP, lectura API y columnas SQL (documento/nombres/teléfono/IsActive/VehicleId/OwnerUserId; Plate/IsActive/Status/OwnerUserId). Cada paso también compara snapshots API/SQL del Driver, Vehicle y Route Manager existentes.
+- Cleanup elimina por ID con fallback por documento/placa y verifica cero filas. Smoke completo MySQL 8 efímero terminó exit 0; `bash -n`, `git diff --check` y build Release (0 warnings/errores) pasan.
+- Prevención: tratar `onlyActive` como predicado exacto y obtener expectativas de ownership en el mismo escenario/tenant, sin depender de variables asignadas en fases posteriores.
+
 # 2026-11-22 — Fixtures tenant A/B del smoke no reflejaban assignment-options — CORREGIDO
 
 - Al crear el Driver propio de B antes de `GET /Routes/assignment-options`, el endpoint devolvió ese Driver asignable. La aserción antigua `drivers | length == 0` falló aunque el aislamiento era correcto.

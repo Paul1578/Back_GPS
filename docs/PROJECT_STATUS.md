@@ -1,3 +1,5 @@
+
+- Action `2045b18` [45050058627](https://github.com/Paul1578/Back_GPS/actions/runs/45050058627) pasó: Release build, xUnit **97/97**, smoke HTTP/MySQL tenant y concurrencia, incluye carrera de role/refresh y bloqueos con ruta Pending; cleanup sin fixtures.
 # Estado actual — 2026-11-22
 
 - Rama `chore/stabilize-fleet-platform`; `main` intacta. Commit `27bf75a` pasó Action `45048795456`: build Release, xUnit **94/94**, smokes HTTP/MySQL de tenant/concurrencia y cleanup cero.

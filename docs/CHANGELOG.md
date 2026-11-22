@@ -381,3 +381,4 @@
 - El cambio de rol ahora serializa token-version/revocación con la rotación de refresh.
 - No se permite desasignar, dar de baja o sacar del rol Driver a un conductor con rutas activas pendientes o en progreso.
 - Pruebas y smoke ampliados para persistencia, conflicto y refresh concurrente.
+- Action backend [45050058627](https://github.com/Paul1578/Back_GPS/actions/runs/45050058627) validó build, 97/97 tests, smokes HTTP/MySQL/concurrencia y cleanup completo.

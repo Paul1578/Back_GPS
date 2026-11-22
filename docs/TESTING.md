@@ -476,3 +476,4 @@ La invitación envía sólo el enlace de activación; el usuario fija su contras
 - Suite Release local tras ampliar tests: **97/97**. Casos nuevos comprueban que cambiar a Logistics con ruta Pending no desactive ni desasigne el Driver ni cambie tokens; baja/desasignación también se rechazan sin persistencia.
 - Build Release: 0 warnings/0 errores. `bash -n scripts/smoke-tenant-http.sh scripts/smoke-route-concurrency.sh` y `git diff --check`: correctos.
 - Smokes actualizados: carrera MySQL real refresh/cambio de rol con row lock; HTTP 409 y SQL intacta para reasignación, desasignación y baja con ruta Pending. Ejecución Action pendiente.
+- Cierre CI [45050058627](https://github.com/Paul1578/Back_GPS/actions/runs/45050058627), `2045b18`: build Release; xUnit **97/97**; smoke tenant HTTP/MySQL y route concurrency aprobados, incluida carrera de cambio de rol/refresh y HTTP 409 con SQL sin cambios para operaciones de Driver con ruta Pending. Cleanup: cero fixtures.

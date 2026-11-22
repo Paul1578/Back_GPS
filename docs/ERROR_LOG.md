@@ -1025,10 +1025,10 @@ Cada cambio de API debe incluir validación de compilación, migraciones si apli
 - Solución: usar strings Unicode (`str`) para el texto español y codificar al escribir mediante el mecanismo de texto del archivo; la actualización se reejecuta tras comprobar el error de sintaxis.
 - Prevención: no escribir texto UTF-8 dentro de literales `b"..."`; reservar bytes para contenido ASCII o codificar desde Unicode.
 
-## 2026-11-22 — Cambio de rol podía dejar refresh activo y baja de Driver invalidaba ruta pendiente — CORREGIDO; CI PENDIENTE
+## 2026-11-22 — Cambio de rol podía dejar refresh activo y baja de Driver invalidaba ruta pendiente — CORREGIDO Y VALIDADO
 
 - Auditoría independiente encontró dos problemas. (1) `ChangeUserRoleCommand` revocaba refresh tokens sin tomar el lock de fila User compartido con la rotación; una renovación concurrente podía insertar un sucesor después de listar tokens a revocar. (2) desasignar, desactivar Driver o cambiar su rol sólo bloqueaba rutas InProgress, dejando una ruta Pending sin su asignación original.
 - Solución de sesión: el cambio de rol bloquea la fila User bajo el mismo lock transaccional que refresh antes de releer usuario, incrementar TokenVersion y revocar sesiones. Smoke MySQL fuerza lock de usuario y compite refresh/cambio de rol; verifica 0 refresh activos y rechazo de sucesor si refresh alcanzó a responder 200.
 - Solución operativa: desasignación, baja Driver y cambio de rol rechazan con 409 mientras existan rutas activas Pending o InProgress. Pruebas unitarias verifican que usuario, conductor, vehículo/ruta y tokens no se muten. Smoke MySQL valida HTTP y estado persistido para Pending.
-- Release xUnit local **97/97**, build Release **0 warnings/0 errors** y `bash -n` pasan. Actions con smoke actualizado pendientes.
+- Release xUnit local **97/97**, build Release **0 warnings/0 errors** y `bash -n` pasan. Action backend `45050058627` pasó para `2045b18`: build, xUnit 97/97, smoke HTTP/MySQL tenant, carreras refresh/rol y rutas; cleanup cero fixtures.
 - Prevención: toda operación que invalide sesiones debe compartir el row lock con refresh; cambios que quiten Vehicle/Driver de una ruta activa deben tomar locks de asignación y considerar Pending además de InProgress.

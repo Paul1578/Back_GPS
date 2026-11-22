@@ -6,8 +6,9 @@
 - Cambio local en `chore/stabilize-fleet-platform`: el backend fija Admin como cuenta raíz de cada tenant nuevo; nunca usa el rol del request. `AuthService` emite `owner_id=user.Id` al no haber `OwnerUserId`, y el query filter de la flota confina operaciones a ese ID.
 - xUnit controller solicita `Driver` y comprueba rol fijo Admin. Smoke HTTP/MySQL verifica rol Admin y listado de Vehicles propio vacío. El runner deja de reescribir manualmente a Admin el rol del tenant B.
 - Front elimina roleName del payload, usa los nombres capturados para username y añade E2E UI de registro móvil: consulta `/Auth/me`, confirma rol Admin, flota 200 vacía y navegación a Vehículos/Rutas.
-- Validación local: Backend Release 61/61; `bash -n` smoke/runner y `git diff --check` pasan. Front lint/build/discovery 18 pasan. HTTP/MySQL y E2E integrados pendientes.
-- Se habilitó `workflow_dispatch` en ambas CI para correr sobre las ramas aisladas; pendiente publicar y disparar las acciones backend y cross-branch.
+- Validación local: Backend Release 61/61; `bash -n` smoke/runner y `git diff --check` pasan. Actions backend `44999697740` success con build, xUnit 61/61, smoke tenant/registro y concurrencia MySQL.
+- Front lint/build/discovery 18 pasan localmente; Actions cross-branch `44999716080` continúa ejecutando E2E Chrome/API/MySQL.
+- Se habilitó `workflow_dispatch` en ambas CI para correr sobre las ramas aisladas; workflow backend ya finalizó, Front integrado está en curso.
 - El hallazgo/solución y errores de inspección de rutas se documentan en `ERROR_LOG.md` de Front y Back.
 
 ## Ramas

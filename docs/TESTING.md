@@ -94,11 +94,12 @@ Resultado histórico previo al aislamiento por tenant: `Passed: 22, Failed: 0, S
 - El primer SQL de limpieza de la prueba de navegador usó la columna inexistente `Vehicles.PlateNumber` y se detuvo al llegar a esa sentencia. Se corrigió a `Vehicles.Plate`, se repitió la limpieza y se verificaron cero rutas, vehículos, conductores y usuarios temporales restantes.
 - Chrome Admin CRUD: creó y editó vehículo, creó cuenta Driver con documento/teléfono, UI advirtió correctamente que SMTP no pudo enviar la invitación, y asignó/desasignó vehículo. La primera desasignación reveló HTTP 415; con la corrección del middleware se repitió y terminó mostrando `Sin vehículo`. Todas las filas QA fueron eliminadas; conteos finales en cero.
 
-## Registro público como Admin raíz aislado — 2026-11-22 — pendiente de integración
+## Registro público como Admin raíz aislado — 2026-11-22
 
 - El contrato previo de registro como `User` fue reemplazado: la UI promete el alta Gerente, y el servidor crea la cuenta raíz `Admin` fija de una empresa nueva, aunque el request incluya `roleName=Driver`.
 - El smoke HTTP/MySQL comprueba rol único Admin, `OwnerUserId IS NULL`, claim JWT `owner_id` igual al ID recién creado, acceso 200 a flota vacía, listado vacío después de crear vehículo en otro tenant y 404 al consultar su ID directamente.
-- El runner de dos tenants ya no modifica `UserRoles` manualmente. Backend Release local 61/61; `bash -n` y `git diff --check` correctos. El smoke real y Actions quedan pendientes de publicar el cambio.
+- El runner de dos tenants ya no modifica `UserRoles` manualmente. Backend Release local 61/61; `bash -n` y `git diff --check` correctos.
+- Actions `44999697740` para `3620cc2` finalizó success: Release build, xUnit 61/61, smoke HTTP/MySQL de tenant/registro y smoke de concurrencia. El token y los recursos del job usan MySQL descartable; cleanup/stop containers concluyó success.
 - La suite ahora contiene 33 pruebas: las 30 anteriores más tres para cabeceras HTTP con y sin cuerpo.
 - Role QA real MySQL/API: Logistics puede listar rutas (200) y su DELETE con ID inexistente llegó a dominio (404); User recibe 403. Se corrigieron el seeder que omitía Logistics y policies que nombraban Dispatcher. Datos QA borrados, cero usuarios temporales.
 - Suite final: 35 pruebas (30 base + 3 middleware + autorización de rutas + seeding de roles idempotente).

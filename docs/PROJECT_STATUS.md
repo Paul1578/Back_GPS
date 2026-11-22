@@ -4,13 +4,13 @@ Fecha de corte: 2026-11-22.
 
 Actualización de estabilidad: duplicados de placa en creación/edición ahora se reportan como conflicto de negocio HTTP 409 con mensaje en español. `dotnet test` Release pasó 59/59 con el SDK local 8.0.428; CI integrado pendiente.
 
-Nota de actualización: algunos resultados históricos de registro público más abajo describen el contrato anterior (rol User). Desde el cambio de onboarding del 2026-11-22, la expectativa vigente es una cuenta raíz Admin confinada a su tenant; validar mediante smoke HTTP/MySQL antes de cerrar este cambio.
+Nota de actualización: algunos resultados históricos de registro público más abajo describen el contrato anterior (rol User). Desde el cambio de onboarding del 2026-11-22, la expectativa vigente es una cuenta raíz Admin confinada a su tenant; Actions `44999697740` confirmó build, xUnit, smoke HTTP/MySQL de tenant y smoke de concurrencia en `3620cc2`.
 
 ## Onboarding público de empresa — en validación — 2026-11-22
 
 - La pantalla pública prometía registrar a la empresa como Gerente, pero AuthController forzaba `User`; una cuenta recién registrada no podía gestionar su flota.
 - Corrección local: el servidor asigna siempre rol Admin como raíz de un tenant nuevo, sin aceptar `roleName` del request. El token usa su propio ID como `owner_id`, conservando filtros de aislamiento de datos.
-- xUnit Release local 61/61; smoke HTTP/tenant y E2E UI integrados aún pendientes. El test/runner ya no eleva manualmente el rol del segundo tenant para esconder el resultado del registro.
+- xUnit Release local y Actions 61/61; smoke HTTP/tenant y concurrencia MySQL Actions success. El test/runner ya no eleva manualmente el rol del segundo tenant para esconder el resultado del registro. E2E UI integrado de Front aún en ejecución.
 
 ## Estado operativo
 

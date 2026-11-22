@@ -533,8 +533,9 @@ Cada cambio de API debe incluir validación de compilación, migraciones si apli
 - Corrección: usar el SDK local documentado `/home/leonardo/.dotnet/dotnet`; Release volvió a pasar 61/61.
 - Prevención: en este entorno invocar explícitamente el SDK local, sin depender del `dotnet` del PATH.
 
-## 2026-11-22 — Workflows no ejecutables en ramas de trabajo — CORREGIDO
+## 2026-11-22 — Workflows no ejecutables en ramas de trabajo — CORREGIDO Y VALIDADO
 
 - Los workflows sólo escuchaban push/PR hacia `main`; al mantener el trabajo aislado en `chore/stabilize-fleet-platform`, no había ejecución automática para validar este cambio integrado sin crear una integración a `main`.
 - Corrección: habilitar `workflow_dispatch` para que la suite completa se ejecute contra el ref de trabajo elegido; el workflow frontend usa además el backend feature checkout.
 - Prevención: al exigir validación antes de merge, comprobar que la CI se pueda ejecutar sobre la rama aislada.
+- Evidencia: Actions backend `44999697740` para `3620cc2` success en build, xUnit, smoke HTTP/MySQL y concurrencia.

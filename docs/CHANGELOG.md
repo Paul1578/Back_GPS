@@ -57,7 +57,7 @@
 
 - El registro público ahora crea una cuenta raíz Admin fija; `roleName` del cliente se ignora y el owner del tenant deriva del ID del usuario nuevo.
 - Se amplía el smoke para verificar claims, empresa recién creada, flota vacía y acceso cruzado denegado, y se elimina la elevación SQL manual del tenant secundario.
-- xUnit Release local 61/61; smoke HTTP/MySQL y Actions pendientes.
+- xUnit Release local y Actions **61/61**; smokes HTTP/MySQL tenant/concurrencia success en `44999697740` (`3620cc2`).
 
 ## 2026-11-20 — Operación y evidencia por parada
 

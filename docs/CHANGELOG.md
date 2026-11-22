@@ -253,3 +253,4 @@
 - Se impide que un segundo perfil Driver conserve el mismo VehicleId; para reasignar se desasigna primero al actual. Consulta bajo el lock tenant-scoped del vehículo.
 - xUnit prueba rechazo; smoke MySQL prueba dos asignaciones concurrentes, un éxito/un conflicto y unicidad persistida. Validación pendiente.
 - Verificación local: Release build 0 warnings/0 errors, xUnit 73/73, bash syntax y diff-check; Actions MySQL pendiente.
+- Actions `45017642439` para `8d19118` pasó: Release, xUnit **73/73**, smoke HTTP/MySQL tenant/roles/operación y smoke concurrente de asignación; concurrencia dejó exactamente un Driver por vehículo y cleanup sin residuos.

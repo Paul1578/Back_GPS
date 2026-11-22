@@ -682,3 +682,15 @@ Cada cambio de API debe incluir validación de compilación, migraciones si apli
 - La primera compilación del test de asignación se refirió a BusinessConflictException con namespace global completo, pero el proyecto de pruebas tiene raíz BackEnd_Gps; el compilador lo resolvió como BackEnd_Gps.fletflow y falló CS0234.
 - Se añadió using fletflow.Domain.Fleet.Exceptions y se usó el tipo importado. Producción compiló sin errores en ese intento; repetir build/test completo.
 - Prevención: preferir imports explícitos cuando el nombre de raíz del proyecto puede prefijar un namespace global.
+
+## 2026-11-22 — Búsqueda de E2E Front ejecutada desde Backend — CORREGIDO
+
+- Se consultó e2e/fleet-admin.spec.ts desde /home/leonardo/Back_GPS y rg informó IO error; el archivo pertenece al repositorio Front.
+- Solución: repetir la inspección desde /home/leonardo/Front_gpsR y usar el workdir del repositorio de cada archivo.
+- Prevención: verificar ruta raíz antes de búsquedas que cruzan los checkouts de Front y Back.
+
+## 2026-11-22 — Búsqueda de scripts auxiliares en Front — CORREGIDO
+
+- Una consulta de descubrimiento incluyó el directorio `scripts/` en Front, pero allí no existe; `rg` reportó IO error.
+- Solución: buscar en los archivos que sí existen (`package.json`, `playwright.config.ts` y `e2e/`) y consultar el workflow pertinente.
+- Prevención: confirmar directorios con `rg --files` antes de incluir rutas supuestas.

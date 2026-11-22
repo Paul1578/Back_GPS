@@ -333,3 +333,4 @@ Errores de migración, herramientas, QA y soluciones están en `docs/ERROR_LOG.m
 - Cambio local: nuevo método tenant-filtered de IDriverRepository, llamado después de adquirir lock; conflicto explicativo si hay otro Driver asignado. Regla documenta desasignar antes de reasignar.
 - Cobertura: xUnit y smoke smoke-route-concurrency.sh con dos PUT simultáneos y SQL que exige una relación. Ejecutar Release/test, shell syntax, smoke local efímero y Actions; registrar errores.
 - Estado local: Release build 0 warnings/0 errors; xUnit 73/73; script pasa bash -n y diff-check. Ejecutar Actions sobre este cambio para la prueba concurrente MySQL y registrar resultado.
+- Cerrado en `8d19118`; Actions `45017642439` success: Release/xUnit 73/73, smokes HTTP/MySQL de tenant, roles y operación, asignación simultánea con unicidad persistida y cleanup completo. Próximo: mantener auditoría abierta y cubrir brechas restantes.

@@ -255,3 +255,4 @@ Nota de actualización: algunos resultados históricos de registro público más
 - Hallazgo de auditoría: faltaba impedir que dos Drivers conservaran el mismo vehículo. El comando consulta otras asignaciones del tenant bajo el lock de vehículo.
 - xUnit y smoke de concurrencia añadidos para dos asignaciones paralelas, conflicto 409 y verificación SQL de una sola relación. Build/Actions pendientes.
 - Release build local: 0 warnings/0 errors; xUnit 73/73; bash syntax y diff-check correctos. Smoke MySQL/Actions del nuevo SHA pendiente.
+- Validación completada en Actions `45017642439` (`8d19118`): Release build, xUnit **73/73**, smoke tenant/roles/operación, dos PUT simultáneos contra MySQL con un éxito y un conflicto, relación única y cleanup sin residuos.

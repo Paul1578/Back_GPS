@@ -241,3 +241,8 @@
 - Opciones de rutas excluyen vehículos en ruta/mantenimiento y Drivers cuya cuenta vinculada esté inactiva; Drivers activos sin cuenta siguen disponibles.
 - Añadidos xUnit y smoke HTTP/MySQL para condiciones de elegibilidad. Local: Release 65/65, build 0 warnings/0 errors, script válido.
 - Actions `45014146500` pasó Release build, xUnit 65/65, smoke HTTP/MySQL de asignabilidad/tenant/concurrencia y cleanup sin residuos.
+
+# 2026-11-22 — Validación de alta Driver
+
+- Documento/teléfono se recortan y validan como requeridos, con máximo de 20 caracteres igual a las columnas MySQL y al comando de edición.
+- Añadidos tests para rechazar cada campo en 21 caracteres y permitir ambos en 20. Local: Release 0 warnings/0 errors, xUnit 68/68; Actions pendiente.

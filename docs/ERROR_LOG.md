@@ -7,6 +7,13 @@
 
 # Registro de errores y soluciones
 
+## 2026-11-22 — Alta Driver podía exceder el tamaño de columnas — CORREGIDO
+
+- El endpoint de alta no validaba longitud de documento/teléfono antes de ejecutar EF Core, mientras MySQL restringe ambos campos a 20 caracteres. En particular, el formulario de Manager aceptaba entradas mayores y el POST podía terminar en error de persistencia.
+- El comando ahora normaliza espacios, exige los cuatro campos y rechaza documento/teléfono mayores a 20 con `ArgumentException`, en línea con `UpdateDriverCommand` y `DriverConfiguration`.
+- xUnit añade rechazo de ambos campos en 21 caracteres, aceptación del límite exacto de 20 y verificación de que los rechazos no agregan ni confirman.
+- Verificación local: build Release 0 warnings/0 errors y xUnit 68/68. Smoke API/MySQL integrado de Actions queda por ejecutar.
+
 ## 2026-11-22 — Comando de perfil dependía del controlador para tenant — REFORZADO
 
 - Revisión de seguridad identificó que `UpdateUserProfileCommand` consultaba por ID solamente, aunque el controller sí verificaba tenant antes de invocarlo. No se confirmó un bypass HTTP.
@@ -657,3 +664,9 @@ Cada cambio de API debe incluir validación de compilación, migraciones si apli
 - Solución: guardar el `driverId` de la respuesta, borrar primero ese Driver durante cleanup y comprobar que queden cero filas Driver/User. La verificación tolera errores de conexión reportándolos y conserva el estado de fallo.
 - Prevención: al ampliar fixtures con entidades enlazadas, documentar orden de borrado respetando FK y verificar también que cada fila de prueba desaparezca.
 - Repetición: Actions backend `45014146500` pasó, incluyendo la comprobación de cero Driver/User residuales.
+
+## 2026-11-22 — Lectura del AuthContext desde el checkout Backend — CORREGIDO
+
+- Una inspección ejecutada desde `/home/leonardo/Back_GPS` intentó leer `src/Context/AuthContext.tsx`, que pertenece al frontend; `sed` devolvió error sin modificar archivos.
+- Solución: repetir la lectura desde `/home/leonardo/Front_gpsR`. En la misma inspección de Back sí se confirmó que `cleanup-e2e.sql` elimina Drivers antes de Vehicles usando prefijos E2EQA.
+- Prevención: leer cada archivo relativo desde el repositorio que lo contiene.

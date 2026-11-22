@@ -320,3 +320,8 @@ Errores de migración, herramientas, QA y soluciones están en `docs/ERROR_LOG.m
 - Actions `45014146500` success en `648b23f`: smoke HTTP/MySQL confirma sólo opciones asignables, aislamiento/concurrencia y cleanup de cero rutas/posiciones/vehículo/Driver/User QA.
 - Actions Front integrada `45014430986` success en `7bf1955` con Back `648b23f`: backend Release/xUnit, audit/lint/build, responsive 1/1, E2E 18/18 y cleanup completo.
 - Continuar auditoría; Manager y Logistics ahora tienen rol UI separado. Otros CRUD/responsive pendientes, Admin delegado sin política aprobada, SMTP externo y app nativa pospuesta.
+
+## Alta Driver: límites documento/teléfono — 2026-11-22
+
+- Rama `chore/stabilize-fleet-platform`: modificación local en `CreateDriverCommand` normaliza y valida campos requeridos y límite de 20 antes de persistir; `DriverTests` suma casos de 20/21 caracteres.
+- Validación local actual: Release 0 warnings/0 errors; xUnit 68/68; `git diff --check` pasa. Actions/smoke HTTP/MySQL pendiente después del commit.

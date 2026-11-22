@@ -30,6 +30,38 @@ public class DriverTests
         Assert.Equal(0, unitOfWork.CommitCount);
     }
 
+    [Theory]
+    [InlineData("123456789012345678901", "0990000000")]
+    [InlineData("DOC-001", "123456789012345678901")]
+    public async Task CreateDriver_RejectsDocumentOrPhoneLongerThanDatabaseLimit(string documentNumber, string phoneNumber)
+    {
+        var repository = new FakeDriverRepository();
+        var unitOfWork = new FakeUnitOfWork();
+        var command = new CreateDriverCommand(unitOfWork, repository);
+
+        var error = await Assert.ThrowsAsync<ArgumentException>(() =>
+            command.Execute("New", "Driver", documentNumber, phoneNumber));
+
+        Assert.Contains("no pueden exceder 20", error.Message);
+        Assert.Equal(0, repository.AddCount);
+        Assert.Equal(0, unitOfWork.CommitCount);
+    }
+
+    [Fact]
+    public async Task CreateDriver_TrimsFieldsAndAcceptsDatabaseLengthLimit()
+    {
+        var repository = new FakeDriverRepository();
+        var unitOfWork = new FakeUnitOfWork();
+        var command = new CreateDriverCommand(unitOfWork, repository);
+
+        var result = await command.Execute(" Ana ", " Paz ", " 12345678901234567890 ", " 09876543210987654321 ");
+
+        Assert.Equal(20, result.DocumentNumber.Length);
+        Assert.Equal(20, result.PhoneNumber.Length);
+        Assert.Equal(1, repository.AddCount);
+        Assert.Equal(1, unitOfWork.CommitCount);
+    }
+
     [Fact]
     public async Task UpdateDriver_RejectsDocumentOwnedByAnotherDriver()
     {

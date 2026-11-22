@@ -244,3 +244,8 @@ Nota de actualización: algunos resultados históricos de registro público más
 - Auditoría encontró que `GET /Routes/assignment-options` podía ofrecer vehículo `OnRoute`/Maintenance y Driver ligado a usuario inactivo. El servicio de creación rechaza ambos casos.
 - Implementación local: vehículos sólo `Available` y activos; Drivers activos sin vínculo o ligados a User activo del tenant. Query de Driver usa filtro SQL sin consultas N+1.
 - Pruebas: Release build 0 warnings/0 errors; xUnit 65/65; Actions `45014146500` pasó filtros HTTP/MySQL, aislamiento/concurrencia y cleanup Driver/User sin residuos.
+
+## Validación local de límites de alta Driver — pendiente Actions
+
+- `CreateDriverCommand` valida campos requeridos y limita documento/teléfono a 20 caracteres antes de consultar o persistir.
+- Release build local: 0 warnings/0 errors. xUnit: 68/68, incluidos rechazo de 21 caracteres y aceptación del límite exacto. Falta smoke HTTP/MySQL en Actions.

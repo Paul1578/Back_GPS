@@ -28,7 +28,16 @@ namespace fletflow.Application.Fleet.Commands
             Guid? userId = null,
             Guid? ownerUserId = null)
         {
+            firstName = firstName?.Trim() ?? string.Empty;
+            lastName = lastName?.Trim() ?? string.Empty;
             documentNumber = documentNumber.Trim();
+            phoneNumber = phoneNumber?.Trim() ?? string.Empty;
+
+            if (string.IsNullOrWhiteSpace(firstName) || string.IsNullOrWhiteSpace(lastName) ||
+                string.IsNullOrWhiteSpace(documentNumber) || string.IsNullOrWhiteSpace(phoneNumber))
+                throw new ArgumentException("Nombres, apellidos, documento y teléfono son obligatorios.");
+            if (documentNumber.Length > 20 || phoneNumber.Length > 20)
+                throw new ArgumentException("Documento y teléfono no pueden exceder 20 caracteres.");
 
             var existing = await _drivers.GetByDocumentAsync(documentNumber);
             if (existing is not null)

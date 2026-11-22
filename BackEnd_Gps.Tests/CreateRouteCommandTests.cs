@@ -160,6 +160,89 @@ public class CreateRouteCommandTests
     }
 
     [Fact]
+    public async Task AssignDriverToVehicle_RejectsChangingVehicleWhileRouteIsPending()
+    {
+        var ownerId = Guid.NewGuid();
+        using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder<AppDbContext>().UseSqlite(connection).Options;
+        var http = new DefaultHttpContext
+        {
+            User = new ClaimsPrincipal(new ClaimsIdentity([new Claim("owner_id", ownerId.ToString())], "test"))
+        };
+        await using var context = new AppDbContext(options, new HttpContextAccessor { HttpContext = http });
+        await context.Database.EnsureCreatedAsync();
+
+        var vehicles = new VehicleRepository(context);
+        var drivers = new DriverRepository(context);
+        var routes = new RouteRepository(context);
+        var currentVehicle = Vehicle.Create("QA-PENDING-ASSIGN-A", "Test", "Van", 2025, null);
+        var requestedVehicle = Vehicle.Create("QA-PENDING-ASSIGN-B", "Test", "Van", 2025, null);
+        var driver = Driver.Create("Pending", "Driver", "QA-PENDING-ASSIGN-D", "0990000000");
+        await vehicles.AddAsync(currentVehicle);
+        await vehicles.AddAsync(requestedVehicle);
+        await drivers.AddAsync(driver);
+        await context.SaveChangesAsync();
+
+        var unitOfWork = new UnitOfWork(context, null!, null!, null!, null!, vehicles, drivers, routes, null!);
+        var route = await new CreateRouteCommand(unitOfWork, routes, vehicles, drivers).Execute(
+            currentVehicle.Id, driver.Id, "Pending route assignment",
+            [RoutePoint.Create(-0.2, -78.5, "Origin"), RoutePoint.Create(-0.21, -78.51, "Destination")],
+            null, null, null);
+
+        var command = new AssignDriverToVehicleCommand(unitOfWork, drivers, vehicles);
+        await Assert.ThrowsAsync<BusinessConflictException>(() => command.Execute(driver.Id, requestedVehicle.Id));
+
+        Assert.Equal(currentVehicle.Id, (await drivers.GetByIdAsync(driver.Id))!.VehicleId);
+        Assert.Equal(RouteStatus.Pending, (await routes.GetByIdAsync(route.Id))!.Status);
+        Assert.Equal(VehicleStatus.Available, (await vehicles.GetByIdAsync(currentVehicle.Id))!.Status);
+        Assert.Equal(VehicleStatus.Available, (await vehicles.GetByIdAsync(requestedVehicle.Id))!.Status);
+    }
+
+    [Fact]
+    public async Task ChangeRouteStatus_RejectsStartingWhenDriverVehicleNoLongerMatchesRoute()
+    {
+        var ownerId = Guid.NewGuid();
+        using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder<AppDbContext>().UseSqlite(connection).Options;
+        var http = new DefaultHttpContext
+        {
+            User = new ClaimsPrincipal(new ClaimsIdentity([new Claim("owner_id", ownerId.ToString())], "test"))
+        };
+        await using var context = new AppDbContext(options, new HttpContextAccessor { HttpContext = http });
+        await context.Database.EnsureCreatedAsync();
+
+        var vehicles = new VehicleRepository(context);
+        var drivers = new DriverRepository(context);
+        var routes = new RouteRepository(context);
+        var routeVehicle = Vehicle.Create("QA-ROUTE-MISMATCH-A", "Test", "Van", 2025, null);
+        var assignedVehicle = Vehicle.Create("QA-ROUTE-MISMATCH-B", "Test", "Van", 2025, null);
+        var driver = Driver.Create("Mismatch", "Driver", "QA-ROUTE-MISMATCH-D", "0990000000");
+        await vehicles.AddAsync(routeVehicle);
+        await vehicles.AddAsync(assignedVehicle);
+        await drivers.AddAsync(driver);
+        await context.SaveChangesAsync();
+
+        var unitOfWork = new UnitOfWork(context, null!, null!, null!, null!, vehicles, drivers, routes, null!);
+        var route = await new CreateRouteCommand(unitOfWork, routes, vehicles, drivers).Execute(
+            routeVehicle.Id, driver.Id, "Mismatched pending route",
+            [RoutePoint.Create(-0.2, -78.5, "Origin"), RoutePoint.Create(-0.21, -78.51, "Destination")],
+            null, null, null);
+        driver.AssignToVehicle(assignedVehicle.Id);
+        await drivers.UpdateAsync(driver);
+        await context.SaveChangesAsync();
+
+        var command = new ChangeRouteStatusCommand(unitOfWork, routes, vehicles, drivers, null!);
+        await Assert.ThrowsAsync<BusinessConflictException>(() => command.Execute(route.Id, RouteStatus.InProgress));
+
+        Assert.Equal(RouteStatus.Pending, (await routes.GetByIdAsync(route.Id))!.Status);
+        Assert.Equal(VehicleStatus.Available, (await vehicles.GetByIdAsync(routeVehicle.Id))!.Status);
+        Assert.Equal(VehicleStatus.Available, (await vehicles.GetByIdAsync(assignedVehicle.Id))!.Status);
+        Assert.Equal(assignedVehicle.Id, (await drivers.GetByIdAsync(driver.Id))!.VehicleId);
+    }
+
+    [Fact]
     public async Task ChangeRouteStatus_RejectsStartingPendingRouteWhenAssignedDriverIsInactive()
     {
         var ownerId = Guid.NewGuid();

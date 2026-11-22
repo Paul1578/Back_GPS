@@ -84,6 +84,9 @@ namespace fletflow.Application.Fleet.Commands
                         ?? throw new KeyNotFoundException("Driver assigned to the route not found.");
                     if (!driver.IsActive)
                         throw new BusinessConflictException("No se puede iniciar una ruta con un conductor inactivo.");
+                    if (driver.VehicleId != route.VehicleId)
+                        throw new BusinessConflictException(
+                            "El vehículo de la ruta no coincide con el asignado actualmente al conductor.");
                     if (driver.UserId.HasValue)
                     {
                         await _uow.LockLinkedUserForRouteAssignmentAsync(driver.UserId.Value);

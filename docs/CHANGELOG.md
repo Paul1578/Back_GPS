@@ -369,3 +369,8 @@
 - `EmailOutboxWorker` valida que el token asociado al payload cifrado siga activo, no usado y sin expirar antes de enviar. Si quedó invalidado por una nueva solicitud/consumo/expiración, lo marca terminal como `ResetTokenInactive` y no envía un enlace muerto.
 - Test SQLite del worker verifica que no se llama al remitente, se registra supresión terminal, y no se incrementa el contador de fallos SMTP.
 - Worker enfocado **3/3**; suite Release **92/92**, build **0 warnings/0 errors**. CI backend/Front integrada pendiente.
+
+## 2026-11-22 — Integridad de Driver y vehículo en rutas activas
+
+- Reasignar un Driver con una ruta activa Pending/InProgress ahora responde conflicto. La transición a InProgress también rechaza una ruta cuyo vehículo no coincide con la asignación vigente del Driver.
+- Se añadieron pruebas SQLite y smoke HTTP/MySQL para verificar que el conflicto no cambie ruta, conductor ni estados de vehículos.

@@ -1,3 +1,11 @@
+# Estado actual — 2026-11-22
+
+- Rama `chore/stabilize-fleet-platform`; `main` no se modifica.
+- Último código publicado: `5c08dbc` pasó Action backend `45047639950` (Release xUnit 92/92 + smoke HTTP/MySQL y concurrencia/cleanup). Docs actuales `fcd7111` pasaron `45047712270`.
+- Cambio local pendiente de publicar: bloqueo de reasignación Driver con ruta Pending/InProgress y validación Driver/Vehicle al iniciar. Release xUnit **94/94**, `bash -n` y diff-check correctos; smoke HTTP/MySQL de concurrencia y Action sobre el SHA nuevo pendientes.
+- La protección de Outbox contra envío de reset ya inválido está implementada y cubierta por suite/CI previo.
+- Misión abierta: continúan CRUD/roles/responsive y E2E; esperar decisión de política de Admin delegado. SMTP/PFX e infraestructura productiva son dependencias externas; app móvil nativa aplazada.
+
 # Estado actual — auditoría y estabilización integral — 2026-11-22
 
 - Backend branch `chore/stabilize-fleet-platform`; Front branch `refactor/route-builder`; `main` intacta.

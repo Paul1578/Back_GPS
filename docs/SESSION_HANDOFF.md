@@ -1,3 +1,12 @@
+# Continuación — Validación de asignación Driver/ruta — 2026-11-22
+
+- Backend rama `chore/stabilize-fleet-platform`; Front `refactor/route-builder`; sin cambios en `main`.
+- Backend `5c08dbc` pasó Action `45047639950`: 92/92 xUnit, smoke HTTP/MySQL y concurrencia, cleanup; docs `fcd7111` pasó `45047712270`.
+- Fix backend local sin publicar: bloquea reasignar Driver mientras tenga ruta activa Pending/InProgress y valida coincidencia del vehículo al iniciar. Suite Release **94/94**; smoke HTTP/MySQL y CI del nuevo SHA pendientes.
+- Front: E2E agregados para logout-all en dos sesiones y baja desde Equipo con revocación de refresh/access; logout-all ahora es visible sin expandir el formulario de contraseña. Fixture de baja independiente agregado al runner descartable. Lint y discovery pendientes de cierre; E2E integrado después de publicar ambos commits.
+- Seguir con el smoke, build y E2E, registrar cualquier falla y solución, actualizar estado y ejecutar Actions en ambas ramas.
+- Misión global sigue abierta. SMTP/PFX e infraestructura productiva externas; app nativa pospuesta.
+
 # Continuación — Estado actual — 2026-11-22
 
 - Backend branch `chore/stabilize-fleet-platform`; Front branch `refactor/route-builder`; `main` intacta.

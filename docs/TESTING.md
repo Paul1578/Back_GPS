@@ -463,3 +463,9 @@ La invitación envía sólo el enlace de activación; el usuario fija su contras
 - `bash -n scripts/smoke-tenant-http.sh` y `git diff --check`: correctos. Próxima Actions debe validar en MySQL el smoke de mantenimiento y el workflow backend completo.
 
 - `EmailOutboxWorkerTests` cubre supresión de payload cuando ResetToken ya se usó/invalidó; `dotnet test ... --filter FullyQualifiedName~EmailOutboxWorkerTests`: **3/3**. Suite Release actual: **92/92**.
+
+## Reasignación Driver/ruta pendiente — 2026-11-22
+
+- `dotnet test BackEnd_Gps.Tests/BackEnd_Gps.Tests.csproj -c Release --no-restore` con SDK aislado .NET 8.0.428: **94/94**.
+- Incluye pruebas SQLite para rechazar reasignación con ruta Pending y para defender el inicio ante un vínculo Driver/Vehicle inconsistente, comprobando que no se muten los estados.
+- `bash -n scripts/smoke-route-concurrency.sh scripts/run-e2e-local.sh` y `git diff --check`: correctos. Smoke HTTP/MySQL real de este cambio y CI remoto pendientes.

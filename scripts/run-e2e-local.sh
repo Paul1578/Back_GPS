@@ -89,6 +89,8 @@ trap cleanup EXIT
 user_suffix="$(date +%s%N | tail -c 10)"
 export FLETFLOW_E2E_USER_EMAIL="fletflow.e2e.user.$user_suffix@example.test"
 export FLETFLOW_E2E_USER_PASSWORD="$(openssl rand -hex 24)"
+export FLETFLOW_E2E_DEACTIVATION_EMAIL="fletflow.e2e.user.deactivation.$user_suffix@example.test"
+export FLETFLOW_E2E_DEACTIVATION_PASSWORD="$(openssl rand -hex 24)"
 export FLETFLOW_E2E_DRIVER_EMAIL="fletflow.e2e.driver.$user_suffix@example.test"
 export FLETFLOW_E2E_DRIVER_PASSWORD="$(openssl rand -hex 24)"
 export FLETFLOW_E2E_OTHER_TENANT_EMAIL="fletflow.e2e.admin.other.$user_suffix@example.test"
@@ -129,6 +131,13 @@ await createUser({
   roleName: "User",
 });
 
+await createUser({
+  username: "E2E QA Deactivation",
+  email: process.env.FLETFLOW_E2E_DEACTIVATION_EMAIL,
+  password: process.env.FLETFLOW_E2E_DEACTIVATION_PASSWORD,
+  roleName: "User",
+});
+
 const otherTenantRegistration = await fetch(`${api}/Auth/register`, {
   method: "POST",
   headers: { "Content-Type": "application/json" },
@@ -162,7 +171,7 @@ mysql --protocol=TCP --host="$MYSQL_HOST" --port="$MYSQL_PORT" --user="$MYSQL_US
   >/dev/null 2>&1
 
 mysql --protocol=TCP --host="$MYSQL_HOST" --port="$MYSQL_PORT" --user="$MYSQL_USER" "$DB_NAME" \
-  -e "UPDATE Users SET IsActive=1, MustChangePassword=0 WHERE Email IN ('$FLETFLOW_E2E_USER_EMAIL', '$FLETFLOW_E2E_DRIVER_EMAIL');" \
+  -e "UPDATE Users SET IsActive=1, MustChangePassword=0 WHERE Email IN ('$FLETFLOW_E2E_USER_EMAIL', '$FLETFLOW_E2E_DEACTIVATION_EMAIL', '$FLETFLOW_E2E_DRIVER_EMAIL');" \
   >/dev/null 2>&1
 
 PLAYWRIGHT_BASE_URL="$playwright_base_url" \

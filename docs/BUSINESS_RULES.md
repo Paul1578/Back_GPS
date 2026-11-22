@@ -107,3 +107,8 @@ Cambiar, restablecer o activar una contraseña incrementa `User.TokenVersion`, r
 - Solicitudes de recuperación conocidas e inexistentes conservan la misma respuesta pública. Para un usuario existente, las solicitudes se serializan por lock de su fila; se invalida cualquier token anterior y sólo queda un token activo.
 - El token y el email cifrado de outbox se confirman juntos. La respuesta HTTP no afirma que el proveedor ya haya entregado el correo.
 - El worker reintenta fallos y deja registro dead-letter después de 12 intentos. La entrega SMTP externa requiere configuración válida; el almacenamiento durable no equivale a entrega exactamente una vez.
+
+### Consistencia de asignaciones activas
+
+- Un Driver con una ruta activa Pending o InProgress conserva el vehículo relacionado a esa operación: no puede reasignarse a otro vehículo hasta que las rutas activas terminen o se cancelen.
+- Antes de pasar a InProgress, la ruta, el Vehicle y la asignación actual del Driver deben referirse al mismo vehículo. La regla se verifica bajo los locks de asignación.

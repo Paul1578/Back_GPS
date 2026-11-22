@@ -60,6 +60,14 @@ namespace fletflow.Application.Fleet.Commands
                     throw new fletflow.Domain.Fleet.Exceptions.BusinessConflictException(
                         "No se puede reasignar un conductor con una ruta en progreso.");
 
+                if (driver.VehicleId != vehicleId)
+                {
+                    var activeRoutes = await _uow.Routes.GetAllAsync(driverId: driverId, onlyActive: true);
+                    if (activeRoutes.Any(route => route.Status is RouteStatus.Pending or RouteStatus.InProgress))
+                        throw new fletflow.Domain.Fleet.Exceptions.BusinessConflictException(
+                            "No se puede cambiar el vehículo asignado mientras el conductor tenga rutas activas pendientes o en progreso.");
+                }
+
                 driver.AssignToVehicle(vehicle.Id);
 
                 await _drivers.UpdateAsync(driver);

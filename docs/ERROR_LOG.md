@@ -1010,3 +1010,10 @@ Cada cambio de API debe incluir validación de compilación, migraciones si apli
 - Al añadir el resumen actual con escritura de texto Python, se normalizó el formato histórico CRLF del handoff y el commit mostró 830 líneas alteradas aunque sólo se necesitaba anteponer el estado.
 - Solución: restaurar el contenido exacto del commit base y añadir el encabezado conservando sus bytes de newline. El diff neto quedó en 10 líneas nuevas; no se perdió historial.
 - Prevención: antes de escribir documentación histórica, detectar/preservar el newline original y revisar `git diff --stat` por archivo, no sólo `git diff --check`.
+
+## 2026-11-22 — Reasignación de Driver con ruta pendiente — CORREGIDO; smoke/CI PENDIENTES
+
+- Auditoría reprodujo que un Driver podía reasignarse a otro vehículo con una ruta Pending activa y después iniciar esa ruta: la asignación de Driver y Vehicle de la ruta quedaban incompatibles. La transición sólo comprobaba que el Driver estuviera activo.
+- Solución en `AssignDriverToVehicleCommand`: bajo los locks compartidos de Driver/Vehicle, impedir cambiar de vehículo si hay rutas Pending o InProgress activas. Defensa adicional en `ChangeRouteStatusCommand`: volver a exigir `Driver.VehicleId == Route.VehicleId` antes de iniciar.
+- Se agregaron dos regresiones SQLite y un escenario HTTP/MySQL a `smoke-route-concurrency.sh`; el test y la suite Release local pasan 94/94. `bash -n` y `git diff --check` pasan. El smoke contra MySQL y la Action del SHA con el fix aún deben ejecutarse.
+- Prevención: mantener checks redundantes de consistencia al iniciar la operación y al mutar la asignación; la comprobación debe ocurrir después de tomar los locks, no sólo en el controller.

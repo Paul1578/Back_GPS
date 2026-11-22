@@ -127,6 +127,19 @@ update_target_driver="$(create_driver "${prefix}UTD")"
 status_vehicle="$(create_vehicle "${prefix}SV")"
 status_driver="$(create_driver "${prefix}SD")"
 
+pending_assignment_vehicle="$(create_vehicle "${prefix}PAV")"
+pending_assignment_target="$(create_vehicle "${prefix}PAT")"
+pending_assignment_driver="$(create_driver "${prefix}PAD")"
+pending_assignment_route="$(create_route "${prefix}pending_assignment" "$pending_assignment_vehicle" "$pending_assignment_driver" "2035-04-05T10:00:00Z" "2035-04-05T11:00:00Z")"
+request PUT "/Drivers/$pending_assignment_driver/assign-vehicle" "$(jq -nc --arg vehicleId "$pending_assignment_target" '{vehicleId:$vehicleId}')"
+expect 409 "Impedir cambiar el vehículo de un conductor con ruta pendiente"
+pending_assignment_state="$(mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" --batch --skip-column-names "$db_name" \
+  -e "SELECT CONCAT(r.Status, ':', d.VehicleId, ':', v.Status, ':', target.Status) FROM Routes r JOIN Drivers d ON d.Id=r.DriverId JOIN Vehicles v ON v.Id=r.VehicleId JOIN Vehicles target ON target.Id='$pending_assignment_target' WHERE r.Id='$pending_assignment_route';")"
+if [[ "$pending_assignment_state" != "0:$pending_assignment_vehicle:0:0" ]]; then
+  echo "Reasignar un Driver con ruta pendiente alteró el vínculo o los estados (Route:DriverVehicle:RouteVehicleStatus:TargetStatus=$pending_assignment_state)." >&2
+  exit 1
+fi
+
 concurrent_request PUT "/Drivers/$assignment_driver_a/assign-vehicle" "$(jq -nc --arg vehicleId "$assignment_vehicle" '{vehicleId:$vehicleId}')" assign_vehicle_a & p1=$!
 concurrent_request PUT "/Drivers/$assignment_driver_b/assign-vehicle" "$(jq -nc --arg vehicleId "$assignment_vehicle" '{vehicleId:$vehicleId}')" assign_vehicle_b & p2=$!
 wait "$p1"

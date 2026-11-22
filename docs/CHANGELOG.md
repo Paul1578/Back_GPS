@@ -1,8 +1,9 @@
-# 2026-11-22 — Paradas terminales requieren evidencia — DEFECTO CORREGIDO LOCALMENTE
+# 2026-11-22 — Paradas terminales requieren evidencia — VALIDADO EN CI
 
 - API permitía cerrar una parada como Completed/Skipped sin evidencia; después no permitía adjuntarla y la ruta quedaba imposible de finalizar.
 - Dominio ahora rechaza ambas transiciones terminales sin evidencia; interfaz deshabilita Omitir hasta adjuntar evidencia.
-- Release xUnit **110/110** y smoke HTTP/MySQL 8 efímero exit 0; rechazo por HTTP 400 y snapshot MySQL sin cambios para Skip/Complete/ruta. Cleanup explícito cero fixtures. Action nueva pendiente.
+- Release xUnit **110/110** y smoke HTTP/MySQL 8 efímero exit 0; rechazo por HTTP 400 y snapshot MySQL sin cambios para Skip/Complete/ruta. Cleanup explícito cero fixtures.
+- Backend Action `45070491409` terminó `success` sobre `f564aa3`: build, xUnit, tenant HTTP/MySQL, concurrencia y cleanup.
 
 # 2026-11-22 — Vínculo manual User/Driver verificado por HTTP y SQL
 

@@ -1,8 +1,8 @@
-## 2026-11-22 — Estado terminal de parada sin evidencia podía bloquear una ruta — CORREGIDO LOCAL; ACTION PENDIENTE
+## 2026-11-22 — Estado terminal de parada sin evidencia podía bloquear una ruta — CORREGIDO Y VALIDADO
 
 - Auditoría de flujo encontró que backend aceptaba `Pending→Skipped`/`InProgress→Completed` aunque `Evidence.Count == 0`. `AddPointEvidence` rechaza paradas cerradas y `Route.ChangeStatus(Completed)` exige evidencia, por lo que se podía dejar la ruta imposible de finalizar. La UI también permitía Omitir sin evidencia.
 - `Route.UpdatePointStatus` ahora rechaza Completed/Skipped sin evidencia antes de modificar puntos. DriverView deshabilita Omitir sin evidencia. Tests: rechazo y estado intacto para ambos terminales; skip válido con evidencia.
-- Release xUnit **110/110**; smoke tenant HTTP + MySQL 8 efímero exit 0. Snapshot de `Routes.Status`, `EndedAt`, `PointsJson` y `Vehicles.Status` permanece idéntico tras los tres HTTP 400; cleanup cero. Nueva Action pendiente.
+- Release xUnit **110/110**; smoke tenant HTTP + MySQL 8 efímero exit 0. Snapshot de `Routes.Status`, `EndedAt`, `PointsJson` y `Vehicles.Status` permanece idéntico tras los tres HTTP 400; cleanup cero. Action `45070491409` sobre `f564aa3` confirmó build, xUnit, smoke y concurrencia en success.
 - Prevención: no confiar en restricciones UI; al cerrar paradas validar la evidencia en dominio para todo estado terminal y comprobar que el flujo no quede irrecuperable.
 
 ## 2026-11-22 — Smoke no cubría vínculo manual User/Driver — CORREGIDO Y VALIDADO

@@ -3,7 +3,7 @@
 - xUnit Release local **110/110**: Completing/Skipping sin evidencia se rechaza y preserva estado/evidencia; Skipping con nota de evidencia se permite y luego la ruta completa.
 - Smoke API + MySQL 8 descartables pasó completo: omitir, completar parada y cerrar ruta sin evidencia devuelven HTTP 400; después de cada request se comparan ruta, `EndedAt`, JSON completo `PointsJson` y status de vehículo con snapshot previo. Camino válido posterior registra evidencia, completa ruta y libera vehículo.
 - Cleanup confirmó cero rutas/posiciones y cero fixtures de Vehicle/Driver/tenant. `bash -n`, diff-check correctos.
-- Action `45069402482` cubre el SHA anterior sin esta corrección; nueva Action requerida.
+- Action backend `45070491409` para `f564aa3` terminó `success`: build, suite xUnit **110/110**, smoke HTTP/MySQL y concurrencia; servicios descartables detenidos y cleanup correcto.
 
 # Vínculo manual User/Driver y validaciones negativas CRUD — 2026-11-22
 

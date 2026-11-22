@@ -1,8 +1,8 @@
-## Evidencia obligatoria para estados terminales — local aprobado; CI pendiente
+## Evidencia obligatoria para estados terminales — validado localmente y en CI
 
 - Se corrigió API que permitía Completed/Skipped sin evidencia y dejaba la operación atascada. El dominio exige evidencia y DriverView deshabilita Omitir sin evidencia.
 - Release xUnit 110/110, smoke HTTP/MySQL descartable y cleanup cero; 400 sin mutaciones para cierre de parada/ruta, y camino válido completo.
-- `bash -n`, diff-check pasan. Acción nueva para el código corregido todavía pendiente.
+- `bash -n`, diff-check pasan. Backend Action `45070491409` sobre `f564aa3` pasó build, xUnit 110/110, smoke HTTP/MySQL y concurrencia; cleanup correcto.
 
 ## Vínculo manual User/Driver y CRUD negativo — local aprobado
 
@@ -15,11 +15,11 @@
 - Action `2045b18` [45050058627](https://github.com/Paul1578/Back_GPS/actions/runs/45050058627) pasó: Release build, xUnit **97/97**, smoke HTTP/MySQL tenant y concurrencia, incluye carrera de role/refresh y bloqueos con ruta Pending; cleanup sin fixtures.
 # Estado actual — 2026-11-22
 
-## Validación HTTP negativa Vehicle/Driver — local aprobada; Action pendiente
+## Validación HTTP negativa Vehicle/Driver — local y CI aprobadas
 
 - El smoke HTTP ahora verifica que ediciones inválidas de Vehicle y Driver no persistan parcialmente y que altas Driver inválidas no creen filas.
 - MySQL 8/API efímeros pasaron; cleanup sin fixtures. `bash -n` y diff-check correctos.
-- Sin cambios C# de producto. Action todavía no lanzada; continuar por HTTP CRUD/roles.
+- Action `45070491409` pasó el smoke HTTP/MySQL y xUnit 110/110 en el HEAD actual. Continuar por cobertura de CRUD/roles.
 
 ## Validación integrada de registro neutral — 2026-11-22
 

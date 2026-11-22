@@ -1,9 +1,17 @@
+# Continuación actual — 2026-11-22
+
+- Backend `chore/stabilize-fleet-platform` en `f564aa3`; Action `45070491409` terminó success (build, xUnit 110/110, smoke HTTP/MySQL tenant, concurrencia y cleanup).
+- La regla de evidencia para Completed/Skipped de parada está validada localmente y en CI; detalle y prevención en `ERROR_LOG.md`.
+- Front `refactor/route-builder` tiene Action integrada `45070512838` aún ejecutando E2E autenticado al momento de la nota. No afirmar su resultado antes de consultar GitHub.
+- Front tiene cambios locales sin commit en E2E de registro duplicado desde UI y cinco documentos; lint/build/audit/discovery pasaron localmente. Esperar resultado de Action antes de publicar.
+- Pendientes: decisión sobre quién puede otorgar rol Admin; definir si hace falta desvincular User/Driver conservando ambos; seguir CRUD/roles/responsive y pruebas reales. App nativa pospuesta; SMTP e infraestructura de producción son externos.
+
 ## Hallazgo y corrección — cerrar parada sin evidencia — 2026-11-22
 
 - Defecto confirmado: HTTP permitía `Pending→Skipped` y `InProgress→Completed` sin evidencia; luego la ruta no podía cerrarse y tampoco se podía añadir evidencia.
 - Backend `Route.UpdatePointStatus` ahora requiere evidencia antes de Completed/Skipped. Dos casos theory cubren rechazo y un caso permite Skip con nota. Release xUnit **110/110**.
 - Smoke HTTP/MySQL 8 descartable probó HTTP 400 para Skip/Complete/cierre ruta sin evidencia; compara SQL (status, EndedAt, PointsJson, Vehicle.Status) intacto en cada intento; camino válido registra nota/completa ruta y cleanup cero. Salida exit 0.
-- Front deshabilita Omitir sin evidencia; E2E Driver intenta ambos endpoints, verifica persistencia y sigue al cierre positivo. Lint/build/audit/discovery 36 pasan local; nueva Action frontend/backend todavía pendiente.
+- Front deshabilita Omitir sin evidencia; E2E Driver intenta ambos endpoints, verifica persistencia y sigue al cierre positivo. Lint/build/audit/discovery 36 pasan local; Front Action `45070512838` sigue pendiente de E2E al momento de esta nota.
 - Cambios locales modificados en `fletflow/Domain/Fleet/Entities/Route.cs`, `BackEnd_Gps.Tests/RoutePointTests.cs`, `scripts/smoke-tenant-http.sh`; Front `DriverView.tsx` y `fleet-admin.spec.ts`. Documentar/correr Actions, corregir fallos y mantener ramas aisladas.
 
 ## Cobertura manual User/Driver — 2026-11-22

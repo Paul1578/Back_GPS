@@ -159,3 +159,4 @@
 - CreateDriver y UpdateDriver ahora usan BusinessConflict/HTTP 409; el endpoint Admin al crear cuenta Driver devuelve el mismo contrato en español en vez de HTTP 400.
 - Añadidas dos pruebas unitarias y E2E móvil de rechazo sin cuenta parcial. Release local 61/61; integración pendiente.
 - Actions `44997043103` confirmó build, xUnit 61/61 y smokes HTTP/MySQL completos para `a7f7c4e`.
+- Cross-branch confirmado por Actions `44997054375`: backend `a7f7c4e` integrado con Front `1bb7d71`, xUnit 61/61, E2E 16/16, responsive 1/1, cleanup success.

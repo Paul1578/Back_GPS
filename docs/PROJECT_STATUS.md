@@ -165,3 +165,4 @@ Actualización de estabilidad: duplicados de placa en creación/edición ahora s
 
 - Integridad de conductores: crear Driver, alta de User con rol Driver y editar documento duplicado responden HTTP 409 con mensaje claro. Release local pasó 61/61; CI integrado pendiente.
 - Actions `44997043103` para `a7f7c4e` terminó success: build, xUnit 61/61, smokes HTTP/MySQL tenant y concurrencia; servicios desechables se cerraron correctamente.
+- La integración Front `1bb7d71` + Back `a7f7c4e` pasó Actions `44997054375`: 61/61 xUnit, responsive 1/1, 16/16 E2E y cleanup success; se verificó documento Driver duplicado como HTTP 409 sin cuenta parcial.

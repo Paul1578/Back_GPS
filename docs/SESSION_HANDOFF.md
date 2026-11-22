@@ -215,3 +215,4 @@ Errores de migración, herramientas, QA y soluciones están en `docs/ERROR_LOG.m
 - xUnit Release local 61/61; E2E Admin móvil agregado para mismo documento/otro correo: comprueba 409 y ausencia de email parcial. Front lint/build/discovery 16 correctos.
 - Pendiente publicar ambas ramas y verificar Actions cross-branch, persistencia y cleanup.
 - Actions `44997043103` para `a7f7c4e` success: build, xUnit 61/61, smokes tenant/concurrencia con MySQL efímero y cierre de servicios; la validación Front cross-branch sigue.
+- Actions `44997054375` validó cross-branch con Front `1bb7d71`: backend `a7f7c4e`, xUnit 61/61, E2E 16/16, responsive 1/1 y cleanup completos. Se probó rechazo de documento duplicado 409 antes de crear cuenta. Continuar los criterios pendientes CRUD/roles/responsive.

@@ -266,3 +266,8 @@ La invitación envía sólo el enlace de activación; el usuario fija su contras
 - Unit tests validan que CreateDriver y UpdateDriver generan conflicto sin insertar, mutar ni hacer commit cuando el documento ya pertenece a otro Driver.
 - E2E frontend local lint/build/discovery 16 pasan; Actions integrado pendiente.
 - CI integrado: Actions `44997043103` en `a7f7c4e` pasó build, **61/61 xUnit** y smokes MySQL de tenant/concurrencia.
+
+## Front cross-branch — documento de Driver repetido
+
+- Actions `44997054375` hizo checkout exacto de backend `a7f7c4e`, pasó xUnit 61/61, responsive 1/1 y Playwright 16/16. El caso crea Driver, repite documento con correo distinto y confirma 409 y ausencia del nuevo correo en My Team.
+- Audit/lint/build y cleanup del workflow terminaron success.

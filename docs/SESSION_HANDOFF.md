@@ -1,7 +1,7 @@
 ## GPS y autorización Driver — backend corregido — 2026-11-22
 
 - Auditor independiente (solo lectura) confirmó el ownership de lista/detalle/estado/paradas/evidencia y filtros tenant, pero halló que GPS no validaba `Driver.IsActive` y faltaban pruebas HTTP de ruta ajena por Driver para paradas/evidencia/GPS.
-- Backend `2fdc9e0` centralizó GET/POST posiciones con `IsCurrentDriverAssigned`; un pase adicional aplicó el mismo helper a `GET /Routes/{id}` para impedir lectura de detalle con perfil desactivado. Release/xUnit local 61/61; Actions `45002238853` pasó build, 61/61, smoke tenant/HTTP y concurrencia. El smoke existente no cubre por sí mismo el nuevo caso de perfil Driver inactivo.
+- Backend `2fdc9e0` centralizó GET/POST posiciones con `IsCurrentDriverAssigned`; `41c01e7` aplicó el mismo helper a `GET /Routes/{id}` para impedir lectura de detalle con perfil desactivado. Release/xUnit local 61/61; Actions `45002562048` pasó build, 61/61, smoke tenant/HTTP y concurrencia. El smoke existente no cubre por sí mismo el nuevo caso de perfil Driver inactivo.
 - Front `refactor/route-builder` agregó el E2E real de denegaciones a otra ruta y perfil inactivo/reactivado (detalle/listado/GPS); Actions `45002306327` y `45002396041` estaban en curso en ese corte; una repetición posterior debe usar backend actualizado que deniega detalle inactivo. La segunda contiene el ajuste de assert de lista no vacía permitido.
 - Al pasar Actions, registrar códigos exactos y cleanup. No cerrar criterio hasta que prueba HTTP/browser compruebe estado/evidencia/GPS persistentes tras denegación.
 

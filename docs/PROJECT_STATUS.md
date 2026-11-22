@@ -313,3 +313,8 @@ Nota de actualización: algunos resultados históricos de registro público más
 
 - Verificación adicional post-reinicio: la fila cifrada sobrevivió al apagado de API/MySQL persistente y el proceso nuevo, con el key ring montado en la misma ruta, descifró el mensaje e incrementó AttemptCount; se observó el fallo esperado InvalidOperationException por SMTP sin configurar.
 - smoke-route-concurrency.sh pasó también tras aplicar AddEmailOutbox en una DB MySQL 8 limpia.
+
+## Outbox en Actions — 2026-11-22
+
+- Commit 5049dea validado por Actions 45027017954: build Release 0 warnings, xUnit 77/77, smoke HTTP/MySQL tenant/outbox y concurrencia rutas success; cleanup de contenedor success.
+- Front Actions 45027026835 también pasó en Front 82941b8 y backend feature branch; ese run es previo a los nuevos casos E2E de filtros/roles/responsive.

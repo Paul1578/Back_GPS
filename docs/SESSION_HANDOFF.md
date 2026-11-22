@@ -409,3 +409,6 @@ Errores de migración, herramientas, QA y soluciones están en `docs/ERROR_LOG.m
 
 - Verificación adicional ya terminada: restart API con DB + key ring persistentes confirmó que EmailOutbox se descifra y se reintenta después del reinicio; sender llegó al fallo esperado SMTP no configurado. Smoke separado de concurrencia de asignación de rutas también exit 0.
 - El primer assert de restart esperaba un contador fijo y falló; se cambió por baseline comparativo y la repetición pasó. ERROR_LOG incluye ambos resultados.
+
+- CI backend cerró success después de la publicación: Actions 45027017954 para 5049dea, Release build sin warnings, xUnit 77/77, smoke tenant/outbox y concurrencia de rutas completos; cleanup de servicio MySQL descartable success.
+- Actions Front 45027026835 fue success en 82941b8 y Backend 5049dea, con backend/lint/build/responsive/E2E integrados. No incluye los nuevos cambios Front aún locales.

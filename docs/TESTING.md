@@ -382,3 +382,8 @@ La invitación envía sólo el enlace de activación; el usuario fija su contras
 - Reinicio con key ring persistente en ruta temporal: se encoló una recuperación, se capturó el baseline, se detuvo la API, se hizo elegible la fila y se reinició API con el mismo key ring. MySQL confirmó que aumentó el intento y LastFailureType=InvalidOperationException (SMTP ausente, payload descifrado y sender invocado).
 - El primer assert del restart asumió un conteo fijo y falló; se corrigió a comparar con el baseline. Causa/solución en ERROR_LOG.
 - Smoke independiente smoke-route-concurrency.sh también pasó contra API + MySQL 8 descartables tras la migración.
+
+## Actions outbox — 2026-11-22
+
+- Backend commit 5049dea: Actions 45027017954 success. Release build 0 warnings; xUnit 77/77; smoke HTTP/MySQL y concurrencia rutas success; cleanup completo.
+- El reinicio con key ring persistente se comprobó localmente en DB/API descartables y quedó documentado arriba; SMTP sin credenciales sólo produjo el fallo esperado.

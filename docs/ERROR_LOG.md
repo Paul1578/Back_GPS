@@ -857,3 +857,8 @@ Cada cambio de API debe incluir validación de compilación, migraciones si apli
 
 - Error: la primera compilación de `ChangeRouteStatusAuthorizationTests` falló con `CS1061` porque el parámetro del constructor primario `vehicleId` quedó sombreado por un parámetro del método y `this.vehicleId` no es miembro de la clase. También emitió `CS9113` por el parámetro de constructor sin uso.
 - Solución: convertir el fixture de prueba a clase explícita con campos `_vehicleId`, `_newDriverId` y `_routes`. La prueba enfocada pasó 1/1 y la suite completa 78/78.
+# 2026-11-22 — Normalización de precisión temporal en smoke de rutas
+
+- Error: Actions `45029094282` falló en la comparación de `CreatedAtUtc` tras editar una ruta, aunque build y xUnit pasaron. El mensaje previo no mostraba los valores comparados.
+- Causa en el test: su normalizador truncaba fracciones mayores a 6 dígitos, pero no rellenaba fracciones cortas ni el caso sin fracción; `System.Text.Json` puede omitir ceros finales mientras MySQL `datetime(6)` siempre representa microsegundos.
+- Solución: canonicalizar ambos timestamps a UTC textual con exactamente seis dígitos fraccionarios y agregar los valores iniciales/finales al diagnóstico para fallos futuros. Pendiente repetir el workflow para comprobar la solución.

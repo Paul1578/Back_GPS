@@ -392,3 +392,7 @@ La invitación envía sólo el enlace de activación; el usuario fija su contras
 - `ChangeRouteStatusAuthorizationTests.Execute_DriverReassignedAfterInitialRead_CannotChangeRouteStatus`: reemplaza la asignación cuando se adquiere el lock, como ocurriría si el Driver se reasigna después del chequeo inicial del controller.
 - Verifica `KeyNotFoundException`, una sola adquisición del lock, cero actualizaciones del repositorio y estado Pending conservado.
 - Resultado Release local: prueba enfocada 1/1; suite completa **78/78**, cero skips; build Release 0 warnings/0 errors. Validación remota pendiente.
+# Incidente CI — precisión de `CreatedAtUtc`
+
+- Actions `45029094282`: build/tests pasaron, smoke HTTP falló en assert API/MySQL luego de editar ruta.
+- Ajuste de prueba: helper compara timestamp con seis decimales, completando fracciones cortas y eliminando exceso; el mensaje ahora imprime API antes/después y DB antes/después. Repetición CI pendiente.

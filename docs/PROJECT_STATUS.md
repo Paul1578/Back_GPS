@@ -324,3 +324,7 @@ Nota de actualización: algunos resultados históricos de registro público más
 - El command ahora recibe los IDs del Driver y usuario solicitantes; después del lock y reload verifica que el Driver siga activo y que continúe asignado, incluyendo compatibilidad con rutas históricas que guardan `UserId`. Rechazo uniforme mediante `KeyNotFoundException`.
 - Nueva prueba `ChangeRouteStatusAuthorizationTests` sustituye la ruta al momento del lock para simular reasignación concurrente; demuestra que el Driver antiguo no cambia estado ni persiste modificaciones.
 - Prueba enfocada 1/1; suite backend Release `dotnet test ... -m:1`: **78/78**, cero fallidas/omitidas; `dotnet build -c Release --no-restore -m:1`: 0 warnings/0 errors. Actions del commit con el cambio pendiente.
+# Smoke de CreatedAtUtc: comparación estabilizada
+
+- Actions `45029094282` falló sólo en el smoke HTTP que compara timestamp API/MySQL después de editar; build y xUnit pasaron. La prueba anterior normalizaba fracciones largas, pero no añadía ceros cuando JSON omitía ceros de precisión.
+- El helper ahora normaliza siempre a seis decimales, como MySQL `datetime(6)`, y el fallo imprime los cuatro valores para diagnóstico. Shell syntax/diff-check y Actions de repetición pendientes.

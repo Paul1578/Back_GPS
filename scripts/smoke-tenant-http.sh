@@ -398,7 +398,18 @@ manager_route_created_at_count="$(mysql --protocol=TCP --host="$mysql_host" --po
 [[ "$manager_route_created_at_count" == "1" ]] || { echo "CreatedAtUtc no quedó persistido en MySQL para la ruta Manager." >&2; exit 1; }
 manager_route_created_at_db="$(mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" "$db_name" \
   --batch --skip-column-names -e "SELECT DATE_FORMAT(CreatedAtUtc, '%Y-%m-%dT%H:%i:%s.%fZ') FROM Routes WHERE Id='$manager_route_id';")"
-normalize_mysql_datetime() { sed -E 's/(\.[0-9]{6})[0-9]*Z$/\1Z/' <<<"$1"; }
+normalize_mysql_datetime() {
+  local value="${1%Z}" whole fraction
+  if [[ "$value" == *.* ]]; then
+    whole="${value%.*}"
+    fraction="${value##*.}"
+  else
+    whole="$value"
+    fraction=""
+  fi
+  fraction="${fraction}000000"
+  printf '%s.%sZ' "$whole" "${fraction:0:6}"
+}
 [[ "$(normalize_mysql_datetime "$manager_route_created_at")" == "$manager_route_created_at_db" ]] || { echo "CreatedAtUtc de API no coincide con el valor MySQL." >&2; exit 1; }
 request PUT "/Routes/$manager_route_id" "$(jq -nc --arg name "$manager_route_name updated" --arg vehicleId "$manager_vehicle_id" --arg driverId "$manager_driver_id" --argjson points "$role_points" '{name:$name,cargoDescription:"Role matrix updated",vehicleId:$vehicleId,driverId:$driverId,points:$points}')" "$deactivated_access_token"
 expect_status 200 "Editar ruta como Manager"
@@ -407,7 +418,7 @@ manager_route_updated_created_at_db="$(mysql --protocol=TCP --host="$mysql_host"
   --batch --skip-column-names -e "SELECT DATE_FORMAT(CreatedAtUtc, '%Y-%m-%dT%H:%i:%s.%fZ') FROM Routes WHERE Id='$manager_route_id';")"
 [[ "$manager_route_updated_created_at_db" == "$manager_route_created_at_db" && \
    "$(normalize_mysql_datetime "$manager_route_updated_created_at")" == "$manager_route_created_at_db" ]] || {
-  echo "Editar la ruta cambió CreatedAtUtc o la API no refleja el valor MySQL." >&2; exit 1;
+  echo "Editar la ruta cambió CreatedAtUtc o la API no refleja el valor MySQL (API inicial: $manager_route_created_at; API edición: $manager_route_updated_created_at; MySQL inicial: $manager_route_created_at_db; MySQL edición: $manager_route_updated_created_at_db)." >&2; exit 1;
 }
 request DELETE "/Routes/$manager_route_id" "" "$deactivated_access_token"
 expect_status 204 "Dar de baja ruta como Manager antes de reutilizar agenda"

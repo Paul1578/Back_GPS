@@ -47,7 +47,7 @@ Los hallazgos anteriores de roles públicos, logs con tokens, CORS abierto, recu
 - Regresiones de metadatos comprueban Admin/Manager para Vehicles y Drivers, y Admin para Users. El smoke HTTP/MySQL integrado en CI cubre aislamiento entre tenants para Vehicles, Drivers, Routes y RoutePositions; no reemplaza una matriz completa de permisos por rol.
 - Consulta de dependencias al cierre: `dotnet list BackEnd_Gps.sln package --vulnerable --include-transitive` no encontró paquetes vulnerables.
 
-La prueba HTTP/MySQL cross-tenant de cierre cubre Vehicles, Drivers, Routes y creación/lectura de RoutePositions. Un tenant ajeno recibe 404 para recursos individuales y no puede crear asociaciones cruzadas; GET de colección de posiciones devuelve `200 []` por el filtro global. El caso completo pasó dentro de Playwright 8/8 y el smoke de backend se integró al workflow. Sigue pendiente integrar Playwright autenticado frontend/API en CI remota. El smoke comprueba además que el rol `User` recibe 403 al leer rutas/vehículos y crear vehículos.
+La prueba HTTP/MySQL cross-tenant de cierre cubre Vehicles, Drivers, Routes y creación/lectura de RoutePositions. Un tenant ajeno recibe 404 para recursos individuales y no puede crear asociaciones cruzadas; GET de colección de posiciones devuelve `200 []` por el filtro global. La integración autenticada frontend/API/MySQL está activa en GitHub Actions; los ciclos recientes de frontend pasaron 20/20.
 
 ## Configuración por entorno y smoke CI
 
@@ -134,3 +134,11 @@ El smoke anónimo solicitó rol Admin en el registro; la fila persistida conserv
 - El claim usa actualización condicional atómica, lease de 2 minutos y LockToken para no sobrescribir una concesión posterior. El SMTP se llama fuera de transacción. La entrega es al menos una vez: si el proveedor acepta el email y la aplicación cae antes de marcar SentAtUtc, podría repetirse.
 - Los fallos reintentan con backoff exponencial, limitado a seis horas; tras 12 intentos van a dead-letter. Mensajes enviados se purgan después de 30 días y dead-letter después de 90 días.
 - Verificación HTTP/MySQL local: contenido persistido opaco, dos solicitudes concurrentes producen un token activo y ambos mensajes se guardan; SMTP sin credenciales no reporta éxito. Las credenciales SMTP válidas siguen siendo un requisito externo para la entrega real.
+
+## Revalidación de autorización Driver y outbox — 2026-11-22
+
+- Un Driver del mismo tenant no puede listar/leer ni cambiar estado, parada, evidencia o GPS de una ruta asignada a otro Driver. El smoke HTTP usa tokens reales contra API/MySQL; Admin confirma que no hay mutaciones. Actions `45029798323` pasó con cleanup verificado.
+- `PUT /Routes/{id}/status` vuelve a autorizar al Driver después del lock de asignación y la recarga de la ruta, cerrando la ventana TOCTOU entre el controller y el command. La regresión simula una reasignación durante el lock y exige cero cambios persistidos.
+- `EmailOutboxWorkerTests` ejecuta el BackgroundService real sobre SQLite: comprueba descifrado/entrega, marca `SentAtUtc` y libera lease; ante fallo en intento 12 verifica dead-letter y `LastFailureType`. Actions `45030208849` pasó Release build, xUnit **80/80**, smoke HTTP/MySQL y concurrencia; Actions `45030428079` volvió a pasar después del cambio documental.
+- El envío de correo todavía no puede comprobarse con proveedor real mientras falten credenciales SMTP. La protección durable, el retry y el dead-letter sí quedaron probados.
+- Pendientes de seguridad/plataforma: decidir si Admin delegado puede asignar Admin; habilitar SMTP y almacenamiento persistente/compartido de Data Protection keys en despliegue; mover evidencia JSON a object storage y rate limiting a almacenamiento distribuido antes de escalar.

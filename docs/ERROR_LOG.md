@@ -694,3 +694,51 @@ Cada cambio de API debe incluir validación de compilación, migraciones si apli
 - Una consulta de descubrimiento incluyó el directorio `scripts/` en Front, pero allí no existe; `rg` reportó IO error.
 - Solución: buscar en los archivos que sí existen (`package.json`, `playwright.config.ts` y `e2e/`) y consultar el workflow pertinente.
 - Prevención: confirmar directorios con `rg --files` antes de incluir rutas supuestas.
+
+## 2026-11-22 — Búsqueda de `fechaCreacion` Front desde Backend — CORREGIDO
+
+- Una búsqueda agrupada intentó abrir `src/` estando en `/home/leonardo/Back_GPS`; el frontend vive en `/home/leonardo/Front_gpsR` y `rg` devolvió IO error.
+- Solución: repetir las búsquedas frontend desde el checkout Front y las búsquedas de DTO/repositorio desde Back.
+- Prevención: no compartir rutas relativas entre repositorios al agrupar comandos.
+
+## 2026-11-22 — Lectura de RoutesManagement desde Backend — CORREGIDO
+
+- Un comando combinado consultó `src/Components/fleet/RoutesManagement.tsx` desde el checkout Backend y `sed` reportó que no existía; ese path es de Front.
+- Solución: repetir el archivo frontend desde `/home/leonardo/Front_gpsR` y mantener las lecturas de DTO/entidad/backend desde `/home/leonardo/Back_GPS`.
+- Prevención: dividir búsquedas por checkout cuando los paths comparten sólo el nombre del proyecto.
+
+## 2026-11-22 — Directorio del mapper Application mal escrito — CORREGIDO
+
+- Se consultó `fletflow/Aplication/Fleet/Mappings`; el directorio real tiene otra estructura y `rg` devolvió IO error.
+- Solución: descubrir el archivo del mapper mediante `rg --files fletflow` y buscar la clase por contenido.
+- Prevención: no inferir rutas a partir del nombre de namespace; confirmar el árbol antes de abrir archivos.
+
+## 2026-11-22 — Archivo `RouteTests.cs` supuesto — CORREGIDO
+
+- Se intentó abrir `BackEnd_Gps.Tests/RouteTests.cs`, pero ese archivo no existe y `sed` reportó IO error.
+- Solución: localizar cobertura real con `rg --files BackEnd_Gps.Tests` y continuar en `CreateRouteCommandTests.cs`/`RouteLifecycleTests.cs`.
+- Prevención: descubrir nombres de test antes de abrirlos.
+
+## 2026-11-22 — Nombre de archivo de `AppDbContext` asumido — CORREGIDO
+
+- Se intentó abrir `Infrastructure/Persistence/Context/AppDbContext.cs`; la carpeta existe, pero esa clase está declarada en `FleetFlowDbContext.cs` y `sed` informó que el nombre de archivo no existe.
+- Solución: buscar la declaración de clase con `rg -n 'class AppDbContext' fletflow` antes de abrirla.
+- Prevención: no inferir que el nombre de clase coincide con el nombre de archivo.
+
+## 2026-11-22 — `dotnet ef` no está instalado localmente — CORREGIDO
+
+- Al comprobar el generador de migraciones, `/home/leonardo/.dotnet/dotnet ef --version` informó que `dotnet-ef` no existe.
+- Solución prevista: habilitar EF CLI en un tool-path temporal, alineado con la versión del proyecto, o actualizar manualmente migración y snapshot si la instalación no está disponible.
+- Prevención: verificar la herramienta antes de intentar generar migraciones.
+
+## 2026-11-22 — Glob del `.csproj` desde subdirectorio equivocado — CORREGIDO
+
+- Se buscó `fletflow/*.csproj`, pero el proyecto se declara en la raíz y `cat` reportó que el glob no coincidía.
+- Solución: localizar proyectos con `rg --files | rg '\\.csproj$'` desde la raíz.
+- Prevención: confirmar ubicación del proyecto al iniciar comandos de herramientas.
+
+## 2026-11-22 — EF CLI no encontró el runtime .NET instalado — EN RESOLUCIÓN
+
+- La primera ejecución de `/tmp/fletflow-tools/dotnet-ef` buscó `hostfxr` bajo `/usr/lib64/dotnet`, pero el SDK/runtime local está instalado en `/home/leonardo/.dotnet`.
+- Solución: `dotnet-ef` 9.0.10 se ejecuta con `PATH=/home/leonardo/.dotnet:$PATH`, `DOTNET_ROOT` y `DOTNET_ROOT_X64` apuntando a `/home/leonardo/.dotnet` y `DOTNET_MULTILEVEL_LOOKUP=0`; la migración se generó correctamente.
+- Prevención: este entorno necesita esas variables también para la metadata de MSBuild, no sólo para consultar la versión del apphost.

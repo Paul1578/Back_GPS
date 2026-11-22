@@ -83,7 +83,8 @@ namespace fletflow.Infrastructure.Persistence.Mappings
                 (RouteStatus)entity.Status,
                 entity.IsActive,
                 entity.StartedAt,
-                entity.EndedAt
+                entity.EndedAt,
+                entity.CreatedAtUtc
             );
         }
 
@@ -110,6 +111,7 @@ namespace fletflow.Infrastructure.Persistence.Mappings
                 PlannedEnd = domain.PlannedEnd,
                 StartedAt = domain.StartedAt,
                 EndedAt = domain.EndedAt,
+                CreatedAtUtc = domain.CreatedAtUtc,
                 Status = (int)domain.Status,
                 IsActive = domain.IsActive,
                 PointsJson = pointsJson

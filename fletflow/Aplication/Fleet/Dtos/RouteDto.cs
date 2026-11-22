@@ -22,6 +22,7 @@ namespace fletflow.Application.Fleet.Dtos
         public DateTime? PlannedEnd { get; set; }
         public DateTime? StartedAt { get; set; }
         public DateTime? EndedAt { get; set; }
+        public DateTime? CreatedAtUtc { get; set; }
 
         public RouteStatus Status { get; set; }
         public bool IsActive { get; set; }

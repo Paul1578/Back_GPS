@@ -22,6 +22,7 @@ namespace fletflow.Application.Fleet.Mappings
                 PlannedEnd = route.PlannedEnd,
                 StartedAt = route.StartedAt,
                 EndedAt = route.EndedAt,
+                CreatedAtUtc = route.CreatedAtUtc,
                 Status = route.Status,
                 IsActive = route.IsActive
             };

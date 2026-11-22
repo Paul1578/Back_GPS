@@ -256,3 +256,9 @@ Nota de actualización: algunos resultados históricos de registro público más
 - xUnit y smoke de concurrencia añadidos para dos asignaciones paralelas, conflicto 409 y verificación SQL de una sola relación. Build/Actions pendientes.
 - Release build local: 0 warnings/0 errors; xUnit 73/73; bash syntax y diff-check correctos. Smoke MySQL/Actions del nuevo SHA pendiente.
 - Validación completada en Actions `45017642439` (`8d19118`): Release build, xUnit **73/73**, smoke tenant/roles/operación, dos PUT simultáneos contra MySQL con un éxito y un conflicto, relación única y cleanup sin residuos.
+
+## Fecha de creación de rutas — en validación
+
+- Hallazgo: el dashboard titulaba “Actividad Reciente” sobre un endpoint sin orden y Gestión de Rutas mostraba `PlannedStart` (o la hora actual inventada) como fecha de creación.
+- Migración aditiva nullable `CreatedAtUtc`; nuevas rutas guardan UTC, las existentes quedan sin fecha histórica inventada. API y repositorio exponen/ordenan datos; update preserva creación. Front ordena recientes con fecha de creación y muestra “No registrada” en históricos sin fecha.
+- Local Back Release build 0 warnings/errors, xUnit **73/73**, `bash -n` en ambos smokes; Front lint/build/discovery **18** y diff-check pasan. E2E/API/MySQL de Actions pendiente.

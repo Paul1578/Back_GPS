@@ -82,7 +82,10 @@ namespace fletflow.Infrastructure.Persistence.Repositories
                 query = query.Where(r => r.IsActive);
             }
 
-            var entities = await query.ToListAsync();
+            var entities = await query
+                .OrderByDescending(route => route.CreatedAtUtc ?? route.EndedAt ?? route.StartedAt ?? route.PlannedStart)
+                .ThenBy(route => route.Id)
+                .ToListAsync();
             return entities.Select(FleetMapper.ToDomain).ToList();
         }
     }

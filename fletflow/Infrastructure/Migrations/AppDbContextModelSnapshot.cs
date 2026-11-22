@@ -172,6 +172,9 @@ namespace BackEnd_Gps.fletflow.Infrastructure.Migrations
                         .HasMaxLength(1000)
                         .HasColumnType("varchar(1000)");
 
+                    b.Property<DateTime?>("CreatedAtUtc")
+                        .HasColumnType("datetime(6)");
+
                     b.Property<string>("Destination")
                         .IsRequired()
                         .HasMaxLength(200)

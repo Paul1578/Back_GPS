@@ -48,6 +48,9 @@ namespace fletflow.Infrastructure.Persistence.Configurations
             builder.Property(r => r.IsActive)
                 .IsRequired();
 
+            builder.Property(r => r.CreatedAtUtc)
+                .IsRequired(false);
+
             builder.HasOne(r => r.Vehicle)
                 .WithMany()
                 .HasForeignKey(r => r.VehicleId)

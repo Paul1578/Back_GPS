@@ -19,6 +19,7 @@ namespace fletflow.Domain.Fleet.Entities
         public DateTime? PlannedEnd { get; private set; }
         public DateTime? StartedAt { get; private set; }
         public DateTime? EndedAt { get; private set; }
+        public DateTime? CreatedAtUtc { get; private set; }
 
         public RouteStatus Status { get; private set; }
         public bool IsActive { get; private set; }
@@ -40,7 +41,8 @@ namespace fletflow.Domain.Fleet.Entities
             RouteStatus status,
             bool isActive,
             DateTime? startedAt = null,
-            DateTime? endedAt = null)
+            DateTime? endedAt = null,
+            DateTime? createdAtUtc = null)
         {
             Id = id;
             VehicleId = vehicleId;
@@ -54,6 +56,7 @@ namespace fletflow.Domain.Fleet.Entities
             IsActive = isActive;
             StartedAt = startedAt;
             EndedAt = endedAt;
+            CreatedAtUtc = createdAtUtc;
         }
 
         public static RouteE Create(
@@ -83,7 +86,8 @@ namespace fletflow.Domain.Fleet.Entities
                 plannedStart,
                 plannedEnd,
                 RouteStatus.Pending,
-                isActive: true
+                isActive: true,
+                createdAtUtc: DateTime.UtcNow
             );
         }
 
@@ -101,7 +105,8 @@ namespace fletflow.Domain.Fleet.Entities
             RouteStatus status,
             bool isActive,
             DateTime? startedAt = null,
-            DateTime? endedAt = null)
+            DateTime? endedAt = null,
+            DateTime? createdAtUtc = null)
         {
             return new RouteE(
                 id,
@@ -117,7 +122,8 @@ namespace fletflow.Domain.Fleet.Entities
                 status,
                 isActive,
                 startedAt,
-                endedAt
+                endedAt,
+                createdAtUtc
             );
         }
 

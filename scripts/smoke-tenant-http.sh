@@ -270,8 +270,15 @@ manager_route_payload="$(jq -nc --arg name "$manager_route_name" --arg vehicleId
 request POST /Routes "$manager_route_payload" "$deactivated_access_token"
 expect_status 201 "Crear ruta como Manager"
 manager_route_id="$(jq -er '.id' "$work_dir/response.json")"
+manager_route_created_at="$(jq -er '.createdAtUtc | select(type == "string" and length > 0)' "$work_dir/response.json")"
+[[ -n "$manager_route_created_at" ]] || { echo "La API no devolvió CreatedAtUtc al crear la ruta." >&2; exit 1; }
+manager_route_created_at_count="$(mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" "$db_name" \
+  --batch --skip-column-names -e "SELECT COUNT(*) FROM Routes WHERE Id='$manager_route_id' AND CreatedAtUtc IS NOT NULL;")"
+[[ "$manager_route_created_at_count" == "1" ]] || { echo "CreatedAtUtc no quedó persistido en MySQL para la ruta Manager." >&2; exit 1; }
 request PUT "/Routes/$manager_route_id" "$(jq -nc --arg name "$manager_route_name updated" --arg vehicleId "$manager_vehicle_id" --arg driverId "$manager_driver_id" --argjson points "$role_points" '{name:$name,cargoDescription:"Role matrix updated",vehicleId:$vehicleId,driverId:$driverId,points:$points}')" "$deactivated_access_token"
 expect_status 200 "Editar ruta como Manager"
+manager_route_updated_created_at="$(jq -er '.createdAtUtc' "$work_dir/response.json")"
+[[ "$manager_route_updated_created_at" == "$manager_route_created_at" ]] || { echo "Editar la ruta cambió CreatedAtUtc." >&2; exit 1; }
 request DELETE "/Routes/$manager_route_id" "" "$deactivated_access_token"
 expect_status 204 "Dar de baja ruta como Manager antes de reutilizar agenda"
 request POST /Routes "$manager_route_payload" "$restricted_user_token"

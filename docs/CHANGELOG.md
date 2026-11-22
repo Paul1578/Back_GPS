@@ -1,3 +1,9 @@
+# 2026-11-22 — Bloquear baja de cuenta Driver con ruta activa
+
+- Desactivar una cuenta vinculada a un Driver ahora rechaza con conflicto si tiene rutas `Pending` o `InProgress`, igual que el cambio de rol y la desasignación.
+- La prueba de dominio conserva cuenta, Driver, vehículo, ruta y refresh tokens; el smoke API/MySQL comprueba HTTP 409 y snapshot de estado intacto para una ruta pendiente.
+- Validación local: Release xUnit **111/111**, build **0 warnings/0 errors**, smoke MySQL 8/API descartables exit 0, `bash -n` y diff-check correctos. Action de este cambio pendiente.
+
 # 2026-11-22 — Paradas terminales requieren evidencia — VALIDADO EN CI
 
 - API permitía cerrar una parada como Completed/Skipped sin evidencia; después no permitía adjuntarla y la ruta quedaba imposible de finalizar.

@@ -40,11 +40,10 @@ namespace fletflow.Application.Users.Commands
                     {
                         var activeRoutes = await _unitOfWork.Routes.GetAllAsync(
                             driverId: linkedDriver.Id,
-                            status: RouteStatus.InProgress,
                             onlyActive: true);
-                        if (activeRoutes.Count > 0)
+                        if (activeRoutes.Any(route => route.Status is RouteStatus.Pending or RouteStatus.InProgress))
                             throw new BusinessConflictException(
-                                "No se puede desactivar la cuenta mientras el conductor tenga una ruta en curso.");
+                                "No se puede desactivar la cuenta mientras el conductor tenga rutas activas pendientes o en progreso.");
                     }
                 }
                 else

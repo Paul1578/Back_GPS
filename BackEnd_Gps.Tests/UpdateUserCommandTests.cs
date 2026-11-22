@@ -103,6 +103,53 @@ public sealed class UpdateUserCommandTests
         Assert.Equal(0, refreshTokens.RevokeAllCount);
     }
 
+    [Fact]
+    public async Task Execute_CannotDeactivateLinkedDriverAccountWhileRouteIsPending()
+    {
+        var ownerId = Guid.NewGuid();
+        using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder<AppDbContext>().UseSqlite(connection).Options;
+        await using var context = CreateContext(options, ownerId);
+        await context.Database.EnsureCreatedAsync();
+
+        var user = new UserEntity
+        {
+            Id = Guid.NewGuid(), OwnerUserId = ownerId, Username = "pending-driver",
+            Email = "pending-driver@example.test", PasswordHash = "test-hash", IsActive = true
+        };
+        var vehicles = new VehicleRepository(context);
+        var drivers = new DriverRepository(context);
+        var routes = new RouteRepository(context);
+        var vehicle = Vehicle.Create("QA-USER-PENDING-ROUTE", "Test", "Van", 2025, null);
+        var driver = Driver.Create("Pending", "Driver", "QA-PENDING-ROUTE", "0990000000", user.Id);
+        driver.AssignToVehicle(vehicle.Id);
+        var origin = RoutePoint.Create(-0.2, -78.5, "Origin");
+        var destination = RoutePoint.Create(-0.21, -78.51, "Destination");
+        var route = RouteE.Create(vehicle.Id, driver.Id, "Pending route", origin, destination,
+            [origin, destination], null, null, null);
+
+        await context.Users.AddAsync(user);
+        await vehicles.AddAsync(vehicle);
+        await drivers.AddAsync(driver);
+        await routes.AddAsync(route);
+        await context.SaveChangesAsync();
+
+        var refreshTokens = new RecordingRefreshTokenRepository();
+        var unitOfWork = new UnitOfWork(context, new UserRepository(context), null!, refreshTokens,
+            null!, vehicles, drivers, routes, null!);
+        var command = new UpdateUserCommand(unitOfWork, context);
+
+        await Assert.ThrowsAsync<BusinessConflictException>(() => command.Execute(user.Id, false));
+
+        Assert.True((await context.Users.SingleAsync(item => item.Id == user.Id)).IsActive);
+        Assert.True((await drivers.GetByIdAsync(driver.Id))!.IsActive);
+        Assert.Equal(vehicle.Id, (await drivers.GetByIdAsync(driver.Id))!.VehicleId);
+        Assert.Equal(RouteStatus.Pending, (await routes.GetByIdAsync(route.Id))!.Status);
+        Assert.Equal(VehicleStatus.Available, (await vehicles.GetByIdAsync(vehicle.Id))!.Status);
+        Assert.Equal(0, refreshTokens.RevokeAllCount);
+    }
+
     private static AppDbContext CreateContext(DbContextOptions<AppDbContext> options, Guid ownerId)
     {
         var httpContext = new DefaultHttpContext

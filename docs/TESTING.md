@@ -1,3 +1,10 @@
+# Bloqueo de baja de cuenta enlazada a Driver con ruta activa — 2026-11-22
+
+- `dotnet test BackEnd_Gps.sln --configuration Release --no-restore -m:1`: **111/111**, incluyendo ruta Pending e InProgress.
+- `dotnet build BackEnd_Gps.csproj --configuration Release --no-restore -m:1`: 0 warnings/0 errors.
+- `smoke-tenant-http.sh` pasó contra API local y MySQL 8 descartable `fletflow_ci_user_deactivation`; espera 409 al desactivar cuenta con ruta Pending y compara estado de Route/Vehicle/User/Driver/asignación sin mutaciones. El smoke completo verificó además aislamiento y cleanup cero.
+- `bash -n scripts/smoke-tenant-http.sh` y `git diff --check` correctos. Action del HEAD con esta cobertura queda pendiente.
+
 # Regla de evidencia por parada — 2026-11-22
 
 - xUnit Release local **110/110**: Completing/Skipping sin evidencia se rechaza y preserva estado/evidencia; Skipping con nota de evidencia se permite y luego la ruta completa.

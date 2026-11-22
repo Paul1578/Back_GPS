@@ -835,7 +835,15 @@ inactive_driver_access_token="$(jq -er '.token // .accessToken' "$work_dir/respo
 request GET /Routes/assignment-options "" "$inactive_driver_access_token"
 expect_status 403 "Denegar opciones de asignación a Driver"
 request PUT "/Users/$inactive_driver_user_id/status?isActive=false" "" "$token"
-expect_status 200 "Desactivar cuenta de Driver enlazado"
+expect_status 409 "Impedir desactivar cuenta de Driver con ruta pendiente"
+inactive_driver_pending_guard_state="$(mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" "$db_name" \
+  --batch --skip-column-names -e "SELECT CONCAT((SELECT Status FROM Routes WHERE Id='$inactive_driver_route_id'), ':', (SELECT Status FROM Vehicles WHERE Id='$inactive_driver_route_vehicle_id'), ':', (SELECT CASE WHEN IsActive=1 THEN 1 ELSE 0 END FROM Users WHERE Id='$inactive_driver_user_id'), ':', (SELECT CASE WHEN IsActive=1 THEN 1 ELSE 0 END FROM Drivers WHERE Id='$inactive_linked_driver_id'), ':', (SELECT CASE WHEN VehicleId IS NULL THEN 0 ELSE 1 END FROM Drivers WHERE Id='$inactive_linked_driver_id')); ")"
+[[ "$inactive_driver_pending_guard_state" == "0:0:1:1:1" ]] || {
+  echo "El rechazo de baja con ruta pendiente mutó ruta/vehículo/cuenta/conductor ($inactive_driver_pending_guard_state)." >&2
+  exit 1
+}
+mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" "$db_name" \
+  -e "UPDATE Users SET IsActive=0 WHERE Id='$inactive_driver_user_id';" >/dev/null
 request PUT "/Routes/$inactive_driver_route_id" "$inactive_driver_route_payload" "$token"
 expect_status 409 "Impedir editar ruta para cuenta Driver inactiva"
 request PUT "/Routes/$inactive_driver_route_id/status" '{"status":1}' "$token"

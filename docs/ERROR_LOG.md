@@ -1,3 +1,11 @@
+# 2026-11-22 — Dar de baja cuenta Driver bloqueaba una ruta pendiente — CORREGIDO LOCALMENTE
+
+- Auditoría descubrió que `PUT /Users/{id}/status?isActive=false` sólo rechazaba rutas `InProgress`. Para una ruta `Pending`, el User quedaba inactivo mientras Driver seguía activo y asignado, dejando el trabajo sin poder iniciar y con su vehículo retenido.
+- `UpdateUserCommand` ahora consulta rutas activas bajo los locks de asignación compartidos con el inicio y rechaza la baja con HTTP 409 si existe una ruta `Pending` o `InProgress`. El estado de cuenta y refresh tokens no se modifican.
+- Prueba SQLite verifica que la baja en ruta pendiente no cambie User, Driver activo/asignación, vehículo `Available`, ruta Pending o refresh tokens. El smoke API/MySQL compara esas columnas tras HTTP 409; xUnit 111/111, Release build limpio y smoke efímero completo con cleanup cero.
+- Prevención: al desactivar usuarios vinculados, validar ambos estados de ruta protegidos por la transición de rol; comprobar la respuesta por HTTP y persistencia de User/Driver/Vehicle/Route.
+- Action integrada del nuevo HEAD pendiente.
+
 ## 2026-11-22 — Estado terminal de parada sin evidencia podía bloquear una ruta — CORREGIDO Y VALIDADO
 
 - Auditoría de flujo encontró que backend aceptaba `Pending→Skipped`/`InProgress→Completed` aunque `Evidence.Count == 0`. `AddPointEvidence` rechaza paradas cerradas y `Route.ChangeStatus(Completed)` exige evidencia, por lo que se podía dejar la ruta imposible de finalizar. La UI también permitía Omitir sin evidencia.

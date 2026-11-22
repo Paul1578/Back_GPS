@@ -114,3 +114,4 @@ Cambiar, restablecer o activar una contraseña incrementa `User.TokenVersion`, r
 - Antes de pasar a InProgress, la ruta, el Vehicle y la asignación actual del Driver deben referirse al mismo vehículo. La regla se verifica bajo los locks de asignación.
 
 - Desasignar o desactivar un Driver, o cambiar su rol a uno no operativo, no debe dejar rutas activas Pending/InProgress sin asignación válida. El backend rechaza estas operaciones hasta cancelar/completar las rutas.
+- Desactivar una cuenta User vinculada a un Driver también se rechaza mientras ese Driver tenga rutas activas Pending/InProgress; evita dejar operaciones pendientes bloqueadas por la cuenta inactiva.

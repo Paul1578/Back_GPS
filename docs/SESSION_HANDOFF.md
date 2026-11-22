@@ -1,3 +1,12 @@
+# Handoff — 2026-11-22
+
+- Branch backend `chore/stabilize-fleet-platform`; nuevo cambio local bloquea la desactivación de cuenta User vinculada a Driver con rutas activas `Pending`/`InProgress`, bajo locks de asignación y usuario. Test/domain y smoke HTTP/MySQL ya pasaron localmente; Action aún no lanzada hasta publicar el cambio.
+- Validación: Release xUnit 111/111, Release build 0 warnings/0 errors, `smoke-tenant-http.sh` completo sobre API + MySQL 8 descartable `fletflow_ci_user_deactivation`, cleanup correcto, bash syntax/diff-check correctos.
+- El contenedor `fletflow-route-deactivation-mysql` y API local deben detenerse y eliminarse si no se cerraron aún; no se tocó MySQL persistente.
+- Backend commit previo de documentación `777b905` ya está publicado y pasó la Action de `f564aa3`.
+- Front `5d4e290` publicado; Action `45071113746` aún ejecuta el E2E autenticado del registro duplicado UI al último chequeo. Esperar y registrar su resultado.
+- Continúa pendiente: política para otorgar Admin y requisito de desvincular User/Driver; seguir cobertura CRUD/responsive y pruebas reales. Móvil nativo pospuesto.
+
 # Continuación actual — 2026-11-22
 
 - Backend `chore/stabilize-fleet-platform` en `f564aa3`; Action `45070491409` terminó success (build, xUnit 110/110, smoke HTTP/MySQL tenant, concurrencia y cleanup).

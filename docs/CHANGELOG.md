@@ -139,3 +139,4 @@
 
 - El smoke valida el ciclo crear/leer/editar/leer/dar de baja de una ruta como Logistics con los fixtures de vehículo y conductor creados por Manager; el ciclo Manager se da de baja antes para evitar solapamiento de agenda.
 - Cleanup conserva y elimina por separado las rutas lógicamente dadas de baja de ambos roles. Smoke API/MySQL efímero completo aprobado.
+- Actions `44988756481` para `43ca30c` pasó: build, xUnit y smokes HTTP/MySQL de tenant, Logistics y concurrencia.

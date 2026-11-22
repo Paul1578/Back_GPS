@@ -151,3 +151,4 @@ Fecha de corte: 2026-11-21.
 
 - Cobertura HTTP ahora confirma creación positiva de ruta por Logistics con vehículo/Driver del mismo tenant creados por Manager, sin rutas pendientes simultáneas: Manager crea/edita/da de baja; luego Logistics crea, lee y valida persistencia, edita y vuelve a validar, y da de baja.
 - El cleanup registra IDs separados para las dos rutas soft-deleted. Smoke aislado con MySQL 8 efímero y DB `fletflow_ci_*`: aprobado; contenedor eliminado. Primer fallo de cleanup y corrección registrados en `docs/ERROR_LOG.md`.
+- Commit `43ca30c` está publicado y Actions `44988756481` terminó success; build, xUnit y smokes HTTP/MySQL de tenant, Logistics y concurrencia pasaron en recursos descartables.

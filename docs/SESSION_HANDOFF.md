@@ -354,3 +354,28 @@ Errores de migración, herramientas, QA y soluciones están en `docs/ERROR_LOG.m
 - Backend `eaeb495` quedó validado por Actions `45021088919`: Release/xUnit 74/74, smoke API/MySQL (incluye token viejo tras reactivación y Roles) y concurrencia, cleanup correcto.
 - Auditoría Front independiente encontró brechas del formulario/selector duplicado en TeamManagement; se está agregando validación y filtrado y el E2E API/MySQL correspondiente.
 - La política de promoción a Admin delegado sigue pendiente de respuesta; no cambiar esa regla.
+
+## Continuación — sesión, recuperación y carga de flota — 2026-11-22
+
+- Trabajo activo en `chore/stabilize-fleet-platform` y `refactor/route-builder`, sin tocar main.
+- Backend cambios locales: rotación atómica concurrente de refresh, logout-all invalida access JWT mediante TokenVersion, ForgotPassword uniforme y tolerante a fallo SMTP. xUnit previo 76/76; smoke HTTP/MySQL 8 local aprobado y cleanup 0 rutas/posiciones/vehículos. Repetición de xUnit con runtime correcto está en curso.
+- Front cambios locales: error de `/Vehicles` visible en Gestión de Conductores con botón Reintentar; nuevo E2E prueba los errores 503 de Drivers/Vehicles y la recuperación. El E2E enfocado pasó 1/1; lint/build y discovery 19 pasaron.
+- Próximo: capturar final del xUnit; revisar diff y documentación; validar shell/diff; commit/push de ambas ramas; observar Actions backend y Front cross-branch y corregir cualquier regresión.
+- Pendiente de decisión, no modificar sin respuesta: si Admin delegado puede promover a Admin o si sólo cuenta raíz puede hacerlo. SMTP real requiere credenciales externas; móvil nativo está pospuesto.
+- Errores operativos de esta iteración y remedios constan en `ERROR_LOG.md` (runtime .NET del sistema y hunk de script rechazado).
+
+### Resultados locales cerrados — 2026-11-22
+
+- Backend Release xUnit **76/76**, 0 omitidas; Release build **0 warnings/0 errores**; sintaxis smoke y diff-check limpios.
+- Smoke HTTP/MySQL de tenant, sesión, refresh concurrente y operación de flota: exit code 0; exacto cleanup `0 rutas, 0 posiciones GPS, 0 vehículos Logistics/Manager`.
+- Front lint/build Next 16 pasaron, Playwright discovery **19 casos**, E2E focal nuevo **1/1**.
+- Smoke adicional de concurrencia de rutas se está ejecutando; guardar resultado antes del commit.
+- Smoke `scripts/smoke-route-concurrency.sh` finalizó exit code 0: agenda/asignaciones y ciclos de rutas/paradas concurrentes mantienen integridad.
+
+### Cierre de hallazgo de logout-all concurrente — 2026-11-22
+
+- `IUnitOfWork.LockUserSessionAsync` bloquea User en transacción; `TryRotateAsync` toma el mismo lock antes de rotar refresh. Incremento TokenVersion + revocación refresh + commit forman una operación serializada.
+- Auditoría de `Program.cs` confirmó que JwtBearer `OnTokenValidated` compara TokenVersion/rol/estado; el finding de ausencia de validación surgió al leer solamente `JwtMiddleware`. Smoke real comprobó access anterior 401.
+- Smoke tenant/http reforzado bloquea fila User y lanza refresh + logout-all al mismo tiempo; quedó exit 0 con cero refresh activos, sucesor rechazado si lo hubo y cleanup cero.
+- xUnit Release después de cambio: 76/76; smoke de concurrencia de rutas también exit 0. Front lint/build pasaron y E2E de gestión recupera vehículo seleccionable; su última corrida enfocada pasó 1/1.
+- Pendiente antes de completar seguridad: timing de enumeración en ForgotPassword (mismo body, trabajo/respuesta temporal aún distintos); además sigue abierta decisión sobre promoción a Admin delegado. SMTP externo requiere credenciales vigentes; app nativa sigue pospuesta.

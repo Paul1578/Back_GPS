@@ -337,3 +337,21 @@ La invitación envía sólo el enlace de activación; el usuario fija su contras
 - `UpdateUserCommandTests` comprueba incremento persistido de `TokenVersion` al desactivar/reactivar y que repetir el estado no rota sesiones.
 - `smoke-tenant-http.sh` conserva el mismo JWT: `/Auth/me` devuelve 401 durante la baja y tras reactivar; una sesión nueva devuelve 200. Comprueba además GET `/Roles` 200 y POST/DELETE 403 para Admin de tenant.
 - Release xUnit local **74/74**, smoke contra MySQL 8/API efímeros aprobado, cleanup verificado. Actions `45021088919` también pasó build, 74/74, smoke HTTP/MySQL y concurrencia.
+
+## Sesiones y refresh concurrente — 2026-11-22
+
+- xUnit Release: 76/76 tras agregar casos de logout-all y recuperación conocida/desconocida con fallo simulado de correo (la corrida final con `DOTNET_ROOT` se encuentra en ejecución al actualizar este documento; registrar su resultado exacto en el siguiente handoff).
+- Smoke `scripts/smoke-tenant-http.sh` contra API local y MySQL 8 desechable: aprobado. Incluye refresh duplicado concurrente (exactamente 200/401), persistencia del token ganador, rechazo de reuso, invalidación de access/refresh en logout-all, y re-login correcto.
+- Cleanup del smoke: 0 rutas, 0 posiciones GPS y 0 vehículos QA.
+- La prueba de SMTP usa un emisor controlado que falla; no envía mensajes reales ni valida credenciales externas.
+
+- Resultado final de la repetición local: Release xUnit **76/76**, 0 fallidas y 0 omitidas (22-11-2026), usando `/home/leonardo/.dotnet/dotnet` y runtime local.
+- Release build final: **0 warnings / 0 errores**; `bash -n` de ambos scripts y `git diff --check` pasaron. El smoke de concurrencia de rutas está corriendo para esta iteración.
+- El smoke adicional `scripts/smoke-route-concurrency.sh` también terminó exit code 0 en esta iteración; comprobó concurrencia de agenda/asignaciones, roles, rutas y paradas sin dejar asignaciones contradictorias.
+
+## Refresh/logout-all concurrentes — 2026-11-22
+
+- xUnit Release después del lock compartido: **76/76**.
+- Smoke HTTP/MySQL ejecutado con API local y MySQL 8 efímero. El test bloquea deliberadamente la fila de Users, lanza `logout-all` y refresh en paralelo, y valida HTTP 200 al cierre global, cero refresh activos al final y 401 para cualquier sucesor devuelto antes del cierre. Resultado: exit code 0.
+- La configuración JWT real también denegó (`401`) un access token anterior al cierre. Cleanup al final: 0 rutas, 0 posiciones GPS, 0 vehículos de Logistics/Manager.
+- Riesgo pendiente: la duración de recuperación puede diferenciar cuentas conocidas/desconocidas; no se cuenta como mitigado por la igualdad del cuerpo HTTP.

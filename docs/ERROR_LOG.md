@@ -784,3 +784,33 @@ Cada cambio de API debe incluir validación de compilación, migraciones si apli
 - Un segundo parche buscaba el estado “Actions pendiente” tras una aplicación anterior que ya lo había sustituido; `apply_patch` rechazó ese parche completo y no alteró los archivos.
 - Solución: consultar la ocurrencia actual con `rg` y actualizar sólo el texto restante con contexto exacto.
 - Prevención: tras aplicar un parche, releer el resultado antes de preparar otro que dependa de sus líneas.
+
+## 2026-11-22 — Refresh concurrente, logout-all y recuperación de contraseña — CORREGIDO Y VALIDADO
+
+- Auditoría de seguridad detectó que dos refresh simultáneos podían leer el mismo token vigente; logout-all revocaba refresh pero dejaba válidos los access JWT ya emitidos; y la respuesta de recuperación exponía `ExpiresAt` sólo para cuentas existentes. Además, un error SMTP podía romper la petición.
+- Solución: rotación condicional atómica del refresh anterior y creación del sucesor dentro de una transacción; logout-all incrementa `TokenVersion` además de revocar refresh; respuesta pública de recuperación igual para cuenta conocida/desconocida, sin expiración y con mensaje condicional; error SMTP se registra en backend y no se presenta como envío exitoso.
+- Verificación: xUnit Release local 76/76 antes de la última repetición, y smoke HTTP/MySQL 8 descartable aprobado. Dos requests concurrentes al mismo refresh produjeron exactamente uno HTTP 200 y otro 401; hash anterior revocado, un sucesor activo, reuso anterior 401 y sucesor 200. Logout-all dejó access y refresh anteriores en 401; login nuevo 200. Cleanup confirmó cero rutas, posiciones y vehículos QA.
+- Error operativo: `dotnet test` inicialmente invocó el host del sistema (`/usr/lib64/dotnet`) sin runtime y devolvió código 131. Solución: usar `/home/leonardo/.dotnet/dotnet` con `DOTNET_ROOT`, `DOTNET_ROOT_X64` y `DOTNET_MULTILEVEL_LOOKUP=0`; prevención: respetar la instalación local documentada antes de invocar el ejecutable global.
+- Error de edición: un hunk del smoke de rotación concurrente no coincidió y fue rechazado sin aplicar cambios. Solución: releer el final actual del script y aplicar el bloque con anclas exactas; prevención: validar el contexto inmediatamente antes del parche.
+
+## 2026-11-22 — Auditor de sesiones omitió el hook de validación JWT — HALLAZGO NO REPRODUCIBLE
+
+- La revisión independiente afirmó que `TokenVersion` no se comparaba al autenticar porque `Api/Middleware/JwtMiddleware.cs` no tiene esa lógica.
+- Al revisar el flujo completo, `Program.cs` sí registra `JwtBearerEvents.OnTokenValidated`, consulta el usuario y compara `token_version` antes de aceptar el token; el middleware JWT del pipeline no es el único control. El smoke anterior ya comprobó `/Auth/me` = 401 con access previo a logout-all.
+- No se duplicó la validación. Se conservará como regresión HTTP al correr el smoke nuevo.
+- Prevención de falso positivo: revisar tanto middleware personalizado como configuración del esquema `AddJwtBearer`/eventos y orden real del pipeline antes de concluir que falta validación.
+
+## 2026-11-22 — Logout-all podía dejar refresh sucesor activo en carrera — CORREGIDO EN VALIDACIÓN
+
+- El primer `RevokeAllForUserAsync` cargaba tokens y luego los marcaba revocados; un refresh podía insertar un sucesor después de que la lista ya se hubiera leído.
+- Solución en curso: lock transaccional de fila de `Users` compartido por logout-all y rotación refresh. Logout-all mantiene lock, incrementa TokenVersion, revoca refresh y persiste todo antes de liberarlo; rotación bloquea el mismo usuario antes de cambiar token/insertar sucesor.
+- Se amplió smoke HTTP para mantener el lock desde otra conexión MySQL y lanzar refresh + logout-all concurrentes; debe comprobar cero refresh activos y rechazo del sucesor si refresh alcanzó a responder 200. La validación de esta iteración está corriendo.
+- Prevención: probar carreras entre operaciones de sesión distintas, no sólo duplicar el mismo refresh token.
+
+## 2026-11-22 — Path de IUnitOfWork asumido en lectura — CORREGIDO
+
+- Intenté abrir `fletflow/Infrastructure/Persistence/Contracts/IUnitOfWork.cs`; el contrato está en `fletflow/Aplication/Common/Interfaces/IUnitOfWork.cs`. `cat` no encontró el path y no hubo cambios.
+- Solución: localizar por `rg --files | rg 'IUnitOfWork.cs$'` y leer el archivo real.
+- Prevención: verificar nombres/rutas antes de abrir, incluso si el namespace sugiere otra carpeta.
+
+- Verificación cerrada de la carrera: MySQL 8 efímero + API real ejecutó el smoke ampliado con lock deliberado y refresh/logout-all concurrentes; exit code 0, cero refresh activos tras logout, token anterior inválido, cleanup `0 rutas, 0 posiciones GPS, 0 vehículos`. `dotnet test -c Release --no-restore`: 76/76 después del cambio. La posible diferencia temporal de ForgotPassword permanece anotada como pendiente de seguridad, no como resuelta.

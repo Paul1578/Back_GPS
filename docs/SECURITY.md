@@ -95,3 +95,20 @@ El smoke anónimo solicitó rol Admin en el registro; la fila persistida conserv
 ## Auditoría NuGet de continuidad — 2026-11-22
 
 - `dotnet list BackEnd_Gps.sln package --vulnerable --include-transitive` terminó con código 0 y reportó que `BackEnd_Gps` y `BackEnd_Gps.Tests` no tienen paquetes vulnerables.
+
+## Hallazgos de sesiones — 2026-11-22
+
+- Corregida la carrera de refresh concurrente mediante actualización condicional de una fila dentro de transacción y creación del sucesor antes del commit. HTTP/MySQL probó 1 ganador (200), 1 perdedor (401), token anterior revocado y un único sucesor activo.
+- `logout-all` ahora incrementa `TokenVersion` e invalida access JWT ya emitidos, además de revocar refresh. La prueba HTTP comprobó 401 para ambos tokens anteriores y login nuevo 200.
+- Forgot-password devuelve el mismo contenido público para correo conocido/desconocido y `ExpiresAt=null`; el error del proveedor SMTP se registra internamente y la respuesta no afirma envío exitoso.
+- Prueba HTTP/MySQL ejecutada localmente en contenedor efímero `fletflow-ci-refresh-20261122`; smoke informó cleanup de 0 rutas, 0 posiciones GPS y 0 vehículos de Logistics/Manager. Repetir en Actions al publicar.
+
+### Coordinación de logout-all con refresh — 2026-11-22
+
+- Un auditor encontró que listar refresh activos antes de revocarlos podía omitir el sucesor que se insertara mientras tanto. La corrección hace que `logout-all` y `TryRotateAsync` tomen el mismo lock transaccional de la fila `Users` antes de cambiar sesiones. El incremento de `TokenVersion`, revocación y `SaveChanges` de logout-all se confirman juntos.
+- El smoke ahora bloquea deliberadamente la fila del usuario desde MySQL y lanza refresh/logout-all en paralelo; exige HTTP 200 de logout, cero refresh activos al final y 401 al sucesor si refresh alcanzó a responder 200. Resultado local MySQL 8: aprobado.
+- Un auditor indicó que no había validación de `TokenVersion` porque el middleware personalizado no la contiene. Revisión del pipeline completo confirmó que `Program.cs` registra `JwtBearerEvents.OnTokenValidated` y compara versión/estado/rol; smoke HTTP verificó que access anterior recibe 401. No se duplicó lógica.
+
+### Limitación de enumeración por tiempo en recuperación
+
+- Respuestas JSON y expiración son iguales para correo existente/no existente, y la excepción SMTP no se expone. Aun así, una cuenta existente ejecuta escritura y flujo SMTP mientras una desconocida no lo hace; existe diferencia temporal potencial. Requiere desacoplar el envío y reforzar respuesta uniforme; sigue pendiente y no se considera cerrado.

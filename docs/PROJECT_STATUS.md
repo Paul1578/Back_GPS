@@ -270,3 +270,17 @@ Nota de actualización: algunos resultados históricos de registro público más
 - Hallazgo: Admin tenant podía mutar `Roles` global. GET se conserva; POST/DELETE tenant quedan denegados (403) hasta que exista administración de plataforma.
 - Local Backend Release xUnit **74/74**; smoke API/MySQL desechable pasó con token antiguo rechazado tras reactivación, nuevo login permitido, mutaciones de Roles denegadas y cleanup completo. Actions `45021088919` pasó.
 - Actions `45021088919` pasó Release build/xUnit **74/74**, smoke tenant/estado/Roles HTTP/MySQL, concurrencia y cleanup.
+
+## Continuación de auditoría — sesiones y errores de carga (2026-11-22)
+
+- Backend tiene cambios locales pendientes de publicar: refresh atómico, logout-all invalida access JWT, y recuperación uniforme sin revelar expiración; manejo de error SMTP sin afirmar envío.
+- Smoke HTTP/MySQL local pasó: refresh concurrente 200/401, token viejo 401, sucesor 200, logout-all invalida tokens existentes, login nuevo 200; cleanup limpio. xUnit local previo: 76/76; la repetición Release con runtime local debe anotarse tras concluir.
+- Front tiene cambios locales pendientes: Gestión de Conductores hace visible el error de carga de Vehicles y permite reintento. E2E aislado pasó 1/1; lint/build/discovery 19 tests pasan.
+- Acciones remotas/commits de estos lotes aún pendientes. Política de Admin delegado sigue abierta a decisión de producto; correo real depende de credenciales SMTP externas; aplicación móvil nativa está aplazada por el usuario.
+
+- Validación backend final local (22-11-2026): `dotnet test -c Release --no-restore` **76/76**; `dotnet build BackEnd_Gps.sln -c Release --no-restore` **0 warnings/0 errores**. El smoke HTTP/MySQL de sesiones terminó exit code 0 con cleanup en cero; smoke de concurrencia de rutas en ejecución.
+- Smoke adicional `scripts/smoke-route-concurrency.sh`: exit code 0; validó concurrencia de agenda/asignaciones, roles, rutas y paradas.
+
+- Carrera refresh/logout-all corregida con lock común de fila User. xUnit Release 76/76 y smoke MySQL 8 real (lock deliberado, requests simultáneos, cero refresh activo después del logout y cleanup cero) pasaron.
+- La validación JWT de `TokenVersion` ya está en `JwtBearerEvents.OnTokenValidated`; un finding del auditor que sólo examinó `JwtMiddleware` no se reprodujo y se documentó.
+- Pendiente de seguridad: ForgotPassword devuelve mismo contenido, pero la duración todavía puede diferenciar correo existente por trabajo DB/envío; implementar/desplegar mitigación antes de cerrar auditoría.

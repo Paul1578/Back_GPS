@@ -266,3 +266,12 @@
 - Los Admin de tenant mantienen lectura de `/Roles`; POST/DELETE responden 403 porque `Roles` es catálogo global sin propietario ni rol de plataforma definido.
 - xUnit Release **74/74**. Smoke HTTP/MySQL 8 efímero pasó incluyendo token viejo 401 tras reactivación, sesión nueva 200, catálogo protegido, multi-tenant y cleanup cero residuos. Actions `45021088919` confirmó este cambio.
 - Actions `45021088919` para `eaeb495` pasó: Release/xUnit **74/74**, smoke HTTP/MySQL y concurrencia con cleanup exitoso.
+
+## 2026-11-22 — Endurecimiento de sesiones
+
+- Refresh concurrente ahora se rota con una operación condicional transaccional para permitir un único ganador.
+- Logout-all incrementa `TokenVersion` e invalida access JWT y refresh anteriores.
+- Recuperación no revela expiración ni existencia de cuenta; errores SMTP se registran y no se reporta entrega exitosa.
+- Añadidas pruebas unitarias y smoke HTTP/MySQL para carreras y revocación.
+
+- Logout-all y refresh ahora se serializan por lock transaccional de la fila User; smoke MySQL fuerza la contención y confirma que el cierre revoca cualquier sucesor.

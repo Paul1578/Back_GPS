@@ -81,3 +81,10 @@ Cambiar, restablecer o activar una contraseña incrementa `User.TokenVersion`, r
 
 - Cada transición real de estado de usuario incrementa `TokenVersion`; desactivar también revoca refresh tokens. Reactivar no rehabilita access JWT emitidos previamente; el usuario debe iniciar sesión de nuevo.
 - El catálogo de Roles es global y actualmente no tiene propietario ni rol de administración de plataforma. Admin tenant puede consultarlo, pero no crear ni eliminar roles (403).
+
+## Sesiones y recuperación — 2026-11-22
+
+- Rotar un refresh token es una operación de un solo ganador: la revocación del token actual y la inserción del sucesor ocurren condicionalmente y en una única transacción. Reutilizar el token anterior devuelve no autorizado.
+- Cerrar todas las sesiones invalida refresh tokens y access JWT existentes mediante `TokenVersion`; el usuario puede volver a iniciar sesión después.
+- Recuperación de contraseña mantiene el mismo mensaje público para cuentas existentes e inexistentes y no revela expiración. La disponibilidad SMTP no implica que se haya enviado un mensaje.
+- `logout-all` y la rotación de refresh bloquean la fila del usuario dentro de transacciones MySQL. Así, si ambas operaciones compiten, el logout revoca cualquier sucesor producido antes de terminar y una rotación posterior ve revocado el token anterior.

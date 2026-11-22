@@ -14,6 +14,7 @@ namespace fletflow.Infrastructure.Persistence
     {
         private readonly AppDbContext _context;
         private IDbContextTransaction? _routeAssignmentTransaction;
+        private IDbContextTransaction? _userSessionTransaction;
 
         public IUserRepository Users { get; }
         public IRoleRepository Roles { get; }
@@ -54,10 +55,40 @@ namespace fletflow.Infrastructure.Persistence
                 await _routeAssignmentTransaction.DisposeAsync();
                 _routeAssignmentTransaction = null;
             }
+            if (_userSessionTransaction is not null)
+            {
+                await _userSessionTransaction.CommitAsync();
+                await _userSessionTransaction.DisposeAsync();
+                _userSessionTransaction = null;
+            }
             return result;
         }
 
         public IPasswordResetTokenRepository PasswordResetTokens { get; }
+
+        public async Task LockUserSessionAsync(Guid userId)
+        {
+            if (_userSessionTransaction is not null)
+                throw new InvalidOperationException("Ya existe una transacción de sesión activa.");
+            if (!_context.Database.IsRelational())
+                return;
+
+            _userSessionTransaction = await _context.Database.BeginTransactionAsync();
+            if (!_context.Database.ProviderName!.Contains("MySql", StringComparison.OrdinalIgnoreCase))
+                return;
+
+            var connection = _context.Database.GetDbConnection();
+            await using var command = connection.CreateCommand();
+            command.Transaction = _userSessionTransaction.GetDbTransaction();
+            command.CommandText = "SELECT `Id` FROM `Users` WHERE `Id` = @id FOR UPDATE";
+            var idParameter = command.CreateParameter();
+            idParameter.ParameterName = "@id";
+            idParameter.DbType = DbType.Guid;
+            idParameter.Value = userId;
+            command.Parameters.Add(idParameter);
+            if (await command.ExecuteScalarAsync() is null)
+                throw new KeyNotFoundException("Usuario no encontrado.");
+        }
 
         public async Task LockRouteAssignmentAsync(Guid? vehicleId, Guid? driverId, Guid? routeId = null)
         {
@@ -167,6 +198,15 @@ namespace fletflow.Infrastructure.Persistence
 
         public void Rollback()
         {
+            if (_userSessionTransaction is not null)
+            {
+                try { _userSessionTransaction.Rollback(); }
+                finally
+                {
+                    _userSessionTransaction.Dispose();
+                    _userSessionTransaction = null;
+                }
+            }
             if (_routeAssignmentTransaction is null)
                 return;
 

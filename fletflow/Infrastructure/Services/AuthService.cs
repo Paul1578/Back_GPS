@@ -6,6 +6,7 @@ using fletflow.Infrastructure.Persistence.Contracts;  // IUnitOfWork
 using fletflow.Infrastructure.Security;
 using fletflow.Infrastructure.Security.Hashing;
 using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Logging;
 
 namespace fletflow.Infrastructure.Services
 {
@@ -16,14 +17,16 @@ namespace fletflow.Infrastructure.Services
         private readonly IEmailSender _emailService;
         private readonly EmailSettings _emailSettings;
         private readonly PasswordResetTokenFactory _passwordResetTokenFactory;
+        private readonly ILogger<AuthService> _logger;
 
-        public AuthService(IUnitOfWork unitOfWork, JwtTokenService jwtService, IEmailSender emailService, PasswordResetTokenFactory passwordResetTokenFactory, IOptions<EmailSettings> emailOptions)
+        public AuthService(IUnitOfWork unitOfWork, JwtTokenService jwtService, IEmailSender emailService, PasswordResetTokenFactory passwordResetTokenFactory, IOptions<EmailSettings> emailOptions, ILogger<AuthService> logger)
         {
             _unitOfWork = unitOfWork;
             _jwtService = jwtService;
             _emailService = emailService;
             _passwordResetTokenFactory = passwordResetTokenFactory;
             _emailSettings = emailOptions.Value;
+            _logger = logger;
         }
 
         // Access + Refresh
@@ -94,9 +97,8 @@ namespace fletflow.Infrastructure.Services
                 ExpiresAt = DateTime.UtcNow.AddDays(7)
             };
 
-            await _unitOfWork.RefreshTokens.RevokeAsync(rt.Id, replacedByTokenHash: newHash);
-            await _unitOfWork.RefreshTokens.AddAsync(newRt);
-            await _unitOfWork.CommitAsync();
+            if (!await _unitOfWork.RefreshTokens.TryRotateAsync(rt.Id, newRt))
+                throw new UnauthorizedAccessException("RT expirado o revocado.");
 
             return BuildResponse(user, newRaw, newRt.ExpiresAt);
         }
@@ -112,6 +114,8 @@ namespace fletflow.Infrastructure.Services
 
         public async Task LogoutAllAsync(Guid userId)
         {
+            await _unitOfWork.LockUserSessionAsync(userId);
+            await _unitOfWork.Users.IncrementTokenVersionAsync(userId);
             await _unitOfWork.RefreshTokens.RevokeAllForUserAsync(userId);
             await _unitOfWork.CommitAsync();
         }
@@ -142,9 +146,8 @@ namespace fletflow.Infrastructure.Services
 
             var user = await _unitOfWork.Users.GetByEmailAsync(normalizedEmail);
 
-            // respuesta ciega
+            // Mantener exactamente la misma respuesta para cuentas existentes e inexistentes.
             string? raw = null;
-            DateTime? exp = null;
 
             if (user != null)
             {
@@ -156,16 +159,23 @@ namespace fletflow.Infrastructure.Services
                 await _unitOfWork.PasswordResetTokens.AddAsync(token);
                 await _unitOfWork.CommitAsync();
 
-                exp = token.ExpiresAt;
                 var encoded = Uri.EscapeDataString(plainToken);
                 var link = $"{_emailSettings.ResetPasswordUrl}?token={encoded}";
-                await _emailService.SendPasswordResetEmailAsync(user.Email, link, plainToken);
+                try
+                {
+                    await _emailService.SendPasswordResetEmailAsync(user.Email, link, plainToken);
+                }
+                catch (Exception exception)
+                {
+                    // Keep the public response indistinguishable for known/unknown accounts.
+                    _logger.LogError(exception, "Password reset email delivery failed.");
+                }
             }
 
             return new ForgotPasswordResponseDto
             {
                 DebugToken = returnTokenInResponse ? raw : null,
-                ExpiresAt = exp
+                ExpiresAt = null
             };
         }
 

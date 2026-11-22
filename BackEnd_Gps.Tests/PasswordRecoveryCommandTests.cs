@@ -185,6 +185,7 @@ public class PasswordRecoveryCommandTests
             public Task AddAsync(RefreshToken token) => Task.CompletedTask;
             public Task<RefreshToken?> GetByTokenAsync(string rawToken) => Task.FromResult<RefreshToken?>(null);
             public Task RevokeAsync(Guid id, string? replacedByTokenHash = null) => Task.CompletedTask;
+            public Task<bool> TryRotateAsync(Guid currentTokenId, RefreshToken replacement) => Task.FromResult(false);
             public Task RemoveExpiredAsync() => Task.CompletedTask;
             public Task RevokeAllForUserAsync(Guid userId) { RevokeAllCount++; return Task.CompletedTask; }
         }

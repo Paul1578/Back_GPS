@@ -14,6 +14,7 @@ namespace fletflow.Infrastructure.Persistence.Contracts
         IRoleRepository Roles { get; }
 
         Task<int> CommitAsync();
+        Task LockUserSessionAsync(Guid userId) => Task.CompletedTask;
 
         /// <summary>
         /// Descarta cambios en el DbContext (si procede).

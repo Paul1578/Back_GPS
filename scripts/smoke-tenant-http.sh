@@ -241,6 +241,17 @@ request POST /Auth/login "$(jq -nc --arg email "$restricted_user_email" --arg pa
 expect_status 401 "Rechazar contraseña anterior"
 request POST /Auth/login "$(jq -nc --arg email "$restricted_user_email" --arg password "$restricted_user_new_password" '{email:$email,password:$password}')" ""
 expect_status 200 "Aceptar contraseña nueva"
+restricted_user_token="$(jq -er '.token // .accessToken' "$work_dir/response.json")"
+restricted_user_refresh_token="$(jq -er '.refreshToken' "$work_dir/response.json")"
+request POST /Auth/logout-all "" "$restricted_user_token"
+expect_status 200 "Cerrar todas las sesiones del usuario"
+request GET /Auth/me "" "$restricted_user_token"
+expect_status 401 "Invalidar access JWT tras logout-all"
+request POST /Auth/refresh "$(jq -nc --arg refreshToken "$restricted_user_refresh_token" '{refreshToken:$refreshToken}')" ""
+expect_status 401 "Revocar refresh token tras logout-all"
+request POST /Auth/login "$(jq -nc --arg email "$restricted_user_email" --arg password "$restricted_user_new_password" '{email:$email,password:$password}')" ""
+expect_status 200 "Permitir sesión nueva después de logout-all"
+restricted_user_token="$(jq -er '.token // .accessToken' "$work_dir/response.json")"
 
 deactivated_user_email="fletflow.e2e.deactivated.ci.$suffix@example.test"
 deactivated_user_password="$(openssl rand -hex 24)"
@@ -650,5 +661,81 @@ jq -e '.points[0].status == 0 and (.points[0].evidence | length == 0)' "$work_di
   || { echo "Un intento cross-tenant modificó estado/evidencia de la parada." >&2; cat "$work_dir/response.json" >&2; exit 1; }
 request GET "/Drivers/$driver_id" "" "$token"; expect_status 200 "Confirmar Driver tenant A intacto"
 request GET "/Vehicles/$vehicle_id" "" "$token"; expect_status 200 "Confirmar vehículo tenant A intacto"
+
+request POST /Auth/login "$(jq -nc --arg email "$admin_email" --arg password "$admin_password" '{email:$email,password:$password}')" ""
+expect_status 200 "Login Admin para prueba concurrente de refresh"
+race_refresh_token="$(jq -er '.refreshToken' "$work_dir/response.json")"
+race_refresh_body="$(jq -nc --arg refreshToken "$race_refresh_token" '{refreshToken:$refreshToken}')"
+curl --silent --show-error --output "$work_dir/refresh_a.json" --write-out '%{http_code}' \
+  --request POST "$api_base/Auth/refresh" --header 'Content-Type: application/json' --data "$race_refresh_body" \
+  >"$work_dir/refresh_a.status" &
+refresh_a_pid=$!
+curl --silent --show-error --output "$work_dir/refresh_b.json" --write-out '%{http_code}' \
+  --request POST "$api_base/Auth/refresh" --header 'Content-Type: application/json' --data "$race_refresh_body" \
+  >"$work_dir/refresh_b.status" &
+refresh_b_pid=$!
+wait "$refresh_a_pid"
+wait "$refresh_b_pid"
+refresh_a_status="$(cat "$work_dir/refresh_a.status")"
+refresh_b_status="$(cat "$work_dir/refresh_b.status")"
+[[ "$refresh_a_status:$refresh_b_status" == "200:401" || "$refresh_a_status:$refresh_b_status" == "401:200" ]] || {
+  echo "Rotación concurrente debía producir un solo 200 y un 401; obtuvo $refresh_a_status y $refresh_b_status." >&2
+  exit 1
+}
+if [[ "$refresh_a_status" == "200" ]]; then
+  successful_refresh_response="$work_dir/refresh_a.json"
+else
+  successful_refresh_response="$work_dir/refresh_b.json"
+fi
+rotated_refresh_token="$(jq -er '.refreshToken' "$successful_refresh_response")"
+old_refresh_hash="$(printf '%s' "$race_refresh_token" | sha256sum | awk '{print toupper($1)}')"
+new_refresh_hash="$(printf '%s' "$rotated_refresh_token" | sha256sum | awk '{print toupper($1)}')"
+race_refresh_db_state="$(mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" "$db_name" \
+  --batch --skip-column-names -e "SELECT CONCAT((SELECT COUNT(*) FROM RefreshTokens WHERE TokenHash='$old_refresh_hash' AND RevokedAt IS NOT NULL), ':', (SELECT COUNT(*) FROM RefreshTokens WHERE TokenHash='$new_refresh_hash' AND RevokedAt IS NULL));")"
+[[ "$race_refresh_db_state" == "1:1" ]] || { echo "La rotación no persistió exactamente un token sucesor (estado $race_refresh_db_state)." >&2; exit 1; }
+request POST /Auth/refresh "$(jq -nc --arg refreshToken "$race_refresh_token" '{refreshToken:$refreshToken}')" ""
+expect_status 401 "Denegar reutilización del refresh token rotado concurrentemente"
+request POST /Auth/refresh "$(jq -nc --arg refreshToken "$rotated_refresh_token" '{refreshToken:$refreshToken}')" ""
+expect_status 200 "Aceptar únicamente el refresh token sucesor ganador"
+
+request POST /Auth/login "$(jq -nc --arg email "$admin_email" --arg password "$admin_password" '{email:$email,password:$password}')" ""
+expect_status 200 "Login Admin para carrera refresh/logout-all"
+logout_race_token="$(jq -er '.token // .accessToken' "$work_dir/response.json")"
+logout_race_refresh="$(jq -er '.refreshToken' "$work_dir/response.json")"
+logout_race_user_id="$(mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" "$db_name" \
+  --batch --skip-column-names -e "SELECT Id FROM Users WHERE Email='$admin_email';")"
+# Mantener bloqueada la fila de usuario mientras ambos requests llegan al API fuerza
+# que compitan por el mismo lock de sesión, en vez de depender sólo del scheduler.
+mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" "$db_name" \
+  -e "SET SESSION innodb_lock_wait_timeout=10; START TRANSACTION; SELECT Id FROM Users WHERE Id='$logout_race_user_id' FOR UPDATE; DO SLEEP(2); COMMIT;" \
+  >"$work_dir/session_lock.out" 2>"$work_dir/session_lock.err" &
+session_lock_pid=$!
+sleep 0.2
+curl --silent --show-error --output "$work_dir/logout_race.json" --write-out '%{http_code}' \
+  --request POST "$api_base/Auth/logout-all" --header "Authorization: Bearer $logout_race_token" \
+  >"$work_dir/logout_race.status" &
+logout_race_pid=$!
+curl --silent --show-error --output "$work_dir/refresh_logout_race.json" --write-out '%{http_code}' \
+  --request POST "$api_base/Auth/refresh" --header 'Content-Type: application/json' \
+  --data "$(jq -nc --arg refreshToken "$logout_race_refresh" '{refreshToken:$refreshToken}')" \
+  >"$work_dir/refresh_logout_race.status" &
+refresh_logout_race_pid=$!
+wait "$logout_race_pid"
+wait "$refresh_logout_race_pid"
+wait "$session_lock_pid"
+logout_race_status="$(cat "$work_dir/logout_race.status")"
+refresh_logout_race_status="$(cat "$work_dir/refresh_logout_race.status")"
+[[ "$logout_race_status" == "200" && ( "$refresh_logout_race_status" == "200" || "$refresh_logout_race_status" == "401" ) ]] || {
+  echo "Carrera logout-all/refresh produjo estados inesperados: logout=$logout_race_status refresh=$refresh_logout_race_status." >&2
+  exit 1
+}
+active_refresh_after_logout="$(mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" "$db_name" \
+  --batch --skip-column-names -e "SELECT COUNT(*) FROM RefreshTokens WHERE UserId='$logout_race_user_id' AND RevokedAt IS NULL AND ExpiresAt > UTC_TIMESTAMP(6);")"
+[[ "$active_refresh_after_logout" == "0" ]] || { echo "Logout-all concurrente dejó $active_refresh_after_logout refresh tokens activos." >&2; exit 1; }
+if [[ "$refresh_logout_race_status" == "200" ]]; then
+  race_successor_token="$(jq -er '.refreshToken' "$work_dir/refresh_logout_race.json")"
+  request POST /Auth/refresh "$(jq -nc --arg refreshToken "$race_successor_token" '{refreshToken:$refreshToken}')" ""
+  expect_status 401 "Logout-all revoca el sucesor de refresh concurrente"
+fi
 
 echo "OK: aislamiento HTTP/MySQL entre tenants; autorización User/Manager/Logistics; Logistics creó/editó/leyó ruta, inició operación pickup+delivery con evidencia, registró GPS, completó ruta y verificó vehículo Available; cleanup de Vehicles/Drivers/Routes/RoutePositions; revocación de sesiones."

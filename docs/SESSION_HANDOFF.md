@@ -561,3 +561,15 @@ Errores de migración, herramientas, QA y soluciones están en `docs/ERROR_LOG.m
 - Action backend 45060482906 validó build y xUnit 100/100, pero falló tenant smoke con suffix unbound variable. Ya se movió inicialización del sufijo al comienzo de scripts/smoke-tenant-http.sh.
 - Bash syntax y diff-check se deben repetir. Publicar corrección y confirmar Actions: activate/reset, edición con Driver vinculado inactivo, concurrencia y cleanup.
 - El Front 526c07b sigue en Actions 45060482928; verificar su resultado y si valida la rama backend actual.
+
+## Backend smoke validado — 2026-11-22
+
+- Action 45060714338 pasó en commit 14348f3: Release build, 100/100 pruebas, tenant HTTP/MySQL, rutas concurrentes y cleanup.
+- La ampliación activate/reset y el rechazo de editar rutas para cuentas Driver desactivadas quedan verificadas en MySQL desechable.
+- Front Action 45060482928 sigue ejecutando los 33 E2E autenticados; revisar resultado y corregir fallos antes de cerrar este lote.
+
+## Continuación — aislamiento de fixtures Driver para Playwright — 2026-11-22
+
+- El E2E frontend descubrió colisión de agenda al compartir Driver operativo entre escenarios paralelos. El runner ahora crea y exporta un Driver adicional específico para Mi Ruta/evidencia; extrae ambos IDs con Node y activa ambas cuentas.
+- Fixtures de runner se limpian con el patrón existente `fletflow.e2e.driver.*` / documentos `E2EQA%`; confirmar cleanup en Action.
+- `bash -n` y diff-check pasan. Backend Action `45060714338` validó el SHA anterior; ejecutar CI al publicar este cambio.

@@ -443,3 +443,13 @@ Nota de actualización: algunos resultados históricos de registro público más
 
 - Backend 53e2edc: Release build y xUnit 100/100 correctos. Action 45060482906 falló en smoke HTTP porque suffix estaba declarado después de usarlo. Corrección trasladada al inicio del script; nueva Action pendiente.
 - No marcar terminada esta tanda hasta que MySQL smoke complete y cleanup quede verde.
+
+## CI del smoke MySQL — 2026-11-22
+
+- Action 45060714338 sobre Backend 14348f3 pasó Release build, xUnit 100/100, smoke tenant HTTP/MySQL y concurrencia de asignación; cleanup correcto.
+- La inicialización temprana de suffix resolvió el fallo del Action 45060482906. El smoke ejercitó los nuevos endpoints de activación/restablecimiento y la edición/inicio con cuenta Driver inactiva.
+
+## Fixtures E2E de conductor aislados — 2026-11-22
+
+- El runner provisiona un Driver adicional exclusivo para el escenario operativo de Mi Ruta/evidencia; el fixture de Driver de gestión queda libre para CRUD. Los IDs JSON se extraen con Node sin introducir dependencia jq.
+- La sintaxis del runner pasa localmente. Action integrado de backend pendiente para verificar provisioning y cleanup en MySQL efímero.

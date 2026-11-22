@@ -494,3 +494,12 @@ La invitación envía sólo el enlace de activación; el usuario fija su contras
 - bash -n y diff-check correctos. Suite y Actions integradas pendientes.
 
 - Durante la fixture HTTP, TokenHash se normaliza a hexadecimal mayúsculo, igual a Convert.ToHexString; las contraseñas fixture se generan aleatoriamente.
+
+## Actions — smoke de recuperación y ruta — 2026-11-22
+
+- Action 45060714338, commit 14348f3: Release build, xUnit 100/100, smoke tenant HTTP/MySQL (activate/reset, tokens de un solo uso, revocación de refresh, edición con cuenta Driver inactiva), concurrencia y cleanup: success.
+
+## Fixture Driver operativo adicional
+
+- `scripts/run-e2e-local.sh` crea una cuenta Driver de uso exclusivo para la ruta operativa, separada del Driver de CRUD, y exporta `FLETFLOW_E2E_ROUTE_DRIVER_ID` junto con sus credenciales.
+- Los fixtures se eliminan mediante `scripts/cleanup-e2e.sql`. La validación de sintaxis pasa localmente; falta confirmar provisioning, E2E y cleanup en la Action nueva.

@@ -1062,3 +1062,16 @@ Cada cambio de API debe incluir validación de compilación, migraciones si apli
 - Action 45060482906 pasó build y xUnit 100/100, pero el smoke tenant se detuvo en la línea 429: suffix unbound variable por set -u. Los nuevos escenarios activate/reset quedaron antes de la inicialización que históricamente estaba en línea 497.
 - Corrección: inicializar suffix junto a work_dir al inicio del smoke para que todos los fixtures puedan reutilizarlo. La falla sucedió antes de crear los usuarios de activate/reset; el runner continuó cleanup y destruyó contenedores.
 - Prevención: mover estado compartido del script al bloque de inicialización, antes de su primer uso; bash -n no detecta variables no definidas en ejecución.
+
+## 2026-11-22 — Error de sintaxis en generador del apéndice — SIN CAMBIOS
+
+- Al documentar el fallo de CI, el literal JS delimitado con backticks contenía un backtick Markdown sin escapar y el runtime rechazó el módulo antes de ejecutar comandos. No hubo cambios de archivos.
+- Solución: evitar backticks en el texto del literal o usar strings escapados; el registro se escribió después.
+- Prevención: revisar delimitadores del lenguaje host cuando los textos Markdown contienen su propio formato.
+
+## 2026-11-22 — Runner E2E requiere fixture Driver operativo aislado — CORREGIDO; CI PENDIENTE
+
+- El E2E frontend compartía un único Driver para rutas operativas y aislamiento multi-tenant; en ejecución paralela ambos intentaban asignar rutas activas y MySQL/API rechazaba una con 409.
+- Solución: el provisionador local/CI crea un segundo usuario y entidad Driver de QA para Mi Ruta/foto, exporta su ID y activa la cuenta. La extracción del JSON se hace con Node, ya requerido por el frontend; así no se añade `jq` como dependencia implícita.
+- `bash -n scripts/run-e2e-local.sh` y `git diff --check` pasan. Action backend `45060714338` pasó antes de este cambio de fixture; una corrida nueva debe confirmar creación y limpieza del segundo Driver.
+- Prevención: fixtures paralelos para recursos con exclusión de agenda y dependencias del runner limitadas a las herramientas verificadas por el script.

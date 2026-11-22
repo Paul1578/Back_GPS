@@ -93,10 +93,12 @@ export FLETFLOW_E2E_DEACTIVATION_EMAIL="fletflow.e2e.user.deactivation.$user_suf
 export FLETFLOW_E2E_DEACTIVATION_PASSWORD="$(openssl rand -hex 24)"
 export FLETFLOW_E2E_DRIVER_EMAIL="fletflow.e2e.driver.$user_suffix@example.test"
 export FLETFLOW_E2E_DRIVER_PASSWORD="$(openssl rand -hex 24)"
+export FLETFLOW_E2E_ROUTE_DRIVER_EMAIL="fletflow.e2e.driver.route.$user_suffix@example.test"
+export FLETFLOW_E2E_ROUTE_DRIVER_PASSWORD="$(openssl rand -hex 24)"
 export FLETFLOW_E2E_OTHER_TENANT_EMAIL="fletflow.e2e.admin.other.$user_suffix@example.test"
 export FLETFLOW_E2E_OTHER_TENANT_PASSWORD="$(openssl rand -hex 24)"
 
-FLETFLOW_E2E_DRIVER_ID="$(node <<'NODE'
+FLETFLOW_E2E_DRIVER_IDS="$(node <<'NODE'
 const api = "http://127.0.0.1:5048/api";
 const email = process.env.FLETFLOW_E2E_ADMIN_EMAIL;
 const password = process.env.FLETFLOW_E2E_ADMIN_PASSWORD;
@@ -161,17 +163,31 @@ const driver = await createUser({
   phoneNumber: "0990000000",
 });
 if (!driver.driverId) throw new Error("El fixture Driver no devolvió DriverId.");
-process.stdout.write(driver.driverId);
+const routeDriver = await createUser({
+  username: "E2E QA Route Driver",
+  email: process.env.FLETFLOW_E2E_ROUTE_DRIVER_EMAIL,
+  password: process.env.FLETFLOW_E2E_ROUTE_DRIVER_PASSWORD,
+  roleName: "Driver",
+  firstName: "E2E QA Route",
+  lastName: "Driver",
+  documentNumber: `E2EQAR${Date.now()}`,
+  phoneNumber: "0990000001",
+});
+if (!routeDriver.driverId) throw new Error("El fixture Driver de operación no devolvió DriverId.");
+process.stdout.write(JSON.stringify({ driverId: driver.driverId, routeDriverId: routeDriver.driverId }));
 NODE
 )"
+FLETFLOW_E2E_DRIVER_ID="$(node -e 'process.stdout.write(JSON.parse(process.argv[1]).driverId)' "$FLETFLOW_E2E_DRIVER_IDS")"
+FLETFLOW_E2E_ROUTE_DRIVER_ID="$(node -e 'process.stdout.write(JSON.parse(process.argv[1]).routeDriverId)' "$FLETFLOW_E2E_DRIVER_IDS")"
 export FLETFLOW_E2E_DRIVER_ID
+export FLETFLOW_E2E_ROUTE_DRIVER_ID
 
 mysql --protocol=TCP --host="$MYSQL_HOST" --port="$MYSQL_PORT" --user="$MYSQL_USER" "$DB_NAME" \
   -e "UPDATE Users SET IsActive=1, MustChangePassword=0 WHERE Email='$FLETFLOW_E2E_OTHER_TENANT_EMAIL';" \
   >/dev/null 2>&1
 
 mysql --protocol=TCP --host="$MYSQL_HOST" --port="$MYSQL_PORT" --user="$MYSQL_USER" "$DB_NAME" \
-  -e "UPDATE Users SET IsActive=1, MustChangePassword=0 WHERE Email IN ('$FLETFLOW_E2E_USER_EMAIL', '$FLETFLOW_E2E_DEACTIVATION_EMAIL', '$FLETFLOW_E2E_DRIVER_EMAIL');" \
+  -e "UPDATE Users SET IsActive=1, MustChangePassword=0 WHERE Email IN ('$FLETFLOW_E2E_USER_EMAIL', '$FLETFLOW_E2E_DEACTIVATION_EMAIL', '$FLETFLOW_E2E_DRIVER_EMAIL', '$FLETFLOW_E2E_ROUTE_DRIVER_EMAIL');" \
   >/dev/null 2>&1
 
 PLAYWRIGHT_BASE_URL="$playwright_base_url" \

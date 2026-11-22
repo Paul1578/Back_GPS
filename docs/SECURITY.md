@@ -75,3 +75,5 @@ El smoke anónimo solicitó rol Admin en el registro; la fila persistida conserv
 - Se agregó `Users.TokenVersion` (migración aditiva con default 0). Cada cambio/reset/activación incrementa la versión y emite JWT con claim `token_version`; `OnTokenValidated` compara el claim con la versión actual en DB. Cambiar contraseña invalida access y refresh anteriores inmediatamente.
 - La operación mantiene password hash, incremento y revocación de refresh dentro del mismo `UnitOfWork`/commit. La migración debe aplicarse al desplegar esta rama; los tokens anteriores al cambio, sin claim de versión, requerirán iniciar sesión nuevamente.
 - xUnit: 54/54. Smoke HTTP de cambio de contraseña extendido para MySQL; validar en el nuevo run Actions antes de declarar verificado extremo a extremo.
+
+- Resultado Actions `44983337062` (commit `cff33c6`): migración aplicada en MySQL disposable; smoke cambió contraseña, access/refresh viejos dieron 401, el login con password anterior falló y el nuevo fue aceptado. Workflow completo success.

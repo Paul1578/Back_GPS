@@ -162,3 +162,5 @@ Errores de migración, herramientas, QA y soluciones están en `docs/ERROR_LOG.m
 - Rama `chore/stabilize-fleet-platform`; cambios locales no publicados: `User.TokenVersion`, migración `InvalidateAccessTokensAfterPasswordChange`, claim JWT `token_version`, verificación por request, incremento transaccional en los dos métodos de cambio de password, y smoke HTTP de cambio/login/refresh.
 - Suite xUnit Release 54/54; build 0 warnings/0 errores; script smoke pasa `bash -n`. Siguiente: revisar diff, publicar backend y esperar CI (migración MySQL + smoke tenant), corregir/documentar fallos y reflejar el resultado también en el workflow frontend.
 - Front UI lifecycle añadido en `96caf15`: Actions `44982723150` passed; E2E integrado Chrome/API/MySQL ejecutado correctamente.
+
+- Acciones terminadas: backend run `44983337062` success para `cff33c6`; migración `TokenVersion` y smoke MySQL de cambio de contraseña pasaron. Access/refresh anteriores 401, login previo 401 y nuevo 200. Workflow frontend `44983346765` aún en curso al último chequeo; verificar antes de continuar.

@@ -215,3 +215,5 @@ La invitación envía sólo el enlace de activación; el usuario fija su contras
 - Smoke HTTP agrega cambio de contraseña autenticado: access token y refresh previos deben dar 401, contraseña anterior debe fallar y la nueva debe iniciar sesión.
 - `PasswordRecoveryCommandTests` comprueba que reset/activación incrementan `TokenVersion` junto con hash, uso de token y revocación refresh.
 - Suite local Release: 54/54; build 0 warnings/0 errores; `bash -n scripts/smoke-tenant-http.sh` correcto. Integración contra MySQL queda en Actions después del push.
+
+- Resultado remoto: Actions `44983337062` success. MySQL descartable aplicó la migración; smoke HTTP probó cambio de contraseña, revocación inmediata de access y refresh, rechazo de la clave anterior y aceptación de la nueva.

@@ -126,3 +126,5 @@ Fecha de corte: 2026-11-21.
 - Corregido hueco: la rotación de refresh no invalidaba access JWT ya emitidos. `TokenVersion` persistida incrementa en cambio/reset/activación; middleware JWT verifica claim y versión actual.
 - Migración aditiva añade `Users.TokenVersion` con default 0; una comprobación al estilo de cambio de contraseña verifica 401 para token viejo y login con contraseña nueva. Smoke MySQL se ejecutará en Actions después del push.
 - xUnit 54/54, Release build 0 warnings/0 errors; `bash -n` del smoke y `git diff --check` correctos. No marcar completo hasta validar integración CI y seguir cobertura restante.
+
+- Resultado actualizado: Actions backend `44983337062` pasó con migración y verificación real HTTP/MySQL del cambio de contraseña. Access/refresh viejos 401; contraseña vieja rechazada y nueva aceptada. xUnit y build del workflow también verdes.

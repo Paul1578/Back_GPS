@@ -586,10 +586,10 @@ Cada cambio de API debe incluir validación de compilación, migraciones si apli
 - Prevención: al escribir pruebas HTTP nuevas, inspeccionar y validar el código real de respuesta del endpoint antes de codificar la expectativa; conservar asserts de persistencia para verificar el resultado de negocio.
 - Verificación: Actions `45001599626` pasó build, xUnit 61/61, smoke HTTP/MySQL (incluida la carrera 200/409 y persistencia atómica) y prueba de concurrencia de asignación.
 - Error de ejecución relacionado: el primer `gh workflow run backend-ci.yml` respondió HTTP 404 porque ese archivo no existe. El workflow real es `.github/workflows/ci.yml`; repetir el dispatch usando ese nombre.
-# 2026-11-22 — GPS permitía acceso con perfil Driver inactivo — RESUELTO EN CÓDIGO, E2E PENDIENTE
+# 2026-11-22 — Detalle y GPS permitían acceso con perfil Driver inactivo — RESUELTO EN CÓDIGO, E2E PENDIENTE
 
-- Hallazgo de revisión independiente: `GET/POST /Routes/{id}/positions` comparaban `DriverId` de ruta, pero no exigían `Driver.IsActive`; un usuario autenticado con rol Driver podía seguir leyendo o enviando GPS tras desactivar su perfil operativo.
-- Causa: ambos endpoints duplicaban la comprobación de propietario y omitían el helper central `IsCurrentDriverAssigned`, que también valida el estado activo y compatibilidad heredada.
-- Solución: GPS de lectura y escritura resuelven la ruta dentro del tenant y usan `IsCurrentDriverAssigned`; ruta inexistente responde 404 y perfil inactivo/no asignado responde 403.
+- Hallazgo de revisión independiente: `GET /Routes/{id}` y `GET/POST /Routes/{id}/positions` no exigían `Driver.IsActive`; un usuario autenticado podía consultar detalle/GPS o enviar GPS tras desactivar su perfil operativo.
+- Causa: detalle comprobaba sólo el ID asignado y los endpoints GPS duplicaban el ownership, omitiendo el helper central `IsCurrentDriverAssigned` que valida estado activo y compatibilidad heredada.
+- Solución: detalle y GPS de lectura/escritura cargan la ruta dentro del tenant y usan `IsCurrentDriverAssigned`; ruta inexistente responde 404 y perfil inactivo/no asignado responde 403. Listado y mutaciones ya aplicaban esta regla.
 - Prevención: reutilizar el helper de autorización central en endpoints operativos Driver y probar no sólo acceso cruzado, también cambios de estado del perfil con JWT todavía vigente.
 - Verificación: código implementado; falta ejecutar Release/xUnit y E2E integrado de Driver inactivo y rutas de otro conductor antes de cerrar el hallazgo.

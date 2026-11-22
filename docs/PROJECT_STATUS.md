@@ -5,7 +5,7 @@
 
 ## Actualización — autorización GPS Driver — 2026-11-22
 
-- Se corrigió la autorización en lectura/escritura GPS para requerir que el Driver autenticado siga activo y asignado a la ruta, alineándola con el helper central. Pruebas automatizadas integradas para perfil inactivo y otro Driver están en preparación; CI pendiente.
+- Se corrigió la autorización de detalle y lectura/escritura GPS para requerir que el Driver autenticado siga activo y asignado a la ruta, alineándola con el helper central. Pruebas automatizadas integradas para perfil inactivo y otro Driver están en preparación; CI pendiente.
 
 ## Actualización — 2026-11-22
 

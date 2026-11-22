@@ -214,21 +214,14 @@ namespace fletflow.Api.Controllers
         [Authorize(Roles = "Admin,Manager,Logistics,Driver")]
         public async Task<ActionResult<RouteDto>> GetById(Guid id)
         {
-            var result = await _getById.Execute(id);
             if (User.IsInRole("Driver"))
             {
-                var userId = GetUserIdFromClaims();
-                if (userId == null)
-                {
-                    return Forbid();
-                }
-                var currentDriverId = await ResolveDriverIdAsync(userId.Value);
-                var matchesDriver = currentDriverId != null && result.DriverId == currentDriverId.Value;
-                if (!matchesDriver)
-                {
-                    return Forbid();
-                }
+                var route = await _unitOfWork.Routes.GetByIdAsync(id);
+                if (route is null) return NotFound();
+                if (!await IsCurrentDriverAssigned(route)) return Forbid();
             }
+
+            var result = await _getById.Execute(id);
             return Ok(result);
         }
 

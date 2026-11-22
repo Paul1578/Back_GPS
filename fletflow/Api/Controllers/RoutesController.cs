@@ -300,23 +300,9 @@ namespace fletflow.Api.Controllers
         {
             if (User.IsInRole("Driver"))
             {
-                var userId = GetUserIdFromClaims();
-                if (userId == null)
-                {
-                    return Forbid();
-                }
-                var currentDriverId = await ResolveDriverIdAsync(userId.Value);
-                if (currentDriverId == null)
-                {
-                    return Forbid();
-                }
-                var route = await _getById.Execute(routeId);
-                var matchesDriver = route.DriverId == currentDriverId.Value;
-                var matchesLegacy = route.DriverId == userId.Value;
-                if (!matchesDriver && !matchesLegacy)
-                {
-                    return Forbid();
-                }
+                var route = await _unitOfWork.Routes.GetByIdAsync(routeId);
+                if (route is null) return NotFound();
+                if (!await IsCurrentDriverAssigned(route)) return Forbid();
             }
 
             var result = await _registerPosition.Execute(
@@ -341,23 +327,9 @@ namespace fletflow.Api.Controllers
         {
             if (User.IsInRole("Driver"))
             {
-                var userId = GetUserIdFromClaims();
-                if (userId == null)
-                {
-                    return Forbid();
-                }
-                var currentDriverId = await ResolveDriverIdAsync(userId.Value);
-                if (currentDriverId == null)
-                {
-                    return Forbid();
-                }
-                var route = await _getById.Execute(routeId);
-                var matchesDriver = route.DriverId == currentDriverId.Value;
-                var matchesLegacy = route.DriverId == userId.Value;
-                if (!matchesDriver && !matchesLegacy)
-                {
-                    return Forbid();
-                }
+                var route = await _unitOfWork.Routes.GetByIdAsync(routeId);
+                if (route is null) return NotFound();
+                if (!await IsCurrentDriverAssigned(route)) return Forbid();
             }
 
             var result = await _getPositions.Execute(routeId, from, to);

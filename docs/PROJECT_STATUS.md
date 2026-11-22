@@ -1,3 +1,7 @@
+## Actualización — autorización GPS Driver — 2026-11-22
+
+- Se corrigió la autorización en lectura/escritura GPS para requerir que el Driver autenticado siga activo y asignado a la ruta, alineándola con el helper central. Pruebas automatizadas integradas para perfil inactivo y otro Driver están en preparación; CI pendiente.
+
 ## Actualización — 2026-11-22
 
 - Alta de usuarios Driver concurrente probada de punta a punta: un ganador HTTP 200, perdedor 409 y persistencia única Users/Driver/PasswordResetToken. Actions `45001599626` success, xUnit 61/61, smoke HTTP/MySQL y concurrencia de asignación incluidos.

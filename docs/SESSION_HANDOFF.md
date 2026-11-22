@@ -1,3 +1,10 @@
+## Autorización Driver/GPS — validación pendiente — 2026-11-22
+
+- Auditor independiente de solo lectura confirmó filtros tenant y controles Driver para detalle, estado, paradas y evidencia; faltaba cobertura HTTP automatizada de otros conductores en paradas/evidencia/GPS.
+- Hallazgo concreto: `GET/POST /Routes/{id}/positions` omitían `Driver.IsActive`. `RoutesController` ahora carga ruta por repositorio tenant y aplica `IsCurrentDriverAssigned`, cerrando acceso GPS del perfil Driver desactivado.
+- El E2E Front Driver se amplió para intentar lista, detalle, estado, parada, evidencia y GPS de una ruta de otro Driver del mismo tenant, y para comprobar que denegar no muta datos; también desactiva/reactiva el perfil con JWT vigente y valida bloqueo GPS.
+- Próximo: build/xUnit backend, lint/build y Actions Front integrado con E2E real; no marcar autorización cerrada antes del resultado.
+
 ## Alta concurrente Driver verificada — 2026-11-22
 
 - Backend `chore/stabilize-fleet-platform` corrigió el smoke para reflejar contrato actual: una solicitud de alta responde 200 (se admite 201 si cambia el endpoint) y la carrera perdedora 409. SQL exige exactamente una fila Users, Driver y PasswordResetToken.

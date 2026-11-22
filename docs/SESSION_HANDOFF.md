@@ -2,9 +2,9 @@
 
 - Auditoría read-only encontró que `CreateRouteCommand` y `UpdateRouteCommand` podían asociar un Vehicle todavía asignado a otro Driver, aunque la asignación directa ya devolvía conflicto.
 - Ambos comandos ahora vuelven a comprobar `GetOtherAssignedToVehicleAsync` después del lock/reload y lanzan `BusinessConflictException` antes de modificar datos. xUnit Release **82/82** pasa; dos regresiones SQLite comprueban que creación/edición conflictiva no mutan ruta/asignaciones.
-- `smoke-route-concurrency.sh` verifica HTTP 409 en ambas entradas y estado SQL intacto; `bash -n` y `git diff --check` pasan. Aún falta ejecutar MySQL descartable y Actions.
+- `smoke-route-concurrency.sh` verifica HTTP 409 en ambas entradas y estado SQL intacto; `bash -n` y `git diff --check` pasan. Actions `45032172895` terminó success en backend `8e76f80`: Release build, xUnit **82/82**, tenant HTTP/MySQL y smoke de concurrencia; cleanup success.
 - La primera suite completa falló 81/82 porque el caso de doble inicio construía dos conductores asignados al mismo vehículo, contrario a la regla documentada. Se actualizó el fixture a mismo Driver/Vehicle con agendas separadas; el resultado final fue 82/82. Registrado en `ERROR_LOG.md`.
-- Actions `45031869323` pasó build, xUnit y smoke tenant, pero el smoke de concurrencia falló creando el fixture del update porque reutilizaba v2/d2 asignados por un caso anterior. Script corregido para aislar recursos; volver a correr CI antes de afirmar integración.
+- Actions `45031869323` pasó build/xUnit/tenant HTTP, pero el smoke de concurrencia falló por reutilizar v2/d2 asignados por un caso anterior. Script corregido para aislar recursos; repetición `45032172895` success, incluidos los dos conflictos HTTP/SQL y cleanup.
 - Front también filtra la opción ya asignada y añade E2E de ciclo de visibilidad. Mantener ambas ramas aisladas y no cerrar la auditoría global.
 
 ## Trabajo actual — CRUD de perfil de miembro — 2026-11-22

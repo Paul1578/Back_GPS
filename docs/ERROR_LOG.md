@@ -874,9 +874,9 @@ Cada cambio de API debe incluir validación de compilación, migraciones si apli
 - Se añadió cobertura HTTP/MySQL al smoke para creación y edición fallidas, incluyendo consultas SQL de integridad. Pendiente ejecutar smoke local/Actions con MySQL descartable.
 - Prevención: al cambiar reglas de consistencia, revisar también los fixtures de agenda/concurrencia y mantener cada prueba enfocada en una sola invariante.
 
-## 2026-11-22 — Smoke de concurrencia reutilizaba un vehículo ya asignado — CORREGIDO; Actions pendiente
+## 2026-11-22 — Smoke de concurrencia reutilizaba un vehículo ya asignado — CORREGIDO Y VALIDADO
 
 - Actions `45031869323` pasó build/xUnit/tenant HTTP, pero falló en `smoke-route-concurrency.sh`: el caso de update esperaba crear una ruta base con `v2/d2`, cuando el escenario previo ya había asignado ese vehículo a otro Driver. El nuevo HTTP 409 era el resultado correcto.
 - Solución: cada escenario de update y doble inicio usa ahora vehículos/conductores propios, evitando acoplar el resultado a qué petición concurrente ganó.
-- El log del smoke inicial no imprimía fixture/relación completa; el siguiente run debe validar ambos 409 con SQL y limpieza. Repetir Actions y documentar resultado.
+- Actions `45032172895` pasó Release xUnit 82/82, smoke tenant y smoke de concurrencia. Confirmó ambos HTTP 409, estado SQL intacto y cleanup del runner.
 - Prevención: escenarios de concurrencia deben tener recursos QA aislados por invariante y no depender de la identidad del ganador previo.

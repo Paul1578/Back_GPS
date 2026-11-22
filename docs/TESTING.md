@@ -23,7 +23,7 @@
 - `bash -n` en `smoke-tenant-http.sh`, `smoke-route-concurrency.sh`, `run-e2e-local.sh`, y `git diff --check`: correctos.
 - Smokes HTTP/API/MySQL 8 efímeros: ambos exit 0. Tenant smoke ejercitó logout cross-account y logout propio; concurrency smoke verificó agenda/asignaciones/roles. Cleanup corroboró cero fixtures.
 - Front integrado cross-repo: Playwright **33/33**, lint/build/audit (0 vulnerabilidades).
-- Actions para los nuevos commits sigue pendiente.
+- Action `45058536309` sobre `22c2fb6` pasó Release build/xUnit, smoke tenant HTTP/MySQL, concurrencia y cleanup.
 
 # Pruebas backend
 

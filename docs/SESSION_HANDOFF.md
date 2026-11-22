@@ -2,10 +2,10 @@
 
 - Branch backend `chore/stabilize-fleet-platform`, frontend `refactor/route-builder`; `main` intacta.
 - Seguridad: `/Auth/logout` compara dueño del refresh con `NameIdentifier`; foreign token no se revoca y token propio sí. Regresión xUnit agregada.
-- Validación local: Release build 0 warnings/errores, **99/99** xUnit, `smoke-tenant-http.sh` y `smoke-route-concurrency.sh` exit 0; ambos usaron MySQL 8 efímero y limpiaron recursos QA.
+- Validación local: Release build 0 warnings/errores, **99/99** xUnit, `smoke-tenant-http.sh` y `smoke-route-concurrency.sh` exit 0; ambos usaron MySQL 8 efímero y limpiaron recursos QA. Action [`45058536309`](https://github.com/Paul1578/Back_GPS/actions/runs/45058536309) pasó en `22c2fb6`.
 - Front relacionado: **33/33** E2E API/MySQL, build/lint, audit 0 vulnerabilidades; manager constructor responsive y CRUD actualizado.
 - Error de autorización de logout y errores de ejecución del E2E Front registrados en `docs/ERROR_LOG.md`.
-- Próximo paso: commit/push de ambas ramas y ejecutar Actions para los SHAs nuevos; continuar la auditoría CRUD/roles/responsive. Admin delegado requiere decisión de producto, SMTP/PFX/infra productiva externos, nativo móvil aplazado.
+- Próximo paso: continuar auditoría CRUD/roles/responsive y mantener los pendientes delimitados. Admin delegado requiere decisión de producto, SMTP/PFX/infra productiva externos, nativo móvil aplazado.
 
 # Continuación histórica — Sesión y Driver con ruta Pending — 2026-11-22
 

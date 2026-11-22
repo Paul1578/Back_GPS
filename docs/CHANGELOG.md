@@ -3,6 +3,7 @@
 - `POST /api/Auth/logout` obtiene el ID del JWT y sólo revoca refresh tokens de esa cuenta.
 - Regresiones xUnit para refresh ajeno/propio; smoke HTTP/MySQL verifica persistencia real.
 - Release build limpio, xUnit **99/99**, tenant/concurrency smokes exit 0 y cleanup sin fixtures.
+- Action `45058536309` sobre `22c2fb6` pasó build/xUnit, tenant HTTP/MySQL, concurrencia y cleanup.
 - Hallazgo y prevención en `docs/ERROR_LOG.md`; auditoría en `docs/SECURITY.md`.
 
 ## 2026-11-22 — Edición de perfil de miembros del equipo

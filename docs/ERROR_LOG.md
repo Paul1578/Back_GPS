@@ -4,6 +4,7 @@
 - Corrección: el controlador obtiene el ID autenticado de `NameIdentifier`; `AuthService.LogoutAsync` sólo revoca cuando el `UserId` del refresh coincide. Token inexistente o de otra cuenta conserva respuesta idempotente para no revelar si existe.
 - Regresiones xUnit verifican token ajeno sin commit/revocación y token propio revocado/commit. El smoke HTTP real verificó que cuenta B no revoca refresh de A, que A aún puede rotarlo y que A sí puede revocar su refresh; suite Release **99/99**, build 0 warnings/errores.
 - `smoke-tenant-http.sh` y `smoke-route-concurrency.sh` terminaron exit 0 contra API/MySQL 8 efímeros; cleanup confirmó cero fixtures QA.
+- Action `45058536309` en commit `22c2fb6` pasó la misma matriz Release/xUnit, aislamiento HTTP/MySQL y concurrencia.
 - Prevención: para operaciones de sesión autenticadas, vincular siempre el recurso de sesión al principal del JWT, aunque el endpoint reciba además identificadores/tokens.
 
 # 2026-11-22 — Matriz HTTP CRUD Driver de Manager — CORREGIDA Y VALIDADA

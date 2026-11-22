@@ -416,3 +416,9 @@
 ## 2026-11-22 — Registro neutral para no enumerar emails
 
 - Registro público responde igual si el email es nuevo o ya existe; ya no auto-emite tokens. Front muestra mensaje neutral y envía a login. Hash BCrypt antes del pre-check + espera de 500 ms; Action `45066082294` pasó Release build, 107/107, smoke MySQL de tiempos/respuesta y cleanup.
+
+## 2026-11-22 — Smoke de ciclo Vehicle en tenant
+
+- `smoke-tenant-http.sh` ahora comprueba editar vehículo con lectura persistida en HTTP/MySQL, cambio de estado a mantenimiento sin modificar `IsActive`, baja lógica y reactivación conservando estado.
+- `bash -n`, `git diff --check` y smoke completo sobre MySQL efímero aislado pasaron; cleanup sin fixtures. Action para este commit documental/código pendiente.
+- Primer arranque falló porque `/usr/bin/dotnet` apunta a instalación incompleta; se resolvió con el SDK local `/home/leonardo/.dotnet/dotnet`. No se usó la base local persistente.

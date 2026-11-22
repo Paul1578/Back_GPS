@@ -46,6 +46,7 @@ maintenance_driver_document=""
 vehicle_id=""
 duplicate_vehicle_id=""
 duplicate_vehicle_plate=""
+updated_vehicle_plate=""
 driver_id=""
 other_tenant_email=""
 other_tenant_member_email=""
@@ -1172,6 +1173,70 @@ request GET "/Vehicles/$vehicle_id" "" "$token"
 expect_status 200 "Confirmar placa original tras rechazo de edición duplicada"
 jq -e --arg plate "$plate" '.plate == $plate' "$work_dir/response.json" >/dev/null || {
   echo "El rechazo de placa duplicada modificó el vehículo original." >&2; cat "$work_dir/response.json" >&2; exit 1;
+}
+
+updated_vehicle_plate="E2EU${suffix: -8}"
+request PUT "/Vehicles/$duplicate_vehicle_id" "$(jq -nc --arg plate "$updated_vehicle_plate" '{plate:$plate,brand:"CI QA editado",model:"Ciclo positivo",year:2024,description:"Persistencia smoke tenant"}')" "$token"
+expect_status 200 "Editar vehículo tenant A exitosamente"
+jq -e --arg id "$duplicate_vehicle_id" --arg plate "$updated_vehicle_plate" \
+  '.id == $id and .plate == $plate and .brand == "CI QA editado" and .model == "Ciclo positivo" and .year == 2024 and .description == "Persistencia smoke tenant" and .isActive == true and .status == 0' \
+  "$work_dir/response.json" >/dev/null || {
+  echo "La respuesta de edición del vehículo no contiene los valores esperados." >&2; cat "$work_dir/response.json" >&2; exit 1;
+}
+vehicle_edit_sql="$(mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" "$db_name" \
+  --batch --skip-column-names -e "SELECT CONCAT(Plate,':',Brand,':',Model,':',Year,':',COALESCE(Description,'NULL'),':',CASE WHEN IsActive=1 THEN 'true' ELSE 'false' END,':',Status) FROM Vehicles WHERE Id='$duplicate_vehicle_id';")"
+[[ "$vehicle_edit_sql" == "$updated_vehicle_plate:CI QA editado:Ciclo positivo:2024:Persistencia smoke tenant:true:0" ]] || {
+  echo "La edición del vehículo no persistió correctamente en MySQL: $vehicle_edit_sql." >&2
+  exit 1
+}
+request GET "/Vehicles/$duplicate_vehicle_id" "" "$token"
+expect_status 200 "Leer vehículo editado desde API"
+jq -e --arg plate "$updated_vehicle_plate" \
+  '.plate == $plate and .brand == "CI QA editado" and .model == "Ciclo positivo" and .year == 2024 and .description == "Persistencia smoke tenant" and .isActive == true and .status == 0' \
+  "$work_dir/response.json" >/dev/null || {
+  echo "La lectura API no refleja la edición persistida del vehículo." >&2; cat "$work_dir/response.json" >&2; exit 1;
+}
+
+request PUT "/Vehicles/$duplicate_vehicle_id/status" '{"status":2}' "$token"
+expect_status 204 "Cambiar estado operativo del vehículo sin desactivarlo"
+vehicle_status_sql="$(mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" "$db_name" \
+  --batch --skip-column-names -e "SELECT CONCAT(CASE WHEN IsActive=1 THEN 'true' ELSE 'false' END,':',Status) FROM Vehicles WHERE Id='$duplicate_vehicle_id';")"
+[[ "$vehicle_status_sql" == "true:2" ]] || {
+  echo "Cambiar estado operativo también alteró IsActive o no persistió (esperado true:2, recibido $vehicle_status_sql)." >&2
+  exit 1
+}
+request GET "/Vehicles/$duplicate_vehicle_id" "" "$token"
+expect_status 200 "Verificar estado operativo desde API"
+jq -e '.isActive == true and .status == 2' "$work_dir/response.json" >/dev/null || {
+  echo "La API no refleja el estado operativo sin alterar IsActive." >&2; cat "$work_dir/response.json" >&2; exit 1;
+}
+
+request DELETE "/Vehicles/$duplicate_vehicle_id" "" "$token"
+expect_status 204 "Desactivar vehículo tenant A"
+vehicle_inactive_sql="$(mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" "$db_name" \
+  --batch --skip-column-names -e "SELECT CONCAT(CASE WHEN IsActive=1 THEN 'true' ELSE 'false' END,':',Status) FROM Vehicles WHERE Id='$duplicate_vehicle_id';")"
+[[ "$vehicle_inactive_sql" == "false:2" ]] || {
+  echo "La baja lógica no conservó el estado operativo (esperado false:2, recibido $vehicle_inactive_sql)." >&2
+  exit 1
+}
+request GET "/Vehicles/$duplicate_vehicle_id" "" "$token"
+expect_status 200 "Leer vehículo desactivado"
+jq -e '.isActive == false and .status == 2' "$work_dir/response.json" >/dev/null || {
+  echo "La API no refleja la baja lógica del vehículo ni conserva su estado operativo." >&2; cat "$work_dir/response.json" >&2; exit 1;
+}
+
+request POST "/Vehicles/$duplicate_vehicle_id/reactivate" "" "$token"
+expect_status 204 "Reactivar vehículo tenant A"
+vehicle_reactivated_sql="$(mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" "$db_name" \
+  --batch --skip-column-names -e "SELECT CONCAT(CASE WHEN IsActive=1 THEN 'true' ELSE 'false' END,':',Status) FROM Vehicles WHERE Id='$duplicate_vehicle_id';")"
+[[ "$vehicle_reactivated_sql" == "true:2" ]] || {
+  echo "La reactivación no persistió IsActive o modificó el estado operativo (esperado true:2, recibido $vehicle_reactivated_sql)." >&2
+  exit 1
+}
+request GET "/Vehicles/$duplicate_vehicle_id" "" "$token"
+expect_status 200 "Verificar vehículo reactivado desde API"
+jq -e '.isActive == true and .status == 2' "$work_dir/response.json" >/dev/null || {
+  echo "La API no refleja la reactivación del vehículo ni conserva su estado operativo." >&2; cat "$work_dir/response.json" >&2; exit 1;
 }
 
 request POST /Drivers "$(jq -nc --arg document "$document_number" '{firstName:"E2E QA",lastName:"Driver A",documentNumber:$document,phoneNumber:"0990000000"}')"

@@ -5,8 +5,15 @@
 ## Validación integrada de registro neutral — 2026-11-22
 
 - Backend `52d7e46` pasó Action `45066082294`: Release build, xUnit **107/107**, smoke HTTP/MySQL, comparación del payload de registro nuevo/duplicado, espera mínima y cleanup.
-- Front `57e44c6` está validando en Action `45066249833` contra ese backend; E2E autenticado y checks web aún en ejecución al registrar esta nota.
-- La rama integrada sigue en progreso; revisar brechas restantes CRUD/roles/responsive antes de declarar la auditoría cerrada.
+- Front `57e44c6` pasó Action `45066249833` contra ese código backend: audit/lint/build, responsive 1/1, Playwright API/MySQL 33/33, cleanup.
+- Backend documentación `029011e` pasó Action `45066471076`, incluyendo build/xUnit y smokes tenant/concurrencia.
+
+## Cobertura de ciclo Vehicle en CI — local validado, Action pendiente
+
+- El smoke tenant añade editar Vehicle con persistencia SQL/API, cambiar estado a Maintenance sin alterar `IsActive`, baja lógica y reactivación preservando `Status`.
+- Release no se modificó. `bash -n`, `git diff --check` y smoke completo contra MySQL 8 efímero pasaron; cleanup eliminó las filas QA.
+- El host global `dotnet` falla al iniciar en el entorno; el SDK local `/home/leonardo/.dotnet/dotnet` resolvió el smoke. No se utilizó MySQL persistente.
+- Siguiente: publicar el smoke y docs, verificar Action; continuar aislamiento de vínculos manuales User/Driver y demás casos CRUD HTTP. Misión abierta.
 
 - Rama `chore/stabilize-fleet-platform`; `main` intacta. Backend `22c2fb6` Action [`45058536309`](https://github.com/Paul1578/Back_GPS/actions/runs/45058536309) pasó build/xUnit, aislamiento tenant HTTP/MySQL, concurrencia y cleanup.
 - Logout limita revocación al propietario autenticado del refresh. Validación local: Release build 0 warnings/errores, xUnit **99/99**, `smoke-tenant-http.sh` y `smoke-route-concurrency.sh` exit 0 con limpieza en MySQL 8 efímero.

@@ -1,3 +1,12 @@
+## Smoke de ciclo Vehicle y anti-enumeración — 2026-11-22
+
+- Rama `chore/stabilize-fleet-platform`, Front relacionado `refactor/route-builder`; `main` intacta.
+- Backend code `52d7e46` Action `45066082294` success: Release/xUnit 107/107, registro neutral, latencia mínima y cleanup. Docs `029011e` Action `45066471076` success (tenant HTTP/MySQL, concurrencia).
+- Front `57e44c6` Action `45066249833` success: backend 107/107, lint/build/audit, responsive 1/1, E2E 33/33, cleanup.
+- Smoke local amplía el ciclo Vehicle HTTP/MySQL: PUT exitoso, GET/SQL persistidos, Maintenance sin cambiar `IsActive`, baja y reactivación conservando estado. `bash -n`, diff-check y MySQL efímero pasan; Actions para esta ampliación pendientes.
+- Primer start con `/usr/bin/dotnet` falló por instalación incompleta; el SDK local `/home/leonardo/.dotnet/dotnet` resolvió. Base persistente de puerto 3306 no fue usada.
+- Reauditoría: falta smoke HTTP/MySQL de vínculo manual User↔Driver y decisión de política para Admin delegado. Seguir cobertura CRUD/roles/responsive; no cerrar misión.
+
 # Continuación — Logout autenticado y smokes MySQL — 2026-11-22
 
 - Branch backend `chore/stabilize-fleet-platform`, frontend `refactor/route-builder`; `main` intacta.

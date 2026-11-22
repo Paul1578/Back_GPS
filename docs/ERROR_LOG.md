@@ -1137,3 +1137,14 @@ Cada cambio de API debe incluir validación de compilación, migraciones si apli
 - Mitigación temporal adicional: hashing BCrypt antes del pre-check de email y espera mínima 500 ms para ambos resultados; smoke verifica cada respuesta >=450 ms. La latencia bajo DB/red saturadas sigue siendo variable y se documenta como mitigación, no tiempo constante.
 - Backend Action `45066082294` pasó en `52d7e46`: build/tests, creación duplicada neutral, piso temporal del smoke y cleanup.
 - Prevención: probar también alta pública duplicada y comparar status y cuerpo; nunca retornar tokens en un branch de éxito si los conflictos se normalizan a respuesta pública genérica.
+
+## 2026-11-22 — dotnet global apunta a instalación incompleta al ejecutar smoke — CORREGIDO EN EL RUNNER
+
+- El primer intento de smoke con la instalación `dotnet` del sistema no pudo iniciar la API por un host/runtime incompleto.
+- Se repitió usando el SDK local `/home/leonardo/.dotnet/dotnet` contra MySQL efímero aislado; smoke completo y cleanup pasaron. La DB persistente local en 3306 no se tocó.
+- Prevención: en este entorno fijar `DOTNET_ROOT=/home/leonardo/.dotnet` y usar el ejecutable local al ejecutar .NET.
+
+## 2026-11-22 — Smoke MySQL de ciclo positivo Vehicle — AMPLIADO Y VALIDADO LOCAL
+
+- La CI probaba creación/conflicto de Vehicle, pero no una edición positiva persistida ni la conservación independiente de `IsActive` y `Status` durante cambio operativo.
+- `smoke-tenant-http.sh` ahora cubre edición, paso a mantenimiento, baja lógica y reactivación, verificando respuestas HTTP, lectura API y valores SQL en cada fase. MySQL efímero pasó y cleanup eliminó fixtures; Actions nuevo pendiente.

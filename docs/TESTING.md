@@ -517,3 +517,5 @@ La invitación envía sólo el enlace de activación; el usuario fija su contras
 - Smoke de registro mide ambas respuestas >=450 ms (controlador fija piso de 500 ms); no certifica igualdad temporal bajo carga externa.
 - Backend Action `45065747053` pasó build/xUnit **107/107**, alta nueva/duplicada y cleanup, antes de la adición del piso temporal. Validar esa medición en la siguiente Action.
 - Backend Action `45066082294` pasó build/xUnit **107/107**, smoke HTTP/MySQL de alta nueva/duplicada, cuerpo neutral, tiempo >=450 ms y cleanup.
+- `smoke-tenant-http.sh` local valida el ciclo Vehicle HTTP/MySQL de edición, estado operativo independiente, baja lógica y reactivación. MySQL efímero pasó; cleanup correcto; Actions del nuevo cambio pendientes.
+- El smoke usa el SDK en `/home/leonardo/.dotnet/dotnet` porque el `dotnet` global del entorno no puede iniciar la API. No se mutó la DB persistente.

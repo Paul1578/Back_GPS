@@ -90,3 +90,8 @@ El smoke anónimo solicitó rol Admin en el registro; la fila persistida conserv
 - Actions `44989454133` del frontend ejecutó contra backend `chore/stabilize-fleet-platform` la matriz negativa User/Driver/Logistics/Manager en MySQL efímero: Playwright 15/15, sin skips; xUnit 57/57. Las operaciones de flota/rutas/administración no permitidas devolvieron los 403 esperados.
 - Smoke descartable amplió el camino positivo Logistics: crear/editar ruta, iniciar, completar parada PickupAndDelivery con evidencia, registrar GPS y cerrar. El backend devolvió el vehículo a `Available`; MySQL confirmó persistencia y cleanup. Actions `44990525889` pasó el ciclo completo y `44991032520` volvió a validar el código con fallback por nombre QA (cleanup `0:0:0`). El caso extremo de respuesta sin ID no se indujo.
 - La cobertura de políticas sigue siendo parcial respecto a todas las acciones posibles; la autorización y el aislamiento deben permanecer en el servidor, no sólo en los controles UI.
+
+
+## Auditoría NuGet de continuidad — 2026-11-22
+
+- `dotnet list BackEnd_Gps.sln package --vulnerable --include-transitive` terminó con código 0 y reportó que `BackEnd_Gps` y `BackEnd_Gps.Tests` no tienen paquetes vulnerables.

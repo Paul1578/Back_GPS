@@ -279,3 +279,9 @@ Errores de migración, herramientas, QA y soluciones están en `docs/ERROR_LOG.m
 - `RegisterUserCommand.Execute` permite diferir el commit; UsersController crea user/Driver/token y confirma una vez. AuthService agrupa user/Driver antes del flujo de token. Unique-document conflict posterior al precheck se devuelve como 409.
 - `smoke-tenant-http.sh` envía dos `POST /Users` paralelos con un documento y verifica HTTP 201/409 + conteos MySQL `1:1:1`; limpieza incluye ambos emails/driver.
 - Release local 61/61, shell syntax y diff-check pasan. El smoke MySQL de Actions queda pendiente.
+
+
+## Auditoría de dependencias repetida — 2026-11-22
+
+- En `chore/stabilize-fleet-platform`, `dotnet list BackEnd_Gps.sln package --vulnerable --include-transitive` terminó con código 0; sin vulnerabilidades en Backend ni Tests.
+- Quedan CRUD/roles por auditar; política de Admin delegado pendiente de respuesta. No marcar la misión como completa.

@@ -306,3 +306,8 @@ La invitación envía sólo el enlace de activación; el usuario fija su contras
 - El runner run-e2e-local.sh pasó Playwright autenticado 18/18 en Chrome contra API/MySQL reales; el contenedor/esquema fueron descartados al salir.
 - Los smoke scripts respetan MYSQL_PORT; valor predeterminado 3306.
 - Actions backend 45005400763 pasó build, xUnit, smoke HTTP/MySQL de tenant y smoke de concurrencia.
+
+
+## Auditoría de dependencias — 2026-11-22
+
+- Ejecutado con SDK 8.0.428: `dotnet list BackEnd_Gps.sln package --vulnerable --include-transitive` — código 0; sin vulnerabilidades en `BackEnd_Gps` ni `BackEnd_Gps.Tests`.

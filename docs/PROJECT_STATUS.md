@@ -217,3 +217,8 @@ Nota de actualización: algunos resultados históricos de registro público más
 - Se permite diferir el `SaveChanges` y se agrupan usuario/Driver/token en un solo commit. Si el unique index gana la carrera, se consulta el documento ya persistido y se convierte el error en conflicto 409. AuthService también agrupa user/Driver antes de emitir sesión.
 - Smoke HTTP lanza dos POST `/Users` concurrentes con correos distintos y el mismo documento; espera un 201/409 y valida MySQL `Users:Drivers:ActivationTokens = 1:1:1`, con cleanup temporal.
 - Release local 61/61; bash syntax y diff-check pasan. Actions con MySQL real pendiente.
+
+
+## Seguridad de dependencias — 2026-11-22
+
+- NuGet audit repetida sobre la solución: cero paquetes vulnerables en backend y proyecto de pruebas. La auditoría global de criterios funcionales continúa abierta.

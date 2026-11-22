@@ -3,6 +3,7 @@
 - CreateRoute/UpdateRoute validan relación Vehicle/Driver bajo locks y devuelven 409 si el vehículo sigue asignado a otro conductor.
 - Dos regresiones SQLite y suite Release completa pasaron: **82/82**. `bash -n`/diff-check pasan.
 - Smoke HTTP/MySQL añadido para creación/edición y persistencia intacta; MySQL descartable y Actions pendientes.
+- Primera ejecución integrada `45031869323`: build, xUnit y tenant HTTP pasaron; el smoke de concurrencia expuso dependencia entre fixtures. El script ya usa recursos aislados por escenario, pendiente repetir Actions.
 
 ## Contrato de filtros de GPS — Actions validado — 2026-11-22
 

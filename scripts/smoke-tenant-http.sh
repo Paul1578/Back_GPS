@@ -131,6 +131,7 @@ cleanup() {
     if [[ -n "$manager_crud_driver_id" ]]; then sql+=" DELETE FROM Drivers WHERE Id='$manager_crud_driver_id';"
     elif [[ -n "$manager_crud_driver_document" ]]; then sql+=" DELETE FROM Drivers WHERE DocumentNumber='$manager_crud_driver_document';"; fi
     if [[ -n "$manager_driver_id" ]]; then sql+=" DELETE FROM Drivers WHERE Id='$manager_driver_id';"; fi
+    if [[ -n "$inactive_linked_driver_id" ]]; then sql+=" DELETE FROM Drivers WHERE Id='$inactive_linked_driver_id';"; fi
     if [[ -n "$vehicle_id" ]]; then sql+=" DELETE FROM Vehicles WHERE Id='$vehicle_id';"
     elif [[ -n "$plate" ]]; then sql+=" DELETE FROM Vehicles WHERE Plate='$plate';"; fi
     if [[ -n "$duplicate_vehicle_id" ]]; then sql+=" DELETE FROM Vehicles WHERE Id='$duplicate_vehicle_id';"
@@ -173,7 +174,7 @@ cleanup() {
       sql+=" SET @qa_user_id=(SELECT Id FROM Users WHERE Email='$deactivated_user_email'); DELETE FROM RefreshTokens WHERE UserId=@qa_user_id; DELETE FROM PasswordResetTokens WHERE UserId=@qa_user_id; DELETE FROM UserRoles WHERE UserId=@qa_user_id; DELETE FROM Users WHERE Id=@qa_user_id;"
     fi
     if [[ -n "$inactive_driver_user_email" ]]; then
-      sql+=" SET @qa_user_id=(SELECT Id FROM Users WHERE Email='$inactive_driver_user_email'); DELETE FROM Drivers WHERE Id='$inactive_linked_driver_id'; DELETE FROM RefreshTokens WHERE UserId=@qa_user_id; DELETE FROM PasswordResetTokens WHERE UserId=@qa_user_id; DELETE FROM UserRoles WHERE UserId=@qa_user_id; DELETE FROM Users WHERE Id=@qa_user_id;"
+      sql+=" SET @qa_user_id=(SELECT Id FROM Users WHERE Email='$inactive_driver_user_email'); DELETE FROM RefreshTokens WHERE UserId=@qa_user_id; DELETE FROM PasswordResetTokens WHERE UserId=@qa_user_id; DELETE FROM UserRoles WHERE UserId=@qa_user_id; DELETE FROM Users WHERE Id=@qa_user_id;"
     fi
     if [[ -n "$logistics_user_email" ]]; then
       sql+=" SET @qa_user_id=(SELECT Id FROM Users WHERE Email='$logistics_user_email'); DELETE FROM RefreshTokens WHERE UserId=@qa_user_id; DELETE FROM PasswordResetTokens WHERE UserId=@qa_user_id; DELETE FROM UserRoles WHERE UserId=@qa_user_id; DELETE FROM Users WHERE Id=@qa_user_id;"
@@ -775,17 +776,6 @@ request GET /Routes/assignment-options "" "$inactive_driver_access_token"
 expect_status 403 "Denegar opciones de asignación a Driver"
 request PUT "/Users/$inactive_driver_user_id/status?isActive=false" "" "$token"
 expect_status 200 "Desactivar cuenta de Driver enlazado"
-request PUT "/Users/$inactive_driver_user_id/role" '{"roleName":"Logistics"}' "$token"
-expect_status 200 "Cambiar a Logistics el rol de cuenta Driver inactiva"
-request PUT "/Users/$inactive_driver_user_id/role" '{"roleName":"Driver"}' "$token"
-expect_status 200 "Restaurar rol Driver sin reactivar cuenta inactiva"
-request GET "/Drivers/$inactive_linked_driver_id" "" "$token"
-expect_status 200 "Consultar perfil vinculado tras cambio de rol con cuenta inactiva"
-jq -e '.isActive == false' "$work_dir/response.json" >/dev/null || {
-  echo "Cambiar el rol reactivó el perfil Driver de una cuenta User inactiva." >&2
-  cat "$work_dir/response.json" >&2
-  exit 1
-}
 request PUT "/Routes/$inactive_driver_route_id" "$inactive_driver_route_payload" "$token"
 expect_status 409 "Impedir editar ruta para cuenta Driver inactiva"
 request PUT "/Routes/$inactive_driver_route_id/status" '{"status":1}' "$token"
@@ -816,6 +806,17 @@ request PUT "/Drivers/$inactive_linked_driver_id/unassign-vehicle" "" "$token"
 expect_status 204 "Liberar vehículo de prueba del Driver inactivo"
 request DELETE "/Routes/$inactive_driver_route_id" "" "$token"
 expect_status 204 "Eliminar ruta de prueba del Driver inactivo"
+request PUT "/Users/$inactive_driver_user_id/role" '{"roleName":"Logistics"}' "$token"
+expect_status 200 "Cambiar a Logistics el rol de cuenta Driver inactiva sin ruta"
+request PUT "/Users/$inactive_driver_user_id/role" '{"roleName":"Driver"}' "$token"
+expect_status 200 "Restaurar rol Driver sin reactivar cuenta inactiva"
+request GET "/Drivers/$inactive_linked_driver_id" "" "$token"
+expect_status 200 "Consultar perfil vinculado tras cambio de rol con cuenta inactiva"
+jq -e '.isActive == false' "$work_dir/response.json" >/dev/null || {
+  echo "Cambiar el rol reactivó el perfil Driver de una cuenta User inactiva." >&2
+  cat "$work_dir/response.json" >&2
+  exit 1
+}
 request DELETE "/Vehicles/$inactive_driver_route_vehicle_id" "" "$token"
 expect_status 204 "Eliminar vehículo de prueba del Driver inactivo"
 

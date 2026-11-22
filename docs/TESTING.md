@@ -509,3 +509,4 @@ La invitación envía sólo el enlace de activación; el usuario fija su contras
 - Vehicle validation/concurrency: Release xUnit **103/103**; Release build **0 warnings, 0 errors**. El primer intento tuvo 102/103 por fake mutable de EF, corregido y registrado en `ERROR_LOG.md`. Backend Action `45063488394` pasó e incluye smoke tenant HTTP/MySQL para límites 400 y placas duplicadas 409 en create/update.
 
 - Cambio de rol con cuenta Driver inactiva: xUnit Release **104/104**; smoke HTTP/MySQL cubre Logistics→Driver y comprueba que el perfil siga inactivo. Validación integrada pendiente.
+- Primera Action `45063802250` rechazó el cambio de rol con 409 porque había ruta pendiente; el test ya se ejecuta después de borrar esa ruta. También se corrigió orden de cleanup por FK restrictiva; Action nueva pendiente.

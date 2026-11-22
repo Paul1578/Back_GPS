@@ -592,3 +592,4 @@ Errores de migración, herramientas, QA y soluciones están en `docs/ERROR_LOG.m
 
 - Subagente confirmó el bug real y corrigió `ChangeUserRoleCommand`: cambiar a Driver ya no reactiva el perfil vinculado cuando `User.IsActive=false`. Test nuevo; suite Release local **104/104**.
 - Smoke `scripts/smoke-tenant-http.sh` ampliado para ejecutar Logistics→Driver en API/MySQL real y asegurar `Driver.isActive=false`. Error/causa/prevención en `docs/ERROR_LOG.md`; suite 104/104, bash syntax y diff-check pasan. Commit y Actions nuevas pendientes.
+- Action `45063802250` confirmó causa de test inválido: el cambio de rol se hizo con ruta pendiente (409 esperado). El ciclo se movió después de cancelar ruta; cleanup ahora elimina el Driver vinculado antes del vehículo para respetar FK. Action de confirmación pendiente.

@@ -1110,3 +1110,9 @@ Cada cambio de API debe incluir validación de compilación, migraciones si apli
 
 - Se consultó el run `45063487802` desde `/home/leonardo/Back_GPS`; GitHub devuelve 404 porque ese run pertenece a `Paul1578/Front_gpsR`, no al repositorio actual. No afectó código ni Actions.
 - Solución: ejecutar `gh run view` desde `/home/leonardo/Front_gpsR`; el run existe y seguía en E2E autenticado. Prevención: consultar cada workflow desde el repositorio propietario del run.
+
+## 2026-11-22 — Action Backend 45063802250 falló por orden de smoke y FK durante cleanup — CORREGIDO LOCAL; CI PENDIENTE
+
+- El smoke quiso cambiar Driver→Logistics mientras el conductor aún tenía una ruta pendiente; la API devolvió el 409 correcto por regla de negocio. La prueba del bug de reactivación ahora corre después de cancelar/eliminar la ruta.
+- Al abortar temprano, cleanup borraba el vehículo antes que el perfil Driver vinculado; la FK `Drivers.VehicleId` rechazó el DELETE y dejó de ejecutarse el resto del bloque. Se mueve el borrado del Driver antes de vehículos, después de eliminar sus rutas. Verificar que la siguiente ejecución termine con cero fixtures.
+- La Action localmente ya había pasado build y xUnit 104/104 en la máquina; la nueva Action debe verificar la secuencia HTTP/MySQL completa y cleanup.

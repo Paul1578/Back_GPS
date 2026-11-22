@@ -406,3 +406,4 @@
 ## 2026-11-22 — Cambio de rol no reactiva Driver con cuenta inactiva
 
 - Se corrigió `ChangeUserRoleCommand`: asignar el rol Driver sólo reactiva el perfil vinculado si User está activo. Test focal y suite Release 104/104; smoke HTTP/MySQL agregado para este ciclo real.
+- La primera prueba colocó el cambio de rol mientras había una ruta pendiente y recibió el 409 esperado; se movió tras cancelar/eliminar la ruta. El cleanup ahora elimina primero el perfil Driver para respetar la FK del vehículo.

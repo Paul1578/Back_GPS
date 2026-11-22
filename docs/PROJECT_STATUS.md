@@ -466,3 +466,4 @@ Nota de actualización: algunos resultados históricos de registro público más
 ## Cambio de rol y cuenta Driver inactiva — CI integrado pendiente
 
 - El análisis encontró que cambio de rol Logistics→Driver reactivaba el perfil vinculado sin activar la cuenta User. Se condicionó a `User.IsActive`; Release local 104/104. Smoke HTTP/MySQL comprueba que la cuenta inactiva no recupera un perfil operativo.
+- La primera Action `45063802250` identificó que el smoke se ejecutaba antes de terminar la ruta y que cleanup borraba el vehículo antes del Driver (FK restrictiva). Ambos casos corregidos; nuevo CI pendiente.

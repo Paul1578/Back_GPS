@@ -45,6 +45,10 @@ duplicate_email_race=""
 deactivated_user_email=""
 inactive_driver_user_email=""
 inactive_linked_driver_id=""
+inactive_driver_route_id=""
+inactive_driver_route_name=""
+inactive_driver_route_vehicle_id=""
+inactive_driver_route_vehicle_plate=""
 logistics_user_email=""
 logistics_user_id=""
 public_registration_email=""
@@ -96,6 +100,11 @@ cleanup() {
     elif [[ -n "$logistics_route_name" ]]; then
       sql+=" DELETE rp FROM RoutePositions rp JOIN Routes r ON r.Id=rp.RouteId WHERE r.Name='$logistics_route_name'; DELETE FROM Routes WHERE Name='$logistics_route_name';"
     fi
+    if [[ -n "$inactive_driver_route_id" ]]; then
+      sql+=" DELETE FROM RoutePositions WHERE RouteId='$inactive_driver_route_id'; DELETE FROM Routes WHERE Id='$inactive_driver_route_id';"
+    elif [[ -n "$inactive_driver_route_name" ]]; then
+      sql+=" DELETE rp FROM RoutePositions rp JOIN Routes r ON r.Id=rp.RouteId WHERE r.Name='$inactive_driver_route_name'; DELETE FROM Routes WHERE Name='$inactive_driver_route_name';"
+    fi
     if [[ -n "$driver_id" ]]; then sql+=" DELETE FROM Drivers WHERE Id='$driver_id';"
     elif [[ -n "$document_number" ]]; then sql+=" DELETE FROM Drivers WHERE DocumentNumber='$document_number';"; fi
     if [[ -n "$foreign_driver_id" ]]; then sql+=" DELETE FROM Drivers WHERE Id='$foreign_driver_id';"; fi
@@ -111,6 +120,8 @@ cleanup() {
     if [[ -n "$manager_crud_vehicle_id" ]]; then sql+=" UPDATE Vehicles SET Status=0 WHERE Id='$manager_crud_vehicle_id'; DELETE FROM Vehicles WHERE Id='$manager_crud_vehicle_id';"
     elif [[ -n "$manager_crud_vehicle_plate" ]]; then sql+=" DELETE FROM Vehicles WHERE Plate='$manager_crud_vehicle_plate';"; fi
     if [[ -n "$manager_vehicle_id" ]]; then sql+=" UPDATE Vehicles SET Status=0 WHERE Id='$manager_vehicle_id'; DELETE FROM Vehicles WHERE Id='$manager_vehicle_id';"; fi
+    if [[ -n "$inactive_driver_route_vehicle_id" ]]; then sql+=" UPDATE Vehicles SET Status=0 WHERE Id='$inactive_driver_route_vehicle_id'; DELETE FROM Vehicles WHERE Id='$inactive_driver_route_vehicle_id';"
+    elif [[ -n "$inactive_driver_route_vehicle_plate" ]]; then sql+=" DELETE FROM Vehicles WHERE Plate='$inactive_driver_route_vehicle_plate';"; fi
     if [[ -n "$restricted_attempt_plate" ]]; then sql+=" DELETE FROM Vehicles WHERE Plate='$restricted_attempt_plate';"; fi
     if [[ -n "$other_tenant_email" ]]; then
       sql+=" SET @qa_user_id=(SELECT Id FROM Users WHERE Email='$other_tenant_email'); DELETE FROM RefreshTokens WHERE UserId=@qa_user_id; DELETE FROM PasswordResetTokens WHERE UserId=@qa_user_id; DELETE FROM UserRoles WHERE UserId=@qa_user_id; DELETE FROM Users WHERE Id=@qa_user_id;"
@@ -202,8 +213,8 @@ cleanup() {
       local inactive_driver_remaining
       if inactive_driver_remaining="$(mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" \
         --batch --skip-column-names "$db_name" \
-        -e "SELECT CONCAT((SELECT COUNT(*) FROM Drivers WHERE Id='$inactive_linked_driver_id'), ':', (SELECT COUNT(*) FROM Users WHERE Email='$inactive_driver_user_email'));" 2>"$work_dir/inactive_cleanup_verify.stderr")"; then
-        if [[ "$inactive_driver_remaining" != "0:0" ]]; then
+        -e "SELECT CONCAT((SELECT COUNT(*) FROM Drivers WHERE Id='$inactive_linked_driver_id'), ':', (SELECT COUNT(*) FROM Users WHERE Email='$inactive_driver_user_email'), ':', (SELECT COUNT(*) FROM Routes WHERE Id='$inactive_driver_route_id' OR Name='$inactive_driver_route_name'), ':', (SELECT COUNT(*) FROM Vehicles WHERE Id='$inactive_driver_route_vehicle_id' OR Plate='$inactive_driver_route_vehicle_plate'));" 2>"$work_dir/inactive_cleanup_verify.stderr")"; then
+        if [[ "$inactive_driver_remaining" != "0:0:0:0" ]]; then
           echo "Cleanup dejó Driver/User vinculado de QA (conteos: $inactive_driver_remaining)." >&2
           status=1
         fi
@@ -641,6 +652,15 @@ request POST /Users "$(jq -nc --arg email "$inactive_driver_user_email" --arg pa
 expect_status 200 "Crear Driver vinculado para probar cuenta inactiva"
 inactive_driver_user_id="$(jq -er '.id' "$work_dir/response.json")"
 inactive_linked_driver_id="$(jq -er '.driverId' "$work_dir/response.json")"
+inactive_driver_route_vehicle_plate="E2EID${suffix: -8}"
+request POST /Vehicles "$(jq -nc --arg plate "$inactive_driver_route_vehicle_plate" '{plate:$plate,brand:"CI Driver status",model:"Linked account",year:2025}')" "$token"
+expect_status 201 "Crear vehículo para probar Driver con cuenta desactivada"
+inactive_driver_route_vehicle_id="$(jq -er '.id' "$work_dir/response.json")"
+inactive_driver_route_name="E2E inactive linked Driver $suffix"
+inactive_driver_route_payload="$(jq -nc --arg name "$inactive_driver_route_name" --arg vehicleId "$inactive_driver_route_vehicle_id" --arg driverId "$inactive_linked_driver_id" --argjson points "$role_points" '{name:$name,cargoDescription:"Inactive linked account",vehicleId:$vehicleId,driverId:$driverId,points:$points}')"
+request POST /Routes "$inactive_driver_route_payload" "$token"
+expect_status 201 "Crear ruta pendiente para Driver con cuenta activa"
+inactive_driver_route_id="$(jq -er '.id' "$work_dir/response.json")"
 mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" "$db_name" \
   -e "UPDATE Users SET IsActive=1, MustChangePassword=0 WHERE Id='$inactive_driver_user_id';" >/dev/null
 request POST /Auth/login "$(jq -nc --arg email "$inactive_driver_user_email" --arg password "$inactive_driver_password" '{email:$email,password:$password}')" ""
@@ -650,6 +670,36 @@ request GET /Routes/assignment-options "" "$inactive_driver_access_token"
 expect_status 403 "Denegar opciones de asignación a Driver"
 request PUT "/Users/$inactive_driver_user_id/status?isActive=false" "" "$token"
 expect_status 200 "Desactivar cuenta de Driver enlazado"
+request PUT "/Routes/$inactive_driver_route_id/status" '{"status":1}' "$token"
+expect_status 409 "Impedir iniciar una ruta asignada a una cuenta Driver inactiva"
+inactive_driver_pending_state="$(mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" "$db_name" \
+  --batch --skip-column-names -e "SELECT CONCAT((SELECT Status FROM Routes WHERE Id='$inactive_driver_route_id'), ':', (SELECT Status FROM Vehicles WHERE Id='$inactive_driver_route_vehicle_id'), ':', (SELECT CASE WHEN IsActive=1 THEN 1 ELSE 0 END FROM Users WHERE Id='$inactive_driver_user_id')); ")"
+[[ "$inactive_driver_pending_state" == "0:0:0" ]] || {
+  echo "El intento de inicio cambió ruta/vehículo/cuenta inactiva ($inactive_driver_pending_state)." >&2
+  exit 1
+}
+request PUT "/Users/$inactive_driver_user_id/status?isActive=true" "" "$token"
+expect_status 200 "Reactivar cuenta Driver antes de iniciar la ruta"
+request PUT "/Routes/$inactive_driver_route_id/status" '{"status":1}' "$token"
+expect_status 204 "Iniciar ruta mientras la cuenta Driver vinculada está activa"
+request PUT "/Users/$inactive_driver_user_id/status?isActive=false" "" "$token"
+expect_status 409 "Impedir desactivar la cuenta Driver con una ruta en curso"
+inactive_driver_active_state="$(mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" "$db_name" \
+  --batch --skip-column-names -e "SELECT CONCAT((SELECT Status FROM Routes WHERE Id='$inactive_driver_route_id'), ':', (SELECT Status FROM Vehicles WHERE Id='$inactive_driver_route_vehicle_id'), ':', (SELECT CASE WHEN IsActive=1 THEN 1 ELSE 0 END FROM Users WHERE Id='$inactive_driver_user_id')); ")"
+[[ "$inactive_driver_active_state" == "1:1:1" ]] || {
+  echo "La baja de cuenta durante ruta activa alteró la operación ($inactive_driver_active_state)." >&2
+  exit 1
+}
+request PUT "/Routes/$inactive_driver_route_id/status" '{"status":3}' "$token"
+expect_status 204 "Cancelar ruta de prueba después de verificar el bloqueo de baja"
+request PUT "/Users/$inactive_driver_user_id/status?isActive=false" "" "$token"
+expect_status 200 "Desactivar Driver después de liberar la ruta"
+request PUT "/Drivers/$inactive_linked_driver_id/unassign-vehicle" "" "$token"
+expect_status 204 "Liberar vehículo de prueba del Driver inactivo"
+request DELETE "/Routes/$inactive_driver_route_id" "" "$token"
+expect_status 204 "Eliminar ruta de prueba del Driver inactivo"
+request DELETE "/Vehicles/$inactive_driver_route_vehicle_id" "" "$token"
+expect_status 204 "Eliminar vehículo de prueba del Driver inactivo"
 
 request PUT "/Vehicles/$manager_vehicle_id/status" '{"status":2}' "$token"
 expect_status 204 "Poner vehículo en mantenimiento para filtrar opciones"

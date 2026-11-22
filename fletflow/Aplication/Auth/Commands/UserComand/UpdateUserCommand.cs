@@ -1,5 +1,7 @@
 using fletflow.Infrastructure.Persistence.Contracts;
 using fletflow.Infrastructure.Persistence.Context;
+using fletflow.Domain.Fleet.Entities;
+using fletflow.Domain.Fleet.Exceptions;
 using Microsoft.EntityFrameworkCore;
 
 namespace fletflow.Application.Users.Commands
@@ -17,20 +19,54 @@ namespace fletflow.Application.Users.Commands
 
         public async Task Execute(Guid userId, bool isActive)
         {
-            var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
-            if (user == null)
-                throw new KeyNotFoundException("Usuario no encontrado.");
+            try
+            {
+                var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId)
+                    ?? throw new KeyNotFoundException("Usuario no encontrado.");
+                var initialDriver = await _unitOfWork.Drivers.GetByUserIdAsync(userId);
 
-            if (user.IsActive == isActive)
-                return;
+                if (initialDriver is not null)
+                {
+                    await _unitOfWork.LockRouteAssignmentAsync(initialDriver.VehicleId, initialDriver.Id);
+                    await _unitOfWork.LockLinkedUserForRouteAssignmentAsync(userId);
 
-            user.IsActive = isActive;
-            // Access JWT are stateless; bump the persisted version on both deactivation
-            // and reactivation so a token rejected while inactive cannot become valid again.
-            user.TokenVersion++;
-            if (!isActive)
-                await _unitOfWork.RefreshTokens.RevokeAllForUserAsync(userId);
-            await _unitOfWork.CommitAsync();
+                    // Re-read after the assignment locks; a route start takes the same locks.
+                    var linkedDriver = await _unitOfWork.Drivers.GetByUserIdAsync(userId);
+                    if (linkedDriver?.Id != initialDriver.Id)
+                        throw new BusinessConflictException("La asignación del conductor cambió; vuelve a intentar.");
+
+                    await _context.Entry(user).ReloadAsync();
+                    if (!isActive)
+                    {
+                        var activeRoutes = await _unitOfWork.Routes.GetAllAsync(
+                            driverId: linkedDriver.Id,
+                            status: RouteStatus.InProgress,
+                            onlyActive: true);
+                        if (activeRoutes.Count > 0)
+                            throw new BusinessConflictException(
+                                "No se puede desactivar la cuenta mientras el conductor tenga una ruta en curso.");
+                    }
+                }
+
+                if (user.IsActive == isActive)
+                {
+                    _unitOfWork.Rollback();
+                    return;
+                }
+
+                user.IsActive = isActive;
+                // Access JWT are stateless; bump the persisted version on both deactivation
+                // and reactivation so a token rejected while inactive cannot become valid again.
+                user.TokenVersion++;
+                if (!isActive)
+                    await _unitOfWork.RefreshTokens.RevokeAllForUserAsync(userId);
+                await _unitOfWork.CommitAsync();
+            }
+            catch
+            {
+                _unitOfWork.Rollback();
+                throw;
+            }
         }
     }
 }

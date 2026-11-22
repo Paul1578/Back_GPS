@@ -32,6 +32,7 @@
 - Pausar una ruta la devuelve a pendiente y libera el vehículo si ninguna otra ruta sigue en curso; reanudar exige que el vehículo esté disponible.
 - Un vehículo sólo puede tener una ruta activa en progreso a la vez; cambios concurrentes de ruta se serializan y el perdedor recibe HTTP 409.
 - El inicio exige Driver activo. La baja del Driver, la asignación manual y el cambio de estado del vehículo se serializan con inicio/edición para evitar estados incompatibles.
+- Si el Driver está vinculado a una cuenta User, esa cuenta también debe estar activa para iniciar la ruta. La baja de la cuenta se serializa con el inicio usando los locks de vehículo/Driver/cuenta; no se puede desactivar mientras tenga ruta en progreso. Si la cuenta ya está inactiva, el inicio devuelve 409 y no cambia la ruta ni el vehículo.
 - `CreatedAtUtc` registra en UTC cuándo se crea la ruta y la API lo serializa con zona UTC. Es nullable sólo para rutas anteriores a la migración; la edición no altera la fecha original. Las consultas recientes ordenan por creación y usan cierre/inicio planificado para ordenar los registros históricos sin fecha.
 # Aislamiento por empresa
 

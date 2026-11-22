@@ -1,6 +1,7 @@
 using fletflow.Domain.Fleet.Entities;
 using fletflow.Domain.Fleet.Exceptions;
 using fletflow.Domain.Fleet.Repositories;
+using fletflow.Domain.Auth.Repositories;
 using fletflow.Infrastructure.Persistence.Contracts;
 using System.Linq;
 
@@ -12,17 +13,20 @@ namespace fletflow.Application.Fleet.Commands
         private readonly IRouteRepository _routes;
         private readonly IVehicleRepository _vehicles;
         private readonly IDriverRepository _drivers;
+        private readonly IUserRepository _users;
 
         public ChangeRouteStatusCommand(
             IUnitOfWork uow,
             IRouteRepository routes,
             IVehicleRepository vehicles,
-            IDriverRepository drivers)
+            IDriverRepository drivers,
+            IUserRepository users)
         {
             _uow = uow;
             _routes = routes;
             _vehicles = vehicles;
             _drivers = drivers;
+            _users = users;
         }
 
         public async Task Execute(
@@ -80,6 +84,13 @@ namespace fletflow.Application.Fleet.Commands
                         ?? throw new KeyNotFoundException("Driver assigned to the route not found.");
                     if (!driver.IsActive)
                         throw new BusinessConflictException("No se puede iniciar una ruta con un conductor inactivo.");
+                    if (driver.UserId.HasValue)
+                    {
+                        await _uow.LockLinkedUserForRouteAssignmentAsync(driver.UserId.Value);
+                        var linkedUser = await _users.GetByIdAsync(driver.UserId.Value);
+                        if (linkedUser?.IsActive != true)
+                            throw new BusinessConflictException("No se puede iniciar una ruta con la cuenta del conductor inactiva.");
+                    }
 
                     var otherInProgressRoutes = await _routes.GetAllAsync(
                         vehicleId: route.VehicleId,

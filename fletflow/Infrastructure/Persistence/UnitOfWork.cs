@@ -149,6 +149,38 @@ namespace fletflow.Infrastructure.Persistence
                     throw new KeyNotFoundException("Driver not found.");
         }
 
+        public async Task LockLinkedUserForRouteAssignmentAsync(Guid userId)
+        {
+            if (!_context.Database.IsRelational())
+                return;
+            if (_routeAssignmentTransaction is null)
+                throw new InvalidOperationException("Primero se debe bloquear la asignación de ruta.");
+            if (!_context.Database.ProviderName!.Contains("MySql", StringComparison.OrdinalIgnoreCase))
+                return;
+
+            var ownerId = _context.CurrentOwnerUserId
+                ?? throw new InvalidOperationException("No se puede bloquear una cuenta sin propietario autenticado.");
+            var connection = _context.Database.GetDbConnection();
+            await using var command = connection.CreateCommand();
+            command.Transaction = _routeAssignmentTransaction.GetDbTransaction();
+            command.CommandText = "SELECT `Id` FROM `Users` WHERE `Id` = @id AND (`OwnerUserId` = @ownerId OR `Id` = @ownerId) FOR UPDATE";
+
+            var idParameter = command.CreateParameter();
+            idParameter.ParameterName = "@id";
+            idParameter.DbType = DbType.Guid;
+            idParameter.Value = userId;
+            command.Parameters.Add(idParameter);
+
+            var ownerParameter = command.CreateParameter();
+            ownerParameter.ParameterName = "@ownerId";
+            ownerParameter.DbType = DbType.Guid;
+            ownerParameter.Value = ownerId;
+            command.Parameters.Add(ownerParameter);
+
+            if (await command.ExecuteScalarAsync() is null)
+                throw new KeyNotFoundException("La cuenta vinculada al conductor no existe.");
+        }
+
         private async Task<(Guid VehicleId, Guid DriverId)?> LockOwnerScopedRouteAsync(Guid routeId, Guid ownerId)
         {
             var connection = _context.Database.GetDbConnection();

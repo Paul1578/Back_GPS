@@ -340,3 +340,8 @@
 - Se permite mantener el certificado anterior como fallback de descifrado durante rotación; el actual protege las claves nuevas. Se añadieron pruebas de payload previo y nuevo.
 - Tests Release 86/86, build Release 0 warnings/0 errors. Actions backend del commit resultante pendiente.
 - Backend `b664b2c` pasó Actions `45040550853`: xUnit 86/86, Release build, smoke HTTP/MySQL de tenant y concurrencia, cleanup success.
+# 2026-11-22 — Bloquear inicio de ruta con cuenta Driver inactiva
+
+- El inicio vuelve a validar que la cuenta User vinculada siga activa después de adquirir locks de asignación. Desactivar cuenta de un Driver usa el mismo orden de locks y devuelve 409 si su ruta está en progreso.
+- Nuevos tests xUnit verifican inicio denegado sin mutar ruta/vehículo y baja denegada sin revocar la cuenta durante operación activa. El smoke HTTP/MySQL cubre ambos estados y confirma persistencia SQL y cleanup.
+- Local: xUnit Release **88/88**, build 0 warnings/errors, shell syntax y diff-check pasan. Actions integrado pendiente.

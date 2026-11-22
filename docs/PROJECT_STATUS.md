@@ -378,3 +378,11 @@ Nota de actualización: algunos resultados históricos de registro público más
 - Data Protection: certificado previo opcional para descifrar key ring rotado; certificado actual sigue cifrando claves nuevas. Variables documentadas: `FLETFLOW_DATA_PROTECTION_PREVIOUS_CERT_PATH` y `FLETFLOW_DATA_PROTECTION_PREVIOUS_CERT_PASSWORD`.
 - Test de rotación cubre payload anterior y round-trip de payload nuevo con provider actual + anterior; no escribe XML cifrado a logs.
 - Tests enfocados pasaron 2/2; rotación aislada 1/1; suite Release **86/86**; build Release **0 warnings/0 errores**. Actions `45040550853` pasó con HTTP/MySQL isolation, concurrencia de rutas y cleanup. Commit `b664b2c`; roles sin cambios.
+
+## Cuenta Driver inactiva y ciclo de ruta — local validado, Actions pendiente
+
+- Hallazgo: se podía iniciar ruta pendiente con `Driver.IsActive=true` y cuenta User vinculada `IsActive=false`; vehículo pasaba a OnRoute sin que Driver pudiera iniciar sesión.
+- El start ahora bloquea/valida la cuenta User después de locks de ruta/vehículo/Driver. La baja de una cuenta vinculada toma los mismos locks y responde 409 si tiene ruta en progreso. La cuenta permanece activa y no se revocan sesiones en ese conflicto.
+- xUnit cubre inicio de ruta denegado con cuenta inactiva y baja denegada durante ruta activa, sin mutaciones inconsistentes. `smoke-tenant-http.sh` añade verificación HTTP/MySQL de ambos caminos y limpieza de sus recursos.
+- Validación local: Release xUnit **88/88**, restore al día, Release build **0 warnings/0 errores**, `bash -n` y diff-check correctos. MySQL/API integrado de este cambio pendiente de Actions.
+- Misión global sigue abierta: cobertura CRUD/responsive pendiente, política Admin delegado requiere decisión, credenciales SMTP/infraestructura PFX son externas; app móvil nativa aplazada por usuario.

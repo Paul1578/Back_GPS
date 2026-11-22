@@ -18,7 +18,7 @@ public sealed class ChangeRouteStatusAuthorizationTests
         var routes = new MutableRoutes(originalRoute);
         var unitOfWork = new ReassignOnLockUnitOfWork(routes, vehicle.Id, Guid.NewGuid());
         var drivers = new Drivers(Driver.Create("QA", "Driver", "AUTH-D1", "0990000000", userId));
-        var command = new ChangeRouteStatusCommand(unitOfWork, routes, new Vehicles(vehicle), drivers);
+        var command = new ChangeRouteStatusCommand(unitOfWork, routes, new Vehicles(vehicle), drivers, null!);
 
         await Assert.ThrowsAsync<KeyNotFoundException>(() =>
             command.Execute(originalRoute.Id, RouteStatus.Cancelled, driverId, userId));

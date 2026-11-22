@@ -5,6 +5,7 @@ using fletflow.Domain.Fleet.Exceptions;
 using fletflow.Api.Middleware;
 using fletflow.Infrastructure.Persistence;
 using fletflow.Infrastructure.Persistence.Context;
+using fletflow.Infrastructure.Persistence.Entities;
 using fletflow.Infrastructure.Persistence.Repositories;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
@@ -205,7 +206,8 @@ public class CreateRouteCommandTests
             new UnitOfWork(context, null!, null!, null!, null!, vehicles, drivers, routes, null!),
             routes,
             vehicles,
-            drivers);
+            drivers,
+            new UserRepository(context));
         var middleware = new ExceptionMiddleware(NullLogger<ExceptionMiddleware>.Instance);
         http.Response.Body = new MemoryStream();
 
@@ -215,6 +217,61 @@ public class CreateRouteCommandTests
         Assert.Equal(StatusCodes.Status409Conflict, http.Response.StatusCode);
         Assert.Equal(RouteStatus.Pending, (await routes.GetByIdAsync(created.Id))!.Status);
         Assert.Equal(VehicleStatus.Available, (await vehicles.GetByIdAsync(vehicle.Id))!.Status);
+    }
+
+    [Fact]
+    public async Task ChangeRouteStatus_RejectsStartingRouteWhenLinkedUserIsInactive_WithoutChangingRouteOrVehicle()
+    {
+        var ownerId = Guid.NewGuid();
+        using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder<AppDbContext>().UseSqlite(connection).Options;
+        var http = new DefaultHttpContext
+        {
+            User = new ClaimsPrincipal(new ClaimsIdentity([new Claim("owner_id", ownerId.ToString())], "test"))
+        };
+        await using var context = new AppDbContext(options, new HttpContextAccessor { HttpContext = http });
+        await context.Database.EnsureCreatedAsync();
+
+        var vehicles = new VehicleRepository(context);
+        var drivers = new DriverRepository(context);
+        var routes = new RouteRepository(context);
+        var users = new UserRepository(context);
+        var linkedUser = new UserEntity
+        {
+            Id = Guid.NewGuid(), OwnerUserId = ownerId, Username = "linked-driver",
+            Email = "linked-driver@example.test", PasswordHash = "test-hash", IsActive = true
+        };
+        var vehicle = Vehicle.Create("QA-LINKED-USER", "Test", "Van", 2025, null);
+        var driver = Driver.Create("Linked", "Driver", "QA-LINKED-USER", "0990000000", linkedUser.Id);
+        await context.Users.AddAsync(linkedUser);
+        await vehicles.AddAsync(vehicle);
+        await drivers.AddAsync(driver);
+        await context.SaveChangesAsync();
+
+        var createCommand = new CreateRouteCommand(
+            new UnitOfWork(context, users, null!, null!, null!, vehicles, drivers, routes, null!),
+            routes, vehicles, drivers);
+        var created = await createCommand.Execute(
+            vehicle.Id,
+            driver.Id,
+            "Pending route for linked account",
+            [RoutePoint.Create(-0.2, -78.5, "Origin"), RoutePoint.Create(-0.21, -78.51, "Destination")],
+            null, null, null);
+
+        linkedUser.IsActive = false;
+        await context.SaveChangesAsync();
+
+        var command = new ChangeRouteStatusCommand(
+            new UnitOfWork(context, users, null!, null!, null!, vehicles, drivers, routes, null!),
+            routes, vehicles, drivers, users);
+
+        await Assert.ThrowsAsync<BusinessConflictException>(() =>
+            command.Execute(created.Id, RouteStatus.InProgress));
+
+        Assert.Equal(RouteStatus.Pending, (await routes.GetByIdAsync(created.Id))!.Status);
+        Assert.Equal(VehicleStatus.Available, (await vehicles.GetByIdAsync(vehicle.Id))!.Status);
+        Assert.False((await users.GetByIdAsync(linkedUser.Id))!.IsActive);
     }
 
     [Fact]
@@ -255,7 +312,7 @@ public class CreateRouteCommandTests
             new DateTime(2035, 1, 2, 10, 0, 0, DateTimeKind.Utc),
             new DateTime(2035, 1, 2, 11, 0, 0, DateTimeKind.Utc));
 
-        var command = new ChangeRouteStatusCommand(uow, routes, vehicles, drivers);
+        var command = new ChangeRouteStatusCommand(uow, routes, vehicles, drivers, null!);
         await command.Execute(first.Id, RouteStatus.InProgress);
 
         var middleware = new ExceptionMiddleware(NullLogger<ExceptionMiddleware>.Instance);

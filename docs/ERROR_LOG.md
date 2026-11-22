@@ -650,3 +650,9 @@ Cada cambio de API debe incluir validación de compilación, migraciones si apli
 - Una inspección buscó `fletflow/Aplication/Fleet/Commands/DeleteVehicleCommand.cs`, pero el comando está bajo `Commands/CreateVehicle/`. `sed` falló sin modificar archivos.
 - Solución: localizar el archivo con `rg --files` y leer `CreateVehicle/DeleteVehicleCommand.cs`; se confirmó que la baja permite vehículos en mantenimiento si no tienen ruta activa ni Driver asignado.
 - Prevención: localizar la ruta real de clases antes de leerlas mediante un nombre de archivo supuesto.
+
+## 2026-11-22 — Smoke no eliminaba Driver vinculado al usuario de QA — CORREGIDO, CI REPETICIÓN PENDIENTE
+
+- Actions backend `45013922679`: build y xUnit 65/65 pasaron; el smoke HTTP/MySQL hizo todas las aserciones de negocio, pero el cleanup falló con MySQL 1451 porque `Drivers.UserId` restringe borrar el User de prueba mientras permanezca el Driver enlazado.
+- Solución: guardar el `driverId` de la respuesta, borrar primero ese Driver durante cleanup y comprobar que queden cero filas Driver/User. La verificación tolera errores de conexión reportándolos y conserva el estado de fallo.
+- Prevención: al ampliar fixtures con entidades enlazadas, documentar orden de borrado respetando FK y verificar también que cada fila de prueba desaparezca.

@@ -316,6 +316,6 @@ Errores de migración, herramientas, QA y soluciones están en `docs/ERROR_LOG.m
 
 - `chore/stabilize-fleet-platform`, HEAD base `5dc2426`; cambios locales pendientes: `IDriverRepository.GetAssignableAsync`, query asignación filtra Vehicle Available, Driver query con tenant+User activo; xUnit nuevo y smoke HTTP/MySQL ampliado.
 - Hallazgo: endpoint exponía vehículos OnRoute/Maintenance y Drivers con User inactivo, aunque `CreateRouteCommand` los rechaza. La traza del agente está en contexto del coordinador; documentada en ERROR_LOG.
-- Verificado local: `/home/leonardo/.dotnet/dotnet build BackEnd_Gps.sln -c Release` 0 warnings/errors; xUnit 65/65; bash -n/diff-check correctos. Falta Actions para smoke real MySQL.
-- Asegurar que el smoke incluye y excluye IDs correctos, que restaura Vehicle status antes de crear ruta Logistics, y cleanup del nuevo Driver vinculado.
+- Verificado local: `/home/leonardo/.dotnet/dotnet build BackEnd_Gps.sln -c Release` 0 warnings/errors; xUnit 65/65; bash -n/diff-check correctos. Actions `45013922679` confirmó filtros HTTP/MySQL, pero cleanup falló por borrar User antes del Driver enlazado.
+- Fix local no publicado: el cleanup borra Driver por ID antes del User y verifica cero filas residuales. Validar `bash -n`, publicar fix y repetir Actions completa; Front run `45013936721` también usa backend remoto anterior y puede fallar al cleanup.
 - `refactor/route-builder` tiene en paralelo prueba Manager UI iniciada localmente (18 E2E descubiertos); no confundir esta nueva cobertura con validación integrada.

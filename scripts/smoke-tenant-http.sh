@@ -42,6 +42,7 @@ other_tenant_email=""
 restricted_user_email=""
 deactivated_user_email=""
 inactive_driver_user_email=""
+inactive_linked_driver_id=""
 logistics_user_email=""
 logistics_user_id=""
 public_registration_email=""
@@ -106,7 +107,7 @@ cleanup() {
       sql+=" SET @qa_user_id=(SELECT Id FROM Users WHERE Email='$deactivated_user_email'); DELETE FROM RefreshTokens WHERE UserId=@qa_user_id; DELETE FROM PasswordResetTokens WHERE UserId=@qa_user_id; DELETE FROM UserRoles WHERE UserId=@qa_user_id; DELETE FROM Users WHERE Id=@qa_user_id;"
     fi
     if [[ -n "$inactive_driver_user_email" ]]; then
-      sql+=" SET @qa_user_id=(SELECT Id FROM Users WHERE Email='$inactive_driver_user_email'); DELETE FROM RefreshTokens WHERE UserId=@qa_user_id; DELETE FROM PasswordResetTokens WHERE UserId=@qa_user_id; DELETE FROM UserRoles WHERE UserId=@qa_user_id; DELETE FROM Users WHERE Id=@qa_user_id;"
+      sql+=" SET @qa_user_id=(SELECT Id FROM Users WHERE Email='$inactive_driver_user_email'); DELETE FROM Drivers WHERE Id='$inactive_linked_driver_id'; DELETE FROM RefreshTokens WHERE UserId=@qa_user_id; DELETE FROM PasswordResetTokens WHERE UserId=@qa_user_id; DELETE FROM UserRoles WHERE UserId=@qa_user_id; DELETE FROM Users WHERE Id=@qa_user_id;"
     fi
     if [[ -n "$logistics_user_email" ]]; then
       sql+=" SET @qa_user_id=(SELECT Id FROM Users WHERE Email='$logistics_user_email'); DELETE FROM RefreshTokens WHERE UserId=@qa_user_id; DELETE FROM PasswordResetTokens WHERE UserId=@qa_user_id; DELETE FROM UserRoles WHERE UserId=@qa_user_id; DELETE FROM Users WHERE Id=@qa_user_id;"
@@ -138,6 +139,21 @@ cleanup() {
       fi
       if [[ "$remaining" == "0:0:0" ]]; then
         echo "Cleanup verificado: 0 rutas, 0 posiciones GPS y 0 vehículos Logistics/Manager." >&2
+      fi
+    fi
+    if [[ -n "$inactive_driver_user_email" ]]; then
+      local inactive_driver_remaining
+      if inactive_driver_remaining="$(mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" \
+        --batch --skip-column-names "$db_name" \
+        -e "SELECT CONCAT((SELECT COUNT(*) FROM Drivers WHERE Id='$inactive_linked_driver_id'), ':', (SELECT COUNT(*) FROM Users WHERE Email='$inactive_driver_user_email'));" 2>"$work_dir/inactive_cleanup_verify.stderr")"; then
+        if [[ "$inactive_driver_remaining" != "0:0" ]]; then
+          echo "Cleanup dejó Driver/User vinculado de QA (conteos: $inactive_driver_remaining)." >&2
+          status=1
+        fi
+      else
+        echo "No se pudo verificar la limpieza del Driver/User de QA:" >&2
+        cat "$work_dir/inactive_cleanup_verify.stderr" >&2
+        status=1
       fi
     fi
   fi

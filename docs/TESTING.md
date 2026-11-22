@@ -361,3 +361,4 @@ La invitación envía sólo el enlace de activación; el usuario fija su contras
 - xUnit Release: 76/76, incluyendo respuesta genérica, token sólo para cuenta conocida, cola de entrega y duración mínima >=200 ms para conocidas/desconocidas.
 - Smoke HTTP/MySQL real comparó JSON ordenado y HTTP 200 para ambas cuentas; ambas duraciones fueron >=200 ms. La cola ejecutó el worker y registró `SmtpHost no configurado`; no se envió email ni se comunicó como enviado.
 - `EmailDeliveryQueue` es volátil y bounded (256). Falta outbox durable y prueba de entrega SMTP cuando haya credenciales vigentes.
+- Actions Backend `45024262135` para SHA `35ad3934daadafd16d553c11b999011d44ea2753`: `success`; build 0 warnings/0 errors, xUnit 76/76, smoke HTTP/MySQL tenant/concurrencia y cleanup cero.

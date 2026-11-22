@@ -290,3 +290,8 @@ Nota de actualización: algunos resultados históricos de registro público más
 - Nuevo worker bounded de proceso saca SMTP del request; both paths de recuperación responden el mismo JSON con mínimo 250 ms. Unit/HTTP smoke verifican payload y piso; smoke real vio `SmtpHost no configurado`, sin envío ni éxito simulado.
 - La rama local tiene cambios aún sin publicar; revisar/commitear y volver a correr Actions.
 - Riesgo restante: la cola actual no es durable y el tiempo puede variar si DB está lenta; un outbox persistente cifrado y credenciales SMTP son necesarios para garantía productiva. No considerar seguridad de enumeración totalmente cerrada.
+
+## Actions de recuperación uniforme y sesiones — validación cerrada
+
+- Backend `35ad393`: Actions `45024262135` success; Release build 0 warnings/0 errores, xUnit **76/76**, smoke HTTP/MySQL tenant y concurrencia aprobado, cleanup verificado `0 rutas / 0 posiciones / 0 vehículos`.
+- El smoke incluye los asserts nuevos de refresh/logout-all y recuperación de password; no se usó SMTP real.

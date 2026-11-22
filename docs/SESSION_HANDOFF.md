@@ -387,3 +387,4 @@ Errores de migración, herramientas, QA y soluciones están en `docs/ERROR_LOG.m
 - Validación local posterior: Release xUnit 76/76, Release build 0 warnings/errors, smoke API/MySQL 8 exit 0; el worker registró SMTP sin configurar, y no se afirmó envío. Repetir Actions con SHA nuevo antes de cerrar.
 - Riesgo abierto: cola en memoria (hasta 256) no es durable y piso no garantiza timings idénticos bajo saturación. Añadir outbox durable protegido antes de garantía productiva. Credenciales SMTP siguen externas.
 - Otros pendientes: decisión del usuario sobre promoción de Admin por cuentas delegadas, cobertura CRUD/responsive restante, y no cerrar misión.
+- Backend commit `35ad393` quedó validado por Actions `45024262135`: Release build 0 warnings/0 errores, xUnit 76/76, smoke MySQL/API success y cleanup `0 rutas/posiciones/vehículos`.

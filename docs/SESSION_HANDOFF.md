@@ -285,3 +285,10 @@ Errores de migración, herramientas, QA y soluciones están en `docs/ERROR_LOG.m
 
 - En `chore/stabilize-fleet-platform`, `dotnet list BackEnd_Gps.sln package --vulnerable --include-transitive` terminó con código 0; sin vulnerabilidades en Backend ni Tests.
 - Quedan CRUD/roles por auditar; política de Admin delegado pendiente de respuesta. No marcar la misión como completa.
+
+
+## Auditoría backend — siguiente bloque — 2026-11-22
+
+- `scripts/smoke-tenant-http.sh` tiene cambios locales no publicados en `chore/stabilize-fleet-platform`: pruebas cross-tenant de actualización de estado/evidencia de parada y ciclo positivo HTTP/MySQL Driver (CRUD/status/filter/assignment).
+- Validación local: Release 64/64; `bash -n`; MySQL 8 descartable; smoke completo aprobado y cleanup verificado. Publicar en la rama y confirmar Actions antes de contar el criterio.
+- Decisión pendiente de producto: si Admin delegado puede promover a miembro a Admin. No alterar el permiso ni escribir expectativa de test hasta definirlo.

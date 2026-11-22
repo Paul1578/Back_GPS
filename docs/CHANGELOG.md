@@ -212,3 +212,10 @@
 ## 2026-11-22 — Restringir el perfil a roles autorizados y validar campos
 
 - Backend smoke ahora prueba username vacío, valores mayores de 100 caracteres y conservación de datos ante 400; validación HTTP/MySQL pendiente para este incremento.
+
+
+## 2026-11-22 — Ampliar smoke tenant y CRUD de Driver
+
+- `smoke-tenant-http.sh` verifica las mutaciones cross-tenant de estado/evidencia de parada y comprueba persistencia intacta tras 404.
+- Añade ciclo positivo HTTP Driver: alta/consulta/edición, baja/reactivación con filtro `onlyActive=false` y asignación/desasignación de vehículo con lecturas de persistencia.
+- MySQL 8 aislado smoke aprobado; Release xUnit 64/64 y `bash -n` pasan. Actions pendiente.

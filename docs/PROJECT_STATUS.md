@@ -1,3 +1,10 @@
+## Cross-tenant de paradas y CRUD HTTP de Driver — local aprobado, Actions pendiente — 2026-11-22
+
+- El smoke tenant ahora intenta cambiar estado y agregar evidencia a una parada de tenant A usando token de tenant B; ambas respuestas deben ser 404 y una lectura posterior como A exige estado original/evidencia vacía.
+- El smoke cubre el ciclo HTTP positivo de Driver: crear/leer/editar, baja y reactivación con `onlyActive=false`, asignar y desasignar vehículo; cada cambio se confirma por API.
+- MySQL 8 efímero local pasó `smoke-tenant-http.sh`; limpieza comprobó cero rutas, posiciones y vehículos QA; el contenedor se eliminó. Release xUnit 64/64, shell syntax y diff-check pasan. Actions del nuevo cambio están pendientes.
+- Se mantiene abierta la política de promoción de miembros a Admin: requiere decisión de producto antes de fijar el permiso esperado.
+
 ## Actualización — edición de perfil de usuarios — 2026-11-22
 
 Backend implementa persistencia de nombres, endpoint Admin para edición de nombre/apellido/username, migración con backfill desde Drivers y sincronización bilateral User/Driver bajo tenant. Email sigue inmutable. Release build 0 warnings/errores; xUnit 62/62; smoke HTTP/MySQL de tenant y concurrencia pasan en MySQL efímero. Playwright integrado pasó 18/18 en Chrome sobre API/MySQL efímero y cleanup del runner. Actions backend 45005400763 success en el commit e54d3c8 (build, xUnit, smoke MySQL tenant/concurrencia). Auditoría integral abierta.

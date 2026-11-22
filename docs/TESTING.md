@@ -311,3 +311,11 @@ La invitación envía sólo el enlace de activación; el usuario fija su contras
 ## Auditoría de dependencias — 2026-11-22
 
 - Ejecutado con SDK 8.0.428: `dotnet list BackEnd_Gps.sln package --vulnerable --include-transitive` — código 0; sin vulnerabilidades en `BackEnd_Gps` ni `BackEnd_Gps.Tests`.
+
+
+## Cross-tenant de paradas y ciclo Driver por HTTP/MySQL — 2026-11-22
+
+- En MySQL 8 efímero, el token de tenant B intentó `PUT /Routes/{id}/points/0/status` y `POST /Routes/{id}/points/0/evidence` para la ruta de A; ambas devolvieron 404. La lectura posterior de A confirmó que status quedó 0 y evidence vacío.
+- CRUD Driver HTTP: POST/GET, PUT y GET de verificación; status false, GET `onlyActive=false`, status true y GET; asignación/desasignación del vehículo con GET confirmatorio.
+- `bash -n scripts/smoke-tenant-http.sh`, `dotnet test BackEnd_Gps.sln -c Release --no-restore -m:1` (**64/64**) y smoke completo pasaron. La base `fletflow_ci_*` y contenedor MySQL se descartaron; cleanup confirmó cero rutas, posiciones y vehículos QA.
+- Actions `45008868471` valida la actualización documental previa. La Action que incluirá estos nuevos escenarios todavía debe ejecutarse tras publicar el cambio.

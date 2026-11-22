@@ -623,3 +623,9 @@ Cada cambio de API debe incluir validación de compilación, migraciones si apli
 - La primera llamada a request_user_input_async envió el campo question, pero el contrato de esta herramienta sólo acepta title y options; la llamada fue rechazada sin llegar al usuario.
 - Se reintentó con title y opciones, y la pregunta pendiente es si un Admin delegado puede asignar rol Admin.
 - Prevención: validar el esquema concreto de cada interfaz de preguntas antes de invocarla.
+
+
+## 2026-11-22 — Ruta de Program.cs equivocada durante la verificación local — CORREGIDO
+
+- La inspección buscó `fletflow/Program.cs`, aunque el entry point está en la raíz del repositorio. `rg --files` localizó el archivo; se leyó el path correcto y se confirmó que el proceso toma variables de entorno antes de `.env`. No se ejecutó ni modificó configuración local por esa búsqueda fallida.
+- Prevención: consultar el inventario de archivos antes de asumir que el entry point está dentro del proyecto de dominio/API.

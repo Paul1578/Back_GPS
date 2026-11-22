@@ -456,6 +456,39 @@ vehicle_id="$(jq -er '.id' "$work_dir/response.json")"
 request POST /Drivers "$(jq -nc --arg document "$document_number" '{firstName:"E2E QA",lastName:"Driver A",documentNumber:$document,phoneNumber:"0990000000"}')"
 expect_status 201 "Crear Driver tenant A"
 driver_id="$(jq -er '.id' "$work_dir/response.json")"
+request GET "/Drivers/$driver_id"
+expect_status 200 "Consultar Driver recién creado"
+jq -e --arg id "$driver_id" --arg document "$document_number" '.id == $id and .documentNumber == $document and .isActive == true and .vehicleId == null' \
+  "$work_dir/response.json" >/dev/null || { echo "El Driver inicial no coincide con los datos persistidos." >&2; cat "$work_dir/response.json" >&2; exit 1; }
+updated_document="E2EU${suffix: -9}"
+request PUT "/Drivers/$driver_id" "$(jq -nc --arg document "$updated_document" '{firstName:"E2E QA editado",lastName:"Driver A",documentNumber:$document,phoneNumber:"0990000009"}')"
+expect_status 200 "Editar Driver propio"
+request GET "/Drivers/$driver_id"
+expect_status 200 "Confirmar edición persistida de Driver"
+jq -e --arg document "$updated_document" '.firstName == "E2E QA editado" and .documentNumber == $document and .phoneNumber == "0990000009"' \
+  "$work_dir/response.json" >/dev/null || { echo "La edición del Driver no quedó persistida." >&2; cat "$work_dir/response.json" >&2; exit 1; }
+request PUT "/Drivers/$driver_id/status" '{"isActive":false}'
+expect_status 204 "Desactivar Driver propio"
+request GET /Drivers?onlyActive=false
+expect_status 200 "Consultar Drivers inactivos"
+jq -e --arg id "$driver_id" 'any(.[]; .id == $id and .isActive == false)' "$work_dir/response.json" >/dev/null \
+  || { echo "El filtro onlyActive=false no incluyó el Driver desactivado." >&2; cat "$work_dir/response.json" >&2; exit 1; }
+request PUT "/Drivers/$driver_id/status" '{"isActive":true}'
+expect_status 204 "Reactivar Driver propio"
+request GET "/Drivers/$driver_id"
+expect_status 200 "Confirmar reactivación persistida de Driver"
+jq -e '.isActive == true' "$work_dir/response.json" >/dev/null || { echo "El Driver no volvió a estar activo." >&2; cat "$work_dir/response.json" >&2; exit 1; }
+request PUT "/Drivers/$driver_id/assign-vehicle" "$(jq -nc --arg vehicleId "$vehicle_id" '{vehicleId:$vehicleId}')"
+expect_status 204 "Asignar vehículo al Driver propio"
+request GET "/Drivers/$driver_id"
+expect_status 200 "Confirmar asignación de vehículo"
+jq -e --arg vehicleId "$vehicle_id" '.vehicleId == $vehicleId' "$work_dir/response.json" >/dev/null \
+  || { echo "La asignación del vehículo no quedó persistida." >&2; cat "$work_dir/response.json" >&2; exit 1; }
+request PUT "/Drivers/$driver_id/unassign-vehicle"
+expect_status 204 "Desasignar vehículo del Driver propio"
+request GET "/Drivers/$driver_id"
+expect_status 200 "Confirmar desasignación de vehículo"
+jq -e '.vehicleId == null' "$work_dir/response.json" >/dev/null || { echo "La desasignación del vehículo no quedó persistida." >&2; cat "$work_dir/response.json" >&2; exit 1; }
 
 route_name="E2E QA ruta tenant ${suffix: -9}"
 points='[{"lat":-0.18,"lng":-78.46,"name":"CI origin","operation":0,"status":0},{"lat":-0.19,"lng":-78.47,"name":"CI destination","operation":0,"status":0}]'
@@ -495,6 +528,11 @@ if jq -e --arg id "$route_id" 'any(.[]; .id == $id)' "$work_dir/response.json" >
   exit 1
 fi
 request GET "/Routes/$route_id" "" "$other_token"; expect_status 404 "Leer ruta cruzada"
+request PUT "/Routes/$route_id/points/0/status" '{"status":1}' "$other_token"
+expect_status 404 "Cambiar estado de parada cruzada"
+request POST "/Routes/$route_id/points/0/evidence" \
+  "$(jq -nc --arg content "Tenant B blocked $suffix" '{type:"note",content:$content,description:"Intento cross-tenant"}')" "$other_token"
+expect_status 404 "Agregar evidencia a parada cruzada"
 request GET "/Routes/$route_id/positions" "" "$other_token"; expect_status 200 "Leer colección GPS cruzada"
 jq -e 'length == 0' "$work_dir/response.json" >/dev/null || { echo "Tenant B recibió posiciones GPS de A." >&2; exit 1; }
 request POST "/Routes/$route_id/positions" '{"latitude":-0.186,"longitude":-78.466}' "$other_token"; expect_status 404 "Escribir GPS cruzado"
@@ -506,7 +544,9 @@ request POST /Routes "$(jq -nc --arg name "E2E QA ruta intento ${suffix: -9}" --
 request GET "/Routes/$route_id/positions" "" "$token"
 expect_status 200 "Leer GPS tenant A"
 jq -e 'length == 1' "$work_dir/response.json" >/dev/null || { echo "Tenant A no encontró su posición GPS." >&2; exit 1; }
-request GET "/Routes/$route_id" "" "$token"; expect_status 200 "Confirmar ruta tenant A intacta"
+request GET "/Routes/$route_id" "" "$token"; expect_status 200 "Confirmar ruta tenant A intacta tras intentos cruzados"
+jq -e '.points[0].status == 0 and (.points[0].evidence | length == 0)' "$work_dir/response.json" >/dev/null \
+  || { echo "Un intento cross-tenant modificó estado/evidencia de la parada." >&2; cat "$work_dir/response.json" >&2; exit 1; }
 request GET "/Drivers/$driver_id" "" "$token"; expect_status 200 "Confirmar Driver tenant A intacto"
 request GET "/Vehicles/$vehicle_id" "" "$token"; expect_status 200 "Confirmar vehículo tenant A intacto"
 

@@ -1,3 +1,9 @@
+# Estado de esta iteración — cobertura tenant HTTP/MySQL — 2026-11-22
+
+- Rama `chore/stabilize-fleet-platform`. Smoke amplía aislamiento de `GET /Users` y `/Users/my-team`, opciones de asignación y operaciones cross-tenant sobre Drivers/Vehicles.
+- Verificado localmente: build Release limpio, xUnit **82/82**, sintaxis Bash/diff-check limpios y `smoke-tenant-http.sh` exit 0 con API y MySQL 8 desechables. Tras cada uno de cuatro intentos cross-tenant, SQL confirmó `VehicleId`, `IsActive` y ownership sin cambios; cleanup de fixtures A/B y demás recursos confirmó cero filas.
+- Alcance pendiente: Actions/CI sobre este diff y revisión/integración. La misión global de FletFlow sigue abierta y SMTP real/app móvil están fuera de esta entrega.
+
 ## Iteración actual — exclusividad de asignación en rutas — 2026-11-22
 
 - CreateRoute/UpdateRoute validan relación Vehicle/Driver bajo locks y devuelven 409 si el vehículo sigue asignado a otro conductor.

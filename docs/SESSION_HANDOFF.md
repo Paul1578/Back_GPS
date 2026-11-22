@@ -1,3 +1,11 @@
+# Sesión actual — smoke tenant Users/asignaciones — 2026-11-22
+
+- Rama backend: `chore/stabilize-fleet-platform`, base `d3ac953`; sin cambios en `main`, sin commit/push.
+- Alcance implementado sólo en `scripts/smoke-tenant-http.sh` y documentación: listados Users/team de B excluyen todos los IDs A obtenidos de MySQL (`Id` raíz o `OwnerUserId` de A); opciones de ruta validan Driver propio B; cuatro intentos cross-tenant (assign/unassign Driver A, asociar vehículo A al Driver B y reactivar Vehicle A) esperan HTTP 404.
+- Cada intento cross-tenant dispara inmediatamente consulta MySQL de `Drivers.VehicleId`, `Vehicles.IsActive` para vehículo asignable y vehículo dado de baja, y `OwnerUserId`; los valores deben coincidir con baseline. Cleanup confirma cero Drivers, Vehicles y miembro B creados por el escenario.
+- Verificación local concluida: Release build 0 warnings/0 errores; xUnit **82/82** con `/home/leonardo/.dotnet/dotnet`; `bash -n scripts/smoke-tenant-http.sh`; `git diff --check`; smoke HTTP/MySQL 8 con exit 0. Cleanup informó cero fixtures A/B, rutas, posiciones y recursos Logistics/Manager; servicio API/contendor desechable detenido.
+- El primer `dotnet` global falló por runtime ausente; se registró y resolvió usando SDK .NET 8 de usuario. Actions backend sigue pendiente; revisar el diff y ejecutar CI antes de integrar. No declarar terminada la misión global.
+
 ## Iteración actual — exclusividad de asignación al crear/editar ruta — 2026-11-22
 
 - Auditoría read-only encontró que `CreateRouteCommand` y `UpdateRouteCommand` podían asociar un Vehicle todavía asignado a otro Driver, aunque la asignación directa ya devolvía conflicto.

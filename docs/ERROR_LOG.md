@@ -1,3 +1,18 @@
+# 2026-11-22 — Fixtures tenant A/B del smoke no reflejaban assignment-options — CORREGIDO
+
+- Al crear el Driver propio de B antes de `GET /Routes/assignment-options`, el endpoint devolvió ese Driver asignable. La aserción antigua `drivers | length == 0` falló aunque el aislamiento era correcto.
+- Solución: exigir cero vehículos y exactamente el ID del Driver B; esto también excluye IDs de Drivers A.
+- Se añadieron consultas MySQL inmediatamente después de cada intento cross-tenant (asignar/desasignar Driver A, asignar vehículo A al Driver B y reactivar vehículo A). Comparan ambos `VehicleId`, `IsActive` de los vehículos, y `OwnerUserId`.
+- Verificación: `bash -n`, `git diff --check`, build Release sin warnings/errores y smoke completo contra API + MySQL 8 desechables; cleanup confirmó cero Drivers, Vehicles y Users temporales A/B.
+- Incidencias de ejecución: el primer wrapper local fue bloqueado antes de ejecutar por incluir `rm -f`; se sustituyó por `unlink` y `docker stop/rm`. La primera creación del miembro B respondió HTTP 400 porque faltaba `Password`; el fixture ahora genera contraseña aleatoria. La primera corrida que alcanzó `assignment-options` expuso la expectativa vieja descrita arriba.
+
+# 2026-11-22 — `dotnet` del PATH no encuentra runtimes — RESUELTO PARA ESTA SESIÓN
+
+- Síntoma: `dotnet test BackEnd_Gps.sln --configuration Release --no-restore` abortó con código 131 porque `/usr/lib64/dotnet/host/fxr` no contiene una versión runtime.
+- Causa: el host global del sistema no corresponde al SDK/runtime .NET 8 instalado para el usuario.
+- Solución: usar `/home/leonardo/.dotnet/dotnet test BackEnd_Gps.sln --configuration Release --no-restore`; pasó **82/82** pruebas Release.
+- Prevención: verificar `command -v dotnet` y usar el SDK local del usuario en este entorno.
+
 # 2026-11-22 — Inspección buscó Application con ortografía distinta — CORREGIDO
 
 - Síntoma: `rg` en `/home/leonardo/Back_GPS` no encontró `fletflow/Application`; el proyecto histórico tiene carpetas `Aplication` y namespaces `Application`, con spelling inconsistente.

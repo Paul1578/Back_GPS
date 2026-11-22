@@ -1,3 +1,12 @@
+# Aislamiento Users y asignaciones A/B por HTTP/MySQL — validado local — 2026-11-22
+
+- `GET /api/Users` y `GET /api/Users/my-team` con JWT de B devuelven HTTP 200, incluyen el miembro B y excluyen todos los IDs que MySQL identifica como pertenecientes a A (`Id` raíz o `OwnerUserId` de A). Consultas SQL antes/después confirman `OwnerUserId` intacto.
+- `GET /api/Routes/assignment-options` para B incluye exactamente su Driver y cero vehículos; no incluye Drivers A.
+- B intenta asignar y desasignar el Driver A, asignar un vehículo A a su propio Driver y reactivar un vehículo A inactivo. Los cuatro endpoints responden HTTP 404. Después de cada request, SQL compara `Drivers.VehicleId`, `Vehicles.IsActive` y propietarios contra baseline; no hay mutaciones.
+- Comandos ejecutados: `/home/leonardo/.dotnet/dotnet build BackEnd_Gps.csproj -c Release --no-restore -m:1` (0 warnings/0 errors), `/home/leonardo/.dotnet/dotnet test BackEnd_Gps.sln --configuration Release --no-restore` (**82/82**), `bash -n scripts/smoke-tenant-http.sh`, `git diff --check` y `bash scripts/smoke-tenant-http.sh` con API local y MySQL 8 en contenedor/DB descartables (`fletflow_ci_*`). El smoke terminó exit 0.
+- Cleanup SQL confirmó cero Drivers, vehículos y miembros temporales A/B; además cero rutas, posiciones GPS y vehículos Logistics/Manager. El contenedor y API locales se detuvieron. Se observaron avisos del cliente MariaDB por alias `mysql` y TLS desactivado en conexión local de prueba; no afectaron el resultado.
+- Actions aún pendiente para este diff; la rama sigue sin commit/push, pendiente de revisión e integración.
+
 # Pruebas backend
 
 ## Edición de perfil con scope de tenant — 2026-11-22

@@ -39,6 +39,7 @@ route_id=""
 vehicle_id=""
 driver_id=""
 other_tenant_email=""
+other_tenant_member_email=""
 restricted_user_email=""
 duplicate_email_race=""
 deactivated_user_email=""
@@ -53,6 +54,10 @@ restricted_attempt_plate=""
 document_number=""
 manager_vehicle_id=""
 manager_driver_id=""
+other_tenant_driver_id=""
+foreign_driver_id=""
+foreign_vehicle_id=""
+foreign_reactivate_vehicle_id=""
 manager_route_name=""
 manager_route_id=""
 logistics_route_id=""
@@ -88,14 +93,21 @@ cleanup() {
     fi
     if [[ -n "$driver_id" ]]; then sql+=" DELETE FROM Drivers WHERE Id='$driver_id';"
     elif [[ -n "$document_number" ]]; then sql+=" DELETE FROM Drivers WHERE DocumentNumber='$document_number';"; fi
+    if [[ -n "$foreign_driver_id" ]]; then sql+=" DELETE FROM Drivers WHERE Id='$foreign_driver_id';"; fi
     if [[ -n "$driver_race_document" ]]; then sql+=" DELETE FROM Drivers WHERE DocumentNumber='$driver_race_document';"; fi
+    if [[ -n "$other_tenant_driver_id" ]]; then sql+=" DELETE FROM Drivers WHERE Id='$other_tenant_driver_id';"; fi
     if [[ -n "$manager_driver_id" ]]; then sql+=" DELETE FROM Drivers WHERE Id='$manager_driver_id';"; fi
     if [[ -n "$vehicle_id" ]]; then sql+=" DELETE FROM Vehicles WHERE Id='$vehicle_id';"
     elif [[ -n "$plate" ]]; then sql+=" DELETE FROM Vehicles WHERE Plate='$plate';"; fi
+    if [[ -n "$foreign_reactivate_vehicle_id" ]]; then sql+=" DELETE FROM Vehicles WHERE Id='$foreign_reactivate_vehicle_id';"; fi
+    if [[ -n "$foreign_vehicle_id" ]]; then sql+=" DELETE FROM Vehicles WHERE Id='$foreign_vehicle_id';"; fi
     if [[ -n "$manager_vehicle_id" ]]; then sql+=" UPDATE Vehicles SET Status=0 WHERE Id='$manager_vehicle_id'; DELETE FROM Vehicles WHERE Id='$manager_vehicle_id';"; fi
     if [[ -n "$restricted_attempt_plate" ]]; then sql+=" DELETE FROM Vehicles WHERE Plate='$restricted_attempt_plate';"; fi
     if [[ -n "$other_tenant_email" ]]; then
       sql+=" SET @qa_user_id=(SELECT Id FROM Users WHERE Email='$other_tenant_email'); DELETE FROM RefreshTokens WHERE UserId=@qa_user_id; DELETE FROM PasswordResetTokens WHERE UserId=@qa_user_id; DELETE FROM UserRoles WHERE UserId=@qa_user_id; DELETE FROM Users WHERE Id=@qa_user_id;"
+    fi
+    if [[ -n "$other_tenant_member_email" ]]; then
+      sql+=" SET @qa_user_id=(SELECT Id FROM Users WHERE Email='$other_tenant_member_email'); DELETE FROM RefreshTokens WHERE UserId=@qa_user_id; DELETE FROM PasswordResetTokens WHERE UserId=@qa_user_id; DELETE FROM UserRoles WHERE UserId=@qa_user_id; DELETE FROM Users WHERE Id=@qa_user_id;"
     fi
     if [[ -n "$restricted_user_email" ]]; then
       sql+=" SET @qa_user_id=(SELECT Id FROM Users WHERE Email='$restricted_user_email'); DELETE FROM RefreshTokens WHERE UserId=@qa_user_id; DELETE FROM PasswordResetTokens WHERE UserId=@qa_user_id; DELETE FROM UserRoles WHERE UserId=@qa_user_id; DELETE FROM Users WHERE Id=@qa_user_id;"
@@ -176,6 +188,24 @@ cleanup() {
         status=1
       fi
     fi
+    if [[ -n "$foreign_driver_id" && -n "$other_tenant_driver_id" && -n "$foreign_vehicle_id" && -n "$foreign_reactivate_vehicle_id" ]]; then
+      local tenant_fixture_remaining
+      tenant_fixture_remaining="$(mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" \
+        --batch --skip-column-names "$db_name" \
+        -e "SELECT CONCAT((SELECT COUNT(*) FROM Drivers WHERE Id IN ('$foreign_driver_id','$other_tenant_driver_id')), ':', (SELECT COUNT(*) FROM Vehicles WHERE Id IN ('$foreign_vehicle_id','$foreign_reactivate_vehicle_id')), ':', (SELECT COUNT(*) FROM Users WHERE Email='$other_tenant_member_email'));" \
+        2>"$work_dir/tenant_cleanup_verify.stderr")" || {
+        echo "No se pudo verificar cleanup de fixtures tenant A/B:" >&2
+        cat "$work_dir/tenant_cleanup_verify.stderr" >&2
+        status=1
+        tenant_fixture_remaining="unknown"
+      }
+      if [[ "$tenant_fixture_remaining" != "0:0:0" && "$tenant_fixture_remaining" != "unknown" ]]; then
+        echo "Cleanup dejó fixtures Driver/Vehicle/User tenant A/B (conteos: $tenant_fixture_remaining)." >&2
+        status=1
+      elif [[ "$tenant_fixture_remaining" == "0:0:0" ]]; then
+        echo "Cleanup verificado: cero Drivers, vehículos y miembros temporales tenant A/B." >&2
+      fi
+    fi
   fi
   rm -rf -- "$work_dir"
   exit "$status"
@@ -199,6 +229,17 @@ expect_status() {
     cat "$work_dir/response.json" >&2
     exit 1
   fi
+}
+
+assert_foreign_assignment_state_unchanged() {
+  local label="$1" state expected
+  state="$(mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" "$db_name" \
+    --batch --skip-column-names -e "SELECT CONCAT((SELECT COALESCE(CAST(VehicleId AS CHAR),'NULL') FROM Drivers WHERE Id='$foreign_driver_id'), ':', (SELECT COALESCE(CAST(VehicleId AS CHAR),'NULL') FROM Drivers WHERE Id='$other_tenant_driver_id'), ':', (SELECT CASE WHEN IsActive=1 THEN '1' ELSE '0' END FROM Vehicles WHERE Id='$foreign_vehicle_id'), ':', (SELECT CASE WHEN IsActive=1 THEN '1' ELSE '0' END FROM Vehicles WHERE Id='$foreign_reactivate_vehicle_id'), ':', (SELECT COALESCE(CAST(OwnerUserId AS CHAR),'NULL') FROM Drivers WHERE Id='$foreign_driver_id'), ':', (SELECT COALESCE(CAST(OwnerUserId AS CHAR),'NULL') FROM Drivers WHERE Id='$other_tenant_driver_id'), ':', (SELECT COALESCE(CAST(OwnerUserId AS CHAR),'NULL') FROM Vehicles WHERE Id='$foreign_vehicle_id'), ':', (SELECT COALESCE(CAST(OwnerUserId AS CHAR),'NULL') FROM Vehicles WHERE Id='$foreign_reactivate_vehicle_id'));")"
+  expected="$foreign_vehicle_id:NULL:1:0:$root_user_id:$other_tenant_root_id:$root_user_id:$root_user_id"
+  [[ "$state" == "$expected" ]] || {
+    echo "$label mutó VehicleId/IsActive u ownership (esperado $expected, recibido $state)." >&2
+    exit 1
+  }
 }
 
 request POST /Auth/login "$(jq -nc --arg email "$admin_email" --arg password "$admin_password" '{email:$email,password:$password}')" ""
@@ -611,14 +652,68 @@ expect_status 200 "Registro tenant B"
 request POST /Auth/login "$(jq -nc --arg email "$other_tenant_email" --arg password "$other_tenant_password" '{email:$email,password:$password}')" ""
 expect_status 200 "Login tenant B"
 other_token="$(jq -er '.token // .accessToken' "$work_dir/response.json")"
-request GET /Routes/assignment-options "" "$other_token"
-expect_status 200 "Opciones de asignación limitadas al tenant B"
-jq -e '(.vehicles | length == 0) and (.drivers | length == 0)' "$work_dir/response.json" >/dev/null \
-  || { echo "Tenant B recibió opciones de vehículos o Drivers del tenant A." >&2; cat "$work_dir/response.json" >&2; exit 1; }
 restricted_user_id="$(mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" "$db_name" \
   --batch --skip-column-names -e "SELECT Id FROM Users WHERE Email='$restricted_user_email';")"
 root_user_id="$(mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" "$db_name" \
   --batch --skip-column-names -e "SELECT Id FROM Users WHERE Email='$admin_email';")"
+other_tenant_root_id="$(mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" "$db_name" \
+  --batch --skip-column-names -e "SELECT Id FROM Users WHERE Email='$other_tenant_email';")"
+[[ -n "$restricted_user_id" && -n "$root_user_id" && -n "$other_tenant_root_id" ]] || {
+  echo "No se encontraron las cuentas raíz/miembro QA para probar aislamiento de usuarios." >&2
+  exit 1
+}
+
+other_tenant_member_email="fletflow.e2e.tenant-b.member.$suffix@example.test"
+other_tenant_member_password="$(openssl rand -hex 24)"
+request POST /Users "$(jq -nc --arg email "$other_tenant_member_email" --arg password "$other_tenant_member_password" --arg username "Tenant B member $suffix" '{username:$username,email:$email,password:$password,roleName:"User"}')" "$other_token"
+expect_status 200 "Crear miembro propio de tenant B para probar listados"
+other_tenant_member_id="$(jq -er '.id' "$work_dir/response.json")"
+other_tenant_driver_document="TENB${suffix: -9}"
+request POST /Drivers "$(jq -nc --arg document "$other_tenant_driver_document" '{firstName:"Tenant B",lastName:"Driver",documentNumber:$document,phoneNumber:"0990000002"}')" "$other_token"
+expect_status 201 "Crear Driver propio de tenant B para probar asignaciones cruzadas"
+other_tenant_driver_id="$(jq -er '.id' "$work_dir/response.json")"
+
+user_scope_before="$(mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" "$db_name" \
+  --batch --skip-column-names -e "SELECT CONCAT(COALESCE((SELECT CAST(OwnerUserId AS CHAR) FROM Users WHERE Id='$root_user_id'),'NULL'), ':', COALESCE((SELECT CAST(OwnerUserId AS CHAR) FROM Users WHERE Id='$restricted_user_id'),'NULL'), ':', COALESCE((SELECT CAST(OwnerUserId AS CHAR) FROM Users WHERE Id='$other_tenant_root_id'),'NULL'), ':', COALESCE((SELECT CAST(OwnerUserId AS CHAR) FROM Users WHERE Id='$other_tenant_member_id'),'NULL'));")"
+expected_user_scope="NULL:$root_user_id:NULL:$other_tenant_root_id"
+[[ "$user_scope_before" == "$expected_user_scope" ]] || {
+  echo "Los fixtures de usuarios no quedaron asociados a sus propietarios esperados ($user_scope_before)." >&2
+  exit 1
+}
+tenant_a_user_ids="$(mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" "$db_name" \
+  --batch --skip-column-names -e "SELECT COALESCE(JSON_ARRAYAGG(Id), JSON_ARRAY()) FROM Users WHERE Id='$root_user_id' OR OwnerUserId='$root_user_id';")"
+
+request GET /Users "" "$other_token"
+expect_status 200 "Listar usuarios propios como tenant B"
+jq -e --arg own "$other_tenant_member_id" --argjson tenantAIds "$tenant_a_user_ids" \
+  'type == "array" and any(.[]; .id == $own) and all(.[]; .id as $id | ($tenantAIds | index($id)) == null)' \
+  "$work_dir/response.json" >/dev/null || {
+  echo "GET /Users omitió al miembro B o expuso usuarios de tenant A." >&2
+  cat "$work_dir/response.json" >&2
+  exit 1
+}
+request GET /Users/my-team "" "$other_token"
+expect_status 200 "Listar equipo propio como tenant B"
+jq -e --arg own "$other_tenant_member_id" --argjson tenantAIds "$tenant_a_user_ids" \
+  'type == "array" and any(.[]; .id == $own) and all(.[]; .id as $id | ($tenantAIds | index($id)) == null)' \
+  "$work_dir/response.json" >/dev/null || {
+  echo "GET /Users/my-team omitió al miembro B o expuso usuarios de tenant A." >&2
+  cat "$work_dir/response.json" >&2
+  exit 1
+}
+user_scope_after="$(mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" "$db_name" \
+  --batch --skip-column-names -e "SELECT CONCAT(COALESCE((SELECT CAST(OwnerUserId AS CHAR) FROM Users WHERE Id='$root_user_id'),'NULL'), ':', COALESCE((SELECT CAST(OwnerUserId AS CHAR) FROM Users WHERE Id='$restricted_user_id'),'NULL'), ':', COALESCE((SELECT CAST(OwnerUserId AS CHAR) FROM Users WHERE Id='$other_tenant_root_id'),'NULL'), ':', COALESCE((SELECT CAST(OwnerUserId AS CHAR) FROM Users WHERE Id='$other_tenant_member_id'),'NULL'));")"
+[[ "$user_scope_after" == "$user_scope_before" ]] || {
+  echo "Las lecturas de Users alteraron propietario o tenant de las cuentas ($user_scope_before -> $user_scope_after)." >&2
+  exit 1
+}
+
+request GET /Routes/assignment-options "" "$other_token"
+expect_status 200 "Opciones de asignación limitadas al tenant B"
+jq -e --arg own "$other_tenant_driver_id" \
+  '(.vehicles | length == 0) and (.drivers | length == 1) and (.drivers | any(.[]; .id == $own))' \
+  "$work_dir/response.json" >/dev/null \
+  || { echo "Opciones de tenant B deben incluir su Driver propio y excluir vehículos/Drivers de A." >&2; cat "$work_dir/response.json" >&2; exit 1; }
 [[ -n "$restricted_user_id" && -n "$root_user_id" ]] || { echo "No se encontraron las cuentas QA para verificar el límite de usuarios." >&2; exit 1; }
 root_username_before="$(mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" "$db_name" \
   --batch --skip-column-names -e "SELECT Username FROM Users WHERE Id='$root_user_id';")"
@@ -732,6 +827,13 @@ request GET "/Drivers/$driver_id"
 expect_status 200 "Confirmar desasignación de vehículo"
 jq -e '.vehicleId == null' "$work_dir/response.json" >/dev/null || { echo "La desasignación del vehículo no quedó persistida." >&2; cat "$work_dir/response.json" >&2; exit 1; }
 
+request PUT "/Drivers/$driver_id/assign-vehicle" "$(jq -nc --arg vehicleId "$vehicle_id" '{vehicleId:$vehicleId}')"
+expect_status 204 "Restaurar asignación base del Driver para probar aislamiento"
+request GET "/Drivers/$driver_id"
+expect_status 200 "Confirmar asignación base del Driver"
+jq -e --arg vehicleId "$vehicle_id" '.vehicleId == $vehicleId' "$work_dir/response.json" >/dev/null \
+  || { echo "No se pudo preparar una asignación existente para probar aislamiento." >&2; exit 1; }
+
 route_name="E2E QA ruta tenant ${suffix: -9}"
 points='[{"lat":-0.18,"lng":-78.46,"name":"CI origin","operation":0,"status":0},{"lat":-0.19,"lng":-78.47,"name":"CI destination","operation":0,"status":0}]'
 request POST /Routes "$(jq -nc --arg name "$route_name" --arg vehicleId "$vehicle_id" --arg driverId "$driver_id" --argjson points "$points" '{name:$name,cargoDescription:"CI tenant isolation",vehicleId:$vehicleId,driverId:$driverId,points:$points}')"
@@ -785,6 +887,24 @@ request GET "/Vehicles/$vehicle_id" "" "$other_token"; expect_status 404 "Leer v
 request PUT "/Vehicles/$vehicle_id" "$(jq -nc --arg plate "HACK${suffix: -9}" '{plate:$plate,brand:"Blocked",model:"Blocked",year:2025}')" "$other_token"; expect_status 404 "Editar vehículo cruzado"
 request DELETE "/Vehicles/$vehicle_id" "" "$other_token"; expect_status 404 "Borrar vehículo cruzado"
 
+foreign_vehicle_plate="E2EQF${suffix: -9}"
+request POST /Vehicles "$(jq -nc --arg plate "$foreign_vehicle_plate" '{plate:$plate,brand:"Tenant A",model:"Foreign assignment",year:2025}')" "$token"
+expect_status 201 "Crear vehículo de tenant A para probar asignación cruzada"
+foreign_vehicle_id="$(jq -er '.id' "$work_dir/response.json")"
+foreign_driver_document="E2EQD${suffix: -9}"
+request POST /Drivers "$(jq -nc --arg document "$foreign_driver_document" '{firstName:"Tenant A",lastName:"Foreign Driver",documentNumber:$document,phoneNumber:"0990000003"}')" "$token"
+expect_status 201 "Crear Driver de tenant A para probar asignación cruzada"
+foreign_driver_id="$(jq -er '.id' "$work_dir/response.json")"
+request PUT "/Drivers/$foreign_driver_id/assign-vehicle" "$(jq -nc --arg vehicleId "$foreign_vehicle_id" '{vehicleId:$vehicleId}')" "$token"
+expect_status 204 "Preparar asignación de Driver/vehículo de tenant A"
+
+foreign_reactivate_plate="E2EQR${suffix: -9}"
+request POST /Vehicles "$(jq -nc --arg plate "$foreign_reactivate_plate" '{plate:$plate,brand:"Tenant A",model:"Reactivation isolation",year:2025}')" "$token"
+expect_status 201 "Crear vehículo aislado para probar reactivación cross-tenant"
+foreign_reactivate_vehicle_id="$(jq -er '.id' "$work_dir/response.json")"
+request DELETE "/Vehicles/$foreign_reactivate_vehicle_id" "" "$token"
+expect_status 204 "Dar de baja vehículo de prueba antes del intento cross-tenant"
+
 request GET /Drivers "" "$other_token"
 expect_status 200 "Listar Drivers tenant B"
 if jq -e --arg id "$driver_id" 'any(.[]; .id == $id)' "$work_dir/response.json" >/dev/null; then
@@ -794,6 +914,26 @@ fi
 request GET "/Drivers/$driver_id" "" "$other_token"; expect_status 404 "Leer Driver cruzado"
 request PUT "/Drivers/$driver_id" '{"firstName":"Blocked","lastName":"Blocked","documentNumber":"HACK00001","phoneNumber":"0990000000"}' "$other_token"; expect_status 404 "Editar Driver cruzado"
 request PUT "/Drivers/$driver_id/status" '{"isActive":false}' "$other_token"; expect_status 404 "Cambiar estado Driver cruzado"
+request PUT "/Drivers/$foreign_driver_id/assign-vehicle" "$(jq -nc --arg vehicleId "$foreign_vehicle_id" '{vehicleId:$vehicleId}')" "$other_token"
+expect_status 404 "Tenant B no puede asignar un vehículo al Driver ajeno"
+assert_foreign_assignment_state_unchanged "Asignar vehículo al Driver ajeno"
+request PUT "/Drivers/$foreign_driver_id/unassign-vehicle" "" "$other_token"
+expect_status 404 "Tenant B no puede desasignar un Driver ajeno"
+assert_foreign_assignment_state_unchanged "Desasignar Driver ajeno"
+request PUT "/Drivers/$other_tenant_driver_id/assign-vehicle" "$(jq -nc --arg vehicleId "$foreign_vehicle_id" '{vehicleId:$vehicleId}')" "$other_token"
+expect_status 404 "Tenant B no puede asignar a su Driver un vehículo ajeno"
+assert_foreign_assignment_state_unchanged "Asignar vehículo ajeno al Driver B"
+request POST "/Vehicles/$foreign_reactivate_vehicle_id/reactivate" "" "$other_token"
+expect_status 404 "Tenant B no puede reactivar vehículo ajeno"
+assert_foreign_assignment_state_unchanged "Reactivar vehículo ajeno"
+
+foreign_assignment_state="$(mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" "$db_name" \
+  --batch --skip-column-names -e "SELECT CONCAT((SELECT COALESCE(CAST(VehicleId AS CHAR),'NULL') FROM Drivers WHERE Id='$foreign_driver_id'), ':', (SELECT COALESCE(CAST(VehicleId AS CHAR),'NULL') FROM Drivers WHERE Id='$other_tenant_driver_id'), ':', (SELECT CASE WHEN IsActive=1 THEN '1' ELSE '0' END FROM Vehicles WHERE Id='$foreign_reactivate_vehicle_id'), ':', (SELECT COALESCE(CAST(OwnerUserId AS CHAR),'NULL') FROM Drivers WHERE Id='$foreign_driver_id'), ':', (SELECT COALESCE(CAST(OwnerUserId AS CHAR),'NULL') FROM Drivers WHERE Id='$other_tenant_driver_id'), ':', (SELECT COALESCE(CAST(OwnerUserId AS CHAR),'NULL') FROM Vehicles WHERE Id='$foreign_vehicle_id'), ':', (SELECT COALESCE(CAST(OwnerUserId AS CHAR),'NULL') FROM Vehicles WHERE Id='$foreign_reactivate_vehicle_id'));")"
+expected_foreign_assignment_state="$foreign_vehicle_id:NULL:0:$root_user_id:$other_tenant_root_id:$root_user_id:$root_user_id"
+[[ "$foreign_assignment_state" == "$expected_foreign_assignment_state" ]] || {
+  echo "Los intentos cross-tenant mutaron asignaciones/estado o cambiaron propietarios (esperado $expected_foreign_assignment_state, recibido $foreign_assignment_state)." >&2
+  exit 1
+}
 
 request GET /Routes "" "$other_token"
 expect_status 200 "Listar rutas tenant B"
@@ -900,4 +1040,4 @@ if [[ "$refresh_logout_race_status" == "200" ]]; then
   expect_status 401 "Logout-all revoca el sucesor de refresh concurrente"
 fi
 
-echo "OK: aislamiento HTTP/MySQL entre tenants; autorización User/Driver/Manager/Logistics; altas con longitudes límite/rechazo y email duplicado concurrente 200/409 sin persistencia parcial; Logistics creó/editó/leyó ruta, inició operación pickup+delivery con evidencia, registró GPS, completó ruta y verificó vehículo Available; cleanup de Vehicles/Drivers/Routes/RoutePositions/usuarios QA; revocación de sesiones."
+echo "OK: aislamiento HTTP/MySQL entre tenants en Users/my-team, Vehicles/Drivers/Routes y asignaciones/reactivación; autorización User/Driver/Manager/Logistics; altas con longitudes límite/rechazo y email duplicado concurrente 200/409 sin persistencia parcial; Logistics creó/editó/leyó ruta, inició operación pickup+delivery con evidencia, registró GPS, completó ruta y verificó vehículo Available; cleanup de Vehicles/Drivers/Routes/RoutePositions/usuarios QA; revocación de sesiones."

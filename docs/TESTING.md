@@ -397,7 +397,7 @@ La invitación envía sólo el enlace de activación; el usuario fija su contras
 
 - `Worker_DecryptsAndMarksOutboxMessageSent`: ejecuta el worker real y verifica payload recuperado, llamada al sender, timestamp enviado, attempts y liberación de lock.
 - `Worker_DeadLettersMessageAfterTwelfthFailure`: fuerza fallo del sender desde intento 11 y confirma intento 12, `DeadLetteredAtUtc`, tipo de falla y lease libre.
-- Validación local: suite Release **80/80**, 0 skips; build Release 0 warnings/0 errors. Actions pendiente.
+- Validación local: suite Release **80/80**, 0 skips; build Release 0 warnings/0 errors. Actions `45030208849` también pasó build/xUnit 80/80, smoke HTTP/MySQL, concurrencia y cleanup.
 # Incidente CI — precisión de `CreatedAtUtc`
 
 - Actions `45029094282`: build/tests pasaron, smoke HTTP falló en assert API/MySQL luego de editar ruta.

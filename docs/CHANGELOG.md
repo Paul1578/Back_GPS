@@ -304,4 +304,4 @@
 # 2026-11-22 — Tests del worker de EmailOutbox
 
 - Agregados casos SQLite que ejecutan EmailOutboxWorker para entrega/descifrado exitosos y dead-letter al intento 12.
-- Suite Release 80/80; build 0 warnings/0 errors. Actions pendiente.
+- Suite Release 80/80; build 0 warnings/0 errors. Actions `45030208849` pasó también con smoke API/MySQL y cleanup.

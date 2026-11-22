@@ -341,4 +341,4 @@ Nota de actualización: algunos resultados históricos de registro público más
 - `EmailOutboxWorkerTests` ejecuta el BackgroundService contra SQLite y el sender fake, no mocks del flujo interno.
 - Caso de éxito comprueba descifrado de correo/link/token, llamada al sender, `SentAtUtc` y liberación del lease.
 - Caso de fallo inicia en el intento 11 y confirma llamada al sender, `AttemptCount=12`, dead-letter, failure type y lease liberado.
-- Suite Release local: **80/80**; build Release 0 warnings/0 errors. Actions del nuevo commit pendiente.
+- Suite Release local: **80/80**; build Release 0 warnings/0 errors. Actions `45030208849` pasó para Backend `43c074d`: 80/80, HTTP/MySQL tenant/outbox/same-tenant Driver, concurrencia y cleanup success.

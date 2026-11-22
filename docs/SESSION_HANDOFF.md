@@ -301,3 +301,6 @@ Errores de migración, herramientas, QA y soluciones están en `docs/ERROR_LOG.m
 
 - Cambio local no publicado: smoke tenant ahora valida GET positions en intervalo inclusivo, `from`/`to` individual, sin coincidencias e invertido (HTTP 200 `[]` en rangos sin datos).
 - Local Release 64/64, bash syntax, diff-check y smoke completo MySQL 8 efímero pasaron; cleanup correcto. Commit/push y Actions quedan pendientes.
+
+
+- Filtros GPS completados en Actions: run `45009987648`, commit `729f326`, success; Release/xUnit 64/64, smoke tenant y concurrencia limpios. Caso `from > to` documentado como HTTP 200 `[]`.

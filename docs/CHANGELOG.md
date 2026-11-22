@@ -228,3 +228,6 @@
 
 - El smoke de tenant verifica límites inclusivos `from`/`to`, filtros de un solo límite, intervalo sin coincidencias e intervalo invertido para GET positions. Contrato actual: el rango invertido devuelve HTTP 200 y lista vacía.
 - Validación local: Release 64/64, smoke HTTP/MySQL efímero completo, `bash -n` y diff-check; Actions pendiente.
+
+
+- Actions `45009987648` para `729f326` terminó success: xUnit 64/64, Release build, smoke HTTP/MySQL tenant/Logistics/GPS y concurrencia; cleanup correcto.

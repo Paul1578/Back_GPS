@@ -133,3 +133,5 @@ Fecha de corte: 2026-11-21.
 
 - Dos pruebas nuevas cubren cambio exitoso con revocación/hash/version/commit y contraseña actual incorrecta sin efectos secundarios.
 - Suite Release actualizada: **56/56**, 0 fallidas/omitidas. La integración MySQL/HTTP ya pasó en Actions `44983337062`; esta ampliación xUnit queda pendiente de CI en el próximo commit.
+
+- CI confirmado tras esta ampliación: backend Actions `44983763612` success, xUnit **56/56**, smoke tenant/roles/sesiones y smoke concurrencia en MySQL desechable.

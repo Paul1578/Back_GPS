@@ -220,3 +220,5 @@ La invitación envía sólo el enlace de activación; el usuario fija su contras
 
 - Ampliación xUnit: `ChangePassword_ChangesHashAndInvalidatesExistingSessions` comprueba BCrypt, versión, revocación refresh y commit; `ChangePassword_RejectsWrongCurrentPasswordWithoutChangingState` comprueba que un current password incorrecto no modifica hash/versión/sesiones.
 - Suite actual Release: **56/56**. La ampliación de tests está pendiente de Actions; smoke HTTP/MySQL anterior del flujo completo pasó en `44983337062`.
+
+- Resultado remoto final de esta iteración: run `44983763612` success; xUnit **56/56**, smoke HTTP tenant/autorización/sesiones y smoke concurrente vía API/MySQL pasaron. DB disposable y contenedores se detuvieron al finalizar.

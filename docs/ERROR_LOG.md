@@ -454,3 +454,8 @@ Cada cambio de API debe incluir validación de compilación, migraciones si apli
 
 - El primer build tras agregar el argumento `tokenVersion` encontró el test `TenantIsolationTests` que llama directamente al generador.
 - El argumento ahora tiene default 0 para compatibilidad de generación directa; AuthService siempre pasa la versión persistida real. Suite posterior pasó 54/54.
+
+## 2026-11-21 — Aplicación de parche de smoke no encontró el bloque esperado — CORREGIDO
+
+- El primer parche buscó líneas contiguas, pero el fixture de usuario limitaba primero el `restricted_attempt_plate`; apply_patch no hizo cambios.
+- Se inspeccionó el bloque real con `nl -ba` y se insertó junto al punto exacto después del login. `bash -n` y Actions `44983763612` pasaron el smoke completo en MySQL desechable.

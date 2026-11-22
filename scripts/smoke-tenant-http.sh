@@ -91,6 +91,10 @@ same_tenant_driver_email=""
 same_tenant_driver_token=""
 activation_user_email=""
 reset_user_email=""
+manual_link_user_email=""
+manual_link_user_id=""
+manual_link_driver_id=""
+manual_link_driver_document=""
 
 cleanup() {
   local status=$?
@@ -133,6 +137,8 @@ cleanup() {
     elif [[ -n "$manager_crud_driver_document" ]]; then sql+=" DELETE FROM Drivers WHERE DocumentNumber='$manager_crud_driver_document';"; fi
     if [[ -n "$manager_driver_id" ]]; then sql+=" DELETE FROM Drivers WHERE Id='$manager_driver_id';"; fi
     if [[ -n "$inactive_linked_driver_id" ]]; then sql+=" DELETE FROM Drivers WHERE Id='$inactive_linked_driver_id';"; fi
+    if [[ -n "$manual_link_driver_id" ]]; then sql+=" DELETE FROM Drivers WHERE Id='$manual_link_driver_id';"
+    elif [[ -n "$manual_link_driver_document" ]]; then sql+=" DELETE FROM Drivers WHERE DocumentNumber='$manual_link_driver_document';"; fi
     if [[ -n "$vehicle_id" ]]; then sql+=" DELETE FROM Vehicles WHERE Id='$vehicle_id';"
     elif [[ -n "$plate" ]]; then sql+=" DELETE FROM Vehicles WHERE Plate='$plate';"; fi
     if [[ -n "$duplicate_vehicle_id" ]]; then sql+=" DELETE FROM Vehicles WHERE Id='$duplicate_vehicle_id';"
@@ -182,6 +188,9 @@ cleanup() {
     fi
     if [[ -n "$public_registration_email" ]]; then
       sql+=" SET @qa_user_id=(SELECT Id FROM Users WHERE Email='$public_registration_email'); DELETE FROM RefreshTokens WHERE UserId=@qa_user_id; DELETE FROM PasswordResetTokens WHERE UserId=@qa_user_id; DELETE FROM UserRoles WHERE UserId=@qa_user_id; DELETE FROM Users WHERE Id=@qa_user_id;"
+    fi
+    if [[ -n "$manual_link_user_email" ]]; then
+      sql+=" SET @qa_user_id=(SELECT Id FROM Users WHERE Email='$manual_link_user_email'); DELETE FROM EmailOutbox WHERE UserId=@qa_user_id; DELETE FROM RefreshTokens WHERE UserId=@qa_user_id; DELETE FROM PasswordResetTokens WHERE UserId=@qa_user_id; DELETE FROM UserRoles WHERE UserId=@qa_user_id; DELETE FROM Users WHERE Id=@qa_user_id;"
     fi
     sql+=" COMMIT;"
     mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" "$db_name" -e "$sql" >/dev/null || {
@@ -284,6 +293,22 @@ cleanup() {
         status=1
       elif [[ "$tenant_fixture_remaining" == "0:0:0" ]]; then
         echo "Cleanup verificado: cero Drivers, vehículos y miembros temporales tenant A/B." >&2
+      fi
+    fi
+    if [[ -n "$manual_link_user_email" ]]; then
+      local manual_link_cleanup_remaining
+      manual_link_cleanup_remaining="$(mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" \
+        --batch --skip-column-names "$db_name" \
+        -e "SELECT CONCAT((SELECT COUNT(*) FROM Drivers WHERE Id='$manual_link_driver_id' OR DocumentNumber='$manual_link_driver_document'), ':', (SELECT COUNT(*) FROM Users WHERE Email='$manual_link_user_email'));")" || {
+        echo "No se pudo verificar cleanup del vínculo manual User/Driver." >&2
+        status=1
+        manual_link_cleanup_remaining="unknown"
+      }
+      if [[ "$manual_link_cleanup_remaining" != "0:0" && "$manual_link_cleanup_remaining" != "unknown" ]]; then
+        echo "Cleanup dejó el vínculo manual User/Driver (conteos: $manual_link_cleanup_remaining)." >&2
+        status=1
+      elif [[ "$manual_link_cleanup_remaining" == "0:0" ]]; then
+        echo "Cleanup verificado: cero Driver/User del vínculo manual." >&2
       fi
     fi
   fi
@@ -1035,6 +1060,42 @@ other_tenant_root_id="$(mysql --protocol=TCP --host="$mysql_host" --port="$mysql
   exit 1
 }
 
+manual_link_user_email="fletflow.e2e.manual-driver-link.$suffix@example.test"
+manual_link_driver_document="MANUAL${suffix: -9}"
+request POST /Users "$(jq -nc --arg email "$manual_link_user_email" --arg password "Manual-link-$(openssl rand -hex 8)aA1!" --arg username "Manual Driver Link $suffix" '{username:$username,email:$email,password:$password,roleName:"User"}')" "$token"
+expect_status 200 "Crear cuenta User antes de vincular perfil Driver"
+manual_link_user_id="$(jq -er '.id' "$work_dir/response.json")"
+request GET /Users/my-team "" "$token"
+expect_status 200 "Confirmar User sin Driver antes del cambio de rol"
+jq -e --arg userId "$manual_link_user_id" 'any(.[]; .id == $userId and .driverId == null)' "$work_dir/response.json" >/dev/null || {
+  echo "El User de vínculo manual ya aparece asociado a Driver antes de crear el perfil." >&2; cat "$work_dir/response.json" >&2; exit 1;
+}
+request PUT "/Users/$manual_link_user_id/role" '{"roleName":"Driver"}' "$token"
+expect_status 200 "Cambiar User a rol Driver para vínculo manual"
+manual_link_role="$(mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" "$db_name" \
+  --batch --skip-column-names -e "SELECT r.Name FROM UserRoles ur JOIN Roles r ON r.Id=ur.RoleId WHERE ur.UserId='$manual_link_user_id';")"
+[[ "$manual_link_role" == "Driver" ]] || { echo "El cambio de rol previo al vínculo no quedó en Driver ($manual_link_role)." >&2; exit 1; }
+request POST /Drivers "$(jq -nc --arg userId "$manual_link_user_id" --arg document "$manual_link_driver_document" '{firstName:"Vínculo",lastName:"Manual QA",documentNumber:$document,phoneNumber:"0990000007",userId:$userId}')" "$token"
+expect_status 201 "Crear perfil Driver vinculado a User existente"
+manual_link_driver_id="$(jq -er '.id' "$work_dir/response.json")"
+jq -e --arg userId "$manual_link_user_id" --arg document "$manual_link_driver_document" '.userId == $userId and .documentNumber == $document' "$work_dir/response.json" >/dev/null || {
+  echo "La respuesta de alta Driver no confirmó el vínculo manual." >&2; cat "$work_dir/response.json" >&2; exit 1;
+}
+request GET "/Drivers/$manual_link_driver_id" "" "$token"
+expect_status 200 "Leer perfil Driver después del vínculo manual"
+jq -e --arg userId "$manual_link_user_id" '.userId == $userId' "$work_dir/response.json" >/dev/null
+request GET /Users/my-team "" "$token"
+expect_status 200 "Confirmar vínculo manual en Equipo"
+jq -e --arg userId "$manual_link_user_id" --arg driverId "$manual_link_driver_id" \
+  'any(.[]; .id == $userId and .driverId == $driverId)' "$work_dir/response.json" >/dev/null || {
+  echo "GET /Users/my-team no refleja el vínculo manual User/Driver." >&2; cat "$work_dir/response.json" >&2; exit 1;
+}
+manual_link_sql="$(mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" "$db_name" \
+  --batch --skip-column-names -e "SELECT CONCAT(CAST(d.UserId AS CHAR),':',CAST(d.OwnerUserId AS CHAR),':',d.DocumentNumber,':',(SELECT COUNT(*) FROM Drivers WHERE UserId='$manual_link_user_id')) FROM Drivers d WHERE d.Id='$manual_link_driver_id';")"
+[[ "$manual_link_sql" == "$manual_link_user_id:$root_user_id:$manual_link_driver_document:1" ]] || {
+  echo "La relación User/Driver no quedó consistente en MySQL ($manual_link_sql)." >&2; exit 1;
+}
+
 other_tenant_member_email="fletflow.e2e.tenant-b.member.$suffix@example.test"
 other_tenant_member_password="$(openssl rand -hex 24)"
 request POST /Users "$(jq -nc --arg email "$other_tenant_member_email" --arg password "$other_tenant_member_password" --arg username "Tenant B member $suffix" '{username:$username,email:$email,password:$password,roleName:"User"}')" "$other_token"
@@ -1601,4 +1662,4 @@ if [[ "$refresh_logout_race_status" == "200" ]]; then
   expect_status 401 "Logout-all revoca el sucesor de refresh concurrente"
 fi
 
-echo "OK: aislamiento HTTP/MySQL entre tenants en Users/my-team, Vehicles/Drivers/Routes y asignaciones/reactivación; autorización User/Driver/Manager/Logistics; altas con longitudes límite/rechazo y email duplicado concurrente 200/409 sin persistencia parcial; Logistics creó/editó/leyó ruta, inició operación pickup+delivery con evidencia, registró GPS, completó ruta y verificó vehículo Available; cleanup de Vehicles/Drivers/Routes/RoutePositions/usuarios QA; revocación de sesiones."
+echo "OK: aislamiento HTTP/MySQL entre tenants en Users/my-team, Vehicles/Drivers/Routes y asignaciones/reactivación; autorización User/Driver/Manager/Logistics; altas/ediciones inválidas no mutan Vehicles/Drivers; vínculo manual User->Driver persiste en API/MySQL; email duplicado concurrente 200/409 sin persistencia parcial; Logistics completó operación pickup+delivery con evidencia/GPS y vehículo Available; cleanup de fixtures y revocación de sesiones."

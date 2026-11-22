@@ -1,3 +1,10 @@
+## 2026-11-22 — Smoke no cubría vínculo manual User/Driver — CUBIERTO LOCAL; ACTION PENDIENTE
+
+- Backend ya permitía crear primero una cuenta User, cambiarla a rol Driver y luego crear su perfil operativo con `userId`; el smoke sólo probaba creación conjunta y no detectaba regresiones de ese flujo separado.
+- Se añadió verificación por HTTP (`GET /Drivers/{id}`, `GET /Users/my-team`) y SQL de vínculo/tenant/cardinalidad, además de limpieza Driver→User y consulta final 0:0. Smoke MySQL 8/API efímeros completo exit 0.
+- No existe endpoint HTTP para desvincular conservando ambos registros. Se documenta como capacidad pendiente de definición y no se simula.
+- Prevención: cubrir creación conjunta y asociación manual de perfiles operativos al probar reglas de usuarios/roles.
+
 # 2026-11-22 — Logout podía revocar refresh de otra cuenta — CORREGIDO Y VALIDADO LOCALMENTE
 
 - Hallazgo de auditoría: `POST /api/Auth/logout` estaba autenticado, pero pasaba el refresh token del cuerpo directamente al servicio. Si un usuario obtenía el token de otra cuenta, podía revocarlo.

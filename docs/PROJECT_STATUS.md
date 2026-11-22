@@ -1,3 +1,10 @@
+## Vínculo manual User/Driver y CRUD negativo — local aprobado
+
+- Smoke crea la cuenta User, la convierte al rol Driver y vincula después su perfil por `userId`; respuesta Driver, equipo y SQL verifican asociación única y tenant.
+- CRUD inválido Vehicle/Driver responde 400 sin mutaciones. Smoke MySQL 8/API efímeros completo exit 0, cleanup confirma cero fixture manual.
+- Action `45068547990` pasó Release/xUnit 107/107, aislamiento HTTP/MySQL y concurrencia antes de esta ampliación; nueva Action pendiente.
+- No existe endpoint HTTP para desvincular User/Driver preservando ambos. Política de Admin delegado y necesidad de esa desvinculación están consultadas al usuario; no alterar hasta respuesta.
+
 
 - Action `2045b18` [45050058627](https://github.com/Paul1578/Back_GPS/actions/runs/45050058627) pasó: Release build, xUnit **97/97**, smoke HTTP/MySQL tenant y concurrencia, incluye carrera de role/refresh y bloqueos con ruta Pending; cleanup sin fixtures.
 # Estado actual — 2026-11-22

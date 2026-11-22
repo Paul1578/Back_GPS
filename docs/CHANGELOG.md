@@ -1,3 +1,9 @@
+# 2026-11-22 — Vínculo manual User/Driver verificado por HTTP y SQL
+
+- El smoke crea un User normal, confirma que no tenga `driverId`, cambia su rol a Driver y crea después el perfil enlazándolo con `userId`.
+- `GET /Drivers/{id}`, `GET /Users/my-team` y SQL confirman relación única y propietario del tenant; cleanup explícito verifica **0 Driver/0 User**.
+- MySQL 8/API efímeros: smoke completo exit 0. No hay endpoint HTTP para desvincular conservando ambos registros; se pidió definición de producto.
+
 # 2026-11-22 — Pruebas HTTP negativas de CRUD Vehicle/Driver
 
 - `smoke-tenant-http.sh` ahora envía datos inválidos a edición Vehicle, alta Driver y edición Driver.

@@ -7,6 +7,13 @@
 
 # Registro de errores y soluciones
 
+## 2026-11-22 — Comando de perfil dependía del controlador para tenant — REFORZADO
+
+- Revisión de seguridad identificó que `UpdateUserProfileCommand` consultaba por ID solamente, aunque el controller sí verificaba tenant antes de invocarlo. No se confirmó un bypass HTTP.
+- El comando ahora requiere claim `owner_id` desde `AppDbContext.CurrentOwnerUserId` y limita explícitamente User y Driver al mismo `OwnerUserId`; intento de invocación sin tenant autenticado falla cerrado.
+- xUnit prueba edición/sincronización propia y rechazo de usuario ajeno; el smoke HTTP también valida límites de nombre y apellido.
+- Prevención: comandos que mutan registros tenant-aware deben conservar el scope de propietario aunque el controller ya lo haya comprobado.
+
 ## 2026-11-21 — Prueba UI de Driver se detuvo por selector ambiguo — CORREGIDO EN FRONTEND
 
 - La búsqueda parcial `jperez` coincidió con el textbox de usuario y con `jperez@empresa.com`; Playwright paró en strict mode antes de crear datos.

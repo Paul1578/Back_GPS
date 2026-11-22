@@ -24,6 +24,13 @@
 
 # Changelog
 
+## 2026-11-22 — Defensa de tenant en comando de edición de perfil
+
+- El comando ahora requiere `CurrentOwnerUserId` y filtra explícitamente User y Driver por propietario además del query filter global.
+- Pruebas xUnit cubren sincronización de User/Driver, normalización y rechazo de User de otro tenant; Release **64/64** local.
+- Smoke HTTP amplía el máximo de 100 caracteres para FirstName y LastName; Actions/API/MySQL integrada pendiente.
+- La revisión estática no encontró IDOR directo en endpoint actual. La asignación de Admin por Admin delegado queda pendiente de política de negocio.
+
 ## 2026-11-21 — Rate limit Development y prueba E2E extendida
 
 - Loopback en Development se exime del rate limit para que QA local no bloquee flujos válidos; fuera de Development se conserva 60/min por IP.

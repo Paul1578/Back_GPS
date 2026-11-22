@@ -34,6 +34,13 @@
 
 Los hallazgos anteriores de roles públicos, logs con tokens, CORS abierto, recursos sin tenant y dependencia MySqlConnector vulnerable están resueltos y sus causas/cambios están en `ERROR_LOG.md`.
 
+## Revisión de edición de perfil — 2026-11-22
+
+- Auditoría estática independiente confirmó que el endpoint exige Admin, limita el miembro al tenant, bloquea editar cuenta raíz, valida campos a 100 caracteres y no expone hash/token.
+- No se encontró IDOR directo por este endpoint. Como defensa en profundidad, `UpdateUserProfileCommand` ahora exige `CurrentOwnerUserId` y filtra tanto usuario como Driver asociado por propietario.
+- xUnit verifica sync de nombres User/Driver y rechazo cross-tenant. Smoke HTTP/MySQL ahora comprueba máximos de username, FirstName y LastName (resultado integrado pendiente).
+- Hallazgo aún abierto de política: cualquier Admin actual puede asignar el rol Admin a otro miembro de su mismo tenant (y potencialmente a sí mismo); no se cambió el comportamiento hasta definir si sólo la cuenta raíz puede otorgarlo.
+
 ## Cobertura verificada — 2026-11-21
 
 - EF InMemory ahora prueba el filtro de propietario en Vehicles, Drivers, Routes y RoutePositions; dos compañías no leen los registros de la otra.

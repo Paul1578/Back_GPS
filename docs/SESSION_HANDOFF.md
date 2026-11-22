@@ -9,6 +9,13 @@
 - Errores y soluciones están al final de docs/ERROR_LOG.md.
 - Commit/push backend e54d3c8, Actions 45005400763 success en build, xUnit, tenant HTTP/MySQL y concurrencia. Front commit 948b2e3 y Actions integrada 45005400590 en ejecución al último corte. Misión general sigue abierta.
 
+## Seguridad de perfil — continuación 2026-11-22
+
+- Auditoría estática real (subagente independiente) no encontró bypass directo en `PUT /Users/{id}/profile`, pero recomendó defense-in-depth dentro del command. Implementado: comando filtra por `CurrentOwnerUserId` y agrega owner scope al Driver ligado.
+- xUnit local Release **64/64**; smoke sintáctico y diff-check limpios. Smoke HTTP/MySQL añade límites de nombre/apellido y se debe repetir en Actions.
+- Hallazgo de negocio abierto: Admin delegado puede asignar/promover rol Admin. No modificar esa capacidad hasta resolver la política raíz/delegado. El frontend también tiene esta duda pendiente.
+- Error conocido y solución en `docs/ERROR_LOG.md`. Próximo: ejecutar backend Actions, verificar smoke MySQL, actualizar resultado/documentos.
+
 ## GPS y autorización Driver — backend corregido — 2026-11-22
 
 - Auditor independiente (solo lectura) confirmó el ownership de lista/detalle/estado/paradas/evidencia y filtros tenant, pero halló que GPS no validaba `Driver.IsActive` y faltaban pruebas HTTP de ruta ajena por Driver para paradas/evidencia/GPS.

@@ -17,18 +17,22 @@ public sealed class UpdateUserProfileCommand
 
     public async Task Execute(Guid userId, string username, string firstName, string lastName)
     {
+        var ownerUserId = _context.CurrentOwnerUserId
+            ?? throw new InvalidOperationException("No se puede editar un perfil sin propietario autenticado.");
         var normalizedUsername = username.Trim();
         var normalizedFirstName = firstName.Trim();
         var normalizedLastName = lastName.Trim();
 
-        var user = await _context.Users.FirstOrDefaultAsync(candidate => candidate.Id == userId)
+        var user = await _context.Users.FirstOrDefaultAsync(candidate =>
+                candidate.Id == userId && candidate.OwnerUserId == ownerUserId)
             ?? throw new KeyNotFoundException("Usuario no encontrado.");
 
         user.Username = normalizedUsername;
         user.FirstName = normalizedFirstName;
         user.LastName = normalizedLastName;
 
-        var driver = await _context.Drivers.FirstOrDefaultAsync(candidate => candidate.UserId == userId);
+        var driver = await _context.Drivers.FirstOrDefaultAsync(candidate =>
+            candidate.UserId == userId && candidate.OwnerUserId == ownerUserId);
         if (driver is not null)
         {
             driver.FirstName = normalizedFirstName;

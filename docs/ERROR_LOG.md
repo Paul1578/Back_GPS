@@ -1193,3 +1193,10 @@ Cada cambio de API debe incluir validación de compilación, migraciones si apli
 - La primera ejecución local de la nueva prueba positiva Driver pasó la creación, listado, lectura, inicio, GPS y cancelación propios, pero falló al llegar a la regresión de filtro: el test antiguo aún esperaba cero rutas, ahora había una ruta válida asignada al principal.
 - Se ajustó la aserción para exigir exactamente su ruta propia, que todos los elementos tengan el `driverId` autenticado y que la ruta de otro Driver no aparezca. Repetición completa del smoke HTTP/MySQL 8 efímero terminó exit 0 y cleanup correcto.
 - Prevención: ampliar pruebas positivas sin borrar sus controles negativos; las aserciones negativas deben probar aislamiento/exclusión del recurso ajeno, no asumir ausencia de todo recurso.
+
+## 2026-11-22 — Smoke de permisos Manager comparaba una ruta ya modificada — CORREGIDO
+
+- Al añadir denegaciones Manager sobre Users/Roles, la primera corrida completa falló en un helper compartido que también comparaba el nombre y estado iniciales de una ruta Manager. La ruta ya había sido editada y dada de baja legítimamente en fases anteriores del mismo smoke; no era una mutación causada por las peticiones denegadas.
+- Se reemplazó esa llamada por snapshots SQL limitados al Vehicle/Driver fixture protegido. Las nuevas operaciones de Manager sobre Users/Roles devuelven 403; las de Logistics sobre editar, cambiar estado, reactivar o dar de baja Vehicle y editar, desactivar, asignar o desasignar Driver devuelven 403. Snapshots antes/después deben ser idénticos.
+- Repetición completa API + MySQL 8 descartables exit 0 y cleanup correcto. Action posterior al push pendiente.
+- Prevención: en pruebas de autorización, comparar únicamente las entidades dentro del alcance de la operación denegada; no reutilizar aserciones agregadas que incluyan fixtures modificados válidamente antes.

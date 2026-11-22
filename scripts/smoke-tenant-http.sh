@@ -814,6 +814,31 @@ request DELETE "/Routes/$manager_route_id" "" "$deactivated_access_token"
 expect_status 204 "Dar de baja ruta como Manager antes de reutilizar agenda"
 request POST /Routes "$manager_route_payload" "$restricted_user_token"
 expect_status 403 "Denegar creación de ruta a User"
+manager_denied_fleet_state_before="$(mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" "$db_name" \
+  --batch --skip-column-names -e "SELECT CONCAT((SELECT CONCAT_WS(':',Plate,Brand,Model,Year,Status,IsActive,OwnerUserId) FROM Vehicles WHERE Id='$manager_crud_vehicle_id'), '#', (SELECT CONCAT_WS(':',FirstName,LastName,DocumentNumber,PhoneNumber,IsActive,COALESCE(CAST(VehicleId AS CHAR),'NULL'),OwnerUserId) FROM Drivers WHERE Id='$manager_crud_driver_id'));")"
+request GET /Users/my-team "" "$deactivated_access_token"; expect_status 403 "Denegar equipo a Manager"
+request GET /Users "" "$deactivated_access_token"; expect_status 403 "Denegar listado de usuarios a Manager"
+request GET /Roles "" "$deactivated_access_token"; expect_status 403 "Denegar catálogo de roles a Manager"
+manager_denied_user_email="fletflow.e2e.denied.manager.$suffix@example.test"
+manager_denied_target_user_id="$(mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" "$db_name" \
+  --batch --skip-column-names -e "SELECT Id FROM Users WHERE Email='$restricted_user_email';")"
+[[ -n "$manager_denied_target_user_id" ]] || { echo "No se encontró el fixture User para probar denegaciones de Manager." >&2; exit 1; }
+request POST /Users "$(jq -nc --arg email "$manager_denied_user_email" --arg username "Denied Manager ${suffix: -8}" '{username:$username,email:$email,roleName:"User"}')" "$deactivated_access_token"
+expect_status 403 "Denegar creación de usuario a Manager"
+request PUT "/Users/$manager_denied_target_user_id/status?isActive=false" "" "$deactivated_access_token"
+expect_status 403 "Denegar cambio de estado User a Manager"
+manager_denied_user_rows="$(mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" "$db_name" \
+  --batch --skip-column-names -e "SELECT CONCAT((SELECT COUNT(*) FROM Users WHERE Email='$manager_denied_user_email'), ':', (SELECT CASE WHEN IsActive=1 THEN '1' ELSE '0' END FROM Users WHERE Id='$manager_denied_target_user_id'));")"
+[[ "$manager_denied_user_rows" == "0:1" ]] || {
+  echo "La autorización Manager permitió mutar usuarios (alta:estado=$manager_denied_user_rows)." >&2
+  exit 1
+}
+manager_denied_fleet_state_after="$(mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" "$db_name" \
+  --batch --skip-column-names -e "SELECT CONCAT((SELECT CONCAT_WS(':',Plate,Brand,Model,Year,Status,IsActive,OwnerUserId) FROM Vehicles WHERE Id='$manager_crud_vehicle_id'), '#', (SELECT CONCAT_WS(':',FirstName,LastName,DocumentNumber,PhoneNumber,IsActive,COALESCE(CAST(VehicleId AS CHAR),'NULL'),OwnerUserId) FROM Drivers WHERE Id='$manager_crud_driver_id'));")"
+[[ "$manager_denied_fleet_state_after" == "$manager_denied_fleet_state_before" ]] || {
+  echo "Los intentos de Manager contra Users alteraron Vehicle/Driver protegidos (antes=$manager_denied_fleet_state_before; después=$manager_denied_fleet_state_after)." >&2
+  exit 1
+}
 request PUT "/Users/$deactivated_user_id/status?isActive=false" "" "$token"
 expect_status 200 "Desactivar usuario de prueba"
 request GET /Auth/me "" "$deactivated_access_token"
@@ -843,6 +868,31 @@ logistics_refresh_token="$(jq -er '.refreshToken' "$work_dir/response.json")"
 request GET /Routes "" "$logistics_token"; expect_status 200 "Listar rutas como Logistics"
 request GET /Vehicles "" "$logistics_token"; expect_status 403 "Denegar vehículos a Logistics"
 request GET /Drivers "" "$logistics_token"; expect_status 403 "Denegar conductores a Logistics"
+logistics_driver_denial_document="E2ELOG${suffix: -8}"
+logistics_fleet_state_before="$(mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" "$db_name" \
+  --batch --skip-column-names -e "SELECT CONCAT((SELECT CONCAT_WS(':',Plate,Brand,Model,Year,Status,IsActive,OwnerUserId) FROM Vehicles WHERE Id='$manager_crud_vehicle_id'), '#', (SELECT CONCAT_WS(':',FirstName,LastName,DocumentNumber,PhoneNumber,IsActive,COALESCE(CAST(VehicleId AS CHAR),'NULL'),OwnerUserId) FROM Drivers WHERE Id='$manager_crud_driver_id'));")"
+request PUT "/Vehicles/$manager_crud_vehicle_id" "$(jq -nc --arg plate "$manager_crud_vehicle_plate" '{plate:$plate,brand:"Blocked Logistics",model:"Blocked",year:2025}')" "$logistics_token"
+expect_status 403 "Denegar edición de vehículo a Logistics"
+request PUT "/Vehicles/$manager_crud_vehicle_id/status" '{"status":2}' "$logistics_token"
+expect_status 403 "Denegar cambio de estado de vehículo a Logistics"
+request POST "/Vehicles/$manager_crud_vehicle_id/reactivate" "" "$logistics_token"
+expect_status 403 "Denegar reactivación de vehículo a Logistics"
+request DELETE "/Vehicles/$manager_crud_vehicle_id" "" "$logistics_token"
+expect_status 403 "Denegar baja de vehículo a Logistics"
+request PUT "/Drivers/$manager_crud_driver_id" "$(jq -nc --arg document "$logistics_driver_denial_document" '{firstName:"Blocked",lastName:"Logistics",documentNumber:$document,phoneNumber:"0990000000"}')" "$logistics_token"
+expect_status 403 "Denegar edición de Driver a Logistics"
+request PUT "/Drivers/$manager_crud_driver_id/status" '{"isActive":false}' "$logistics_token"
+expect_status 403 "Denegar cambio de estado Driver a Logistics"
+request PUT "/Drivers/$manager_crud_driver_id/assign-vehicle" "$(jq -nc --arg vehicleId "$manager_crud_vehicle_id" '{vehicleId:$vehicleId}')" "$logistics_token"
+expect_status 403 "Denegar asignación vehículo/Driver a Logistics"
+request PUT "/Drivers/$manager_crud_driver_id/unassign-vehicle" "" "$logistics_token"
+expect_status 403 "Denegar desasignación vehículo/Driver a Logistics"
+logistics_fleet_state_after="$(mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" "$db_name" \
+  --batch --skip-column-names -e "SELECT CONCAT((SELECT CONCAT_WS(':',Plate,Brand,Model,Year,Status,IsActive,OwnerUserId) FROM Vehicles WHERE Id='$manager_crud_vehicle_id'), '#', (SELECT CONCAT_WS(':',FirstName,LastName,DocumentNumber,PhoneNumber,IsActive,COALESCE(CAST(VehicleId AS CHAR),'NULL'),OwnerUserId) FROM Drivers WHERE Id='$manager_crud_driver_id'));")"
+[[ "$logistics_fleet_state_after" == "$logistics_fleet_state_before" ]] || {
+  echo "Las denegaciones de Logistics mutaron el fixture Vehicle/Driver (antes=$logistics_fleet_state_before; después=$logistics_fleet_state_after)." >&2
+  exit 1
+}
 
 inactive_driver_user_email="fletflow.e2e.driver.inactive.$suffix@example.test"
 inactive_driver_password="$(openssl rand -hex 24)"
@@ -1785,4 +1835,4 @@ if [[ "$refresh_logout_race_status" == "200" ]]; then
   expect_status 401 "Logout-all revoca el sucesor de refresh concurrente"
 fi
 
-echo "OK: aislamiento HTTP/MySQL entre tenants en Users/my-team, Vehicles/Drivers/Routes y asignaciones/reactivación; autorización User/Driver/Manager/Logistics; Driver operó su propia ruta (inicio, GPS, cancelación) y no accedió a la ajena; altas/ediciones inválidas no mutan Vehicles/Drivers; vínculo manual User->Driver persiste en API/MySQL; email duplicado concurrente 200/409 sin persistencia parcial; Logistics completó operación pickup+delivery con evidencia/GPS y vehículo Available; cleanup de fixtures y revocación de sesiones."
+echo "OK: aislamiento HTTP/MySQL entre tenants; roles Admin/Manager/User/Driver/Logistics; Manager/User no gestionan Users/Roles y Logistics no muta Vehicles/Drivers; Driver operó su ruta (inicio, GPS, cancelación) y no accedió a la ajena; altas/ediciones inválidas no mutan; vínculo manual User->Driver; email duplicado concurrente 200/409; Logistics completó pickup+delivery con evidencia/GPS; cleanup y revocación de sesiones."

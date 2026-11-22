@@ -100,6 +100,12 @@ Resultado histórico previo al aislamiento por tenant: `Passed: 22, Failed: 0, S
 - El smoke HTTP/MySQL comprueba rol único Admin, `OwnerUserId IS NULL`, claim JWT `owner_id` igual al ID recién creado, acceso 200 a flota vacía, listado vacío después de crear vehículo en otro tenant y 404 al consultar su ID directamente.
 - El runner de dos tenants ya no modifica `UserRoles` manualmente. Backend Release local 61/61; `bash -n` y `git diff --check` correctos.
 - Actions `44999697740` para `3620cc2` finalizó success: Release build, xUnit 61/61, smoke HTTP/MySQL de tenant/registro y smoke de concurrencia. El token y los recursos del job usan MySQL descartable; cleanup/stop containers concluyó success.
+
+## Límites de usuario cross-tenant — pendiente Actions
+
+- El smoke intenta desde tenant B desactivar y cambiar rol (PUT y alias POST) a un miembro de A; espera 404 y luego consulta MySQL para confirmar que sigue activo con rol User.
+- Como propietario raíz, Admin A intenta cambiar su estado y rol mediante ambas rutas; espera 400 y MySQL debe conservar `IsActive=1` y rol Admin.
+- La prueba se ejecuta con la API real y MySQL desechable en Actions; `bash -n` y `git diff --check` pasan localmente. No ejecutada aún contra DB/API.
 - La suite ahora contiene 33 pruebas: las 30 anteriores más tres para cabeceras HTTP con y sin cuerpo.
 - Role QA real MySQL/API: Logistics puede listar rutas (200) y su DELETE con ID inexistente llegó a dominio (404); User recibe 403. Se corrigieron el seeder que omitía Logistics y policies que nombraban Dispatcher. Datos QA borrados, cero usuarios temporales.
 - Suite final: 35 pruebas (30 base + 3 middleware + autorización de rutas + seeding de roles idempotente).

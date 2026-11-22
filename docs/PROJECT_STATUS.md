@@ -12,6 +12,13 @@ Nota de actualización: algunos resultados históricos de registro público más
 - Corrección local: el servidor asigna siempre rol Admin como raíz de un tenant nuevo, sin aceptar `roleName` del request. El token usa su propio ID como `owner_id`, conservando filtros de aislamiento de datos.
 - xUnit Release local y Actions 61/61; smoke HTTP/tenant y concurrencia MySQL Actions success. El test/runner ya no eleva manualmente el rol del segundo tenant para esconder el resultado del registro. Actions Front cross-branch `44999716080` confirmó alta móvil y consumidores API con Backend `3620cc2`: responsive 1/1, Playwright 18/18 y cleanup MySQL success.
 
+## Seguridad de usuarios cross-tenant — cobertura agregada, Actions pendiente
+
+- Auditoría independiente confirmó que las rutas de usuario protegen membresía y cuenta propietaria, pero el smoke no las ejercitaba mediante HTTP/MySQL.
+- `smoke-tenant-http.sh` ahora comprueba que tenant B no cambie estado/rol del User de A (incluye alias legado), y que Admin A no desactive ni cambie el rol de su propia cuenta raíz; SQL sólo verifica que estado/rol persistieron sin cambios.
+- `bash -n` y `git diff --check` pasan localmente; ejecutar Actions sobre MySQL desechable antes de dar cobertura por válida.
+- Abiertos de auditoría para próxima iteración: atomicidad de alta Driver ante dos documentos concurrentes; autorización HTTP de Driver contra ruta asignada a otro Driver; frontera de Admin raíz versus Admin delegado pendiente de política de producto.
+
 ## Estado operativo
 
 - Rama: `chore/stabilize-fleet-platform`.

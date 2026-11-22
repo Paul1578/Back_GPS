@@ -533,6 +533,12 @@ Cada cambio de API debe incluir validación de compilación, migraciones si apli
 - Corrección: usar el SDK local documentado `/home/leonardo/.dotnet/dotnet`; Release volvió a pasar 61/61.
 - Prevención: en este entorno invocar explícitamente el SDK local, sin depender del `dotnet` del PATH.
 
+## 2026-11-22 — Esquema inicial incorrecto en pregunta de negocio — CORREGIDO
+
+- La primera llamada a la herramienta de aclaración usó el campo `question`; el contrato actual requiere `title` y `options`, y rechazó la solicitud sin enviarla al usuario.
+- Corrección: repetir la pregunta con los campos requeridos. Se consulta si un Admin delegado puede crear/promover Admin, mientras las pruebas independientes de aislamiento continúan.
+- Prevención: confirmar el esquema activo de herramientas de entrada antes de construir la solicitud.
+
 ## 2026-11-22 — Workflows no ejecutables en ramas de trabajo — CORREGIDO Y VALIDADO
 
 - Los workflows sólo escuchaban push/PR hacia `main`; al mantener el trabajo aislado en `chore/stabilize-fleet-platform`, no había ejecución automática para validar este cambio integrado sin crear una integración a `main`.

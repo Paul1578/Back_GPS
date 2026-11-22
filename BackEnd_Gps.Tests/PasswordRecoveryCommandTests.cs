@@ -165,6 +165,7 @@ public class PasswordRecoveryCommandTests
                 if (clearMustChangePassword) user.MustChangePassword = false;
                 return Task.CompletedTask;
             }
+            public Task IncrementTokenVersionAsync(Guid userId) => Task.CompletedTask;
             public Task<List<User>> GetByOwnerAsync(Guid ownerUserId) => Task.FromResult(new List<User>());
         }
 

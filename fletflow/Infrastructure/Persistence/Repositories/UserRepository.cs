@@ -87,5 +87,12 @@ namespace fletflow.Infrastructure.Persistence.Repositories
             if (clearMustChangePassword) entity.MustChangePassword = false;
             _context.Users.Update(entity);
         }
+
+        public async Task IncrementTokenVersionAsync(Guid userId)
+        {
+            var entity = await _context.Users.FirstOrDefaultAsync(user => user.Id == userId);
+            if (entity is null) throw new KeyNotFoundException("Usuario no encontrado.");
+            entity.TokenVersion++;
+        }
     }
 }

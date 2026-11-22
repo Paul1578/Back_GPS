@@ -65,7 +65,11 @@ public class ChangeUserRoleCommand
 
             await _uow.Users.AssignRoleAsync(userId, role.Id);
             if (roleChanged)
+            {
+                // Invalida access JWT incluso si posteriormente se restaura el rol original.
+                await _uow.Users.IncrementTokenVersionAsync(userId);
                 await _uow.RefreshTokens.RevokeAllForUserAsync(userId);
+            }
             await _uow.CommitAsync();
         }
         catch

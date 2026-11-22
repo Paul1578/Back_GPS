@@ -6,6 +6,7 @@ admin_email="${FLETFLOW_E2E_ADMIN_EMAIL:-}"
 admin_password="${FLETFLOW_E2E_ADMIN_PASSWORD:-}"
 db_name="${DB_NAME:-}"
 mysql_host="${MYSQL_HOST:-127.0.0.1}"
+mysql_port="${MYSQL_PORT:-3306}"
 mysql_user="${MYSQL_USER:-root}"
 
 if [[ "${FLETFLOW_E2E_ALLOW_MUTATIONS:-}" != "true" ]]; then
@@ -85,7 +86,7 @@ cleanup() {
       sql+=" SET @qa_user_id=(SELECT Id FROM Users WHERE Email='$public_registration_email'); DELETE FROM RefreshTokens WHERE UserId=@qa_user_id; DELETE FROM PasswordResetTokens WHERE UserId=@qa_user_id; DELETE FROM UserRoles WHERE UserId=@qa_user_id; DELETE FROM Users WHERE Id=@qa_user_id;"
     fi
     sql+=" COMMIT;"
-    mysql --protocol=TCP --host="$mysql_host" --user="$mysql_user" "$db_name" -e "$sql" >/dev/null 2>&1 || {
+    mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" "$db_name" -e "$sql" >/dev/null 2>&1 || {
       echo "No se pudieron limpiar los fixtures creados por smoke-tenant-http.sh." >&2
       status=1
     }
@@ -122,7 +123,7 @@ public_registration_email="fletflow.e2e.register.ci.$(date +%s%N | tail -c 9)@ex
 public_registration_password="$(openssl rand -hex 24)"
 request POST /Auth/register "$(jq -nc --arg username "Public registration QA" --arg email "$public_registration_email" --arg password "$public_registration_password" '{username:$username,email:$email,password:$password,roleName:"Admin"}')" ""
 expect_status 200 "Registro público con intento de elevar rol"
-mysql --protocol=TCP --host="$mysql_host" --user="$mysql_user" "$db_name" \
+mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" "$db_name" \
   --batch --skip-column-names -e "SELECT CONCAT(COUNT(DISTINCT ur.RoleId), ':', COALESCE(GROUP_CONCAT(DISTINCT LOWER(r.Name)), 'none')) FROM Users u LEFT JOIN UserRoles ur ON ur.UserId=u.Id LEFT JOIN Roles r ON r.Id=ur.RoleId WHERE u.Email='$public_registration_email';" >"$work_dir/registration_role.txt"
 registered_role_state="$(cat "$work_dir/registration_role.txt")"
 [[ "$registered_role_state" == "1:user" ]] || { echo "Registro público produjo roles inesperados ($registered_role_state)." >&2; exit 1; }
@@ -135,7 +136,7 @@ restricted_user_email="fletflow.e2e.user.ci.$suffix@example.test"
 restricted_user_password="$(openssl rand -hex 24)"
 request POST /Users "$(jq -nc --arg email "$restricted_user_email" --arg password "$restricted_user_password" --arg username "E2E CI restricted $suffix" '{username:$username,email:$email,password:$password,roleName:"User"}')"
 expect_status 200 "Crear usuario de permisos limitados"
-mysql --protocol=TCP --host="$mysql_host" --user="$mysql_user" "$db_name" \
+mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" "$db_name" \
   -e "UPDATE Users SET IsActive=1, MustChangePassword=0 WHERE Email='$restricted_user_email';" >/dev/null
 request POST /Auth/login "$(jq -nc --arg email "$restricted_user_email" --arg password "$restricted_user_password" '{email:$email,password:$password}')" ""
 expect_status 200 "Login usuario de permisos limitados"
@@ -163,7 +164,7 @@ deactivated_user_password="$(openssl rand -hex 24)"
 request POST /Users "$(jq -nc --arg email "$deactivated_user_email" --arg password "$deactivated_user_password" --arg username "E2E CI deactivated $suffix" '{username:$username,email:$email,password:$password,roleName:"Manager"}')"
 expect_status 200 "Crear usuario para probar revocación"
 deactivated_user_id="$(jq -er '.id' "$work_dir/response.json")"
-mysql --protocol=TCP --host="$mysql_host" --user="$mysql_user" "$db_name" \
+mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" "$db_name" \
   -e "UPDATE Users SET IsActive=1, MustChangePassword=0 WHERE Id='$deactivated_user_id';" >/dev/null
 request POST /Auth/login "$(jq -nc --arg email "$deactivated_user_email" --arg password "$deactivated_user_password" '{email:$email,password:$password}')" ""
 expect_status 200 "Login de usuario antes de desactivar"
@@ -202,7 +203,7 @@ logistics_user_password="$(openssl rand -hex 24)"
 request POST /Users "$(jq -nc --arg email "$logistics_user_email" --arg password "$logistics_user_password" --arg username "E2E CI logistics $suffix" '{username:$username,email:$email,password:$password,roleName:"Logistics"}')"
 expect_status 200 "Crear usuario Logistics"
 logistics_user_id="$(jq -er '.id' "$work_dir/response.json")"
-mysql --protocol=TCP --host="$mysql_host" --user="$mysql_user" "$db_name" \
+mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" "$db_name" \
   -e "UPDATE Users SET IsActive=1, MustChangePassword=0 WHERE Email='$logistics_user_email';" >/dev/null
 request POST /Auth/login "$(jq -nc --arg email "$logistics_user_email" --arg password "$logistics_user_password" '{email:$email,password:$password}')" ""
 expect_status 200 "Login Logistics"
@@ -233,6 +234,12 @@ request GET /Auth/me "" "$logistics_token"
 expect_status 401 "Invalidar access token tras cambio de rol"
 request POST /Auth/refresh "$(jq -nc --arg refreshToken "$logistics_refresh_token" '{refreshToken:$refreshToken}')" ""
 expect_status 401 "Invalidar refresh token tras cambio de rol"
+request PUT "/Users/$logistics_user_id/role" '{"roleName":"Logistics"}' "$token"
+expect_status 200 "Restaurar rol Logistics para probar JWT antiguo"
+request GET /Auth/me "" "$logistics_token"
+expect_status 401 "Mantener invalidado access token tras restaurar el rol anterior"
+request POST /Auth/refresh "$(jq -nc --arg refreshToken "$logistics_refresh_token" '{refreshToken:$refreshToken}')" ""
+expect_status 401 "Mantener invalidado refresh token tras restaurar el rol anterior"
 
 other_tenant_email="fletflow.e2e.admin.other.$suffix@example.test"
 other_tenant_password="$(openssl rand -hex 24)"
@@ -243,7 +250,7 @@ expect_status 200 "Registro tenant B"
 
 # El registro público fuerza User. Este upgrade sólo afecta la cuenta QA temporal y
 # permite verificar aislamiento entre dos usuarios Admin de empresas independientes.
-mysql --protocol=TCP --host="$mysql_host" --user="$mysql_user" "$db_name" <<SQL
+mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" "$db_name" <<SQL
 UPDATE Users SET IsActive=1, MustChangePassword=0 WHERE Email='$other_tenant_email';
 DELETE FROM UserRoles WHERE UserId=(SELECT Id FROM Users WHERE Email='$other_tenant_email');
 INSERT INTO UserRoles (UserId, RoleId)

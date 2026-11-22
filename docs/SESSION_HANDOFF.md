@@ -168,3 +168,13 @@ Errores de migración, herramientas, QA y soluciones están en `docs/ERROR_LOG.m
 - Tras el smoke MySQL exitoso (`44983337062`), se añadieron pruebas unitarias para cambio de contraseña correcto e incorrecto. Suite local actual **56/56**. Estos tests aún están sin commit; publicar y esperar Actions backend/frontend.
 
 - Último estado: backend Actions `44983763612` pasó para `afa1108`: xUnit 56/56, restore/build, smokes tenant/roles/password-session y concurrencia MySQL. La migración `TokenVersion` quedó aplicada sólo a la DB desechable CI. Branch aún requiere seguir cobertura CRUD/responsive restante.
+
+## Continuación: invalidación de JWT por cambio de rol — 2026-11-21
+
+- Rama `chore/stabilize-fleet-platform`; sólo backend modificado. `main` intacta.
+- `Program.cs` ya validaba `token_version` y roles actuales; el cambio de rol revocaba refresh, pero faltaba incrementar la versión. Un JWT viejo podía volver a autorizar si se restauraba su rol antes de expirar.
+- `ChangeUserRoleCommand` incrementa `TokenVersion` sólo si cambió el rol. Actualización y revocación se persisten en el mismo commit. Tests cubren cambio real, no-op y rechazo de cambio con ruta activa sin modificar la versión.
+- `smoke-tenant-http.sh` prueba Logistics→User→Logistics y reenvía tokens originales; ambos siguen respondiendo 401. Se añadió `MYSQL_PORT` para DB temporales.
+- Validación local: suite Release 57/57; build 0 warnings/0 errores; smoke real API + MySQL 8 con DB `fletflow_ci_*` aprobado. El contenedor se eliminó.
+- Error del primer intento: el runner omitía el puerto y conectaba al 3306 local con credenciales temporales no válidas; no se ejecutó SQL ni se modificó DB local. Ver `docs/ERROR_LOG.md`.
+- Próximo: inspeccionar diff, commit de la corrección y reportar hash/resultados. No requiere migración; `TokenVersion` ya existe.

@@ -222,3 +222,11 @@ La invitación envía sólo el enlace de activación; el usuario fija su contras
 - Suite actual Release: **56/56**. La ampliación de tests está pendiente de Actions; smoke HTTP/MySQL anterior del flujo completo pasó en `44983337062`.
 
 - Resultado remoto final de esta iteración: run `44983763612` success; xUnit **56/56**, smoke HTTP tenant/autorización/sesiones y smoke concurrente vía API/MySQL pasaron. DB disposable y contenedores se detuvieron al finalizar.
+
+## Invalidación por cambio de rol — 2026-11-21
+
+- `dotnet test BackEnd_Gps.sln --configuration Release --no-restore -m:1`: **57/57** aprobadas.
+- `dotnet build BackEnd_Gps.sln --configuration Release --no-restore -m:1`: 0 warnings, 0 errores.
+- `bash -n scripts/smoke-tenant-http.sh` y `git diff --check`: correctos.
+- `smoke-tenant-http.sh` con API local y MySQL 8 en contenedor temporal, DB `fletflow_ci_*`: aprobado. Logistics→User→Logistics mantuvo 401 para access/refresh originales. El contenedor se eliminó al terminar.
+- El primer intento no completó porque faltaba soporte para puerto MySQL configurable; la conexión al MySQL local falló por credenciales antes de ejecutar SQL. Se documentó el incidente y se añadió `MYSQL_PORT`; la repetición aislada pasó.

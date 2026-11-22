@@ -115,6 +115,12 @@ Fecha de corte: 2026-11-21.
 - Falta publicar el lote y validar workflows remotos para sus SHA; continuar cobertura de CRUD/responsive no visitada. SMTP requiere credenciales vigentes; móvil nativo pospuesto por el usuario.
 - Smoke HTTP/MySQL también confirmó que registro público no eleva el rol y que logout-all revoca refresh tokens.
 
+## Seguridad de sesión por cambio de rol — 2026-11-21
+
+- Corregida la invalidación inmediata: cambios efectivos incrementan `TokenVersion` en el mismo commit que reemplaza rol y revoca refresh tokens.
+- Verificado que un JWT antiguo continúa rechazado tras el ciclo de cambio y restauración del rol. xUnit 57/57, build Release sin warnings y smoke HTTP/MySQL desechable aprobado.
+- El primer smoke encontró que faltaba configurar el puerto MySQL; el script acepta ahora `MYSQL_PORT`. No se tocó la DB local.
+
 ## Recuperación y activación — 2026-11-21
 
 - Cuatro pruebas nuevas cubren reset/activación: persistencia con BCrypt real, consumo de token, revocación de refresh tokens, limpieza de `MustChangePassword`, token usado y confirmación desigual.

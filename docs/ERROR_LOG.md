@@ -459,3 +459,9 @@ Cada cambio de API debe incluir validación de compilación, migraciones si apli
 
 - El primer parche buscó líneas contiguas, pero el fixture de usuario limitaba primero el `restricted_attempt_plate`; apply_patch no hizo cambios.
 - Se inspeccionó el bloque real con `nl -ba` y se insertó junto al punto exacto después del login. `bash -n` y Actions `44983763612` pasaron el smoke completo en MySQL desechable.
+
+## 2026-11-21 — JWT podía recuperar permisos al restaurar un rol — CORREGIDO
+
+- Confirmación del código actual: `Program.cs` valida `token_version` y compara el rol del JWT con el rol vigente; `ChangeUserRoleCommand` revocaba refresh tokens, pero no aumentaba `TokenVersion`. El JWT viejo fallaba mientras el rol era distinto, pero volvía a ser aceptado si se restauraba el rol original antes de su expiración.
+- Corrección: todo cambio efectivo incrementa `Users.TokenVersion` y revoca refresh tokens en el mismo UnitOfWork/commit. xUnit cubre cambio efectivo y no-op; el smoke HTTP cambia Logistics→User→Logistics y vuelve a comprobar que los tokens iniciales sigan respondiendo 401.
+- Primer smoke local no completó: el runner no pasaba el puerto MySQL y conectó al 3306 local, donde el password temporal fue rechazado antes de ejecutar SQL. No se modificó la DB local. Se añadió `MYSQL_PORT` y se repitió con MySQL 8 y DB `fletflow_ci_*` desechables; smoke completo aprobado y contenedor eliminado.

@@ -23,8 +23,25 @@ public class ChangeUserRoleTests
         await new ChangeUserRoleCommand(uow).Execute(user.Id, "Logistics");
 
         Assert.Equal(new[] { logisticsRole.Id }, users.RoleIds);
+        Assert.Equal(1, user.TokenVersion);
         Assert.Equal(1, uow.CommitCount);
         Assert.Equal(1, ((RecordingRefreshTokenRepository)uow.RefreshTokens).RevokeAllCount);
+    }
+
+    [Fact]
+    public async Task Execute_DoesNotInvalidateSessionsWhenRoleIsUnchanged()
+    {
+        var logisticsRole = new Role { Name = "Logistics" };
+        var user = new User();
+        user.UserRoles.Add(new UserRole { User = user, Role = logisticsRole });
+        var users = new RecordingUserRepository(user, logisticsRole.Id);
+        var uow = new RecordingUnitOfWork(users, new RecordingRoleRepository(logisticsRole));
+
+        await new ChangeUserRoleCommand(uow).Execute(user.Id, "Logistics");
+
+        Assert.Equal(0, user.TokenVersion);
+        Assert.Equal(0, ((RecordingRefreshTokenRepository)uow.RefreshTokens).RevokeAllCount);
+        Assert.Equal(1, uow.CommitCount);
     }
 
     [Fact]
@@ -46,6 +63,7 @@ public class ChangeUserRoleTests
         Assert.Null(driver.VehicleId);
         Assert.Equal(((Guid?)vehicleId, (Guid?)driver.Id), uow.LockedAssignment);
         Assert.Equal(new[] { logisticsRole.Id }, users.RoleIds);
+        Assert.Equal(1, user.TokenVersion);
         Assert.Equal(1, uow.CommitCount);
         Assert.Equal(1, ((RecordingRefreshTokenRepository)uow.RefreshTokens).RevokeAllCount);
     }
@@ -69,6 +87,7 @@ public class ChangeUserRoleTests
 
         Assert.True(driver.IsActive);
         Assert.Equal(new[] { adminRole.Id }, users.RoleIds);
+        Assert.Equal(0, user.TokenVersion);
         Assert.Equal(0, uow.CommitCount);
         Assert.Equal(1, uow.RollbackCount);
     }
@@ -85,6 +104,7 @@ public class ChangeUserRoleTests
         public Task RemoveRoleAsync(Guid userId, Guid roleId) { RoleIds.Remove(roleId); return Task.CompletedTask; }
         public Task UpdatePasswordHashAsync(Guid userId, string newPasswordHash) => Task.CompletedTask;
         public Task UpdatePasswordAndClearFlagAsync(Guid userId, string newPasswordHash, bool clearMustChangePassword) => Task.CompletedTask;
+        public Task IncrementTokenVersionAsync(Guid userId) { user.TokenVersion++; return Task.CompletedTask; }
         public Task<List<User>> GetByOwnerAsync(Guid ownerUserId) => Task.FromResult(new List<User>());
     }
 

@@ -63,6 +63,8 @@ root_user_id=""
 driver_race_email_a=""
 driver_race_email_b=""
 driver_race_document=""
+same_tenant_driver_email=""
+same_tenant_driver_token=""
 
 cleanup() {
   local status=$?
@@ -683,6 +685,11 @@ fi
 driver_race_counts="$(mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" "$db_name" \
   --batch --skip-column-names -e "SELECT CONCAT((SELECT COUNT(*) FROM Users WHERE Email IN ('$driver_race_email_a','$driver_race_email_b')), ':', (SELECT COUNT(*) FROM Drivers WHERE DocumentNumber='$driver_race_document'), ':', (SELECT COUNT(*) FROM PasswordResetTokens WHERE UserId IN (SELECT Id FROM Users WHERE Email IN ('$driver_race_email_a','$driver_race_email_b'))));")"
 [[ "$driver_race_counts" == "1:1:1" ]] || { echo "Alta Driver concurrente dejó persistencia parcial (Users:Drivers:ActivationTokens=$driver_race_counts)." >&2; exit 1; }
+if [[ "$driver_race_status_a" =~ ^(200|201)$ ]]; then
+  same_tenant_driver_email="$driver_race_email_a"
+else
+  same_tenant_driver_email="$driver_race_email_b"
+fi
 
 request POST /Vehicles "$(jq -nc --arg plate "$plate" '{plate:$plate,brand:"CI QA",model:"Tenant",year:2025}')"
 expect_status 201 "Crear vehículo tenant A"
@@ -735,6 +742,38 @@ request PUT "/Routes/$route_id/status" '{"status":1}'
 expect_status 204 "Iniciar ruta tenant A"
 request POST "/Routes/$route_id/positions" "$(jq -nc '{latitude:-0.185,longitude:-78.465,recordedAt:(now|todateiso8601),speedKmh:0,heading:0}')"
 expect_status 200 "Guardar GPS tenant A"
+
+# A Driver from this same tenant must not operate another Driver's route.
+mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" "$db_name" \
+  -e "UPDATE Users SET IsActive=1, MustChangePassword=0 WHERE Email='$same_tenant_driver_email';" >/dev/null
+request POST /Auth/login "$(jq -nc --arg email "$same_tenant_driver_email" --arg password "$driver_race_password" '{email:$email,password:$password}')" ""
+expect_status 200 "Autenticar Driver del mismo tenant"
+same_tenant_driver_token="$(jq -er '.token // .accessToken' "$work_dir/response.json")"
+request GET "/Routes?driverId=$driver_id" "" "$same_tenant_driver_token"
+expect_status 200 "Driver no puede ampliar su filtro a otra asignación"
+jq -e 'length == 0' "$work_dir/response.json" >/dev/null \
+  || { echo "El Driver del mismo tenant recibió una ruta que no tiene asignada." >&2; cat "$work_dir/response.json" >&2; exit 1; }
+request GET "/Routes/$route_id" "" "$same_tenant_driver_token"
+expect_status 403 "Denegar detalle de ruta de otro Driver del mismo tenant"
+request PUT "/Routes/$route_id/status" '{"status":3}' "$same_tenant_driver_token"
+expect_status 404 "Denegar cambio de estado de ruta de otro Driver del mismo tenant"
+request PUT "/Routes/$route_id/points/1/status" '{"status":1}' "$same_tenant_driver_token"
+expect_status 404 "Denegar cambio de parada de otro Driver del mismo tenant"
+request POST "/Routes/$route_id/points/1/evidence" \
+  "$(jq -nc --arg content "Unauthorized same-tenant $suffix" '{type:"note",content:$content,description:"Driver ajeno"}')" "$same_tenant_driver_token"
+expect_status 404 "Denegar evidencia de ruta de otro Driver del mismo tenant"
+request GET "/Routes/$route_id/positions" "" "$same_tenant_driver_token"
+expect_status 403 "Denegar GPS de ruta de otro Driver del mismo tenant"
+request POST "/Routes/$route_id/positions" '{"latitude":-0.186,"longitude":-78.466}' "$same_tenant_driver_token"
+expect_status 403 "Denegar escritura GPS de ruta de otro Driver del mismo tenant"
+request GET "/Routes/$route_id" "" "$token"
+expect_status 200 "Confirmar ruta intacta tras denegaciones Driver del mismo tenant"
+jq -e '.status == 1 and .points[1].status == 0 and (.points[1].evidence | length == 0)' "$work_dir/response.json" >/dev/null \
+  || { echo "Driver ajeno modificó estado o evidencia de la ruta." >&2; cat "$work_dir/response.json" >&2; exit 1; }
+request GET "/Routes/$route_id/positions" "" "$token"
+expect_status 200 "Confirmar GPS intacto tras denegaciones Driver del mismo tenant"
+jq -e 'length == 1' "$work_dir/response.json" >/dev/null \
+  || { echo "Driver ajeno modificó o eliminó GPS de la ruta." >&2; cat "$work_dir/response.json" >&2; exit 1; }
 
 request GET /Vehicles "" "$other_token"
 expect_status 200 "Listar vehículos tenant B"

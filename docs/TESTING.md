@@ -397,3 +397,8 @@ La invitación envía sólo el enlace de activación; el usuario fija su contras
 - Actions `45029094282`: build/tests pasaron, smoke HTTP falló en assert API/MySQL luego de editar ruta.
 - Ajuste de prueba: helper compara timestamp con seis decimales, completando fracciones cortas y eliminando exceso; el mensaje ahora imprime API antes/después y DB antes/después. El normalizador pasó casos locales sin fracción, `.1234` y `.123456789`.
 - Actions `45029374847` confirmó smoke y cleanup completos; xUnit **78/78**.
+# Cobertura Driver same-tenant en smoke HTTP — pendiente CI
+
+- Con un JWT Driver real del tenant propietario, el smoke prueba `GET /Routes?driverId=...`, detalle, cambio de estado, estado de parada, evidencia y GET/POST posiciones contra una ruta de otro Driver.
+- Expected status: listado 200 vacío; detalle/GPS 403; escrituras/estado/parada/evidencia 404. Admin verifica que la ruta permanezca InProgress, sin evidencia nueva, y que GPS siga en una fila.
+- El fixture es el Driver ganador de la carrera HTTP de unicidad ya existente; sus filas tienen cleanup por email/documento. `bash -n` y diff-check locales pasan. Resultado MySQL/API pendiente.

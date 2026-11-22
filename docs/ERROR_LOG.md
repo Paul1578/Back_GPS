@@ -862,3 +862,7 @@ Cada cambio de API debe incluir validación de compilación, migraciones si apli
 - Error: Actions `45029094282` falló en la comparación de `CreatedAtUtc` tras editar una ruta, aunque build y xUnit pasaron. El mensaje previo no mostraba los valores comparados.
 - Causa en el test: su normalizador truncaba fracciones mayores a 6 dígitos, pero no rellenaba fracciones cortas ni el caso sin fracción; `System.Text.Json` puede omitir ceros finales mientras MySQL `datetime(6)` siempre representa microsegundos.
 - Solución: canonicalizar ambos timestamps a UTC textual con exactamente seis dígitos fraccionarios y agregar los valores iniciales/finales al diagnóstico para fallos futuros. Pendiente repetir el workflow para comprobar la solución.
+# 2026-11-22 — Cobertura backend incompleta para Driver del mismo tenant
+
+- Auditoría: smoke backend sólo probaba acceso a rutas ajenas mediante un Admin de otro tenant; no ejercitaba un Driver válido del mismo tenant contra la ruta de otro conductor. El frontend sí tenía E2E real, pero la brecha del smoke backend persistía.
+- Corrección: smoke ahora usa la cuenta Driver ganadora de la prueba concurrente de documento/email y prueba list/detail/status/stop/evidence/GPS denegados, seguido de lecturas Admin que verifican ausencia de mutaciones. Falta confirmar en MySQL/API efímeros por CI.

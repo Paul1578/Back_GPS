@@ -329,3 +329,9 @@ Nota de actualización: algunos resultados históricos de registro público más
 - Actions `45029094282` falló sólo en el smoke HTTP que compara timestamp API/MySQL después de editar; build y xUnit pasaron. La prueba anterior normalizaba fracciones largas, pero no añadía ceros cuando JSON omitía ceros de precisión.
 - El helper ahora normaliza siempre a seis decimales, como MySQL `datetime(6)`, y el fallo imprime los cuatro valores para diagnóstico.
 - La repetición pasó en Actions `45029374847` para Backend `5103b51`: build Release, xUnit 78/78, smoke tenant/outbox HTTP/MySQL, concurrencia de rutas y cleanup success.
+
+## Matriz HTTP de Driver contra ruta ajena del mismo tenant — en validación
+
+- El auditor independiente confirmó que el E2E frontend cubre Driver ajeno, pero el smoke backend sólo probaba rutas de otro tenant.
+- `smoke-tenant-http.sh` ahora autentica el Driver creado por la carrera de unicidad y comprueba filtro/listado, detalle, estado, parada, evidencia y GET/POST GPS sobre una ruta asignada a otro Driver del mismo tenant.
+- Admin vuelve a consultar ruta/GPS y confirma que estado, evidencia y posición persistida no cambiaron. `bash -n` y `git diff --check` pasan; falta ejecución real HTTP/MySQL en Actions.

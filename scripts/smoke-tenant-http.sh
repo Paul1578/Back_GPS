@@ -422,8 +422,8 @@ wait "$driver_race_pid_a"
 wait "$driver_race_pid_b"
 driver_race_status_a="$(cat "$work_dir/driver_race_a.status")"
 driver_race_status_b="$(cat "$work_dir/driver_race_b.status")"
-if ! { [[ "$driver_race_status_a" == 201 && "$driver_race_status_b" == 409 ]] || [[ "$driver_race_status_a" == 409 && "$driver_race_status_b" == 201 ]]; }; then
-  echo "Alta Driver concurrente esperaba 201 y 409; recibió $driver_race_status_a y $driver_race_status_b." >&2
+if ! { [[ "$driver_race_status_a" =~ ^(200|201)$ && "$driver_race_status_b" == 409 ]] || [[ "$driver_race_status_a" == 409 && "$driver_race_status_b" =~ ^(200|201)$ ]]; }; then
+  echo "Alta Driver concurrente esperaba 200/201 y 409; recibió $driver_race_status_a y $driver_race_status_b." >&2
   cat "$work_dir/driver_race_a.json" "$work_dir/driver_race_b.json" >&2
   exit 1
 fi

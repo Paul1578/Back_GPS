@@ -571,3 +571,10 @@ Cada cambio de API debe incluir validación de compilación, migraciones si apli
 - `git diff --check` señaló líneas en blanco al final de seis archivos después de concatenar secciones sobre la alta Driver atómica.
 - Corrección: normalizar cada archivo a una sola línea final y repetir diff-check.
 - Prevención: añadir secciones con EOF normalizado en el mismo script y comprobar whitespace inmediatamente.
+# 2026-11-22 — Smoke de alta Driver asumía HTTP 201 — RESUELTO
+
+- Síntoma: Actions `45001352585` confirmó una creación y un conflicto en la carrera de documento duplicado, pero el smoke falló porque recibió `200` y `409` en lugar de `201` y `409`.
+- Causa: `UsersController` devuelve HTTP 200 para la creación de una cuenta Driver; el smoke había supuesto incorrectamente que el endpoint respondía 201. La prueba de atomicidad fue válida, la expectativa HTTP no respetaba el contrato implementado.
+- Solución: aceptar `200` o `201` para exactamente una creación, manteniendo `409` obligatorio para la solicitud concurrente perdedora y el assert SQL `Users:Drivers:PasswordResetTokens=1:1:1`.
+- Prevención: al escribir pruebas HTTP nuevas, inspeccionar y validar el código real de respuesta del endpoint antes de codificar la expectativa; conservar asserts de persistencia para verificar el resultado de negocio.
+- Verificación: pendiente repetir smoke completo de Actions; no contar aún el caso como validado hasta CI verde.

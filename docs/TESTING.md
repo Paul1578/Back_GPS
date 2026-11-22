@@ -486,3 +486,11 @@ La invitación envía sólo el enlace de activación; el usuario fija su contras
 - Build Release: 0 warnings/0 errores. `bash -n scripts/smoke-tenant-http.sh scripts/smoke-route-concurrency.sh` y `git diff --check`: correctos.
 - Smokes actualizados: carrera MySQL real refresh/cambio de rol con row lock; HTTP 409 y SQL intacta para reasignación, desasignación y baja con ruta Pending. Ejecución Action pendiente.
 - Cierre CI [45050058627](https://github.com/Paul1578/Back_GPS/actions/runs/45050058627), `2045b18`: build Release; xUnit **97/97**; smoke tenant HTTP/MySQL y route concurrency aprobados, incluida carrera de cambio de rol/refresh y HTTP 409 con SQL sin cambios para operaciones de Driver con ruta Pending. Cleanup: cero fixtures.
+
+## Validación de cuenta Driver y recuperación — 2026-11-22
+
+- SQLite: edición de ruta con cuenta Driver inactiva rechazada sin cambios de ruta/vehículo; prueba focal CreateRouteCommandTests 10/10.
+- Smoke HTTP/MySQL: editar/iniciar con cuenta inactiva devuelve 409; Activate/Reset aceptan tokens una vez y rechazan reutilización; Reset invalida refresh anterior y permite sólo clave nueva.
+- bash -n y diff-check correctos. Suite y Actions integradas pendientes.
+
+- Durante la fixture HTTP, TokenHash se normaliza a hexadecimal mayúsculo, igual a Convert.ToHexString; las contraseñas fixture se generan aleatoriamente.

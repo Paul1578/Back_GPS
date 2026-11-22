@@ -390,3 +390,10 @@
 - No se permite desasignar, dar de baja o sacar del rol Driver a un conductor con rutas activas pendientes o en progreso.
 - Pruebas y smoke ampliados para persistencia, conflicto y refresh concurrente.
 - Action backend [45050058627](https://github.com/Paul1578/Back_GPS/actions/runs/45050058627) validó build, 97/97 tests, smokes HTTP/MySQL/concurrencia y cleanup completo.
+
+## 2026-11-22 — Validación de cuenta Driver y flujos HTTP de password
+
+- Crear/editar rutas vuelve a validar y bloquear la cuenta User enlazada después de locks de asignación.
+- Regresión SQLite para edición de ruta pendiente con cuenta inactiva sin cambios parciales.
+- Smoke HTTP/MySQL para denegar edición/inicio con cuenta inactiva y probar activation/reset token único, cambio de contraseña y revocación de refresh.
+- Test focal 10/10 y sintaxis shell correctos; integración completa pendiente.

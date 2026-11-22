@@ -546,3 +546,12 @@ Errores de migración, herramientas, QA y soluciones están en `docs/ERROR_LOG.m
 - GPS: `RegisterRoutePositionCommand` bloquea ruta/asignación y valida Driver solicitante después de recargar. `GET positions` mantiene lock y revalida hasta terminar la lectura. Test falso reasigna al adquirir lock, espera excepción, 0 posiciones y sin commit.
 - Validación local posterior: xUnit Release 91/91, build 0 warnings/0 errores. Backend smoke último Action `45046324866` falló por fixture de ruta de mantenimiento compartiendo agenda; script corregido a Vehicle/Driver propios, con limpieza y conteo SQL. Próximo paso: commit/push de todos los cambios, inspeccionar Actions y reparar cualquier fallo; luego disparar Front integrado contra backend nuevo.- Backend Action `45048795456` pasó para `27bf75a`: build, xUnit **94/94**, smoke tenant HTTP/MySQL y concurrencia de rutas; cleanup cero fixtures. La integridad de Driver/ruta Pending queda validada.
 - Backend Action `45050058627` pasó para `2045b18`: build Release, xUnit 97/97, tenant/MySQL y route concurrency; cleanup cero. El lock de cambio de rol y las protecciones de Driver Pending quedan validados.
+
+## Continuación — cuenta Driver enlazada y password HTTP — 2026-11-22
+
+- Rama chore/stabilize-fleet-platform; main intacta.
+- CreateRoute y UpdateRoute validan la cuenta User enlazada después de locks de asignación y la bloquean owner-scoped en la misma transacción.
+- smoke-tenant-http.sh prueba edición con User inactivo y activate/reset, consumo único, revocación refresh y nuevos logins. Verificar el comportamiento y cleanup.
+- Validación: CreateRouteCommandTests 10/10, bash -n y diff-check. Falta suite Release, build, smokes HTTP/API MySQL y Actions.
+- Error del patrón shell con backticks documentado en ERROR_LOG; no hubo cambios ni datos tocados.
+- No cerrar misión. Después validar Front actualizado en CI integrada. Admin delegado sin respuesta; SMTP/PFX/despliegue externos.

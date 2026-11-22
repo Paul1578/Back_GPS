@@ -85,6 +85,8 @@ driver_race_email_b=""
 driver_race_document=""
 same_tenant_driver_email=""
 same_tenant_driver_token=""
+activation_user_email=""
+reset_user_email=""
 
 cleanup() {
   local status=$?
@@ -146,6 +148,12 @@ cleanup() {
     fi
     if [[ -n "$restricted_user_email" ]]; then
       sql+=" SET @qa_user_id=(SELECT Id FROM Users WHERE Email='$restricted_user_email'); DELETE FROM RefreshTokens WHERE UserId=@qa_user_id; DELETE FROM PasswordResetTokens WHERE UserId=@qa_user_id; DELETE FROM UserRoles WHERE UserId=@qa_user_id; DELETE FROM Users WHERE Id=@qa_user_id;"
+    fi
+    if [[ -n "$activation_user_email" ]]; then
+      sql+=" SET @qa_user_id=(SELECT Id FROM Users WHERE Email='$activation_user_email'); DELETE FROM EmailOutbox WHERE UserId=@qa_user_id; DELETE FROM RefreshTokens WHERE UserId=@qa_user_id; DELETE FROM PasswordResetTokens WHERE UserId=@qa_user_id; DELETE FROM UserRoles WHERE UserId=@qa_user_id; DELETE FROM Users WHERE Id=@qa_user_id;"
+    fi
+    if [[ -n "$reset_user_email" ]]; then
+      sql+=" SET @qa_user_id=(SELECT Id FROM Users WHERE Email='$reset_user_email'); DELETE FROM EmailOutbox WHERE UserId=@qa_user_id; DELETE FROM RefreshTokens WHERE UserId=@qa_user_id; DELETE FROM PasswordResetTokens WHERE UserId=@qa_user_id; DELETE FROM UserRoles WHERE UserId=@qa_user_id; DELETE FROM Users WHERE Id=@qa_user_id;"
     fi
     if [[ -n "$duplicate_email_race" ]]; then
       sql+=" SET @qa_user_id=(SELECT Id FROM Users WHERE Email='$duplicate_email_race'); DELETE FROM RefreshTokens WHERE UserId=@qa_user_id; DELETE FROM PasswordResetTokens WHERE UserId=@qa_user_id; DELETE FROM UserRoles WHERE UserId=@qa_user_id; DELETE FROM Users WHERE Id=@qa_user_id;"
@@ -417,6 +425,49 @@ concurrent_recovery_state="$(mysql --protocol=TCP --host="$mysql_host" --port="$
   echo "Solicitudes concurrentes dejaron tokens de recuperación activos no serializados o mensajes faltantes ($concurrent_recovery_state)." >&2
   exit 1
 }
+
+activation_user_email="fletflow.e2e.activation.$suffix@example.test"
+activation_user_password="ActivationOld-$(openssl rand -hex 8)aA1!"
+request POST /Users "$(jq -nc --arg username "E2E activation $suffix" --arg email "$activation_user_email" --arg password "$activation_user_password" '{username:$username,email:$email,password:$password,roleName:"User"}')" "$token"
+expect_status 200 "Crear usuario QA para activación"
+activation_user_id="$(jq -er '.id' "$work_dir/response.json")"
+activation_plain_token="activation-$suffix-$(openssl rand -hex 8)"
+activation_token_hash="$(printf '%s' "$activation_plain_token" | openssl dgst -sha256 | awk '{print toupper($NF)}')"
+mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" "$db_name" \
+  -e "INSERT INTO PasswordResetTokens (Id, UserId, TokenHash, ExpiresAt, CreatedAt, UsedAt) VALUES (UUID(), '$activation_user_id', '$activation_token_hash', DATE_ADD(UTC_TIMESTAMP(), INTERVAL 10 MINUTE), UTC_TIMESTAMP(), NULL);" >/dev/null
+activation_new_password="ActivationNew-$(openssl rand -hex 8)aA1!"
+request POST /Auth/activate-account "$(jq -nc --arg token "$activation_plain_token" --arg password "$activation_new_password" '{token:$token,newPassword:$password,confirmNewPassword:$password}')" ""
+expect_status 200 "Activar cuenta con token vigente"
+request POST /Auth/activate-account "$(jq -nc --arg token "$activation_plain_token" --arg password "$activation_new_password" '{token:$token,newPassword:$password,confirmNewPassword:$password}')" ""
+expect_status 401 "Rechazar reutilización del token de activación"
+request POST /Auth/login "$(jq -nc --arg email "$activation_user_email" --arg password "$activation_new_password" '{email:$email,password:$password}')" ""
+expect_status 200 "Iniciar sesión con contraseña establecida al activar"
+
+reset_user_email="fletflow.e2e.reset.$suffix@example.test"
+reset_old_password="ResetOld-$(openssl rand -hex 8)aA1!"
+request POST /Users "$(jq -nc --arg username "E2E reset $suffix" --arg email "$reset_user_email" --arg password "$reset_old_password" '{username:$username,email:$email,password:$password,roleName:"User"}')" "$token"
+expect_status 200 "Crear usuario QA para restablecimiento"
+reset_user_id="$(jq -er '.id' "$work_dir/response.json")"
+mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" "$db_name" \
+  -e "UPDATE Users SET IsActive=1, MustChangePassword=0 WHERE Id='$reset_user_id';" >/dev/null
+request POST /Auth/login "$(jq -nc --arg email "$reset_user_email" --arg password "$reset_old_password" '{email:$email,password:$password}')" ""
+expect_status 200 "Crear sesión antes del restablecimiento"
+reset_old_refresh="$(jq -er '.refreshToken' "$work_dir/response.json")"
+reset_plain_token="reset-$suffix-$(openssl rand -hex 8)"
+reset_token_hash="$(printf '%s' "$reset_plain_token" | openssl dgst -sha256 | awk '{print toupper($NF)}')"
+mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" "$db_name" \
+  -e "INSERT INTO PasswordResetTokens (Id, UserId, TokenHash, ExpiresAt, CreatedAt, UsedAt) VALUES (UUID(), '$reset_user_id', '$reset_token_hash', DATE_ADD(UTC_TIMESTAMP(), INTERVAL 10 MINUTE), UTC_TIMESTAMP(), NULL);" >/dev/null
+reset_new_password="ResetNew-$(openssl rand -hex 8)aA1!"
+request POST /Auth/reset-password "$(jq -nc --arg token "$reset_plain_token" --arg password "$reset_new_password" '{token:$token,newPassword:$password,confirmNewPassword:$password}')" ""
+expect_status 200 "Restablecer contraseña con token vigente"
+request POST /Auth/reset-password "$(jq -nc --arg token "$reset_plain_token" --arg password "$reset_new_password" '{token:$token,newPassword:$password,confirmNewPassword:$password}')" ""
+expect_status 401 "Rechazar reutilización del token de restablecimiento"
+request POST /Auth/refresh "$(jq -nc --arg refreshToken "$reset_old_refresh" '{refreshToken:$refreshToken}')" ""
+expect_status 401 "Revocar sesión previa al restablecimiento"
+request POST /Auth/login "$(jq -nc --arg email "$reset_user_email" --arg password "$reset_old_password" '{email:$email,password:$password}')" ""
+expect_status 401 "Rechazar contraseña anterior tras restablecimiento"
+request POST /Auth/login "$(jq -nc --arg email "$reset_user_email" --arg password "$reset_new_password" '{email:$email,password:$password}')" ""
+expect_status 200 "Iniciar sesión con contraseña restablecida"
 
 public_registration_email="fletflow.e2e.register.ci.$(date +%s%N | tail -c 9)@example.test"
 public_registration_password="$(openssl rand -hex 24)"
@@ -714,6 +765,8 @@ request GET /Routes/assignment-options "" "$inactive_driver_access_token"
 expect_status 403 "Denegar opciones de asignación a Driver"
 request PUT "/Users/$inactive_driver_user_id/status?isActive=false" "" "$token"
 expect_status 200 "Desactivar cuenta de Driver enlazado"
+request PUT "/Routes/$inactive_driver_route_id" "$inactive_driver_route_payload" "$token"
+expect_status 409 "Impedir editar ruta para cuenta Driver inactiva"
 request PUT "/Routes/$inactive_driver_route_id/status" '{"status":1}' "$token"
 expect_status 409 "Impedir iniciar una ruta asignada a una cuenta Driver inactiva"
 inactive_driver_pending_state="$(mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" "$db_name" \

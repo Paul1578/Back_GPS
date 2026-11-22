@@ -17,6 +17,57 @@ namespace BackEnd_Gps.Tests;
 public class CreateRouteCommandTests
 {
     [Fact]
+    public async Task Update_RejectsDriverWithInactiveLinkedUser_WithoutChangingRouteOrVehicle()
+    {
+        var ownerId = Guid.NewGuid();
+        using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder<AppDbContext>().UseSqlite(connection).Options;
+        var http = new DefaultHttpContext
+        {
+            User = new ClaimsPrincipal(new ClaimsIdentity([new Claim("owner_id", ownerId.ToString())], "test"))
+        };
+        await using var context = new AppDbContext(options, new HttpContextAccessor { HttpContext = http });
+        await context.Database.EnsureCreatedAsync();
+
+        var vehicles = new VehicleRepository(context);
+        var drivers = new DriverRepository(context);
+        var routes = new RouteRepository(context);
+        var users = new UserRepository(context);
+        var linkedUser = new UserEntity
+        {
+            Id = Guid.NewGuid(), OwnerUserId = ownerId, Username = "inactive-edit-driver",
+            Email = "inactive-edit-driver@example.test", PasswordHash = "test-hash", IsActive = true
+        };
+        var vehicle = Vehicle.Create("QA-UPDATE-INACTIVE-USER", "Test", "Van", 2025, null);
+        var driver = Driver.Create("Linked", "Driver", "QA-UPDATE-INACTIVE-USER", "0990000000", linkedUser.Id);
+        await context.Users.AddAsync(linkedUser);
+        await vehicles.AddAsync(vehicle);
+        await drivers.AddAsync(driver);
+        await context.SaveChangesAsync();
+        var uow = new UnitOfWork(context, users, null!, null!, null!, vehicles, drivers, routes, null!);
+        var points = new[]
+        {
+            RoutePoint.Create(-0.2, -78.5, "Origin"),
+            RoutePoint.Create(-0.21, -78.51, "Destination")
+        };
+        var route = await new CreateRouteCommand(uow, routes, vehicles, drivers).Execute(
+            vehicle.Id, driver.Id, "Route before account deactivation", points, null, null, null);
+
+        linkedUser.IsActive = false;
+        await context.SaveChangesAsync();
+        var command = new UpdateRouteCommand(uow, routes, vehicles, drivers);
+        await Assert.ThrowsAsync<BusinessConflictException>(() => command.Execute(
+            route.Id, vehicle.Id, driver.Id, "Must not be applied", points, "changed", null, null));
+
+        var persisted = await routes.GetByIdAsync(route.Id);
+        Assert.Equal("Route before account deactivation", persisted!.Name);
+        Assert.Null(persisted.CargoDescription);
+        Assert.Equal(RouteStatus.Pending, persisted.Status);
+        Assert.Equal(VehicleStatus.Available, (await vehicles.GetByIdAsync(vehicle.Id))!.Status);
+    }
+
+    [Fact]
     public async Task Execute_PersistsRouteAndDriverVehicleAssignmentTogether()
     {
         var ownerId = Guid.NewGuid();

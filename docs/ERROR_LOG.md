@@ -1041,3 +1041,18 @@ Cada cambio de API debe incluir validación de compilación, migraciones si apli
 - Solución operativa: desasignación, baja Driver y cambio de rol rechazan con 409 mientras existan rutas activas Pending o InProgress. Pruebas unitarias verifican que usuario, conductor, vehículo/ruta y tokens no se muten. Smoke MySQL valida HTTP y estado persistido para Pending.
 - Release xUnit local **97/97**, build Release **0 warnings/0 errors** y `bash -n` pasan. Action backend `45050058627` pasó para `2045b18`: build, xUnit 97/97, smoke HTTP/MySQL tenant, carreras refresh/rol y rutas; cleanup cero fixtures.
 - Prevención: toda operación que invalide sesiones debe compartir el row lock con refresh; cambios que quiten Vehicle/Driver de una ruta activa deben tomar locks de asignación y considerar Pending además de InProgress.
+
+## 2026-11-22 — Cuenta Driver enlazada inactiva al editar/crear rutas — CORREGIDO; CI PENDIENTE
+
+- Auditoría encontró que PUT Routes/{id} validaba Driver.IsActive pero no la cuenta User asociada. CreateRoute comprobaba la cuenta antes de locks; podía desactivarse antes del commit.
+- CreateRoute y UpdateRoute ahora vuelven a leer Driver, bloquean la cuenta vinculada dentro de la transacción de asignación y comprueban IsActive. El conflicto revierte cambios.
+- Se añadió regresión SQLite y smoke HTTP/MySQL para editar/iniciar ruta con cuenta inactiva. El smoke también prueba activate-account/reset-password, token de un solo uso, nueva contraseña y revocación de refresh; cleanup elimina fixtures.
+- Test focal CreateRouteCommandTests 10/10; bash -n y diff-check pasan. Suite completa, smoke API/MySQL y Actions pendientes.
+- Error de inspección: un patrón rg con backticks se pasó en comillas dobles al shell, que intentó ejecutar PasswordResetTokens como comando. No escribió archivos ni accedió a datos. La búsqueda se repitió sin interpolación ejecutable.
+- Prevención: patrones shell con backticks deben ir entre comillas simples/escapadas o redactarse sin quoting ejecutable.
+
+## 2026-11-22 — Escritura documental y nombre de solución — CORREGIDOS
+
+- El primer intento de generar apéndices usó APIs de codificación ausentes en el runtime de orquestación y no escribió archivos. Se volvió a ejecutar con heredocs quoted y delimitadores dedicados.
+- Una invocación de dotnet test/build usó Back_Gps.sln, archivo inexistente; MSBuild devolvió MSB1009 antes de compilar. Se repitió con el nombre real BackEnd_Gps.sln: suite 100/100 y build Release sin warnings/errores.
+- Prevención: confirmar el nombre exacto con listado de archivos del repo antes de correr MSBuild; revisar rutas/casing en proyectos Linux.

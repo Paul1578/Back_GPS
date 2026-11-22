@@ -84,6 +84,13 @@ namespace fletflow.Application.Fleet.Commands
                     throw new BusinessConflictException("El vehículo ya no está disponible para asignarlo a una ruta.");
                 if (!driver.IsActive)
                     throw new BusinessConflictException("El conductor ya no está disponible para asignarlo a una ruta.");
+                if (driver.UserId.HasValue)
+                {
+                    await _uow.LockLinkedUserForRouteAssignmentAsync(driver.UserId.Value);
+                    var linkedUser = await _uow.Users.GetByIdAsync(driver.UserId.Value);
+                    if (linkedUser?.IsActive != true)
+                        throw new BusinessConflictException("La cuenta del conductor ya no está disponible para asignarlo a una ruta.");
+                }
 
                 var assignedDriver = await _drivers.GetOtherAssignedToVehicleAsync(vehicleId, driverId);
                 if (assignedDriver is not null)

@@ -185,3 +185,8 @@ Si se conservó el mismo key ring cifrado con el certificado viejo, no quitar `F
 4. Tras validar que ninguna instancia use el key ring viejo, retirar el PFX anterior del secreto activo. Si la política exige conservar la capacidad de restaurar el backup viejo, conservar PFX y backup cifrados bajo custodia separada; su destrucción vuelve irrecuperable ese key ring.
 
 Este proceso invalida los emails/token de recuperación que estén pendientes o activos durante el cambio; debe coordinarse como operación de despliegue y confirmarse con el operador responsable antes de ejecutarse en producción. No hay credenciales PFX/infra productiva en local para ejecutar este runbook aquí.
+
+## Hallazgo adicional — cuenta Driver enlazada y tokens de activación/reset
+
+- Crear y editar rutas vuelven a bloquear y consultar la cuenta User enlazada después del lock de Vehicle/Driver/Route. Se evita asignar una ruta pendiente a una cuenta desactivada concurrentemente; la operación revierte con conflicto.
+- Smokes HTTP/MySQL ejercitan activate-account y reset-password con tokens vigentes, consumo único, refresh previo revocado por reset y nuevo login. CI de esta tanda pendiente.

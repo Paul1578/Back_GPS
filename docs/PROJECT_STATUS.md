@@ -431,3 +431,10 @@ Nota de actualización: algunos resultados históricos de registro público más
 - Backend valida vigencia del token reset inmediatamente antes de envío; un mensaje obsoleto no se presenta como email enviado ni se reintenta como fallo SMTP.
 - Worker enfocado 3/3, suite local 92/92, build 0/0. Nuevo Actions backend y corrida Front integrada pendientes.
 - Cierre CI backend `27bf75a`: Action [45048795456](https://github.com/Paul1578/Back_GPS/actions/runs/45048795456) pasó. Release build, xUnit **94/94**, aislamiento HTTP/MySQL, regresión de reasignación con ruta pendiente, concurrencia de rutas y cleanup; no quedaron fixtures de smoke.
+
+## Estado actual — autorización Driver y recuperación de password — 2026-11-22
+
+- CreateRoute y UpdateRoute validan cuenta enlazada al Driver después de locks; regresión SQLite evita edición parcial. Smoke tenant cubre edición con cuenta inactiva y endpoints activate/reset.
+- Test focal CreateRouteCommandTests 10/10; bash syntax y diff-check correctos. Falta suite Release completa, API/MySQL efímera y Actions.
+- Admin delegado sin decisión de producto. SMTP/PFX/infra productiva externas; móvil nativo aplazado.
+- Misión integral abierta.

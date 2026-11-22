@@ -217,3 +217,6 @@ La invitación envía sólo el enlace de activación; el usuario fija su contras
 - Suite local Release: 54/54; build 0 warnings/0 errores; `bash -n scripts/smoke-tenant-http.sh` correcto. Integración contra MySQL queda en Actions después del push.
 
 - Resultado remoto: Actions `44983337062` success. MySQL descartable aplicó la migración; smoke HTTP probó cambio de contraseña, revocación inmediata de access y refresh, rechazo de la clave anterior y aceptación de la nueva.
+
+- Ampliación xUnit: `ChangePassword_ChangesHashAndInvalidatesExistingSessions` comprueba BCrypt, versión, revocación refresh y commit; `ChangePassword_RejectsWrongCurrentPasswordWithoutChangingState` comprueba que un current password incorrecto no modifica hash/versión/sesiones.
+- Suite actual Release: **56/56**. La ampliación de tests está pendiente de Actions; smoke HTTP/MySQL anterior del flujo completo pasó en `44983337062`.

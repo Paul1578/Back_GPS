@@ -1,4 +1,5 @@
 using fletflow.Application.Auth.Commands.ActivateAccount;
+using fletflow.Application.Auth.Commands;
 using fletflow.Application.Auth.Commands.ResetPassword;
 using fletflow.Domain.Auth.Entities;
 using fletflow.Domain.Auth.Repositories;
@@ -10,6 +11,40 @@ namespace BackEnd_Gps.Tests;
 
 public class PasswordRecoveryCommandTests
 {
+    [Fact]
+    public async Task ChangePassword_ChangesHashAndInvalidatesExistingSessions()
+    {
+        var scenario = new RecoveryScenario();
+        var hasher = new PasswordHasher();
+        scenario.User.PasswordHash = hasher.Hash("Current123");
+        var command = new ChangePasswordCommand(scenario, scenario.Users);
+
+        await command.Execute(scenario.User.Id, "Current123", "NewPass123");
+
+        Assert.True(hasher.Verify("NewPass123", scenario.User.PasswordHash));
+        Assert.Equal(1, scenario.User.TokenVersion);
+        Assert.Equal(1, scenario.RefreshTokens.RevokeAllCount);
+        Assert.Equal(1, scenario.CommitCount);
+    }
+
+    [Fact]
+    public async Task ChangePassword_RejectsWrongCurrentPasswordWithoutChangingState()
+    {
+        var scenario = new RecoveryScenario();
+        var hasher = new PasswordHasher();
+        scenario.User.PasswordHash = hasher.Hash("Current123");
+        var originalHash = scenario.User.PasswordHash;
+        var command = new ChangePasswordCommand(scenario, scenario.Users);
+
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
+            command.Execute(scenario.User.Id, "Wrong123", "NewPass123"));
+
+        Assert.Equal(originalHash, scenario.User.PasswordHash);
+        Assert.Equal(0, scenario.User.TokenVersion);
+        Assert.Equal(0, scenario.RefreshTokens.RevokeAllCount);
+        Assert.Equal(0, scenario.CommitCount);
+    }
+
     [Fact]
     public async Task ResetPassword_ChangesPasswordConsumesTokenAndRevokesSessions()
     {

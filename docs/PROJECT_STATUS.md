@@ -128,3 +128,8 @@ Fecha de corte: 2026-11-21.
 - xUnit 54/54, Release build 0 warnings/0 errors; `bash -n` del smoke y `git diff --check` correctos. No marcar completo hasta validar integración CI y seguir cobertura restante.
 
 - Resultado actualizado: Actions backend `44983337062` pasó con migración y verificación real HTTP/MySQL del cambio de contraseña. Access/refresh viejos 401; contraseña vieja rechazada y nueva aceptada. xUnit y build del workflow también verdes.
+
+## Cobertura negativa de cambio de contraseña — 2026-11-21
+
+- Dos pruebas nuevas cubren cambio exitoso con revocación/hash/version/commit y contraseña actual incorrecta sin efectos secundarios.
+- Suite Release actualizada: **56/56**, 0 fallidas/omitidas. La integración MySQL/HTTP ya pasó en Actions `44983337062`; esta ampliación xUnit queda pendiente de CI en el próximo commit.

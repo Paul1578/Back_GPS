@@ -63,9 +63,12 @@ if [[ -n "$client_api_base" && "$client_api_base" != "/api/backend" && \
   echo "NEXT_PUBLIC_API_BASE_URL apunta fuera del endpoint API local permitido." >&2
   exit 2
 fi
-if ! curl -fsS "$playwright_base_url/login" >/dev/null || \
-  ! curl -fsS "http://127.0.0.1:5048/swagger/index.html" >/dev/null; then
-  echo "Inicia el frontend y la API Development locales antes de ejecutar el E2E." >&2
+if ! curl -fsS "http://127.0.0.1:5048/swagger/index.html" >/dev/null; then
+  echo "Inicia la API Development local antes de ejecutar el E2E." >&2
+  exit 2
+fi
+if [[ "${CI:-}" != "true" ]] && ! curl -fsS "$playwright_base_url/login" >/dev/null; then
+  echo "Inicia el frontend local antes de ejecutar el E2E; Playwright lo inicia en CI." >&2
   exit 2
 fi
 

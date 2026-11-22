@@ -335,3 +335,9 @@ Cada cambio de API debe incluir validación de compilación, migraciones si apli
 - Hallazgo: el E2E completo llamaba `docker exec mysql-gps` y leía `.env` siempre, así que fallaría dentro de Actions aunque el workflow levantara MySQL service y pasara variables aisladas.
 - Solución: el runner conecta con cliente MySQL host; sólo carga `.env` local si `DB_NAME` no fue inyectada, exige credenciales MySQL y en CI sólo acepta esquemas `fletflow_ci*`. Se añadió workflow frontend con checkout del backend público en su rama de estabilización, backend/API efímeros y ejecución Playwright autenticada.
 - Verificación local de integración runner: Chrome/API/MySQL **8/8**; esquema de prueba eliminado. Workflow YAML parseado. Ejecución remota queda pendiente de publicar ramas y abrir PR.
+
+## 2026-11-22 — Runner CI esperaba Next activo antes de que Playwright lo iniciara — CORREGIDO
+
+- El primer PR frontend pasó build, audit, lint y el chequeo responsive, pero el runner autenticado terminó con código 2: su precheck pedía `/login` antes de ejecutar Playwright. El job no llegó a provisionar usuarios E2E.
+- El runner ahora comprueba siempre Swagger/API y sólo exige frontend preiniciado fuera de CI; en CI Playwright `webServer` arranca Next.
+- Se actualizó checkout v4→v7 y setup-dotnet v4→v6 para abandonar Node 20 según advertencia de Actions. La próxima ejecución del workflow debe verificarlo.

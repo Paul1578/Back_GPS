@@ -173,3 +173,4 @@ La invitación envía sólo el enlace de activación; el usuario fija su contras
 - `Front_gpsR/.github/workflows/ci.yml` provisiona MySQL y checkout público de este backend en `chore/stabilize-fleet-platform`; compila/prueba backend y frontend y ejecuta los ocho casos Playwright autenticados con fixtures desechables.
 - `scripts/run-e2e-local.sh` se hizo portable a GitHub Actions: cliente MySQL del host, credenciales por entorno y validación de DB `fletflow_ci*` en modo CI.
 - Repetición local autenticada en Chrome/API/MySQL: **8/8**, cleanup completo y base temporal descartada. Actions remoto no se ha ejecutado aún; requiere PR/branch publicados.
+- Actualización remota: backend PR #5 pasó todas las fases (48 tests y smoke HTTP/MySQL). Frontend PR #2 pasó lint/build/audit y responsive no mutante, pero el primer E2E abortó porque el runner exigió Next antes de que Playwright iniciara `webServer`; corrección ya publicada, falta nuevo resultado.

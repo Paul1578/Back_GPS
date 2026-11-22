@@ -84,3 +84,4 @@ Fecha de corte: 2026-11-21.
 - Corregida precedencia DotNetEnv. Las ramas feature todavía no existen en `origin`, por lo que GitHub Actions remoto queda pendiente de publicar esas ramas/PR.
 - Cobertura HTTP añadida para rol User: obtiene 403 en listados de Vehicles/Routes y alta de Vehicle; validación local en segunda DB MySQL temporal aprobada.
 - Workflow frontend integrado con MySQL, backend de la rama `chore/stabilize-fleet-platform` y Playwright autenticado 8 casos. La suite pasó localmente 8/8; resultado Actions remoto pendiente de publicar PR.
+- PRs publicados: frontend #2 y backend #5. Backend Actions pasó; primer frontend run reveló precheck de frontend antes de que Playwright lo iniciara. Corrección y upgrade de acciones Node 24 ya están en la rama, pendiente nuevo run.

@@ -182,4 +182,5 @@ La invitación envía sólo el enlace de activación; el usuario fija su contras
 - `dotnet list BackEnd_Gps.sln package --vulnerable --include-transitive`: sin paquetes vulnerables; `SQLitePCLRaw.lib.e_sqlite3` resuelve a 2.1.14.
 - Sobre MySQL/API local con DB temporal `fletflow_ci_validation_14`, smoke tenant pasó. El smoke de concurrencia comprobó Create con vehículo repetido, Create con Driver repetido, Update con ambos recursos repetidos, dos inicios del mismo vehículo y carrera inicio/desactivación; cada par devolvió un éxito y un HTTP 409. Los asserts MySQL verifican las rutas/vehículos persistidos y el estado Driver/vehículo coherente.
 - Cleanup detuvo la API y descartó el esquema de validación. Ambos scripts pasan `bash -n`; `git diff --check` limpio.
-- El job remoto backend aún debe ejecutarse con el cambio actualizado; el frontend requiere repetir Actions tras checkout de esta versión backend.
+- Al corte de la verificación local, Actions debía ejecutar la rama actualizada; el resultado remoto siguiente quedó registrado abajo.
+- Resultado remoto posterior: Actions backend run `44976384961`, commit `90da59a`, pasó todas las fases, incluyendo 50 xUnit y los smokes MySQL tenant/concurrencia.

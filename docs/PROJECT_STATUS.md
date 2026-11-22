@@ -96,3 +96,4 @@ Fecha de corte: 2026-11-21.
 - Revisión adicional detectó inicio simultáneo de rutas sobre un vehículo; la transición también toma lock de ruta/asignación y comprueba las demás rutas InProgress. xUnit final 50/50 y smoke MySQL concurrente: un HTTP 204 + un 409.
 - Smoke concurrente ampliado con verificación SQL: una ruta queda InProgress, la otra Pending y el vehículo OnRoute; carrera con baja de Driver deja exclusivamente estados coherentes. La base final `fletflow_ci_validation_14` pasó; cleanup descartó el esquema.
 - Durante la inspección local se mostró accidentalmente la credencial MySQL root en salida de diagnóstico; se rotó inmediatamente para `%` y `localhost`, `.env` quedó 0600 y la conexión temporal se verificó sin exponer la nueva clave.
+- El commit `90da59a` está en PR #5. GitHub Actions run `44976384961` completó exitosamente: restore, Release build, xUnit, smoke tenant HTTP/MySQL y smoke concurrente Create/Update/start/desactivación.

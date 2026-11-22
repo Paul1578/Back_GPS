@@ -259,3 +259,9 @@
 
 - `Routes` almacena `CreatedAtUtc` nullable mediante migración aditiva; rutas nuevas fijan hora UTC al crear, editar conserva el valor, DTO lo expone y consultas ordenan por fecha real con fallback de operación para históricos.
 - Smoke HTTP/MySQL verifica persistencia y que editar no cambie `CreatedAtUtc`. Release/xUnit local **73/73**, shell syntax y diff-check pasan. Actions backend `45020146775` terminó success: migración aplicada en MySQL efímero, smoke HTTP/DB y concurrencia correctos, cleanup completo.
+
+# 2026-11-22 — Invalidación de access JWT y catálogo global de roles
+
+- Estado de usuario ahora incrementa `TokenVersion` en cada transición, incluida reactivación; una sesión anterior no puede revivir. Repetir el mismo estado no cambia la versión. Refresh tokens se revocan al desactivar.
+- Los Admin de tenant mantienen lectura de `/Roles`; POST/DELETE responden 403 porque `Roles` es catálogo global sin propietario ni rol de plataforma definido.
+- xUnit Release **74/74**. Smoke HTTP/MySQL 8 efímero pasó incluyendo token viejo 401 tras reactivación, sesión nueva 200, catálogo protegido, multi-tenant y cleanup cero residuos. Actions de este cambio pendiente.

@@ -21,7 +21,13 @@ namespace fletflow.Application.Users.Commands
             if (user == null)
                 throw new KeyNotFoundException("Usuario no encontrado.");
 
+            if (user.IsActive == isActive)
+                return;
+
             user.IsActive = isActive;
+            // Access JWT are stateless; bump the persisted version on both deactivation
+            // and reactivation so a token rejected while inactive cannot become valid again.
+            user.TokenVersion++;
             if (!isActive)
                 await _unitOfWork.RefreshTokens.RevokeAllForUserAsync(userId);
             await _unitOfWork.CommitAsync();

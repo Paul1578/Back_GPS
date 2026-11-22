@@ -76,3 +76,8 @@ Cambiar, restablecer o activar una contraseña incrementa `User.TokenVersion`, r
 - La cuenta raíz no se edita desde gestión del equipo; recursos de otra empresa responden 404.
 - User y Driver enlazados mantienen nombres sincronizados en cada sentido dentro de una única operación EF.
 - Al migrar, usuarios Driver existentes reciben nombres del perfil Driver sólo cuando los campos nuevos están vacíos.
+
+## Sesiones y catálogo de roles
+
+- Cada transición real de estado de usuario incrementa `TokenVersion`; desactivar también revoca refresh tokens. Reactivar no rehabilita access JWT emitidos previamente; el usuario debe iniciar sesión de nuevo.
+- El catálogo de Roles es global y actualmente no tiene propietario ni rol de administración de plataforma. Admin tenant puede consultarlo, pero no crear ni eliminar roles (403).

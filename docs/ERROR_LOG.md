@@ -751,3 +751,28 @@ Cada cambio de API debe incluir validación de compilación, migraciones si apli
 - Prevención: verificar timestamps a la precisión real de la columna y contrastar el valor persistido.
 
 - Resolución confirmada por Actions `45020146775`: migración y smoke MySQL pasaron, incluyendo comparación a precisión `datetime(6)` antes/después de editar.
+
+## 2026-11-22 — Access JWT revivía al reactivar cuenta — CORREGIDO LOCAL; ACTIONS PENDIENTE
+
+- Auditoría backend confirmó que desactivar sólo revocaba refresh tokens. El access JWT fallaba mientras `IsActive=false`, pero volvía a cumplir las validaciones al reactivar porque `TokenVersion` no cambiaba.
+- Solución local: incrementar `TokenVersion` en cada transición de estado; desactivación revoca refresh tokens y reactivación conserva la invalidez del token viejo. Se añadió xUnit y smoke que reutilizan el mismo JWT después de reactivar y comprueban login/token nuevos.
+- Verificación local: Release xUnit **74/74**; smoke HTTP/MySQL 8 aislado aprobado, incluido token viejo 401 después de reactivar y nuevo JWT 200; cleanup verificado. Falta Actions en el SHA de esta corrección.
+- Prevención: probar el access token antes/durante/después de reactivar, no sólo el refresh token al desactivar.
+
+## 2026-11-22 — Admin de tenant podía mutar catálogo global de Roles — CORREGIDO LOCAL; ACTIONS PENDIENTE
+
+- `Roles` es tabla global sin owner y el API autorizaba `POST`/`DELETE` a cualquier rol Admin tenant. El frontend no consume esas mutaciones y no existe rol/endpoint de administrador de plataforma.
+- Solución local: conservar `GET /Roles` y devolver 403 a mutaciones tenant para evitar que una empresa altere roles compartidos. Smoke HTTP verifica el contrato sin crear ni borrar roles.
+- Verificación local: incluido en smoke MySQL 8 aprobado; Actions de este SHA pendiente.
+
+## 2026-11-22 — Inspección usó rutas/nombres de archivo supuestos — CORREGIDO
+
+- Varias lecturas iniciales apuntaron a `IUnitOfWork.cs`, `DriversController.cs`/`UpdateDriverCommand.cs` en carpetas que no correspondían y una búsqueda de archivos backend se ejecutó desde el checkout Front. `sed`/`rg` informaron IO error; no se alteraron archivos.
+- Solución: volver a ejecutar cada consulta desde el repositorio correspondiente y descubrir los paths reales mediante `rg --files` antes de leer.
+- Prevención: comprobar `workdir`/repositorio al agrupar comandos y no inferir la ruta a partir del nombre de clase.
+
+## 2026-11-22 — Parche de smoke no encontró ancla de login — CORREGIDO
+
+- Un parche esperaba una etiqueta de login que no coincidía con el script (`Login tenant A`); `apply_patch` rechazó el cambio íntegro, sin modificar archivos.
+- Solución: localizar la sección exacta con `rg`/`sed` y volver a aplicar cambios con las anclas existentes.
+- Prevención: comprobar el contexto vigente antes de redactar el parche.

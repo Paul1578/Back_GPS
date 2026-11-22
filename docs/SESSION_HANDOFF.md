@@ -344,3 +344,12 @@ Errores de migración, herramientas, QA y soluciones están en `docs/ERROR_LOG.m
 - Error del primer run `45019828759` documentado y resuelto normalizando a microsegundos según `datetime(6)`.
 - Front `cacb72e` ya publicado; Actions integrada `45020301540` ejecuta audit/lint/build, responsive y E2E Chrome/API/MySQL. Revisar resultado antes de cerrar fecha real en frontend.
 - Continúa pendiente política de Admin delegado; trabajar brechas independientes.
+
+## Seguridad: rotación de access JWT y Roles globales — 2026-11-22
+
+- Auditoría independiente encontró access JWT que podía revivir tras reactivar una cuenta: `UpdateUserCommand` revocaba refresh al desactivar, pero no cambiaba `TokenVersion`. Se corrigió incrementando la versión en cada transición efectiva; repetir estado no la cambia.
+- `RolesController` permitía POST/DELETE a Admin de tenant sobre tabla global. No existe rol de plataforma y Front no consume mutaciones; GET queda disponible y POST/DELETE ahora deniegan 403.
+- xUnit Release **74/74**; API + MySQL 8 efímero pasó `smoke-tenant-http.sh`, incluyendo mismo token viejo 401 post-reactivación y nuevo login 200, y protecciones Roles. Cleanup verificado cero rutas/posiciones/vehículos; contenedor debe detenerse al finalizar sesión.
+- Actions backend de este SHA aún pendiente. Código actual en cambios locales: `UpdateUserCommand.cs`, `RolesController.cs`, `UpdateUserCommandTests.cs`, `smoke-tenant-http.sh`.
+- Auditoría Front independiente encontró brechas del formulario/selector duplicado en TeamManagement; se está agregando validación y filtrado y el E2E API/MySQL correspondiente.
+- La política de promoción a Admin delegado sigue pendiente de respuesta; no cambiar esa regla.

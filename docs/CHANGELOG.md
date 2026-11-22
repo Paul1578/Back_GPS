@@ -339,3 +339,4 @@
 - El test del rate limit fuerza solapamiento real de 200 solicitudes; verifica 60 aceptadas y 140 rechazadas por la misma IP.
 - Se permite mantener el certificado anterior como fallback de descifrado durante rotación; el actual protege las claves nuevas. Se añadieron pruebas de payload previo y nuevo.
 - Tests Release 86/86, build Release 0 warnings/0 errors. Actions backend del commit resultante pendiente.
+- Backend `b664b2c` pasó Actions `45040550853`: xUnit 86/86, Release build, smoke HTTP/MySQL de tenant y concurrencia, cleanup success.

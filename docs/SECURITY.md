@@ -165,3 +165,4 @@ El smoke anónimo solicitó rol Admin en el registro; la fila persistida conserv
 - No retirar ni destruir el certificado anterior mientras existan claves/payloads protegidos con él en el key ring. Los PFX y contraseñas se provisionan mediante secretos de despliegue y nunca se versionan. `.env.example` contiene únicamente nombres vacíos.
 - La prueba de rotación conserva key ring y payload generados con el certificado anterior, abre un provider con actual + anterior, descifra el payload anterior y protege/descifra un payload nuevo.
 - La regresión de rotación valida certificado anterior para lectura y certificado actual para claves nuevas; backend local Release **86/86** y build **0 warnings/0 errores**. Actions del nuevo commit pendiente.
+- Actions `45040550853` validó Backend `b664b2c`: Release build, xUnit **86/86**, aislamiento HTTP/MySQL, concurrencia de asignación y cleanup success.

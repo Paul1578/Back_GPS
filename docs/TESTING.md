@@ -444,7 +444,8 @@ La invitación envía sólo el enlace de activación; el usuario fija su contras
 - `DataProtectionKeyRingTests.CertificateRotation_PreviousCertificateCanDecryptExistingKeyRingAndPayload` crea key ring/payload con certificado anterior; un provider configurado con certificado actual + anterior descifra el payload legado, crea una clave nueva y valida el round-trip nuevo. Comprueba `<encryptedSecret` en ambos archivos y limpia el directorio temporal en `finally`.
 - La prueba enfocada de rotación pasó 1/1; pruebas de rotación y rate limit concurrente 2/2; suite Release **86/86**; build Release **0 warnings/0 errors**.
 - Suite local: `/home/leonardo/.dotnet/dotnet test BackEnd_Gps.sln --configuration Release --no-restore`; build: `/home/leonardo/.dotnet/dotnet build BackEnd_Gps.sln --configuration Release --no-restore -m:1`.
-- Integración cruzada Front `45039605708` usó Backend `b625c28`: xUnit 86/86, E2E API/MySQL Front 23/23, responsive/audit/lint/build y cleanup success. La configuración de rotación y su nueva prueba aún requieren Actions backend del commit resultante.
+- Front Actions `45039605708` usó Backend `b625c28`: xUnit 86/86, E2E API/MySQL Front 23/23, responsive/audit/lint/build y cleanup success.
+- Backend `b664b2c`, Actions `45040550853`: build Release, xUnit **86/86**, aislamiento HTTP/MySQL, concurrencia de rutas y cleanup success. Esta corrida valida la prueba de rotación/concurrencia y el wiring de configuración del backend.
 
 ## Regresiones de concurrencia y rotación de certificados — 2026-11-22
 

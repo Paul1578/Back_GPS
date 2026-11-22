@@ -377,4 +377,4 @@ Nota de actualización: algunos resultados históricos de registro público más
 - Rate limit: prueba sincroniza 200 solicitudes concurrentes por una IP, comprueba solapamiento y resultado 60/140.
 - Data Protection: certificado previo opcional para descifrar key ring rotado; certificado actual sigue cifrando claves nuevas. Variables documentadas: `FLETFLOW_DATA_PROTECTION_PREVIOUS_CERT_PATH` y `FLETFLOW_DATA_PROTECTION_PREVIOUS_CERT_PASSWORD`.
 - Test de rotación cubre payload anterior y round-trip de payload nuevo con provider actual + anterior; no escribe XML cifrado a logs.
-- Tests enfocados pasaron 2/2; rotación aislada 1/1; suite Release **86/86**; build Release **0 warnings/0 errors**. `git diff --check` limpio. Commit/Actions de esta subtarea aún pendientes; sin push y sin cambios de roles.
+- Tests enfocados pasaron 2/2; rotación aislada 1/1; suite Release **86/86**; build Release **0 warnings/0 errores**. Actions `45040550853` pasó con HTTP/MySQL isolation, concurrencia de rutas y cleanup. Commit `b664b2c`; roles sin cambios.

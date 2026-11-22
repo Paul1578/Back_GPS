@@ -578,12 +578,12 @@ Errores de migración, herramientas, QA y soluciones están en `docs/ERROR_LOG.m
 
 ## Continuación — validación de Vehicle y colisiones únicas
 
-- Código/tests locales en `chore/stabilize-fleet-platform`: DataAnnotations y reglas comunes (Plate 20, Brand/Model 100, Description 1000, Year 1900–2100) en Create/Update Vehicle; mapeo condicional `DbUpdateException` a conflicto sólo al confirmar la placa existente; pruebas Create/Update con colisión concurrente y límite inválido.
-- Primera invocación de dotnet fue al host roto `/usr/bin/dotnet`; usar `DOTNET_ROOT=/home/leonardo/.dotnet /home/leonardo/.dotnet/dotnet`. Test Release en curso. Después correr build, pruebas HTTP/MySQL de límites, documentar, commit/push y verificar Action.
+- Backend commit `adcc286` publicado en `chore/stabilize-fleet-platform`: DataAnnotations y reglas comunes (Plate 20, Brand/Model 100, Description 1000, Year 1900–2100) en Create/Update Vehicle; mapeo condicional `DbUpdateException` a conflicto sólo al confirmar placa existente; pruebas Create/Update con colisión concurrente y límite inválido.
+- Release local 103/103 y build 0 warnings/0 errors con `DOTNET_ROOT=/home/leonardo/.dotnet`. Action backend `45063399400` sigue en progreso e incluye HTTP/MySQL smoke para rangos y duplicados. El host `/usr/bin/dotnet` roto está documentado en `ERROR_LOG.md`.
 
 ## Continuación — límites de vehículo y carrera de placa
 
 - Auditoría backend read-only detectó límites de Vehicle ausentes y colisión índice único no traducida. Create/Update request usan DataAnnotations; comandos normalizan/validan igual en aplicación (Plate 20, Brand/Model 100, Description 1000, Year 1900–2100). `DbUpdateException` sólo se traduce a conflicto si la reconsulta confirma placa de otro vehículo.
 - Se extendió `VehicleCommandTests` para input inválido, create race y update race; smoke HTTP/MySQL verifica 400 y 409 con persistencia de la placa original intacta.
 - Primera suite Release fue **102/103**: el fake de Update devolvía misma instancia mutable. Fake ajustado a copia no rastreada; suite **103/103**, build **0 warnings/0 errors**, bash -n/diff-check pasan con `/home/leonardo/.dotnet`.
-- Pendiente commit/push y Action para probar smoke en MySQL real desechable. No olvidar revisión P3 cambio rol a Driver con cuenta inactiva y seguridad restante.
+- Commit/push hecho; Action `45063399400` debe confirmar smoke en MySQL real desechable. Siguiente revisión P3: cambio rol a Driver con cuenta inactiva, más pendientes de seguridad.

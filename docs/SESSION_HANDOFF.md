@@ -555,3 +555,9 @@ Errores de migración, herramientas, QA y soluciones están en `docs/ERROR_LOG.m
 - Validación: CreateRouteCommandTests 10/10, bash -n y diff-check. Falta suite Release, build, smokes HTTP/API MySQL y Actions.
 - Error del patrón shell con backticks documentado en ERROR_LOG; no hubo cambios ni datos tocados.
 - No cerrar misión. Después validar Front actualizado en CI integrada. Admin delegado sin respuesta; SMTP/PFX/despliegue externos.
+
+## Reintento requerido — fixture HTTP de activate/reset
+
+- Action backend 45060482906 validó build y xUnit 100/100, pero falló tenant smoke con suffix unbound variable. Ya se movió inicialización del sufijo al comienzo de scripts/smoke-tenant-http.sh.
+- Bash syntax y diff-check se deben repetir. Publicar corrección y confirmar Actions: activate/reset, edición con Driver vinculado inactivo, concurrencia y cleanup.
+- El Front 526c07b sigue en Actions 45060482928; verificar su resultado y si valida la rama backend actual.

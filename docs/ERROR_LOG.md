@@ -1056,3 +1056,9 @@ Cada cambio de API debe incluir validación de compilación, migraciones si apli
 - El primer intento de generar apéndices usó APIs de codificación ausentes en el runtime de orquestación y no escribió archivos. Se volvió a ejecutar con heredocs quoted y delimitadores dedicados.
 - Una invocación de dotnet test/build usó Back_Gps.sln, archivo inexistente; MSBuild devolvió MSB1009 antes de compilar. Se repitió con el nombre real BackEnd_Gps.sln: suite 100/100 y build Release sin warnings/errores.
 - Prevención: confirmar el nombre exacto con listado de archivos del repo antes de correr MSBuild; revisar rutas/casing en proyectos Linux.
+
+## 2026-11-22 — Smoke de recuperación usó suffix antes de inicializar — CORREGIDO
+
+- Action 45060482906 pasó build y xUnit 100/100, pero el smoke tenant se detuvo en la línea 429: suffix unbound variable por set -u. Los nuevos escenarios activate/reset quedaron antes de la inicialización que históricamente estaba en línea 497.
+- Corrección: inicializar suffix junto a work_dir al inicio del smoke para que todos los fixtures puedan reutilizarlo. La falla sucedió antes de crear los usuarios de activate/reset; el runner continuó cleanup y destruyó contenedores.
+- Prevención: mover estado compartido del script al bloque de inicialización, antes de su primer uso; bash -n no detecta variables no definidas en ejecución.

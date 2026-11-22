@@ -438,3 +438,8 @@ Nota de actualización: algunos resultados históricos de registro público más
 - Test focal CreateRouteCommandTests 10/10; bash syntax y diff-check correctos. Falta suite Release completa, API/MySQL efímera y Actions.
 - Admin delegado sin decisión de producto. SMTP/PFX/infra productiva externas; móvil nativo aplazado.
 - Misión integral abierta.
+
+## CI más reciente — 2026-11-22
+
+- Backend 53e2edc: Release build y xUnit 100/100 correctos. Action 45060482906 falló en smoke HTTP porque suffix estaba declarado después de usarlo. Corrección trasladada al inicio del script; nueva Action pendiente.
+- No marcar terminada esta tanda hasta que MySQL smoke complete y cleanup quede verde.

@@ -34,6 +34,7 @@ if [[ -z "${MYSQL_PWD:-}" ]]; then
 fi
 
 work_dir="$(mktemp -d)"
+suffix="$(date +%s%N | tail -c 10)"
 token=""
 route_id=""
 maintenance_route_id=""
@@ -494,7 +495,6 @@ jq -e 'type == "array" and length == 0' "$work_dir/response.json" >/dev/null || 
   exit 1
 }
 
-suffix="$(date +%s%N | tail -c 10)"
 email_local_prefix="fletflow$suffix"
 email_local_padding=$((187 - ${#email_local_prefix}))
 restricted_user_email="$(printf '%*s' "$email_local_padding" '' | tr ' ' a)${email_local_prefix}@example.test"

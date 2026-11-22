@@ -1,7 +1,7 @@
-## 2026-11-22 — Smoke no cubría vínculo manual User/Driver — CUBIERTO LOCAL; ACTION PENDIENTE
+## 2026-11-22 — Smoke no cubría vínculo manual User/Driver — CORREGIDO Y VALIDADO
 
 - Backend ya permitía crear primero una cuenta User, cambiarla a rol Driver y luego crear su perfil operativo con `userId`; el smoke sólo probaba creación conjunta y no detectaba regresiones de ese flujo separado.
-- Se añadió verificación por HTTP (`GET /Drivers/{id}`, `GET /Users/my-team`) y SQL de vínculo/tenant/cardinalidad, además de limpieza Driver→User y consulta final 0:0. Smoke MySQL 8/API efímeros completo exit 0.
+- Se añadió verificación por HTTP (`GET /Drivers/{id}`, `GET /Users/my-team`) y SQL de vínculo/tenant/cardinalidad, además de limpieza Driver→User y consulta final 0:0. Smoke MySQL 8/API efímeros completo exit 0. Action `45069402482` pasó build/xUnit 107/107, smoke y cleanup.
 - No existe endpoint HTTP para desvincular conservando ambos registros. Se documenta como capacidad pendiente de definición y no se simula.
 - Prevención: cubrir creación conjunta y asociación manual de perfiles operativos al probar reglas de usuarios/roles.
 

@@ -3,7 +3,7 @@
 - Smoke API + MySQL 8 descartables: crea User (`POST /Users`, `roleName=User`), confirma `driverId=null`, cambia rol a Driver, crea perfil con `userId` y confirma el vínculo con GET Driver, `GET /Users/my-team` y SQL (`UserId`, tenant, documento y cardinalidad 1).
 - PUT Vehicle inválido por año 2101/placa de 21; POST Driver inválido por nombre requerido/documento/teléfono de 21; PUT Driver inválido por apellido requerido/documento/teléfono de 21. Cada request responde 400 y SQL confirma sin mutación/alta parcial.
 - Ejecución completa `SMOKE_COMPLETO_OK`, cleanup verificó **0 Driver/0 User** del vínculo manual, cero fixtures de Manager y tenant A/B; contenedor/API locales detenidos. `bash -n`/diff-check pasan.
-- Action `45068547990` pasó build Release, xUnit 107/107, aislamiento HTTP/MySQL y concurrencia para el lote previo de pruebas negativas; incluir vínculo manual y cleanup en la Action nueva.
+- Action `45069402482` pasó build Release, xUnit **107/107**, aislamiento HTTP/MySQL, concurrencia y cleanup. La salida verifica vínculo manual persistido, 400 sin mutaciones y limpieza explícita `0 Driver/0 User`.
 - No hay endpoint HTTP de desvinculación conservando cuenta y perfil; definición funcional solicitada.
 
 # CRUD Driver como Manager con aislamiento de fixtures — validado local — 2026-11-22

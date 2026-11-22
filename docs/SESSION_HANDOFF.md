@@ -3,7 +3,7 @@
 - Smoke crea User normal, valida `driverId=null`, lo promociona a Driver, crea luego el perfil con `userId` y comprueba GET Driver, `my-team` y columnas SQL/tenant.
 - Pruebas negativas de PUT Vehicle/Driver y POST Driver exigen HTTP 400 y snapshot SQL idéntico/sin fila.
 - MySQL/API 8 descartables: `SMOKE_COMPLETO_OK`; cleanup explícito cero User/Driver manual y cero fixtures restantes; script syntax/diff-check correctos. El Action previo pasó antes de esta ampliación.
-- Pendiente: commit/push y Action de backend para ambas ampliaciones.
+- Commit backend `16c8b1a` publicado en la rama. Action `45069402482` pasó build Release, xUnit **107/107**, smoke tenant HTTP/MySQL, concurrencia y cleanup, incluido el fixture manual.
 - El backend no soporta desvincular manteniendo User y Driver; pregunta funcional enviada. Segunda pregunta enviada: rol habilitado para otorgar Admin. Esperar respuestas y continuar cambios independientes.
 
 # Continuación — validaciones negativas CRUD Driver/Vehicle — 2026-11-22

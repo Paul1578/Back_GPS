@@ -2,13 +2,13 @@
 
 - El smoke crea un User normal, confirma que no tenga `driverId`, cambia su rol a Driver y crea después el perfil enlazándolo con `userId`.
 - `GET /Drivers/{id}`, `GET /Users/my-team` y SQL confirman relación única y propietario del tenant; cleanup explícito verifica **0 Driver/0 User**.
-- MySQL 8/API efímeros: smoke completo exit 0. No hay endpoint HTTP para desvincular conservando ambos registros; se pidió definición de producto.
+- MySQL 8/API efímeros: smoke completo exit 0. Action `45069402482` pasó build Release, xUnit 107/107, aislamiento HTTP/MySQL, concurrencia y cleanup explícito 0:0. No hay endpoint HTTP para desvincular conservando ambos registros; se pidió definición de producto.
 
 # 2026-11-22 — Pruebas HTTP negativas de CRUD Vehicle/Driver
 
 - `smoke-tenant-http.sh` ahora envía datos inválidos a edición Vehicle, alta Driver y edición Driver.
 - Verifica HTTP 400 para campos requeridos vacíos, año inválido y límites de 20 caracteres de placa/documento/teléfono; consulta MySQL antes/después y exige cero mutaciones o filas nuevas.
-- Smoke completo pasó en MySQL 8 efímero con cleanup en cero; `bash -n` y `git diff --check` correctos. Sin cambios de código de producto. Action para este cambio pendiente.
+- Smoke completo pasó en MySQL 8 efímero con cleanup en cero; `bash -n` y `git diff --check` correctos. Sin cambios de código de producto. Action `45069402482` validó pruebas negativas y vínculo manual; build Release y xUnit 107/107.
 
 ## 2026-11-22 — Logout limitado al dueño del refresh token
 

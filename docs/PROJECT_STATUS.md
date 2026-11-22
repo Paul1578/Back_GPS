@@ -2,7 +2,7 @@
 
 - Smoke crea la cuenta User, la convierte al rol Driver y vincula después su perfil por `userId`; respuesta Driver, equipo y SQL verifican asociación única y tenant.
 - CRUD inválido Vehicle/Driver responde 400 sin mutaciones. Smoke MySQL 8/API efímeros completo exit 0, cleanup confirma cero fixture manual.
-- Action `45068547990` pasó Release/xUnit 107/107, aislamiento HTTP/MySQL y concurrencia antes de esta ampliación; nueva Action pendiente.
+- Action `45069402482` pasó Release/xUnit **107/107**, aislamiento HTTP/MySQL, concurrencia y cleanup del flujo manual `0:0`.
 - No existe endpoint HTTP para desvincular User/Driver preservando ambos. Política de Admin delegado y necesidad de esa desvinculación están consultadas al usuario; no alterar hasta respuesta.
 
 

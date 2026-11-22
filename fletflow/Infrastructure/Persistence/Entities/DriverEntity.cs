@@ -13,5 +13,6 @@ namespace fletflow.Infrastructure.Persistence.Entities
         public VehicleEntity? Vehicle { get; set; }
 
         public Guid? UserId { get; set; }
+        public Guid? OwnerUserId { get; set; }
     }
 }

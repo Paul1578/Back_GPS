@@ -61,8 +61,8 @@ namespace fletflow.Application.Auth.Commands.ResetPassword
             // Marcar token como usado solo despues de actualizar la contrasena
             await _passwordResetTokenRepository.MarkUsedAsync(resetToken.Id);
 
-            // Opcional: revocar refresh tokens si quieres expulsar sesiones activas
-            // await _refreshTokenRepository.RevokeAllForUserAsync(user.Id);
+            // Un cambio de contraseña debe invalidar sesiones anteriores.
+            await _refreshTokenRepository.RevokeAllForUserAsync(user.Id);
 
             await _unitOfWork.CommitAsync();
         }

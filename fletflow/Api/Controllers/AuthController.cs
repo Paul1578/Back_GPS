@@ -15,12 +15,14 @@ namespace fletflow.Api.Controllers
     public class AuthController : ControllerBase
     {
         private readonly AuthService _authService;
+        private readonly IUserRegistrationService _registrationService;
         private readonly IEmailSender _emailService;
         private readonly ActivateAccountCommand _activateAccountCommand;
 
-        public AuthController(AuthService authService, IEmailSender emailService, ActivateAccountCommand activateAccountCommand)
+        public AuthController(AuthService authService, IUserRegistrationService registrationService, IEmailSender emailService, ActivateAccountCommand activateAccountCommand)
         {
             _authService = authService;
+            _registrationService = registrationService;
             _emailService = emailService;
             _activateAccountCommand = activateAccountCommand;
         }
@@ -37,7 +39,9 @@ namespace fletflow.Api.Controllers
         public async Task<IActionResult> Register([FromBody] RegisterUserDto dto)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
-            var response = await _authService.RegisterAsync(dto.Username, dto.Email, dto.Password, dto.RoleName);
+            // El registro público nunca acepta roles enviados por el cliente.
+            // Los roles operativos se asignan desde la administración autenticada.
+            var response = await _registrationService.RegisterAsync(dto.Username, dto.Email, dto.Password, "User");
             return Ok(response);
         }
 
@@ -215,7 +219,7 @@ namespace fletflow.Api.Controllers
         /// <response code="200">Correo de prueba enviado.</response>
         /// <response code="400">Email de destino no proporcionado.</response>
         [HttpGet("test-email")]
-        [AllowAnonymous]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> TestEmail([FromQuery] string to)
         {
             if (string.IsNullOrWhiteSpace(to))

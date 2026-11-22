@@ -27,21 +27,26 @@ using fletflow.Application;
 using FluentValidation;
 using FluentValidation.AspNetCore;
 
-Env.Load();
+// Values injected by the process/deployment environment must take precedence over
+// the local .env file (CI and production supply their own database/JWT settings).
+Env.NoClobber().Load();
 
 var builder = WebApplication.CreateBuilder(args);
+builder.Services.AddHttpContextAccessor();
 
 // =====================
 // DB (.env)
 // =====================
-var host = Environment.GetEnvironmentVariable("DB_HOST");
-var port = Environment.GetEnvironmentVariable("DB_PORT");
-var db   = Environment.GetEnvironmentVariable("DB_NAME");
-var user = Environment.GetEnvironmentVariable("DB_USER");
-var pass = Environment.GetEnvironmentVariable("DB_PASSWORD");
+static string RequiredEnvironment(string name) =>
+    Environment.GetEnvironmentVariable(name) is { Length: > 0 } value
+        ? value
+        : throw new InvalidOperationException($"Falta la variable de entorno requerida: {name}.");
 
-if (string.IsNullOrEmpty(host))
-    throw new Exception("Variables de entorno de BD no cargadas (.env)");
+var host = RequiredEnvironment("DB_HOST");
+var port = RequiredEnvironment("DB_PORT");
+var db = RequiredEnvironment("DB_NAME");
+var user = RequiredEnvironment("DB_USER");
+var pass = RequiredEnvironment("DB_PASSWORD");
 
 var connectionString =
     $"Server={host};Port={port};Database={db};User={user};Password={pass};TreatTinyAsBoolean=false;";
@@ -63,6 +68,7 @@ builder.Services.AddScoped<PasswordResetTokenFactory>();
 
 builder.Services.AddScoped<JwtTokenService>();
 builder.Services.AddScoped<AuthService>();
+builder.Services.AddScoped<IUserRegistrationService>(services => services.GetRequiredService<AuthService>());
 builder.Services.AddScoped<IEmailSender, EmailService>();
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 
@@ -99,8 +105,11 @@ builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("Emai
 builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("Jwt"));
 var jwtSettings = builder.Configuration.GetSection("Jwt").Get<JwtSettings>();
 
-if (jwtSettings == null || string.IsNullOrWhiteSpace(jwtSettings.Key))
-    throw new Exception("JWT key is not properly configured.");
+if (jwtSettings == null ||
+    Encoding.UTF8.GetByteCount(jwtSettings.Key) < 32 ||
+    string.IsNullOrWhiteSpace(jwtSettings.Issuer) ||
+    string.IsNullOrWhiteSpace(jwtSettings.Audience))
+    throw new InvalidOperationException("JWT key (mínimo 32 bytes), emisor y audiencia deben estar configurados.");
 
 var key = Encoding.UTF8.GetBytes(jwtSettings.Key);
 
@@ -136,8 +145,12 @@ builder.Services.AddControllers()
 
 builder.Services.AddCors(o =>
 {
+    var allowedOrigins = builder.Configuration
+        .GetSection("Cors:AllowedOrigins")
+        .Get<string[]>() ?? new[] { "http://localhost:3000" };
+
     o.AddPolicy("Front", p => p
-        .AllowAnyOrigin()
+        .WithOrigins(allowedOrigins)
         .AllowAnyHeader()
         .AllowAnyMethod());
 });
@@ -194,7 +207,13 @@ if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
-    app.UseCors("Front");
+}
+app.UseCors("Front");
+
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHsts();
+    app.UseHttpsRedirection();
 }
 
 using (var scope = app.Services.CreateScope())
@@ -202,8 +221,6 @@ using (var scope = app.Services.CreateScope())
     var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     await DbSeeder.SeedAsync(dbContext);
 }
-
-//app.UseHttpsRedirection();
 
 app.UseMiddleware<SimpleRateLimitMiddleware>();
 app.UseMiddleware<HeaderValidationMiddleware>();

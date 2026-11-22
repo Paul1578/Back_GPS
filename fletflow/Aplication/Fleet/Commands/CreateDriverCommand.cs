@@ -24,7 +24,8 @@ namespace fletflow.Application.Fleet.Commands
             string lastName,
             string documentNumber,
             string phoneNumber,
-            Guid? userId = null)
+            Guid? userId = null,
+            Guid? ownerUserId = null)
         {
             documentNumber = documentNumber.Trim();
 
@@ -36,6 +37,12 @@ namespace fletflow.Application.Fleet.Commands
             {
                 var user = await _uow.Users.GetByIdAsync(userId.Value)
                     ?? throw new KeyNotFoundException("User not found to link as driver.");
+
+                if (!user.IsActive)
+                    throw new InvalidOperationException("No se puede vincular un usuario inactivo como conductor.");
+
+                if (!ownerUserId.HasValue || (user.OwnerUserId ?? user.Id) != ownerUserId.Value)
+                    throw new KeyNotFoundException("User not found to link as driver.");
 
                 var driverForUser = await _drivers.GetByUserIdAsync(userId.Value);
                 if (driverForUser is not null)

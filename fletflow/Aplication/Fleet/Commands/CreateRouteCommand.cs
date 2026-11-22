@@ -46,8 +46,27 @@ namespace fletflow.Application.Fleet.Commands
             if (!vehicle.IsActive)
                 throw new InvalidOperationException("Cannot create a route with an inactive vehicle.");
 
+            if (vehicle.Status != VehicleStatus.Available)
+                throw new InvalidOperationException("El vehículo debe estar disponible para asignarlo a una ruta.");
+
             if (!driver.IsActive)
                 throw new InvalidOperationException("Cannot create a route with an inactive driver.");
+
+            if (driver.UserId.HasValue)
+            {
+                var linkedUser = await _uow.Users.GetByIdAsync(driver.UserId.Value);
+                if (linkedUser is null || !linkedUser.IsActive)
+                    throw new InvalidOperationException("No se puede crear una ruta con un conductor cuyo usuario está inactivo.");
+            }
+
+            if (plannedStart.HasValue && plannedEnd.HasValue && plannedEnd <= plannedStart)
+                throw new ArgumentException("La fecha final debe ser posterior a la fecha inicial.", nameof(plannedEnd));
+
+            var activeVehicleRoutes = await _routes.GetAllAsync(vehicleId: vehicleId, onlyActive: true);
+            var activeDriverRoutes = await _routes.GetAllAsync(driverId: driverId, onlyActive: true);
+            if (HasScheduleConflict(activeVehicleRoutes, plannedStart, plannedEnd) ||
+                HasScheduleConflict(activeDriverRoutes, plannedStart, plannedEnd))
+                throw new InvalidOperationException("El vehículo o conductor ya tiene una ruta activa en ese horario.");
 
             var pointsList = points?.ToList() ?? new List<RoutePoint>();
             if (pointsList.Count < 2)
@@ -65,10 +84,25 @@ namespace fletflow.Application.Fleet.Commands
                 plannedEnd
             );
 
+            // La asignación de vehículo y la creación de la ruta comparten el mismo commit.
+            if (driver.VehicleId != vehicleId)
+            {
+                driver.AssignToVehicle(vehicleId);
+                await _drivers.UpdateAsync(driver);
+            }
+
             await _routes.AddAsync(route);
             await _uow.CommitAsync();
 
             return RouteApplicationMapper.ToDto(route);
+        }
+
+        private static bool HasScheduleConflict(IEnumerable<RouteE> routes, DateTime? start, DateTime? end)
+        {
+            return routes.Any(existing =>
+                existing.Status is RouteStatus.Pending or RouteStatus.InProgress &&
+                (!start.HasValue || !end.HasValue || !existing.PlannedStart.HasValue || !existing.PlannedEnd.HasValue ||
+                 start.Value < existing.PlannedEnd.Value && existing.PlannedStart.Value < end.Value));
         }
     }
 }

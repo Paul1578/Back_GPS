@@ -24,10 +24,6 @@ namespace fletflow.Infrastructure.Persistence.Repositories
             var entity = await _context.PasswordResetTokens
                 .AsNoTracking()
                 .FirstOrDefaultAsync(x => x.TokenHash == hash);
-            if (entity is null)
-            {
-                Console.WriteLine($"[ResetPasswordRepo] Token no encontrado. normalized={normalized} hash={hash}");
-            }
             return entity is null ? null : PasswordResetTokenMapper.ToDomain(entity);
         }
 
@@ -36,10 +32,6 @@ namespace fletflow.Infrastructure.Persistence.Repositories
             var entity = await _context.PasswordResetTokens
                 .AsNoTracking()
                 .FirstOrDefaultAsync(x => x.TokenHash == tokenHash);
-            if (entity is null)
-            {
-                Console.WriteLine($"[ResetPasswordRepo] Token no encontrado por hash={tokenHash}");
-            }
             return entity is null ? null : PasswordResetTokenMapper.ToDomain(entity);
         }
 

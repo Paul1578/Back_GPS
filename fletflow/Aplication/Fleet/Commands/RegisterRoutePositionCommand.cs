@@ -36,6 +36,9 @@ namespace fletflow.Application.Fleet.Commands
             if (!route.IsActive)
                 throw new InvalidOperationException("No se puede registrar posiciones en una ruta inactiva.");
 
+            if (route.Status != RouteStatus.InProgress)
+                throw new InvalidOperationException("Solo se pueden registrar posiciones mientras la ruta está en progreso.");
+
             var position = RoutePosition.Create(
                 routeId,
                 latitude,

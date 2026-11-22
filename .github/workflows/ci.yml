@@ -10,6 +10,20 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: fletflow_ci_root
+          MYSQL_DATABASE: fletflow_ci
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -pfletflow_ci_root"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=12
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -20,7 +34,69 @@ jobs:
           dotnet-version: "8.0.x"
 
       - name: Restore dependencies
-        run: dotnet restore
+        run: dotnet restore BackEnd_Gps.sln
 
       - name: Build
-        run: dotnet build --configuration Release --no-restore
+        run: dotnet build BackEnd_Gps.sln --configuration Release --no-restore
+
+      - name: Test
+        run: dotnet test BackEnd_Gps.sln --configuration Release --no-build --no-restore
+
+      - name: Install MySQL client and jq
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y default-mysql-client jq
+
+      - name: Create one-run API credentials
+        shell: bash
+        run: |
+          admin_email="fletflow.e2e.admin.ci.${GITHUB_RUN_ID}.${GITHUB_RUN_ATTEMPT}@example.test"
+          admin_password="$(openssl rand -hex 32)"
+          jwt_key="$(openssl rand -hex 48)"
+          echo "::add-mask::$admin_password"
+          echo "::add-mask::$jwt_key"
+          {
+            echo "DB_HOST=127.0.0.1"
+            echo "DB_PORT=3306"
+            echo "DB_NAME=fletflow_ci"
+            echo "DB_USER=root"
+            echo "DB_PASSWORD=fletflow_ci_root"
+            echo "MYSQL_ROOT_PASSWORD=fletflow_ci_root"
+            echo "MYSQL_PWD=fletflow_ci_root"
+            echo "MYSQL_HOST=127.0.0.1"
+            echo "MYSQL_USER=root"
+            echo "FLETFLOW_API_URL=http://127.0.0.1:5048/api"
+            echo "FLETFLOW_E2E_ADMIN_EMAIL=$admin_email"
+            echo "FLETFLOW_E2E_ADMIN_PASSWORD=$admin_password"
+            echo "FLETFLOW_BOOTSTRAP_ADMIN_EMAIL=$admin_email"
+            echo "FLETFLOW_BOOTSTRAP_ADMIN_PASSWORD=$admin_password"
+            echo "FLETFLOW_E2E_ALLOW_MUTATIONS=true"
+            echo "ASPNETCORE_ENVIRONMENT=Development"
+            echo "ASPNETCORE_URLS=http://127.0.0.1:5048"
+            echo "Jwt__Key=$jwt_key"
+            echo "Jwt__Issuer=fletflow.ci"
+            echo "Jwt__Audience=fletflow.ci"
+          } >> "$GITHUB_ENV"
+
+      - name: Start API against disposable MySQL
+        run: |
+          dotnet ./bin/Release/net8.0/BackEnd_Gps.dll > "$RUNNER_TEMP/fletflow-api.log" 2>&1 &
+          echo $! > "$RUNNER_TEMP/fletflow-api.pid"
+          for attempt in $(seq 1 60); do
+            if curl --fail --silent http://127.0.0.1:5048/swagger/index.html >/dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+          cat "$RUNNER_TEMP/fletflow-api.log"
+          exit 1
+
+      - name: Verify tenant isolation through HTTP and MySQL
+        run: bash scripts/smoke-tenant-http.sh
+
+      - name: Stop API
+        if: always()
+        run: |
+          if [[ -f "$RUNNER_TEMP/fletflow-api.pid" ]]; then
+            kill "$(cat "$RUNNER_TEMP/fletflow-api.pid")" 2>/dev/null || true
+          fi

@@ -4,6 +4,7 @@ using fletflow.Infrastructure.Persistence.Context;
 using fletflow.Infrastructure.Persistence.Entities;
 using fletflow.Infrastructure.Persistence.Mappings;
 using Microsoft.EntityFrameworkCore;
+using System.Linq;
 
 namespace fletflow.Infrastructure.Persistence.Repositories
 {
@@ -50,6 +51,19 @@ namespace fletflow.Infrastructure.Persistence.Repositories
             }
 
             var entities = await query.ToListAsync();
+            return entities.Select(FleetMapper.ToDomain).ToList();
+        }
+
+        public async Task<List<Vehicle>> GetByIdsAsync(IReadOnlyCollection<Guid> ids)
+        {
+            if (ids.Count == 0)
+                return new List<Vehicle>();
+
+            var entities = await _context.Vehicles
+                .AsNoTracking()
+                .Where(vehicle => ids.Contains(vehicle.Id))
+                .ToListAsync();
+
             return entities.Select(FleetMapper.ToDomain).ToList();
         }
 

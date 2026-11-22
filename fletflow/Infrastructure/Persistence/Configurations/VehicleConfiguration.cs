@@ -16,8 +16,8 @@ namespace fletflow.Infrastructure.Persistence.Configurations
                 .IsRequired()
                 .HasMaxLength(20);
 
-            builder.HasIndex(v => v.Plate)
-                .IsUnique(); // Unicidad de placa
+            builder.HasIndex(v => new { v.OwnerUserId, v.Plate })
+                .IsUnique();
 
             builder.Property(v => v.Brand)
                 .IsRequired()

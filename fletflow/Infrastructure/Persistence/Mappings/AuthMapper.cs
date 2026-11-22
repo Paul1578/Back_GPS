@@ -55,7 +55,9 @@ namespace fletflow.Infrastructure.Persistence.Mappings
             {
                 UserId = entity.UserId,
                 RoleId = entity.RoleId,
-                Role = entity.Role?.ToDomain(),
+                Role = entity.Role is null
+                    ? throw new InvalidOperationException("No se cargó el rol asociado al usuario.")
+                    : entity.Role.ToDomain(),
                 User = null! // Se debe asignar luego si es necesario
             };
         }

@@ -9,7 +9,7 @@ using Microsoft.Extensions.Options;
 
 namespace fletflow.Infrastructure.Services
 {
-    public class AuthService
+    public class AuthService : IUserRegistrationService
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly JwtTokenService _jwtService;
@@ -128,7 +128,6 @@ namespace fletflow.Infrastructure.Services
         public async Task<ForgotPasswordResponseDto> ForgotPasswordAsync(string email, bool returnTokenInResponse = false)
         {
             var normalizedEmail = email?.Trim();
-            Console.WriteLine($"[ForgotPassword] Solicitud para {normalizedEmail}");
             if (string.IsNullOrWhiteSpace(normalizedEmail))
                 return new ForgotPasswordResponseDto();
 
@@ -140,25 +139,18 @@ namespace fletflow.Infrastructure.Services
 
             if (user != null)
             {
-                Console.WriteLine($"[ForgotPassword] Usuario encontrado {user.Email}");
                 await _unitOfWork.PasswordResetTokens.InvalidateAllForUserAsync(user.Id);
 
                 var (token, plainToken) = _passwordResetTokenFactory.Create(user.Id, _emailSettings.ResetTokenMinutes);
                 raw = plainToken;
 
                 await _unitOfWork.PasswordResetTokens.AddAsync(token);
-                var saved = await _unitOfWork.CommitAsync();
-                Console.WriteLine($"[ForgotPassword] Token guardado? filas={saved} tokenId={token.Id}");
+                await _unitOfWork.CommitAsync();
 
                 exp = token.ExpiresAt;
                 var encoded = Uri.EscapeDataString(plainToken);
                 var link = $"{_emailSettings.ResetPasswordUrl}?token={encoded}";
-                Console.WriteLine($"[ForgotPassword] Enviando correo a {user.Email} link={link} plain={plainToken}");
                 await _emailService.SendPasswordResetEmailAsync(user.Email, link, plainToken);
-            }
-            else
-            {
-                Console.WriteLine($"[ForgotPassword] Email no encontrado {normalizedEmail}");
             }
 
             return new ForgotPasswordResponseDto
@@ -186,8 +178,7 @@ namespace fletflow.Infrastructure.Services
             // marcar token como usado
             await _unitOfWork.PasswordResetTokens.MarkUsedAsync(prt.Id);
 
-            // opcional: revocar todos los refresh tokens del usuario
-            // await _unitOfWork.RefreshTokens.RevokeAllForUserAsync(user.Id);
+            await _unitOfWork.RefreshTokens.RevokeAllForUserAsync(user.Id);
 
             await _unitOfWork.CommitAsync();
         }
@@ -195,9 +186,11 @@ namespace fletflow.Infrastructure.Services
         // ---- helpers ----
         private async Task<AuthResponseDto> IssueTokensAsync(User user)
         {
+            if (user.UserRoles.Count != 1)
+                throw new InvalidOperationException("La cuenta debe tener exactamente un rol antes de iniciar sesión.");
             var role = user.UserRoles.First().Role.Name.Trim();
 
-            var access = _jwtService.GenerateToken(user.Id, user.Username, user.Email, role);
+            var access = _jwtService.GenerateToken(user.Id, user.Username, user.Email, role, user.OwnerUserId ?? user.Id);
 
             var raw = RefreshTokenFactory.Create();
             var hash = TokenHashing.Sha256(raw);
@@ -218,7 +211,7 @@ namespace fletflow.Infrastructure.Services
         private AuthResponseDto BuildResponse(User user, string refreshRaw, DateTime rtExp)
         {
             var role = user.UserRoles.First().Role.Name.Trim();
-            var access = _jwtService.GenerateToken(user.Id, user.Username, user.Email, role);
+            var access = _jwtService.GenerateToken(user.Id, user.Username, user.Email, role, user.OwnerUserId ?? user.Id);
 
             return new AuthResponseDto
             {

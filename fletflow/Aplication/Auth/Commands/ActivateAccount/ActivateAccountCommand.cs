@@ -50,6 +50,7 @@ namespace fletflow.Application.Auth.Commands.ActivateAccount
             var newPasswordHash = _passwordHasher.Hash(newPassword);
             await _userRepository.UpdatePasswordAndClearFlagAsync(user.Id, newPasswordHash, clearMustChangePassword: true);
             await _passwordResetTokenRepository.MarkUsedAsync(resetToken.Id);
+            await _unitOfWork.RefreshTokens.RevokeAllForUserAsync(user.Id);
 
             await _unitOfWork.CommitAsync();
         }

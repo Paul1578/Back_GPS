@@ -1,9 +1,11 @@
 using System;
+using System.Linq;
 using System.Security.Claims;
 using fletflow.Application.Users.Queries;
 using fletflow.Application.Users.Commands;
 using fletflow.Application.Auth.Commands;
 using fletflow.Api.Contracts.Users;
+using fletflow.Api.Security;
 using fletflow.Domain.Fleet.Entities;
 using fletflow.Infrastructure.Services;
 using fletflow.Infrastructure.Persistence.Contracts;
@@ -18,49 +20,53 @@ namespace fletflow.Api.Controllers
     [Authorize(Roles = "Admin")] // "Gerente" en el front
     public class UsersController : ControllerBase
     {
-        private readonly GetAllUsersQuery _getAllUsersQuery;
         private readonly UpdateUserCommand _updateUserCommand;
-        private readonly AssignRoleToUserCommand _assignRole;
-        private readonly RemoveRoleFromUserCommand _removeRole;
+        private readonly ChangeUserRoleCommand _changeUserRoleCommand;
         private readonly RegisterUserCommand _registerUserCommand;
         private readonly GetMyTeamUsersQuery _getMyTeamUsersQuery;
         private readonly PasswordResetTokenFactory _passwordResetTokenFactory;
         private readonly IEmailSender _emailSender;
         private readonly EmailSettings _emailSettings;
         private readonly IUnitOfWork _unitOfWork;
+        private readonly ILogger<UsersController> _logger;
 
         public UsersController(
-            GetAllUsersQuery getAllUsersQuery,
             GetMyTeamUsersQuery getMyTeamUsersQuery,
             UpdateUserCommand updateUserCommand,
-            AssignRoleToUserCommand assignRole,
-            RemoveRoleFromUserCommand removeRole,
+            ChangeUserRoleCommand changeUserRoleCommand,
             RegisterUserCommand registerUserCommand,
             PasswordResetTokenFactory passwordResetTokenFactory,
             IEmailSender emailSender,
             IOptions<EmailSettings> emailOptions,
-            IUnitOfWork unitOfWork)
+            IUnitOfWork unitOfWork,
+            ILogger<UsersController> logger)
         {
-            _getAllUsersQuery = getAllUsersQuery;
             _updateUserCommand = updateUserCommand;
-            _assignRole = assignRole;
-            _removeRole = removeRole;
+            _changeUserRoleCommand = changeUserRoleCommand;
             _registerUserCommand = registerUserCommand;
             _getMyTeamUsersQuery = getMyTeamUsersQuery;
             _passwordResetTokenFactory = passwordResetTokenFactory;
             _emailSender = emailSender;
             _emailSettings = emailOptions.Value;
             _unitOfWork = unitOfWork;
+            _logger = logger;
         }
 
-        private Guid GetCurrentUserId()
+        private Guid GetCurrentOwnerId()
         {
-            var claim = User.FindFirst(ClaimTypes.NameIdentifier) ?? User.FindFirst("nameid");
+            var claim = User.FindFirstValue("owner_id");
 
-            if (claim == null || !Guid.TryParse(claim.Value, out var userId))
-                throw new InvalidOperationException("No se pudo resolver el usuario autenticado.");
+            if (claim == null || !Guid.TryParse(claim, out var userId))
+                throw new InvalidOperationException("No se pudo resolver la empresa del usuario autenticado.");
 
             return userId;
+        }
+
+        private async Task<bool> BelongsToCurrentOwner(Guid userId)
+        {
+            var ownerId = GetCurrentOwnerId();
+            var target = await _unitOfWork.Users.GetByIdAsync(userId);
+            return target is not null && (target.Id == ownerId || target.OwnerUserId == ownerId);
         }
 
         /// <summary>
@@ -70,7 +76,7 @@ namespace fletflow.Api.Controllers
         [HttpGet("my-team")]
         public async Task<IActionResult> GetMyTeam()
         {
-            var ownerId = GetCurrentUserId(); // del token (nameid)
+            var ownerId = GetCurrentOwnerId();
 
             var users = await _getMyTeamUsersQuery.Execute(ownerId);
 
@@ -84,7 +90,7 @@ namespace fletflow.Api.Controllers
         [HttpGet]
         public async Task<IActionResult> GetAll()
         {
-            var users = await _getAllUsersQuery.Execute();
+            var users = await _getMyTeamUsersQuery.Execute(GetCurrentOwnerId());
             return Ok(users);
         }
 
@@ -98,12 +104,25 @@ namespace fletflow.Api.Controllers
         [HttpPut("{id:guid}/status")]
         public async Task<IActionResult> UpdateStatus(Guid id, [FromQuery] bool isActive)
         {
+            if (id == GetCurrentOwnerId())
+                return BadRequest("No se puede desactivar al propietario de la empresa.");
+            if (!await BelongsToCurrentOwner(id)) return NotFound();
             await _updateUserCommand.Execute(id, isActive);
             return Ok(new { Message = "Estado del usuario actualizado." });
         }
 
+        [HttpPut("{id:guid}/role")]
+        public async Task<IActionResult> ChangeRole(Guid id, [FromBody] ChangeUserRoleRequest request)
+        {
+            if (id == GetCurrentOwnerId())
+                return BadRequest("No se puede cambiar el rol del propietario de la empresa.");
+            if (!await BelongsToCurrentOwner(id)) return NotFound();
+            await _changeUserRoleCommand.Execute(id, request.RoleName);
+            return Ok(new { message = "Rol actualizado", userId = id, role = request.RoleName });
+        }
+
         /// <summary>
-        /// Asigna un rol a un usuario.
+        /// Cambia el rol único de un usuario. Se conserva la ruta antigua como alias.
         /// </summary>
         /// <param name="id">ID del usuario.</param>
         /// <param name="name">Nombre del rol.</param>
@@ -112,22 +131,24 @@ namespace fletflow.Api.Controllers
         [HttpPost("{id:guid}/roles/{name}")]
         public async Task<IActionResult> AssignRole(Guid id, string name)
         {
-            await _assignRole.Execute(id, name);
-            return Ok(new { message = "Rol asignado", userId = id, role = name });
+            if (id == GetCurrentOwnerId())
+                return BadRequest("No se pueden modificar los roles del propietario de la empresa.");
+            if (!await BelongsToCurrentOwner(id)) return NotFound();
+            await _changeUserRoleCommand.Execute(id, name);
+            return Ok(new { message = "Rol actualizado", userId = id, role = name });
         }
 
         /// <summary>
-        /// Elimina un rol de un usuario.
+        /// La retirada aislada de roles está deshabilitada para evitar cuentas sin rol.
         /// </summary>
         /// <param name="id">ID del usuario.</param>
         /// <param name="name">Nombre del rol.</param>
         /// <response code="200">Rol removido correctamente.</response>
         /// <response code="404">Usuario o rol no encontrado.</response>
         [HttpDelete("{id:guid}/roles/{name}")]
-        public async Task<IActionResult> RemoveRole(Guid id, string name)
+        public IActionResult RemoveRole(Guid id, string name)
         {
-            await _removeRole.Execute(id, name);
-            return Ok(new { message = "Rol removido", userId = id, role = name });
+            return Conflict(new { message = "No se puede quitar un rol por separado. Usa PUT /api/Users/{id}/role para reemplazarlo." });
         }
 
         // POST /api/users
@@ -146,39 +167,58 @@ namespace fletflow.Api.Controllers
             if (string.IsNullOrWhiteSpace(request.Email))
                 return BadRequest("El email es obligatorio.");
 
-            if (string.IsNullOrWhiteSpace(request.Password))
-                return BadRequest("La contraseña es obligatoria.");
+            // El flujo de invitación establece una clave aleatoria temporal que el usuario
+            // reemplaza al activar su cuenta. Nunca usar una contraseña fija o predecible.
+            var temporaryPassword = string.IsNullOrWhiteSpace(request.Password)
+                ? TemporaryPasswordGenerator.Generate()
+                : request.Password;
 
             if (string.IsNullOrWhiteSpace(request.RoleName))
                 return BadRequest("El rol es obligatorio.");
+            var allowedRoles = new[] { "Admin", "Driver", "Manager", "User", "Logistics" };
+            if (!allowedRoles.Contains(request.RoleName.Trim(), StringComparer.OrdinalIgnoreCase))
+                return BadRequest("El rol solicitado no está permitido.");
 
-            var ownerId = GetCurrentUserId(); // Admin que crea al usuario
+            var ownerId = GetCurrentOwnerId();
+            var isDriver = request.RoleName.Trim().Equals("Driver", StringComparison.OrdinalIgnoreCase);
+            if (isDriver && (string.IsNullOrWhiteSpace(request.DocumentNumber) ||
+                             string.IsNullOrWhiteSpace(request.PhoneNumber)))
+                return BadRequest("Documento y teléfono son obligatorios para crear un conductor.");
+            if (isDriver && (request.DocumentNumber!.Trim().Length > 20 || request.PhoneNumber!.Trim().Length > 20))
+                return BadRequest("Documento y teléfono no pueden exceder 20 caracteres.");
+            if (isDriver)
+            {
+                var existingDriver = await _unitOfWork.Drivers.GetByDocumentAsync(request.DocumentNumber!.Trim());
+                if (existingDriver is not null)
+                    return BadRequest("Ya existe un conductor con ese documento en la empresa.");
+            }
 
             var user = await _registerUserCommand.Execute(
                 request.Username,
                 request.Email,
-                request.Password,
+                temporaryPassword,
                 request.RoleName,
                 ownerId,
                 mustChangePassword: true
             );
 
             // Auto-crear Driver si el rol es Driver
-            if (request.RoleName.Trim().Equals("Driver", StringComparison.OrdinalIgnoreCase))
+            Guid? driverId = null;
+            if (isDriver)
             {
                 var existingDriver = await _unitOfWork.Drivers.GetByUserIdAsync(user.Id);
                 if (existingDriver is null)
                 {
-                    var first = string.IsNullOrWhiteSpace(user.Username) ? "Driver" : user.Username;
-                    var last = "Driver";
-                    var doc = string.IsNullOrWhiteSpace(user.Email)
-                        ? user.Id.ToString("N")[..Math.Min(20, user.Id.ToString("N").Length)]
-                        : user.Email.Length > 20 ? user.Email[..20] : user.Email;
-                    var phone = "N/A";
-
-                    var driver = Driver.Create(first, last, doc, phone, user.Id);
+                    var driver = Driver.Create(
+                        string.IsNullOrWhiteSpace(request.FirstName) ? user.Username : request.FirstName.Trim(),
+                        string.IsNullOrWhiteSpace(request.LastName) ? "" : request.LastName.Trim(),
+                        request.DocumentNumber!.Trim(),
+                        request.PhoneNumber!.Trim(),
+                        user.Id);
                     await _unitOfWork.Drivers.AddAsync(driver);
+                    driverId = driver.Id;
                 }
+                else driverId = existingDriver.Id;
             }
 
             var (token, plainToken) = _passwordResetTokenFactory.Create(user.Id, _emailSettings.ResetTokenMinutes);
@@ -190,13 +230,23 @@ namespace fletflow.Api.Controllers
             var encoded = Uri.EscapeDataString(plainToken);
             var activationLink = $"{activationBase}?token={encoded}";
 
-            await _emailSender.SendUserInvitationEmailAsync(
-                user.Email,
-                request.Password,
-                activationLink,
-                plainToken);
-
             await _unitOfWork.CommitAsync();
+
+            var invitationSent = true;
+            try
+            {
+                await _emailSender.SendUserInvitationEmailAsync(
+                    user.Email,
+                    activationLink);
+            }
+            catch (Exception exception)
+            {
+                invitationSent = false;
+                _logger.LogWarning(
+                    "No se pudo enviar invitación para usuario {UserId}; tipo de fallo {FailureType}. La cuenta quedó guardada.",
+                    user.Id,
+                    exception.GetType().Name);
+            }
 
             return Ok(new
             {
@@ -204,8 +254,14 @@ namespace fletflow.Api.Controllers
                 user.Username,
                 user.Email,
                 Role = request.RoleName,
-                user.OwnerUserId
+                user.OwnerUserId,
+                DriverId = driverId,
+                InvitationSent = invitationSent,
+                Message = invitationSent
+                    ? "Usuario creado y la invitación fue enviada."
+                    : "Usuario creado, pero no se pudo enviar la invitación por correo."
             });
         }
+
     }
 }

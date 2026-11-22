@@ -1,0 +1,165 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+backend_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+frontend_dir="${FLETFLOW_FRONTEND_DIR:-/home/leonardo/Front_gpsR}"
+playwright_base_url="${PLAYWRIGHT_BASE_URL:-http://127.0.0.1:3000}"
+if [[ -z "${DB_NAME:-}" && -f "$backend_dir/.env" ]]; then
+  set -a
+  # shellcheck disable=SC1091
+  source "$backend_dir/.env"
+  set +a
+fi
+
+frontend_env_file="$frontend_dir/.env.local"
+api_origin="${FLETFLOW_API_URL:-}"
+client_api_base="${NEXT_PUBLIC_API_BASE_URL:-}"
+
+if [[ -f "$frontend_env_file" ]]; then
+  [[ -n "$api_origin" ]] || api_origin="$(sed -n 's/^FLETFLOW_API_URL=//p' "$frontend_env_file" | tail -n 1 | tr -d '"')"
+  [[ -n "$client_api_base" ]] || client_api_base="$(sed -n 's/^NEXT_PUBLIC_API_BASE_URL=//p' "$frontend_env_file" | tail -n 1 | tr -d '"')"
+fi
+api_origin="${api_origin:-http://localhost:5048}"
+MYSQL_HOST="${MYSQL_HOST:-127.0.0.1}"
+MYSQL_USER="${MYSQL_USER:-${DB_USER:-root}}"
+MYSQL_PWD="${MYSQL_PWD:-${MYSQL_ROOT_PASSWORD:-${DB_PASSWORD:-}}}"
+export MYSQL_HOST MYSQL_USER MYSQL_PWD
+
+if [[ "${FLETFLOW_E2E_ALLOW_MUTATIONS:-}" != "true" ]]; then
+  echo "Define FLETFLOW_E2E_ALLOW_MUTATIONS=true sólo para una base local/QA descartable." >&2
+  exit 2
+fi
+if [[ ! "${FLETFLOW_E2E_ADMIN_EMAIL:-}" =~ ^fletflow\.e2e\.admin\..+@example\.test$ ]]; then
+  echo "Usa una cuenta bootstrap temporal con correo fletflow.e2e.admin.<id>@example.test." >&2
+  exit 2
+fi
+if [[ -z "${FLETFLOW_E2E_ADMIN_PASSWORD:-}" ]]; then
+  echo "Falta FLETFLOW_E2E_ADMIN_PASSWORD." >&2
+  exit 2
+fi
+if [[ -z "${DB_NAME:-}" || -z "${MYSQL_PWD:-}" ]]; then
+  echo "Faltan DB_NAME o credenciales MYSQL para limpiar los fixtures." >&2
+  exit 2
+fi
+if [[ "${CI:-}" == "true" && ! "$DB_NAME" =~ ^fletflow_ci([_][a-zA-Z0-9]+)*$ ]]; then
+  echo "En CI sólo se permiten bases descartables fletflow_ci*." >&2
+  exit 2
+fi
+if [[ ! -f "$frontend_dir/package.json" ]]; then
+  echo "No se encontró el frontend en $frontend_dir." >&2
+  exit 2
+fi
+if [[ "$playwright_base_url" != "http://127.0.0.1:3000" && "$playwright_base_url" != "http://localhost:3000" ]]; then
+  echo "El runner con limpieza local sólo acepta el frontend local en puerto 3000." >&2
+  exit 2
+fi
+if [[ "$api_origin" != "http://127.0.0.1:5048" && "$api_origin" != "http://localhost:5048" ]]; then
+  echo "El runner con limpieza local sólo acepta la API local en puerto 5048." >&2
+  exit 2
+fi
+if [[ -n "$client_api_base" && "$client_api_base" != "/api/backend" && \
+  "$client_api_base" != "http://127.0.0.1:5048/api" && \
+  "$client_api_base" != "http://localhost:5048/api" ]]; then
+  echo "NEXT_PUBLIC_API_BASE_URL apunta fuera del endpoint API local permitido." >&2
+  exit 2
+fi
+if ! curl -fsS "$playwright_base_url/login" >/dev/null || \
+  ! curl -fsS "http://127.0.0.1:5048/swagger/index.html" >/dev/null; then
+  echo "Inicia el frontend y la API Development locales antes de ejecutar el E2E." >&2
+  exit 2
+fi
+
+cleanup() {
+  local status=$?
+  trap - EXIT
+  if ! mysql --protocol=TCP --host="$MYSQL_HOST" --user="$MYSQL_USER" "$DB_NAME" \
+    < "$backend_dir/scripts/cleanup-e2e.sql" >/dev/null 2>&1; then
+    echo "No se pudieron limpiar los fixtures E2E de MySQL." >&2
+    status=1
+  fi
+  exit "$status"
+}
+trap cleanup EXIT
+
+user_suffix="$(date +%s%N | tail -c 10)"
+export FLETFLOW_E2E_USER_EMAIL="fletflow.e2e.user.$user_suffix@example.test"
+export FLETFLOW_E2E_USER_PASSWORD="$(openssl rand -hex 24)"
+export FLETFLOW_E2E_DRIVER_EMAIL="fletflow.e2e.driver.$user_suffix@example.test"
+export FLETFLOW_E2E_DRIVER_PASSWORD="$(openssl rand -hex 24)"
+export FLETFLOW_E2E_OTHER_TENANT_EMAIL="fletflow.e2e.admin.other.$user_suffix@example.test"
+export FLETFLOW_E2E_OTHER_TENANT_PASSWORD="$(openssl rand -hex 24)"
+
+FLETFLOW_E2E_DRIVER_ID="$(node <<'NODE'
+const api = "http://127.0.0.1:5048/api";
+const email = process.env.FLETFLOW_E2E_ADMIN_EMAIL;
+const password = process.env.FLETFLOW_E2E_ADMIN_PASSWORD;
+
+const loginResponse = await fetch(`${api}/Auth/login`, {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ email, password }),
+});
+if (!loginResponse.ok) throw new Error(`Login QA Admin: HTTP ${loginResponse.status}`);
+const login = await loginResponse.json();
+const token = login.token ?? login.accessToken;
+if (!token) throw new Error("La respuesta de login QA no incluyó token de acceso.");
+
+const createUser = async (body) => {
+  const response = await fetch(`${api}/Users`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(body),
+  });
+  if (!response.ok) throw new Error(`Alta fixture ${body.roleName}: HTTP ${response.status}`);
+  return response.json();
+};
+
+await createUser({
+  username: "E2E QA User",
+  email: process.env.FLETFLOW_E2E_USER_EMAIL,
+  password: process.env.FLETFLOW_E2E_USER_PASSWORD,
+  roleName: "User",
+});
+
+const otherTenantRegistration = await fetch(`${api}/Auth/register`, {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    username: "E2E QA Other Company",
+    email: process.env.FLETFLOW_E2E_OTHER_TENANT_EMAIL,
+    password: process.env.FLETFLOW_E2E_OTHER_TENANT_PASSWORD,
+    roleName: "Admin",
+  }),
+});
+if (!otherTenantRegistration.ok) throw new Error(`Registro de tenant QA: HTTP ${otherTenantRegistration.status}`);
+
+const driver = await createUser({
+  username: "E2E QA Driver",
+  email: process.env.FLETFLOW_E2E_DRIVER_EMAIL,
+  password: process.env.FLETFLOW_E2E_DRIVER_PASSWORD,
+  roleName: "Driver",
+  firstName: "E2E QA",
+  lastName: "Driver",
+  documentNumber: `E2EQA${Date.now()}`,
+  phoneNumber: "0990000000",
+});
+if (!driver.driverId) throw new Error("El fixture Driver no devolvió DriverId.");
+process.stdout.write(driver.driverId);
+NODE
+)"
+export FLETFLOW_E2E_DRIVER_ID
+
+mysql --protocol=TCP --host="$MYSQL_HOST" --user="$MYSQL_USER" "$DB_NAME" \
+  -e "UPDATE Users SET IsActive=1, MustChangePassword=0 WHERE Email='$FLETFLOW_E2E_OTHER_TENANT_EMAIL'; DELETE FROM UserRoles WHERE UserId=(SELECT Id FROM Users WHERE Email='$FLETFLOW_E2E_OTHER_TENANT_EMAIL'); INSERT INTO UserRoles (UserId, RoleId) SELECT u.Id, r.Id FROM Users u JOIN Roles r ON r.Name='Admin' WHERE u.Email='$FLETFLOW_E2E_OTHER_TENANT_EMAIL';" \
+  >/dev/null 2>&1
+
+mysql --protocol=TCP --host="$MYSQL_HOST" --user="$MYSQL_USER" "$DB_NAME" \
+  -e "UPDATE Users SET IsActive=1, MustChangePassword=0 WHERE Email IN ('$FLETFLOW_E2E_USER_EMAIL', '$FLETFLOW_E2E_DRIVER_EMAIL');" \
+  >/dev/null 2>&1
+
+PLAYWRIGHT_BASE_URL="$playwright_base_url" \
+PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH="${PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH:-/usr/bin/google-chrome}" \
+  npm --prefix "$frontend_dir" run test:e2e

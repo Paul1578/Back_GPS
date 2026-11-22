@@ -81,7 +81,9 @@ namespace fletflow.Infrastructure.Persistence.Mappings
                 entity.PlannedStart,
                 entity.PlannedEnd,
                 (RouteStatus)entity.Status,
-                entity.IsActive
+                entity.IsActive,
+                entity.StartedAt,
+                entity.EndedAt
             );
         }
 
@@ -106,6 +108,8 @@ namespace fletflow.Infrastructure.Persistence.Mappings
                 CargoDescription = domain.CargoDescription,
                 PlannedStart = domain.PlannedStart,
                 PlannedEnd = domain.PlannedEnd,
+                StartedAt = domain.StartedAt,
+                EndedAt = domain.EndedAt,
                 Status = (int)domain.Status,
                 IsActive = domain.IsActive,
                 PointsJson = pointsJson
@@ -147,7 +151,7 @@ namespace fletflow.Infrastructure.Persistence.Mappings
                 if (deserialized is { Count: > 0 })
                 {
                     return deserialized
-                        .Select(p => RoutePoint.Create(p.Latitude, p.Longitude, p.Name))
+                        .Select(p => RoutePoint.Create(p.Latitude, p.Longitude, p.Name, p.Operation, p.Status, p.Evidence))
                         .ToList();
                 }
             }
@@ -165,6 +169,12 @@ namespace fletflow.Infrastructure.Persistence.Mappings
             return points;
         }
 
-        private record SerializableRoutePoint(double Latitude, double Longitude, string? Name);
+        private record SerializableRoutePoint(
+            double Latitude,
+            double Longitude,
+            string? Name,
+            RoutePointOperation Operation = RoutePointOperation.None,
+            RoutePointStatus Status = RoutePointStatus.Pending,
+            List<RoutePointEvidence>? Evidence = null);
     }
 }

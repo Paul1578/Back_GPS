@@ -1,4 +1,5 @@
 using fletflow.Api.Contracts.Drivers;
+using System.Security.Claims;
 using fletflow.Application.Fleet.Commands;
 using fletflow.Application.Fleet.Dtos;
 using fletflow.Application.Fleet.Queries;
@@ -18,19 +19,25 @@ namespace fletflow.Api.Controllers
         
         private readonly AssignDriverToVehicleCommand _assignDriverToVehicle;
         private readonly UnassignDriverFromVehicleCommand _unassignDriverFromVehicle;
+        private readonly UpdateDriverCommand _updateDriver;
+        private readonly ChangeDriverStatusCommand _changeStatus;
 
         public DriversController(
             CreateDriverCommand createDriver,
             GetDriverByIdQuery getById,
             GetDriversQuery getAll,
             AssignDriverToVehicleCommand assignDriverToVehicle,
-            UnassignDriverFromVehicleCommand unassignDriverFromVehicle)
+            UnassignDriverFromVehicleCommand unassignDriverFromVehicle,
+            UpdateDriverCommand updateDriver,
+            ChangeDriverStatusCommand changeStatus)
         {
             _createDriver = createDriver;
             _getById = getById;
             _getAll = getAll;
             _assignDriverToVehicle = assignDriverToVehicle;
             _unassignDriverFromVehicle = unassignDriverFromVehicle;
+            _updateDriver = updateDriver;
+            _changeStatus = changeStatus;
         }
 
         /// <summary>
@@ -42,12 +49,16 @@ namespace fletflow.Api.Controllers
         [HttpPost]
         public async Task<ActionResult<DriverDto>> Create([FromBody] CreateDriverRequest request)
         {
+            if (!Guid.TryParse(User.FindFirstValue("owner_id"), out var ownerUserId))
+                return Unauthorized();
+
             var result = await _createDriver.Execute(
                 request.FirstName,
                 request.LastName,
                 request.DocumentNumber,
                 request.PhoneNumber,
-                request.UserId
+                request.UserId,
+                ownerUserId
             );
 
             return CreatedAtAction(nameof(GetById), new { id = result.Id }, result);
@@ -76,6 +87,23 @@ namespace fletflow.Api.Controllers
         {
             var result = await _getById.Execute(id);
             return Ok(result);
+        }
+
+        [HttpPut("{id:guid}")]
+        public async Task<ActionResult<DriverDto>> Update(Guid id, [FromBody] UpdateDriverRequest request)
+        {
+            var result = await _updateDriver.Execute(
+                id, request.FirstName, request.LastName, request.DocumentNumber, request.PhoneNumber);
+            return Ok(result);
+        }
+
+        [HttpPut("{id:guid}/status")]
+        public async Task<IActionResult> ChangeStatus(Guid id, [FromBody] ChangeDriverStatusRequest request)
+        {
+            if (!request.IsActive.HasValue)
+                return BadRequest("El estado del conductor es obligatorio.");
+            await _changeStatus.Execute(id, request.IsActive.Value);
+            return NoContent();
         }
         /// <summary>
         /// Asigna un vehículo a un conductor.

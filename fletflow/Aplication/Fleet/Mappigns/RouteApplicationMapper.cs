@@ -20,6 +20,8 @@ namespace fletflow.Application.Fleet.Mappings
                 CargoDescription = route.CargoDescription,
                 PlannedStart = route.PlannedStart,
                 PlannedEnd = route.PlannedEnd,
+                StartedAt = route.StartedAt,
+                EndedAt = route.EndedAt,
                 Status = route.Status,
                 IsActive = route.IsActive
             };
@@ -34,7 +36,16 @@ namespace fletflow.Application.Fleet.Mappings
             {
                 Latitude = point.Latitude,
                 Longitude = point.Longitude,
-                Name = point.Name
+                Name = point.Name,
+                Operation = point.Operation,
+                Status = point.Status,
+                Evidence = point.Evidence.Select(evidence => new RoutePointEvidenceDto
+                {
+                    Type = evidence.Type,
+                    Content = evidence.Content,
+                    Description = evidence.Description,
+                    CreatedAtUtc = evidence.CreatedAtUtc
+                }).ToList()
             };
         }
     }

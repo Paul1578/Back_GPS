@@ -1,4 +1,5 @@
 using fletflow.Domain.Fleet.Repositories;
+using fletflow.Domain.Fleet.Entities;
 using fletflow.Infrastructure.Persistence.Contracts;
 
 namespace fletflow.Application.Fleet.Commands
@@ -30,8 +31,18 @@ namespace fletflow.Application.Fleet.Commands
             if (!driver.IsActive)
                 throw new InvalidOperationException("Cannot assign an inactive driver.");
 
+            if (driver.UserId.HasValue)
+            {
+                var linkedUser = await _uow.Users.GetByIdAsync(driver.UserId.Value);
+                if (linkedUser is null || !linkedUser.IsActive)
+                    throw new InvalidOperationException("No se puede asignar un conductor con usuario inactivo.");
+            }
+
             if (!vehicle.IsActive)
                 throw new InvalidOperationException("Cannot assign an inactive vehicle.");
+
+            if (vehicle.Status != VehicleStatus.Available)
+                throw new InvalidOperationException("No se puede asignar un vehículo que no esté disponible.");
 
             // Regla simple de MVP:
             // si el driver ya tiene vehículo, lo pisamos

@@ -22,10 +22,13 @@ namespace fletflow.Infrastructure.Persistence.Entities
 
         public DateTime? PlannedStart { get; set; }
         public DateTime? PlannedEnd { get; set; }
+        public DateTime? StartedAt { get; set; }
+        public DateTime? EndedAt { get; set; }
 
         public int Status { get; set; }  // se mapeará a RouteStatus en dominio
         public bool IsActive { get; set; }
 
         public string PointsJson { get; set; } = "[]";
+        public Guid? OwnerUserId { get; set; }
     }
 }

@@ -43,7 +43,9 @@ namespace fletflow.Infrastructure.Persistence.Repositories
                 query = query.Where(rp => rp.RecordedAt <= t);
             }
 
-            query = query.OrderBy(rp => rp.RecordedAt);
+            query = query
+                .OrderBy(rp => rp.RecordedAt)
+                .Take(10_000);
 
             var entities = await query.ToListAsync();
             return entities.Select(FleetMapper.ToDomain).ToList();

@@ -10,6 +10,7 @@ namespace fletflow.Infrastructure.Persistence.Configurations
         {
             builder.ToTable("UserRoles");
             builder.HasKey(ur => new { ur.UserId, ur.RoleId });
+            builder.HasIndex(ur => ur.UserId).IsUnique();
 
             builder
                 .HasOne(ur => ur.User)

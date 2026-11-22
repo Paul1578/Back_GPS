@@ -222,3 +222,9 @@
 
 
 - Actions backend `45009348293` para `c6f74f8` terminó success: build Release, xUnit **64/64**, smokes HTTP/MySQL tenant+Logistics y concurrencia; contenedores/DB de prueba limpiados.
+
+
+## 2026-11-22 — Cobertura de límites temporales GPS
+
+- El smoke de tenant verifica límites inclusivos `from`/`to`, filtros de un solo límite, intervalo sin coincidencias e intervalo invertido para GET positions. Contrato actual: el rango invertido devuelve HTTP 200 y lista vacía.
+- Validación local: Release 64/64, smoke HTTP/MySQL efímero completo, `bash -n` y diff-check; Actions pendiente.

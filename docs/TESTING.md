@@ -322,3 +322,9 @@ La invitación envía sólo el enlace de activación; el usuario fija su contras
 
 
 - Confirmación remota del lote Driver/cross-tenant: Actions backend `45009348293` success para `c6f74f8`; xUnit **64/64**, Release build, smoke HTTP/MySQL y concurrencia pasaron. Cleanup de servicios efímeros completo.
+
+
+## Filtros temporales de tracking — 2026-11-22
+
+- Smoke HTTP/MySQL fijó una hora RecordedAt y verificó coincidencia en los extremos inclusivos (`from=to`), filtros sólo `from`/sólo `to`, consulta fuera del intervalo y rango invertido. La API devuelve 200 con una posición en el rango inclusivo y 200 `[]` para los otros cuatro casos.
+- Release xUnit **64/64**, `bash -n`, `git diff --check` y el smoke completo en MySQL 8 temporal pasaron; cleanup verificó cero rutas, posiciones y vehículos QA. Actions del SHA siguiente pendiente.

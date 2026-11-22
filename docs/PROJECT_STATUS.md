@@ -1,3 +1,8 @@
+## Contrato de filtros de GPS — local aprobado, Actions pendiente — 2026-11-22
+
+- El smoke tenant fija `RecordedAt` conocido y consulta rango inclusivo con `from=to`, límite solo `from`, límite solo `to` e intervalo invertido. Incluye además rango sin resultados; las respuestas esperadas son HTTP 200 y colección vacía cuando el dato queda fuera del filtro o el intervalo está invertido.
+- `bash -n`, Release xUnit **64/64** y el smoke completo en MySQL 8 efímero pasan; cleanup dejó cero recursos QA. Actions pendiente para este incremento.
+
 ## Cross-tenant de paradas y CRUD HTTP de Driver — validado local y en Actions — 2026-11-22
 
 - El smoke tenant ahora intenta cambiar estado y agregar evidencia a una parada de tenant A usando token de tenant B; ambas respuestas deben ser 404 y una lectura posterior como A exige estado original/evidencia vacía.

@@ -54,6 +54,7 @@ manager_route_name=""
 manager_route_id=""
 logistics_route_id=""
 logistics_route_name=""
+logistics_gps_recorded_at=""
 restricted_user_id=""
 root_user_id=""
 driver_race_email_a=""
@@ -328,8 +329,9 @@ jq -e '.points[1].operation == 3 and .points[1].status == 2 and (.points[1].evid
   "$work_dir/response.json" >/dev/null \
   || { echo "El estado/evidencia de la parada no quedó persistido." >&2; cat "$work_dir/response.json" >&2; exit 1; }
 
+logistics_gps_recorded_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 request POST "/Routes/$logistics_route_id/positions" \
-  "$(jq -nc --argjson latitude -0.186 --argjson longitude -78.466 --argjson speed 32 --argjson heading 90 '{latitude:$latitude,longitude:$longitude,speedKmh:$speed,heading:$heading}')" "$logistics_token"
+  "$(jq -nc --argjson latitude -0.186 --argjson longitude -78.466 --argjson speed 32 --argjson heading 90 --arg recordedAt "$logistics_gps_recorded_at" '{latitude:$latitude,longitude:$longitude,speedKmh:$speed,heading:$heading,recordedAt:$recordedAt}')" "$logistics_token"
 expect_status 200 "Registrar posición GPS con ruta en progreso como Logistics"
 jq -e --arg routeId "$logistics_route_id" '.routeId == $routeId and .latitude == -0.186 and .longitude == -78.466 and .speedKmh == 32 and .heading == 90' \
   "$work_dir/response.json" >/dev/null \
@@ -339,6 +341,24 @@ expect_status 200 "Consultar posición GPS persistida como Logistics"
 jq -e 'length == 1 and .[0].latitude == -0.186 and .[0].longitude == -78.466 and .[0].speedKmh == 32 and .[0].heading == 90' \
   "$work_dir/response.json" >/dev/null \
   || { echo "La posición GPS no quedó persistida." >&2; cat "$work_dir/response.json" >&2; exit 1; }
+gps_after="$(date -u -d "$logistics_gps_recorded_at + 1 second" +%Y-%m-%dT%H:%M:%SZ)"
+gps_before="$(date -u -d "$logistics_gps_recorded_at - 1 second" +%Y-%m-%dT%H:%M:%SZ)"
+request GET "/Routes/$logistics_route_id/positions?from=$logistics_gps_recorded_at&to=$logistics_gps_recorded_at" "" "$logistics_token"
+expect_status 200 "Consultar GPS dentro de límites inclusivos"
+jq -e 'length == 1 and .[0].recordedAt != null' "$work_dir/response.json" >/dev/null \
+  || { echo "El intervalo inclusivo no incluyó el GPS en el límite." >&2; cat "$work_dir/response.json" >&2; exit 1; }
+request GET "/Routes/$logistics_route_id/positions?from=$gps_after" "" "$logistics_token"
+expect_status 200 "Consultar GPS desde después de la posición"
+jq -e 'length == 0' "$work_dir/response.json" >/dev/null \
+  || { echo "El filtro from no excluyó la posición previa." >&2; cat "$work_dir/response.json" >&2; exit 1; }
+request GET "/Routes/$logistics_route_id/positions?to=$gps_before" "" "$logistics_token"
+expect_status 200 "Consultar GPS hasta antes de la posición"
+jq -e 'length == 0' "$work_dir/response.json" >/dev/null \
+  || { echo "El filtro to no excluyó la posición posterior." >&2; cat "$work_dir/response.json" >&2; exit 1; }
+request GET "/Routes/$logistics_route_id/positions?from=$gps_after&to=$gps_before" "" "$logistics_token"
+expect_status 200 "Consultar GPS con intervalo invertido"
+jq -e 'length == 0' "$work_dir/response.json" >/dev/null \
+  || { echo "El intervalo invertido debía devolver una colección vacía." >&2; cat "$work_dir/response.json" >&2; exit 1; }
 
 request PUT "/Routes/$logistics_route_id/status" '{"status":2}' "$logistics_token"
 expect_status 204 "Completar ruta como Logistics después de cerrar parada/evidencia"

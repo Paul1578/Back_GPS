@@ -295,3 +295,9 @@ Errores de migración, herramientas, QA y soluciones están en `docs/ERROR_LOG.m
 
 
 - Actions backend `45009348293` confirmó el smoke tenant/Driver y cross-tenant de paradas: `success`, xUnit **64/64**, build y smoke de concurrencia completos, limpieza correcta. HEAD de código `c6f74f8`.
+
+
+## Siguiente validación backend — filtros temporales GPS — 2026-11-22
+
+- Cambio local no publicado: smoke tenant ahora valida GET positions en intervalo inclusivo, `from`/`to` individual, sin coincidencias e invertido (HTTP 200 `[]` en rangos sin datos).
+- Local Release 64/64, bash syntax, diff-check y smoke completo MySQL 8 efímero pasaron; cleanup correcto. Commit/push y Actions quedan pendientes.

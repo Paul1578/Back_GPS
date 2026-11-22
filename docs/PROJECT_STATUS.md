@@ -2,6 +2,12 @@
 - Action `2045b18` [45050058627](https://github.com/Paul1578/Back_GPS/actions/runs/45050058627) pasó: Release build, xUnit **97/97**, smoke HTTP/MySQL tenant y concurrencia, incluye carrera de role/refresh y bloqueos con ruta Pending; cleanup sin fixtures.
 # Estado actual — 2026-11-22
 
+## Validación integrada de registro neutral — 2026-11-22
+
+- Backend `52d7e46` pasó Action `45066082294`: Release build, xUnit **107/107**, smoke HTTP/MySQL, comparación del payload de registro nuevo/duplicado, espera mínima y cleanup.
+- Front `57e44c6` está validando en Action `45066249833` contra ese backend; E2E autenticado y checks web aún en ejecución al registrar esta nota.
+- La rama integrada sigue en progreso; revisar brechas restantes CRUD/roles/responsive antes de declarar la auditoría cerrada.
+
 - Rama `chore/stabilize-fleet-platform`; `main` intacta. Backend `22c2fb6` Action [`45058536309`](https://github.com/Paul1578/Back_GPS/actions/runs/45058536309) pasó build/xUnit, aislamiento tenant HTTP/MySQL, concurrencia y cleanup.
 - Logout limita revocación al propietario autenticado del refresh. Validación local: Release build 0 warnings/errores, xUnit **99/99**, `smoke-tenant-http.sh` y `smoke-route-concurrency.sh` exit 0 con limpieza en MySQL 8 efímero.
 - Front local relacionado pasó **33/33** E2E, lint/build/audit 0 vulnerabilidades y cleanup; incluye creación de ruta de Manager.
@@ -472,4 +478,4 @@ Nota de actualización: algunos resultados históricos de registro público más
 ## Seguridad — anti-enumeración en login y registro
 
 - Login ahora responde uniformemente ante email inexistente, password incorrecto, cuenta inactiva o pendiente; BCrypt usa hash señuelo para el usuario inexistente. Registro público responde igual con email nuevo/duplicado, sin emitir sesión; Front lleva a Login.
-- Backend Action `45065747053` validó registro neutral en MySQL: 107/107, build, smoke y cleanup. Añadido luego hash antes de pre-check y piso temporal; local Release **107/107**, build 0/0 y bash syntax pasan. Nueva Action debe validar esta mejora.
+- Backend Action `45066082294` pasó tras añadir hash antes del pre-check y piso 500 ms: build, xUnit **107/107**, HTTP/MySQL para email nuevo/duplicado, tiempos mínimos y cleanup.

@@ -109,6 +109,13 @@
 
 # Session handoff
 
+## Registro neutral — validación de ramas 2026-11-22
+
+- Backend `52d7e46` en `chore/stabilize-fleet-platform`: Action `45066082294` success; build Release, xUnit 107/107, smoke HTTP/MySQL con alta nueva y duplicada, respuestas neutrales iguales, piso >=450 ms y cleanup.
+- Front `57e44c6` en `refactor/route-builder`: Action integrada `45066249833` aún corría al último sondeo. Consultar el resultado antes de actualizar el cierre del frontend.
+- Documentación backend de este lote actualizada en CHANGELOG, ERROR_LOG, PROJECT_STATUS, SECURITY, TESTING y este handoff.
+- Siguiente: esperar/verificar Action Front; registrar brechas pendientes de CRUD/roles/responsive y seguir implementando en las ramas existentes. No cerrar misión.
+
 ## Onboarding público y alcance del rol Admin — validado
 
 - Hallazgo: `/register` dice “Registra tu equipo como Gerente” y el frontend enviaba `roleName=Admin`, pero `AuthController.Register` ignoraba el campo y asignaba `User`. La sesión se creaba, pero la cuenta no podía administrar la empresa.
@@ -600,5 +607,6 @@ Errores de migración, herramientas, QA y soluciones están en `docs/ERROR_LOG.m
 - Registro público ahora no emite tokens; email nuevo/duplicado recibe el mismo 200/payload. `RegisterForm` muestra aviso neutral y manda a Login; E2E compara respuestas y autentica cuenta nueva. Login también usa 401 neutral + hash BCrypt señuelo; smoke compara respuestas y bloquea cuentas inactivas/pendientes.
 - `RegisterUserCommand` hashea antes de consultar existencia y controller espera piso 500 ms; el smoke mide >=450 ms para ambos resultados. Es mitigación temporal, no garantía si storage/red tienen carga variable.
 - Backend Action `45065747053` pasó neutralización de registro (HTTP/MySQL), 107/107 y cleanup, aunque precede a la protección temporal añadida al final de esta fase. Nueva Action tras commit.
+- Backend Action `45066082294` pasó la versión final del lote `52d7e46`, incluidos timing smoke >=450 ms, neutralidad del cuerpo, 107/107 y cleanup.
 - Local: backend Release build 0 warnings/0 errors, xUnit **107/107**, bash syntax y diff-check; Front lint/build y discovery **33**. Código/docs todavía sin commit en esta fase; publicar ramas y confirmar Actions integradas. Revisar recovery bajo carga después.
 - Backend Action `45064942603` validó login anti-enumeración en SHA `30bcb2f` (106 tests, HTTP/MySQL y cleanup); registro neutral es posterior y requiere nueva Action.

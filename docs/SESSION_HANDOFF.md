@@ -1,6 +1,6 @@
 # Session handoff
 
-## Onboarding público y alcance del rol Admin — en validación
+## Onboarding público y alcance del rol Admin — validado
 
 - Hallazgo: `/register` dice “Registra tu equipo como Gerente” y el frontend enviaba `roleName=Admin`, pero `AuthController.Register` ignoraba el campo y asignaba `User`. La sesión se creaba, pero la cuenta no podía administrar la empresa.
 - Cambio local en `chore/stabilize-fleet-platform`: el backend fija Admin como cuenta raíz de cada tenant nuevo; nunca usa el rol del request. `AuthService` emite `owner_id=user.Id` al no haber `OwnerUserId`, y el query filter de la flota confina operaciones a ese ID.

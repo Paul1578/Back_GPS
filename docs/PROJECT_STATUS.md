@@ -6,7 +6,7 @@ Actualización de estabilidad: duplicados de placa en creación/edición ahora s
 
 Nota de actualización: algunos resultados históricos de registro público más abajo describen el contrato anterior (rol User). Desde el cambio de onboarding del 2026-11-22, la expectativa vigente es una cuenta raíz Admin confinada a su tenant; Actions `44999697740` confirmó build, xUnit, smoke HTTP/MySQL de tenant y smoke de concurrencia en `3620cc2`.
 
-## Onboarding público de empresa — en validación — 2026-11-22
+## Onboarding público de empresa — validado — 2026-11-22
 
 - La pantalla pública prometía registrar a la empresa como Gerente, pero AuthController forzaba `User`; una cuenta recién registrada no podía gestionar su flota.
 - Corrección local: el servidor asigna siempre rol Admin como raíz de un tenant nuevo, sin aceptar `roleName` del request. El token usa su propio ID como `owner_id`, conservando filtros de aislamiento de datos.

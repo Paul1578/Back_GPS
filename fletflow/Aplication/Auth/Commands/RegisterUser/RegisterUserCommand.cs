@@ -1,6 +1,7 @@
 using fletflow.Domain.Auth.Entities;
 using fletflow.Infrastructure.Persistence;
 using fletflow.Infrastructure.Persistence.Contracts;
+using fletflow.Domain.Fleet.Exceptions;
 
 namespace fletflow.Application.Auth.Commands
 {
@@ -24,10 +25,21 @@ namespace fletflow.Application.Auth.Commands
             string? firstName = null,
             string? lastName = null)
         {
+            username = username.Trim();
+            email = email.Trim();
+            firstName = string.IsNullOrWhiteSpace(firstName) ? null : firstName.Trim();
+            lastName = string.IsNullOrWhiteSpace(lastName) ? null : lastName.Trim();
+            if (username.Length > 100)
+                throw new ArgumentException("El usuario no puede exceder 100 caracteres.");
+            if (email.Length > 200)
+                throw new ArgumentException("El correo no puede exceder 200 caracteres.");
+            if (firstName?.Length > 100 || lastName?.Length > 100)
+                throw new ArgumentException("Nombres y apellidos no pueden exceder 100 caracteres.");
+
             // 1) Verificar si el usuario ya existe
             var existingUser = await _unitOfWork.Users.GetByEmailAsync(email);
             if (existingUser is not null)
-                throw new InvalidOperationException("El correo ya fue registrado.");
+                throw new BusinessConflictException("El correo ya fue registrado.");
 
             // 2) Normalizar rol
             roleName = string.IsNullOrWhiteSpace(roleName) ? "User" : roleName.Trim();

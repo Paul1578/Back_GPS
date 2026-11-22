@@ -388,3 +388,11 @@ Errores de migración, herramientas, QA y soluciones están en `docs/ERROR_LOG.m
 - Riesgo abierto: cola en memoria (hasta 256) no es durable y piso no garantiza timings idénticos bajo saturación. Añadir outbox durable protegido antes de garantía productiva. Credenciales SMTP siguen externas.
 - Otros pendientes: decisión del usuario sobre promoción de Admin por cuentas delegadas, cobertura CRUD/responsive restante, y no cerrar misión.
 - Backend commit `35ad393` quedó validado por Actions `45024262135`: Release build 0 warnings/0 errores, xUnit 76/76, smoke MySQL/API success y cleanup `0 rutas/posiciones/vehículos`.
+
+## Nueva iteración — altas robustas y matriz Driver — 2026-11-22
+
+- Auditoría multiagente independiente halló P2: email duplicado concurrente podía caer en 500, límites User/Email/FirstName/LastName no validaban y faltaba prueba Driver de assignment-options.
+- Backend local: RegisterUserCommand trim/limits 100/200/100/100; UserController 400 para límites y 409 sólo al confirmar email duplicado tras DbUpdateException. Smoke MySQL real verifica límites, no persistencia inválida y carrera 200/409 con exactamente User/Role/PasswordResetToken; Driver options 403. Cleanup de fixtures completo.
+- Front local: `TeamManagement` maxLength y validación client-side trim/longitud; E2E de TeamManagement verifica atributos. `npm run lint`, `npm run build`, discovery 19 pasaron después de quitar props duplicadas detectadas por lint.
+- El primer smoke falló por una expectativa vieja que asumía username/nombres de fixture cortos; expectation ajustada a valores máximos, repetición completa exit 0. Error registrado.
+- Pendiente: ejecutar browser E2E contra API/MySQL en CI y Actions con estos SHA; no completar objetivo. Sigue abierta política Admin delegado, outbox durable/SMTP y límites externos anotados.

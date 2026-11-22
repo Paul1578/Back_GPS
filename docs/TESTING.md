@@ -362,3 +362,10 @@ La invitación envía sólo el enlace de activación; el usuario fija su contras
 - Smoke HTTP/MySQL real comparó JSON ordenado y HTTP 200 para ambas cuentas; ambas duraciones fueron >=200 ms. La cola ejecutó el worker y registró `SmtpHost no configurado`; no se envió email ni se comunicó como enviado.
 - `EmailDeliveryQueue` es volátil y bounded (256). Falta outbox durable y prueba de entrega SMTP cuando haya credenciales vigentes.
 - Actions Backend `45024262135` para SHA `35ad3934daadafd16d553c11b999011d44ea2753`: `success`; build 0 warnings/0 errors, xUnit 76/76, smoke HTTP/MySQL tenant/concurrencia y cleanup cero.
+
+## Alta de miembros y opciones de asignación por Driver — 2026-11-22
+
+- Smoke API/MySQL 8: username/nombres 100 y email 200 aceptados. Username 101, email 201, firstName 101 y lastName 101 devuelven HTTP 400; consulta SQL confirma cero filas para los correos inválidos.
+- Dos POST `/Users` concurrentes con correo igual: exactamente HTTP 200 y 409; MySQL confirma exactamente `1 User : 1 UserRole : 1 PasswordResetToken` y cleanup borra la cuenta.
+- Driver autenticado probó GET `/Routes/assignment-options` y recibió 403; smoke también valida User 403 y acceso Logistics 200 sin filtrar datos cross-tenant.
+- Corrida completa contra API real + MySQL 8 desechable terminó exit code 0; cleanup verificó 0 rutas, posiciones y vehículos y retiró usuarios QA.

@@ -281,3 +281,9 @@
 - SMTP ya no bloquea la petición de recuperación; un worker bounded intenta entregar fuera del request.
 - Respuestas de cuenta conocida/desconocida tienen el mismo payload y mínimo de 250 ms. Cola llena/SMTP no configurado queda en logs y nunca se afirma éxito.
 - La cola en memoria requiere sustituirse por un outbox durable antes de tratar entrega como operación garantizada en producción.
+
+## 2026-11-22 — Altas de miembros y matriz de asignaciones
+
+- Backend valida Username/FirstName/LastName hasta 100 y Email hasta 200, y traduce duplicados de email concurrentes a HTTP 409 con atomicidad.
+- Formulario TeamManagement refleja límites de API y trimea entradas antes del envío.
+- Smoke añade validación max/max+1, carrera HTTP/MySQL de email, Driver sin acceso a options y cleanup explícito de cuentas QA.

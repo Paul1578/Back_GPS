@@ -93,3 +93,9 @@ Cambiar, restablecer o activar una contraseña incrementa `User.TokenVersion`, r
 
 - La API devuelve contenido idéntico para correo conocido/desconocido y un mínimo de 250 ms de respuesta; el envío SMTP se realiza fuera del request en worker bounded.
 - Error SMTP se registra como fallo y no se comunica entrega exitosa. La cola actual es local a proceso y no durable; no utilizarla como garantía de entrega en producción hasta añadir outbox persistente protegido.
+
+## Altas de miembros — límites y duplicados concurrentes (2026-11-22)
+
+- Máximos de persistencia y API: Username 100, FirstName 100, LastName 100 y Email 200 caracteres; recortar espacios periféricos antes de guardar.
+- Correo ya existente, incluida carrera concurrente protegida por índice único global, produce conflicto 409; una carrera debe persistir una sola cuenta y un único conjunto de UserRole/token de activación.
+- Driver no puede consultar `/Routes/assignment-options`; Admin, Manager y Logistics tienen acceso según sus permisos operativos; User también recibe 403.

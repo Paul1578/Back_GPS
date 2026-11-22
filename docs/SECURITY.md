@@ -119,3 +119,9 @@ El smoke anónimo solicitó rol Admin en el registro; la fila persistida conserv
 - Tanto correo existente como desconocido esperan un mínimo de 250 ms; el smoke HTTP compara respuestas JSON/códigos y exige al menos 200 ms para ambos casos.
 - MySQL 8 + API reales: ambas respuestas fueron HTTP 200 idénticas; el worker registró `SmtpHost no configurado` y no indicó éxito de envío. No se envió correo.
 - Límite residual: la cola es volátil; un reinicio o cola llena puede descartar solicitudes. El mensaje no confirma envío. Para uso productivo hace falta outbox durable y protección/encriptación del contenido sensible. La duración mínima reduce el canal temporal pero no garantiza igualdad bajo DB lenta/sobrecarga; tratar timing como mitigado parcialmente, no imposible.
+
+## Creación concurrente de cuentas — 2026-11-22
+
+- La unicidad del correo se aplica por índice global MySQL. Si dos altas cruzan el pre-check, el guardado perdedor identifica el duplicado confirmado por DB y responde 409; no convierte otras excepciones DB a conflicto ni expone detalles internos.
+- `RegisterUserCommand` aplica límites de la entidad antes de persistir y el controller entrega 400 para campos fuera de contrato. MySQL smoke confirmó una sola cuenta/rol/token tras dos requests concurrentes al mismo email y ninguna persistencia para límites excedidos.
+- `/Routes/assignment-options` rechaza token Driver (403); la autorización en backend sigue siendo la fuente de verdad.

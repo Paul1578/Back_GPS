@@ -822,3 +822,13 @@ Cada cambio de API debe incluir validación de compilación, migraciones si apli
 - Verificación local: xUnit Release 76/76; build 0 warnings/0 errores; smoke API/MySQL 8 exit 0 con payloads/códigos idénticos y ambos tiempos >=200 ms. El worker reportó SMTP no configurado, sin enviar correo real.
 - Límite explícito: la cola de proceso no es durable y el piso de tiempo no garantiza igualdad ante saturación/DB lenta. Requiere outbox durable protegido para producción; no marcar como eliminación matemática del canal temporal.
 - Error de edición durante este fix: el hunk inicial no coincidió con el cuerpo real (`normalizedEmail` se valida como nullable y tiene early return); no hubo cambios aplicados. Solución: releer el método exacto y dividir el parche. Prevención: revisar BOM/contexto y ramas de retorno reales antes de cambiar timing.
+
+## 2026-11-22 — CREATE USER no validaba límites de Users y email race — CORREGIDO
+
+- Auditoría independiente encontró que User/Email/FirstName/LastName superaban las longitudes EF/MySQL (100/200/100/100) y que dos POST simultáneos al mismo correo podían dejar un `DbUpdateException` sin traducir a 500.
+- Solución: `RegisterUserCommand` recorta valores y valida longitudes; `UsersController` devuelve 400 para username/email/nombres fuera de límite; duplicado existente y colisión del índice Email se traducen a `BusinessConflictException`/409. El manejo sólo convierte a conflicto si la consulta confirma correo duplicado, conserva excepciones no relacionadas.
+- Front limita inputs a máximos backend y valida texto recortado antes de enviar; E2E comprueba `maxlength` en TeamManagement.
+- Smoke MySQL/API de límites probó max username/nombres=100 y email=200 con 200; max+1 para cada campo dio 400 y persistencia cero. Dos altas simultáneas al mismo email produjeron 200/409 y exactamente una fila User, UserRole y PasswordResetToken; cleanup cero.
+- También se agregó HTTP Driver para `/Routes/assignment-options`; Driver recibe 403. El mismo contrato se conserva para User y permitido para Logistics/Managers según matriz.
+- Primer smoke falló después de llegar al test cross-tenant porque el fixture a longitud máxima ya no coincidía con una expectativa anterior de username/nombre corto. Solución: comparar contra valores máximos de ese fixture; repetición completa exit 0.
+- Error de exploración: se intentó leer `e2e/fleet-admin.spec.ts` desde Back y `src/Components/...` desde Backend; rutas relativas no existen ahí y no hubo modificación. Solución: repetir desde checkout Front. Prevención: separar comandos por repositorio al agrupar inspecciones.

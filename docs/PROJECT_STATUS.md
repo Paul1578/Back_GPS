@@ -295,3 +295,9 @@ Nota de actualización: algunos resultados históricos de registro público más
 
 - Backend `35ad393`: Actions `45024262135` success; Release build 0 warnings/0 errores, xUnit **76/76**, smoke HTTP/MySQL tenant y concurrencia aprobado, cleanup verificado `0 rutas / 0 posiciones / 0 vehículos`.
 - El smoke incluye los asserts nuevos de refresh/logout-all y recuperación de password; no se usó SMTP real.
+
+## CRUD/seguridad de alta de miembros — lote local pendiente de Actions
+
+- User Create backend valida límites (100/200/100/100), trim y duplicate email race 409; Front aplica `maxLength` y valida trims en Gestión de Equipo.
+- Smoke HTTP/MySQL real pasó: valores límite aceptados, límite+1 HTTP 400 sin filas, altas concurrentes email 200/409 y una sola User/role/token; Driver options 403; cleanup limpio.
+- Front lint/build/discovery 19 pasó tras quitar dos props duplicadas detectadas en primera lint (error documentado). Integración navegador/API/MySQL y Actions para los HEAD nuevos pendiente.

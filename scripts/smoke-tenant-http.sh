@@ -40,6 +40,7 @@ vehicle_id=""
 driver_id=""
 other_tenant_email=""
 restricted_user_email=""
+duplicate_email_race=""
 deactivated_user_email=""
 inactive_driver_user_email=""
 inactive_linked_driver_id=""
@@ -97,6 +98,9 @@ cleanup() {
     if [[ -n "$restricted_user_email" ]]; then
       sql+=" SET @qa_user_id=(SELECT Id FROM Users WHERE Email='$restricted_user_email'); DELETE FROM RefreshTokens WHERE UserId=@qa_user_id; DELETE FROM PasswordResetTokens WHERE UserId=@qa_user_id; DELETE FROM UserRoles WHERE UserId=@qa_user_id; DELETE FROM Users WHERE Id=@qa_user_id;"
     fi
+    if [[ -n "$duplicate_email_race" ]]; then
+      sql+=" SET @qa_user_id=(SELECT Id FROM Users WHERE Email='$duplicate_email_race'); DELETE FROM RefreshTokens WHERE UserId=@qa_user_id; DELETE FROM PasswordResetTokens WHERE UserId=@qa_user_id; DELETE FROM UserRoles WHERE UserId=@qa_user_id; DELETE FROM Users WHERE Id=@qa_user_id;"
+    fi
     if [[ -n "$driver_race_email_a" ]]; then
       sql+=" SET @qa_user_id=(SELECT Id FROM Users WHERE Email='$driver_race_email_a'); DELETE FROM RefreshTokens WHERE UserId=@qa_user_id; DELETE FROM PasswordResetTokens WHERE UserId=@qa_user_id; DELETE FROM UserRoles WHERE UserId=@qa_user_id; DELETE FROM Users WHERE Id=@qa_user_id;"
     fi
@@ -139,6 +143,20 @@ cleanup() {
       fi
       if [[ "$remaining" == "0:0:0" ]]; then
         echo "Cleanup verificado: 0 rutas, 0 posiciones GPS y 0 vehículos Logistics/Manager." >&2
+      fi
+    fi
+    if [[ -n "$duplicate_email_race" ]]; then
+      duplicate_email_remaining="$(mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" \
+        --batch --skip-column-names "$db_name" \
+        -e "SELECT COUNT(*) FROM Users WHERE Email='$duplicate_email_race';" 2>"$work_dir/email_race_cleanup_verify.stderr")" || {
+        echo "No se pudo verificar cleanup de la carrera de email." >&2
+        cat "$work_dir/email_race_cleanup_verify.stderr" >&2
+        status=1
+        duplicate_email_remaining="unknown"
+      }
+      if [[ "$duplicate_email_remaining" != "0" && "$duplicate_email_remaining" != "unknown" ]]; then
+        echo "Cleanup dejó $duplicate_email_remaining cuenta(s) de la carrera de email." >&2
+        status=1
       fi
     fi
     if [[ -n "$inactive_driver_user_email" ]]; then
@@ -238,9 +256,28 @@ jq -e 'type == "array" and length == 0' "$work_dir/response.json" >/dev/null || 
 }
 
 suffix="$(date +%s%N | tail -c 10)"
-restricted_user_email="fletflow.e2e.user.ci.$suffix@example.test"
+email_local_prefix="fletflow$suffix"
+email_local_padding=$((187 - ${#email_local_prefix}))
+restricted_user_email="$(printf '%*s' "$email_local_padding" '' | tr ' ' a)${email_local_prefix}@example.test"
+[[ ${#restricted_user_email} -eq 200 ]] || { echo "El fixture de correo límite no tiene 200 caracteres." >&2; exit 1; }
 restricted_user_password="$(openssl rand -hex 24)"
-request POST /Users "$(jq -nc --arg email "$restricted_user_email" --arg password "$restricted_user_password" --arg username "E2E CI restricted $suffix" '{username:$username,email:$email,password:$password,roleName:"User"}')"
+max_user_name="$(printf '%100s' '' | tr ' ' u)"
+max_person_name="$(printf '%100s' '' | tr ' ' n)"
+too_long_name="$(printf '%101s' '' | tr ' ' n)"
+too_long_email="$(printf '%188s' '' | tr ' ' x)@example.test"
+too_long_username="$(printf '%101s' '' | tr ' ' u)"
+request POST /Users "$(jq -nc --arg email "length.username.$suffix@example.test" --arg username "$too_long_username" '{username:$username,email:$email,roleName:"User"}')"
+expect_status 400 "Rechazar username mayor a 100 caracteres"
+request POST /Users "$(jq -nc --arg email "$too_long_email" --arg username "Length email $suffix" '{username:$username,email:$email,roleName:"User"}')"
+expect_status 400 "Rechazar email mayor a 200 caracteres"
+request POST /Users "$(jq -nc --arg email "length.first.$suffix@example.test" --arg username "Length first $suffix" --arg firstName "$too_long_name" '{username:$username,email:$email,firstName:$firstName,roleName:"User"}')"
+expect_status 400 "Rechazar firstName mayor a 100 caracteres"
+request POST /Users "$(jq -nc --arg email "length.last.$suffix@example.test" --arg username "Length last $suffix" --arg lastName "$too_long_name" '{username:$username,email:$email,lastName:$lastName,roleName:"User"}')"
+expect_status 400 "Rechazar lastName mayor a 100 caracteres"
+invalid_length_user_count="$(mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" "$db_name" \
+  --batch --skip-column-names -e "SELECT COUNT(*) FROM Users WHERE Email IN ('length.username.$suffix@example.test','length.first.$suffix@example.test','length.last.$suffix@example.test','$too_long_email');")"
+[[ "$invalid_length_user_count" == "0" ]] || { echo "Una solicitud de longitud inválida dejó $invalid_length_user_count usuarios persistidos." >&2; exit 1; }
+request POST /Users "$(jq -nc --arg email "$restricted_user_email" --arg password "$restricted_user_password" --arg username "$max_user_name" --arg firstName "$max_person_name" --arg lastName "$max_person_name" '{username:$username,email:$email,password:$password,roleName:"User",firstName:$firstName,lastName:$lastName}')"
 expect_status 200 "Crear usuario de permisos limitados"
 mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" "$db_name" \
   -e "UPDATE Users SET IsActive=1, MustChangePassword=0 WHERE Email='$restricted_user_email';" >/dev/null
@@ -248,6 +285,28 @@ request POST /Auth/login "$(jq -nc --arg email "$restricted_user_email" --arg pa
 expect_status 200 "Login usuario de permisos limitados"
 restricted_user_token="$(jq -er '.token // .accessToken' "$work_dir/response.json")"
 restricted_user_refresh_token="$(jq -er '.refreshToken' "$work_dir/response.json")"
+
+duplicate_email_race="fletflow.e2e.email.race.$suffix@example.test"
+duplicate_email_payload="$(jq -nc --arg email "$duplicate_email_race" --arg password "$(openssl rand -hex 24)" --arg username "Email race A $suffix" '{username:$username,email:$email,password:$password,roleName:"User"}')"
+duplicate_email_payload_b="$(jq -nc --arg email "$duplicate_email_race" --arg password "$(openssl rand -hex 24)" --arg username "Email race B $suffix" '{username:$username,email:$email,password:$password,roleName:"User"}')"
+curl --silent --show-error --output "$work_dir/email_race_a.json" --write-out '%{http_code}' --request POST "$api_base/Users" \
+  --header 'Content-Type: application/json' --header "Authorization: Bearer $token" --data "$duplicate_email_payload" >"$work_dir/email_race_a.status" &
+email_race_a_pid=$!
+curl --silent --show-error --output "$work_dir/email_race_b.json" --write-out '%{http_code}' --request POST "$api_base/Users" \
+  --header 'Content-Type: application/json' --header "Authorization: Bearer $token" --data "$duplicate_email_payload_b" >"$work_dir/email_race_b.status" &
+email_race_b_pid=$!
+wait "$email_race_a_pid"
+wait "$email_race_b_pid"
+email_race_a_status="$(cat "$work_dir/email_race_a.status")"
+email_race_b_status="$(cat "$work_dir/email_race_b.status")"
+[[ "$email_race_a_status:$email_race_b_status" == "200:409" || "$email_race_a_status:$email_race_b_status" == "409:200" ]] || {
+  echo "Alta concurrente con email duplicado debía resultar 200/409, recibió $email_race_a_status/$email_race_b_status." >&2
+  cat "$work_dir/email_race_a.json" "$work_dir/email_race_b.json" >&2
+  exit 1
+}
+duplicate_email_rows="$(mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" "$db_name" \
+  --batch --skip-column-names -e "SELECT CONCAT((SELECT COUNT(*) FROM Users WHERE Email='$duplicate_email_race'), ':', (SELECT COUNT(*) FROM UserRoles ur JOIN Users u ON u.Id=ur.UserId WHERE u.Email='$duplicate_email_race'), ':', (SELECT COUNT(*) FROM PasswordResetTokens pr JOIN Users u ON u.Id=pr.UserId WHERE u.Email='$duplicate_email_race'));")"
+[[ "$duplicate_email_rows" == "1:1:1" ]] || { echo "La carrera de email dejó persistencia parcial/inconsistente ($duplicate_email_rows)." >&2; exit 1; }
 restricted_attempt_plate="E2EQA${suffix: -9}"
 request GET /Vehicles "" "$restricted_user_token"; expect_status 403 "Listar vehículos como User"
 request GET /Routes "" "$restricted_user_token"; expect_status 403 "Listar rutas como User"
@@ -369,6 +428,11 @@ inactive_driver_user_id="$(jq -er '.id' "$work_dir/response.json")"
 inactive_linked_driver_id="$(jq -er '.driverId' "$work_dir/response.json")"
 mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" "$db_name" \
   -e "UPDATE Users SET IsActive=1, MustChangePassword=0 WHERE Id='$inactive_driver_user_id';" >/dev/null
+request POST /Auth/login "$(jq -nc --arg email "$inactive_driver_user_email" --arg password "$inactive_driver_password" '{email:$email,password:$password}')" ""
+expect_status 200 "Login Driver para matriz negativa de opciones de asignación"
+inactive_driver_access_token="$(jq -er '.token // .accessToken' "$work_dir/response.json")"
+request GET /Routes/assignment-options "" "$inactive_driver_access_token"
+expect_status 403 "Denegar opciones de asignación a Driver"
 request PUT "/Users/$inactive_driver_user_id/status?isActive=false" "" "$token"
 expect_status 200 "Desactivar cuenta de Driver enlazado"
 
@@ -544,7 +608,7 @@ request POST "/Users/$restricted_user_id/roles/Admin" "" "$other_token"
 expect_status 404 "Alias de roles no cruza tenants"
 user_state="$(mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" "$db_name" \
   --batch --skip-column-names -e "SELECT CONCAT(CASE WHEN u.IsActive THEN '1' ELSE '0' END, ':', LOWER(r.Name), ':', u.Username, ':', COALESCE(u.FirstName,''), ':', COALESCE(u.LastName,'')) FROM Users u JOIN UserRoles ur ON ur.UserId=u.Id JOIN Roles r ON r.Id=ur.RoleId WHERE u.Id='$restricted_user_id';")"
-[[ "$user_state" == "1:user:E2E CI restricted $suffix::" ]] || { echo "Los intentos cross-tenant alteraron estado, rol o perfil del miembro ($user_state)." >&2; exit 1; }
+[[ "$user_state" == "1:user:$max_user_name:$max_person_name:$max_person_name" ]] || { echo "Los intentos cross-tenant alteraron estado, rol o perfil del miembro ($user_state)." >&2; exit 1; }
 
 request PUT "/Users/$root_user_id/status?isActive=false" "" "$token"
 expect_status 400 "No se puede desactivar el propietario raíz"
@@ -762,4 +826,4 @@ if [[ "$refresh_logout_race_status" == "200" ]]; then
   expect_status 401 "Logout-all revoca el sucesor de refresh concurrente"
 fi
 
-echo "OK: aislamiento HTTP/MySQL entre tenants; autorización User/Manager/Logistics; Logistics creó/editó/leyó ruta, inició operación pickup+delivery con evidencia, registró GPS, completó ruta y verificó vehículo Available; cleanup de Vehicles/Drivers/Routes/RoutePositions; revocación de sesiones."
+echo "OK: aislamiento HTTP/MySQL entre tenants; autorización User/Driver/Manager/Logistics; altas con longitudes límite/rechazo y email duplicado concurrente 200/409 sin persistencia parcial; Logistics creó/editó/leyó ruta, inició operación pickup+delivery con evidencia, registró GPS, completó ruta y verificó vehículo Available; cleanup de Vehicles/Drivers/Routes/RoutePositions/usuarios QA; revocación de sesiones."

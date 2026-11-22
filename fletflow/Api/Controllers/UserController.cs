@@ -194,6 +194,13 @@ namespace fletflow.Api.Controllers
             if (string.IsNullOrWhiteSpace(request.Email))
                 return BadRequest("El email es obligatorio.");
 
+            if (request.Username.Trim().Length > 100)
+                return BadRequest("El usuario no puede exceder 100 caracteres.");
+            if (request.Email.Trim().Length > 200)
+                return BadRequest("El correo no puede exceder 200 caracteres.");
+            if ((request.FirstName?.Trim().Length ?? 0) > 100 || (request.LastName?.Trim().Length ?? 0) > 100)
+                return BadRequest("Nombres y apellidos no pueden exceder 100 caracteres.");
+
             // El flujo de invitación establece una clave aleatoria temporal que el usuario
             // reemplaza al activar su cuenta. Nunca usar una contraseña fija o predecible.
             var temporaryPassword = string.IsNullOrWhiteSpace(request.Password)
@@ -269,6 +276,9 @@ namespace fletflow.Api.Controllers
                 // A competing request may pass the pre-check first. SaveChanges is
                 // atomic for user, Driver and activation token; map a duplicate index
                 // race to the same conflict as the normal pre-check path.
+                if (await _unitOfWork.Users.GetByEmailAsync(request.Email.Trim()) is not null)
+                    throw new fletflow.Domain.Fleet.Exceptions.BusinessConflictException(
+                        "El correo ya fue registrado.");
                 if (isDriver && await _unitOfWork.Drivers.GetByDocumentAsync(request.DocumentNumber!.Trim()) is not null)
                     throw new fletflow.Domain.Fleet.Exceptions.BusinessConflictException(
                         "Ya existe un conductor con ese documento en la empresa.");

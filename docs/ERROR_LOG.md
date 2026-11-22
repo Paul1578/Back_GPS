@@ -919,3 +919,14 @@ Cada cambio de API debe incluir validación de compilación, migraciones si apli
 - Una búsqueda de recuento de pruebas backend se lanzó con raíz `/home/leonardo/Front_gpsR`; `rg` devolvió ruta inexistente y recuento cero. No se interpretó como ausencia de pruebas.
 - Solución: ejecutar cada inspección en su repositorio propietario; Front y Backend comparten convenciones, pero no las carpetas de tests.
 - Prevención: fijar `workdir` al repo del artefacto antes de búsquedas/ejecuciones cruzadas.
+
+## 2026-11-22 — Verificación de arranque Production usó texto de excepción en inglés — CORREGIDO
+
+- El proceso API sí rechazó el key ring sin certificado con el error esperado en español, pero la aserción inicial buscó la versión inglesa y reportó código 1. El proceso imprimió `Aborted (core dumped)` al terminar por excepción de configuración; no quedó archivo `core*` en el repositorio.
+- Solución: ajustar la aserción al mensaje real `Producción requiere FLETFLOW_DATA_PROTECTION_CERT_PATH`; repetición local confirmó el rechazo fail-fast.
+- Prevención: las verificaciones de startup deben afirmar el texto/código efectivamente emitidos por la aplicación y distinguir ese rechazo esperado del resultado de la aserción.
+
+## Auditoría de seguridad — CI integrado completado
+
+- Actions backend `45037399332` pasó con el código `94c3e90`: Release build 0 warnings/0 errors; xUnit **85/85**; smoke HTTP/MySQL de tenant/roles/flota y smoke concurrente de asignación, con cleanup correcto.
+- Se validó en Actions Development el API y los smokes de base real. El guard de configuración Production sin certificado quedó validado localmente; producción con certificado/infra real sigue pendiente de provisión externa.

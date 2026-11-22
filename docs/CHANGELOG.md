@@ -317,3 +317,7 @@
 - Email diagnóstico restringido a Development y al email autenticado.
 - Producción requiere key ring Data Protection persistente y certificado para cifrarlo.
 - xUnit Release 85/85 y build 0 warnings/0 errors; Actions pendiente.
+
+## 2026-11-22 — Cierre integrado backend de seguridad
+
+- Actions `45037399332` validó commit de código `94c3e90`: xUnit 85/85, build sin warnings/errores, smokes HTTP/MySQL y concurrencia de rutas con cleanup.

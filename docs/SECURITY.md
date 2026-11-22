@@ -154,3 +154,5 @@ El smoke anónimo solicitó rol Admin en el registro; la fila persistida conserv
 
 - Un Admin delegado puede crear o promover otros Admin dentro de su tenant. La implementación está aislada por propietario y no se encontró IDOR, pero falta definir si este permiso debe quedar reservado a la cuenta raíz. No cambiar hasta resolver política de producto.
 - La clave/contraseña PFX y el volumen persistente cifrado deben provisionarse por el entorno de despliegue; no hay material de producción disponible en el repositorio para validar su instalación.
+- Verificación local fail-fast: con entorno `Production`, key ring configurado y certificado ausente, el proceso se negó a iniciar con mensaje explícito; no llegó a conectarse a DB ni creó core file en el repositorio.
+- Validación remota `45037399332` sobre `94c3e90`: build limpio, 85/85 xUnit, aislamiento/roles y ciclo de flota HTTP/MySQL, smoke concurrente y cleanup correctos. La configuración productiva con certificado real continúa pendiente de secretos/infraestructura de despliegue.

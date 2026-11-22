@@ -436,3 +436,5 @@ La invitación envía sólo el enlace de activación; el usuario fija su contras
 - `AuthControllerTests` verifica que el endpoint de email diagnóstico da 404 fuera de Development; en Development rechaza destinatario distinto del email autenticado y sólo invoca el sender para la cuenta propia.
 - `dotnet test BackEnd_Gps.sln --configuration Release --no-restore -m:1`: 85/85; build Release: 0 warnings/0 errors. Actions integrado pendiente para la rama actualizada.
 - Producción requiere configuración de key ring persistente y certificado de cifrado; su disponibilidad depende de secretos/infraestructura externa y no se simuló con credenciales productivas.
+- Arranque de configuración Production: sin certificado y con ruta de key ring especificada, la API rechazó el inicio con `Producción requiere FLETFLOW_DATA_PROTECTION_CERT_PATH`; la comprobación enfocada posterior pasó. No se creó core file en el repositorio.
+- Actions [`45037399332`](https://github.com/Paul1578/Back_GPS/actions/runs/45037399332) validó Backend `94c3e90`: Release build 0 warnings/0 errors; xUnit **85/85**; smoke HTTP/MySQL tenant/roles/flota y smoke de concurrencia de asignación; cleanup success.

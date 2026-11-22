@@ -1105,3 +1105,8 @@ Cada cambio de API debe incluir validación de compilación, migraciones si apli
 - Al reasignar `Logistics` a `Driver`, `ChangeUserRoleCommand` reactivaba el perfil Driver vinculado sin comprobar `User.IsActive`; esto dejaba el perfil operativo en la base pese a que la cuenta no podía autenticarse. `CreateDriverCommand` ya impedía crear perfiles desde cuentas inactivas, pero el flujo de cambio de rol no preservaba esa regla.
 - Fix: condicionar la reactivación del perfil a que la cuenta esté activa. Prueba unitaria cubre usuario inactivo/perfil inactivo; smoke HTTP/MySQL cambia Logistics→Driver y verifica que `Driver.isActive` siga false. Test Release local 104/104; publicar/validar Action pendiente.
 - Prevención: probar el estado combinado de cuenta y perfil, no sólo el rol; cambios de rol no deben restaurar permisos operativos de una cuenta desactivada.
+
+## 2026-11-22 — Consulta GH CLI de Action frontend desde el repo backend devolvió 404 — CORREGIDO
+
+- Se consultó el run `45063487802` desde `/home/leonardo/Back_GPS`; GitHub devuelve 404 porque ese run pertenece a `Paul1578/Front_gpsR`, no al repositorio actual. No afectó código ni Actions.
+- Solución: ejecutar `gh run view` desde `/home/leonardo/Front_gpsR`; el run existe y seguía en E2E autenticado. Prevención: consultar cada workflow desde el repositorio propietario del run.

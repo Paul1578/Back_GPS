@@ -6,7 +6,8 @@
 - Front Actions `45082924174` y `45083215716` vieron SQL `Drivers.VehicleId=NULL` tras asignación exitosa. La causa fue `UpdateDriverCommand` guardando una lectura vieja mientras `DriverRepository.UpdateAsync` copia el `VehicleId`. Fix local usa lock compartido, relee Driver y hace rollback en error.
 - Regresión xUnit simula una asignación ocurrida después de la lectura inicial y antes del lock; el nuevo reread conserva la relación. Release xUnit **113/113** con `/tmp/fletflow-dotnet/dotnet`; el dotnet global de esta máquina carece de runtime.
 - `scripts/run-e2e-local.sh` ahora exporta `FLETFLOW_E2E_DRIVER_USER_ID` junto al DriverId para el E2E de Manager mapa. En la Action Front confirmar que el test no fue omitido.
-- Pendiente: `git diff --check`, smoke HTTP/MySQL descartable o CI backend y frontend integradas, actualizar documentación con resultados, commit/push ambas ramas y revisar fallos. No marcar objetivo completo hasta continuar matriz CRUD/roles/responsive.
+- Backend `f8edbcd` pasó Action `45084368819` (Release build/xUnit 113/113, smoke tenant HTTP/MySQL y concurrencia); backend runner/docs `387b62f` pasó Action `45084501616`. Pendiente ver resultado Front autenticado y confirmar el E2E Manager mapa en ejecución.
+- No marcar objetivo completo; continuar matriz CRUD/roles/responsive después del resultado Front.
 
 - `76c2cc8` pasó Action `45077658712`; `229076d` pasó Action `45078321298` (Release build, xUnit 111/111, HTTP/MySQL tenant, concurrencia y cleanup), incluidos los 403 y la ausencia de mutaciones User en Users/Roles.
 - Durante la revisión estática se detectó una comilla faltante en el JSON del POST Driver usado por el nuevo smoke; se corrigió antes de ejecutar la prueba. Detalle y prevención en `docs/ERROR_LOG.md`.

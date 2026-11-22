@@ -2,8 +2,8 @@
 
 - `/tmp/fletflow-dotnet/dotnet test BackEnd_Gps.sln --configuration Release --no-restore`: **113 passed, 0 failed, 0 skipped**.
 - La prueba `UpdateDriver_RereadsAssignmentAfterLockAndPreservesConcurrentVehicleAssignment` modela una asignación entre la lectura inicial y el lock de edición; el VehicleId permanece en el Driver actualizado.
-- Falta smoke real HTTP/MySQL y Action tras publicar el cambio.
-- `run-e2e-local.sh` expone `FLETFLOW_E2E_DRIVER_USER_ID` para ejecutar el escenario Manager mapa; comprobar explícitamente que no esté skipped.
+- Action `45084368819` pasó Release build/xUnit 113/113, smoke tenant HTTP/MySQL, concurrencia y cleanup.
+- `run-e2e-local.sh` expone `FLETFLOW_E2E_DRIVER_USER_ID`; Action `45084501616` para ese cambio pasó. La Action Front debe comprobar explícitamente que Manager mapa no esté skipped.
 
 # Bloqueo de baja de cuenta enlazada a Driver con ruta activa — 2026-11-22
 

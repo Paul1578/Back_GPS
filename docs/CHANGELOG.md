@@ -3,6 +3,7 @@
 - `UpdateDriverCommand` comparte lock de asignación, vuelve a leer Driver bajo transacción y revierte si falla una validación/escritura.
 - Nueva regresión reproduce actualización perdida cuando otra operación asigna Vehicle después de la primera lectura.
 - Verificación local: Release xUnit **113/113**; smoke/CI integrados pendientes.
+- Runner E2E exporta también el UserId de la cuenta Driver QA que necesita la prueba de Manager mapa.
 
 # 2026-11-22 — Bloquear baja de cuenta Driver con ruta activa — VALIDADO EN CI
 

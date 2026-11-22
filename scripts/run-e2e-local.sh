@@ -174,12 +174,18 @@ const routeDriver = await createUser({
   phoneNumber: "0990000001",
 });
 if (!routeDriver.driverId) throw new Error("El fixture Driver de operación no devolvió DriverId.");
-process.stdout.write(JSON.stringify({ driverId: driver.driverId, routeDriverId: routeDriver.driverId }));
+process.stdout.write(JSON.stringify({
+  driverId: driver.driverId,
+  driverUserId: driver.id,
+  routeDriverId: routeDriver.driverId,
+}));
 NODE
 )"
 FLETFLOW_E2E_DRIVER_ID="$(node -e 'process.stdout.write(JSON.parse(process.argv[1]).driverId)' "$FLETFLOW_E2E_DRIVER_IDS")"
+FLETFLOW_E2E_DRIVER_USER_ID="$(node -e 'process.stdout.write(JSON.parse(process.argv[1]).driverUserId)' "$FLETFLOW_E2E_DRIVER_IDS")"
 FLETFLOW_E2E_ROUTE_DRIVER_ID="$(node -e 'process.stdout.write(JSON.parse(process.argv[1]).routeDriverId)' "$FLETFLOW_E2E_DRIVER_IDS")"
 export FLETFLOW_E2E_DRIVER_ID
+export FLETFLOW_E2E_DRIVER_USER_ID
 export FLETFLOW_E2E_ROUTE_DRIVER_ID
 
 mysql --protocol=TCP --host="$MYSQL_HOST" --port="$MYSQL_PORT" --user="$MYSQL_USER" "$DB_NAME" \

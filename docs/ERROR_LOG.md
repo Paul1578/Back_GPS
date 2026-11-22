@@ -1,3 +1,9 @@
+# 2026-11-22 — Runner no exponía UserId requerido por E2E Manager de mapa — CORREGIDO LOCALMENTE
+
+- La prueba Manager del Front necesita la cuenta Driver de QA para cambiar temporalmente su rol y validar mapa/ruta como Manager. El runner sólo exportaba `FLETFLOW_E2E_DRIVER_ID`; el test también requiere el `UserId` de la cuenta, por lo que habría quedado en skipped aunque la suite figurase verde.
+- `scripts/run-e2e-local.sh` ahora captura `driver.id` del POST `/Users` y exporta `FLETFLOW_E2E_DRIVER_USER_ID` junto al DriverId. La ejecución integrada debe comprobar que el caso corre y no figura skipped.
+- Prevención: comprobar variables de fixture contra los nombres que consumen los specs; revisar el reporte por skipped además de exit code.
+
 # 2026-11-22 — Edición de Driver podía sobrescribir asignación concurrente — CORREGIDO; CI PENDIENTE
 
 - La Action frontend `45082924174` (configurada con un worker) y `45083215716` leyeron `Drivers.VehicleId=NULL` en MySQL tras un resultado visual exitoso de asignación. Esto confirmó que limitar los workers no resolvía el defecto.

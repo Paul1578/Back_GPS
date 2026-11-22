@@ -1,6 +1,7 @@
 # Estado actual de estabilización — 2026-11-22
 
 - Corregida posible actualización perdida entre edición del perfil Driver y asignación Vehicle: el comando de edición bloquea/relee la fila antes de guardar. Release xUnit **113/113** local, incluida regresión interleaving; build forma parte de `dotnet test`. Falta CI integrada y smoke HTTP/MySQL posterior al cambio.
+- El runner ahora exporta el UserId requerido por el nuevo E2E Manager mapa; falta validar que la Action lo ejecute (no skipped).
 - Front Actions `45082924174` (un worker) y `45083215716` detectaron la escritura perdida, y dos aserciones UI/E2E ya corregidas en rama Front. Ver `ERROR_LOG.md` en ambos repos.
 - Ramas: `chore/stabilize-fleet-platform` y Front `refactor/route-builder`; main intacta. Misión abierta por cobertura CRUD/roles/responsive, decisiones Admin delegado y User↔Driver, SMTP externo y móvil nativo aplazado.
 

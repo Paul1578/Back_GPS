@@ -304,3 +304,11 @@ Errores de migración, herramientas, QA y soluciones están en `docs/ERROR_LOG.m
 
 
 - Filtros GPS completados en Actions: run `45009987648`, commit `729f326`, success; Release/xUnit 64/64, smoke tenant y concurrencia limpios. Caso `from > to` documentado como HTTP 200 `[]`.
+# Handoff — Endpoint de opciones de asignación para Logistics — 2026-11-22
+
+- Rama `chore/stabilize-fleet-platform`, HEAD antes de esta iteración `36e55cb`; cambios locales pendientes: RoutesController, DTO/query nuevos, smoke y documentación.
+- Causa: el frontend de Rutas pide recursos a `/Vehicles` y `/Drivers`, prohibidos para Logistics aunque puede crear rutas. Endpoint GET `/Routes/assignment-options` expone sólo campos mínimos y roles Admin/Manager/Logistics.
+- Tenant: `FleetFlowDbContext` query filters por `CurrentOwnerUserId` en Vehicle/Driver/Route; smoke verifica Logistics propietario y tenant B vacío, así como User 403 y no exposición de documento/teléfono.
+- Verificación local con `/home/leonardo/.dotnet/dotnet` y `BackEnd_Gps.sln`: Release build 0 warnings/0 errors, xUnit 64/64, `bash -n`, diff-check. No se ha ejecutado aún el smoke HTTP/MySQL para este cambio.
+- Publicar backend primero y verificar Actions; luego publicar Front para correr su Playwright usando el backend nuevo. Resolver fallas y actualizar handoffs/status/error log con run IDs.
+- No marcar auditoría global como completa: CRUD/roles/responsive siguen progresivos; política Admin delegado pendiente; SMTP externo; app nativa aplazada.

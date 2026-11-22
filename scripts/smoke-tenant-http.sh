@@ -204,6 +204,7 @@ restricted_user_refresh_token="$(jq -er '.refreshToken' "$work_dir/response.json
 restricted_attempt_plate="E2EQA${suffix: -9}"
 request GET /Vehicles "" "$restricted_user_token"; expect_status 403 "Listar vehículos como User"
 request GET /Routes "" "$restricted_user_token"; expect_status 403 "Listar rutas como User"
+request GET /Routes/assignment-options "" "$restricted_user_token"; expect_status 403 "Denegar opciones de asignación a User"
 request POST /Vehicles "$(jq -nc --arg plate "$restricted_attempt_plate" '{plate:$plate,brand:"Blocked",model:"Blocked",year:2025}')" "$restricted_user_token"; expect_status 403 "Crear vehículo como User"
 
 restricted_user_new_password="$(openssl rand -hex 24)"
@@ -276,6 +277,12 @@ logistics_refresh_token="$(jq -er '.refreshToken' "$work_dir/response.json")"
 request GET /Routes "" "$logistics_token"; expect_status 200 "Listar rutas como Logistics"
 request GET /Vehicles "" "$logistics_token"; expect_status 403 "Denegar vehículos a Logistics"
 request GET /Drivers "" "$logistics_token"; expect_status 403 "Denegar conductores a Logistics"
+request GET /Routes/assignment-options "" "$logistics_token"
+expect_status 200 "Consultar opciones mínimas de asignación como Logistics"
+jq -e --arg vehicleId "$manager_vehicle_id" --arg driverId "$manager_driver_id" \
+  '(.vehicles | any(.[]; .id == $vehicleId and .plate != "" and has("status"))) and (.drivers | any(.[]; .id == $driverId and .firstName != "" and has("userId"))) and ((.drivers | all(.[]; (has("documentNumber") or has("phoneNumber")) | not)))' \
+  "$work_dir/response.json" >/dev/null \
+  || { echo "Las opciones Logistics no contienen datos operativos mínimos o exponen campos personales." >&2; cat "$work_dir/response.json" >&2; exit 1; }
 request POST /Vehicles "$(jq -nc --arg plate "BLOCK${suffix: -8}" '{plate:$plate,brand:"Blocked",model:"Blocked",year:2025}')" "$logistics_token"
 expect_status 403 "Denegar creación de vehículo a Logistics"
 request POST /Drivers '{"firstName":"Blocked","lastName":"Blocked","documentNumber":"BLOCK00001","phoneNumber":"0990000000"}' "$logistics_token"
@@ -398,6 +405,10 @@ expect_status 200 "Registro tenant B"
 request POST /Auth/login "$(jq -nc --arg email "$other_tenant_email" --arg password "$other_tenant_password" '{email:$email,password:$password}')" ""
 expect_status 200 "Login tenant B"
 other_token="$(jq -er '.token // .accessToken' "$work_dir/response.json")"
+request GET /Routes/assignment-options "" "$other_token"
+expect_status 200 "Opciones de asignación limitadas al tenant B"
+jq -e '(.vehicles | length == 0) and (.drivers | length == 0)' "$work_dir/response.json" >/dev/null \
+  || { echo "Tenant B recibió opciones de vehículos o Drivers del tenant A." >&2; cat "$work_dir/response.json" >&2; exit 1; }
 restricted_user_id="$(mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" "$db_name" \
   --batch --skip-column-names -e "SELECT Id FROM Users WHERE Email='$restricted_user_email';")"
 root_user_id="$(mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" "$db_name" \

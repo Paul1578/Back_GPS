@@ -234,3 +234,8 @@ Nota de actualización: algunos resultados históricos de registro público más
 ## Seguridad de dependencias — 2026-11-22
 
 - NuGet audit repetida sobre la solución: cero paquetes vulnerables en backend y proyecto de pruebas. La auditoría global de criterios funcionales continúa abierta.
+# Iteración pendiente CI — opciones operativas para rutas — 2026-11-22
+
+- Nuevo `GET /Routes/assignment-options`, autorizado para Admin/Manager/Logistics, retorna vehículos y conductores activos con campos mínimos. Filtros EF Core limitan la consulta al propietario autenticado; DTO no incluye documento ni teléfono del Driver.
+- `scripts/smoke-tenant-http.sh` comprueba Logistics 200 con recursos propios, ausencia de PII, User 403 y tenant B sin recursos de tenant A.
+- Local: Release build 0 warnings/0 errors; xUnit 64/64; shell syntax/diff-check correctos. Falta ejecutar el smoke API/MySQL y Actions integradas antes de marcar validado.

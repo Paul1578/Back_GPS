@@ -1,0 +1,42 @@
+using fletflow.Application.Fleet.Dtos;
+using fletflow.Domain.Fleet.Repositories;
+
+namespace fletflow.Application.Fleet.Queries;
+
+public sealed class GetRouteAssignmentOptionsQuery
+{
+    private readonly IVehicleRepository _vehicles;
+    private readonly IDriverRepository _drivers;
+
+    public GetRouteAssignmentOptionsQuery(IVehicleRepository vehicles, IDriverRepository drivers)
+    {
+        _vehicles = vehicles;
+        _drivers = drivers;
+    }
+
+    public async Task<RouteAssignmentOptionsDto> Execute()
+    {
+        var vehicles = await _vehicles.GetAllAsync(onlyActive: true);
+        var drivers = await _drivers.GetAllAsync(onlyActive: true);
+
+        return new RouteAssignmentOptionsDto
+        {
+            Vehicles = vehicles.Select(vehicle => new RouteVehicleOptionDto
+            {
+                Id = vehicle.Id,
+                Plate = vehicle.Plate,
+                Brand = vehicle.Brand,
+                Model = vehicle.Model,
+                Year = vehicle.Year,
+                Status = (int)vehicle.Status,
+            }).ToList(),
+            Drivers = drivers.Select(driver => new RouteDriverOptionDto
+            {
+                Id = driver.Id,
+                FirstName = driver.FirstName,
+                LastName = driver.LastName,
+                UserId = driver.UserId,
+            }).ToList(),
+        };
+    }
+}

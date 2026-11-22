@@ -231,3 +231,8 @@
 
 
 - Actions `45009987648` para `729f326` terminó success: xUnit 64/64, Release build, smoke HTTP/MySQL tenant/Logistics/GPS y concurrencia; cleanup correcto.
+# 2026-11-22 — Endpoint mínimo de asignación de rutas
+
+- Se agregó `GET /Routes/assignment-options` para Admin, Manager y Logistics; el DTO expone vehículos/Drivers activos y excluye datos personales innecesarios.
+- Smokes agregados para denegar User, limitar tenant y comprobar que Logistics recibe sólo opciones de su empresa.
+- Build/xUnit local: 0 warnings/0 errors y 64/64; integración HTTP/MySQL pendiente de Actions.

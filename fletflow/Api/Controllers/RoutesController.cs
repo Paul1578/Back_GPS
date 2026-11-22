@@ -23,6 +23,7 @@ namespace fletflow.Api.Controllers
         private readonly ChangeRouteStatusCommand _changeStatus;
         private readonly GetRouteByIdQuery _getById;
         private readonly GetRoutesQuery _getAll;
+        private readonly GetRouteAssignmentOptionsQuery _getAssignmentOptions;
 
         private readonly RegisterRoutePositionCommand _registerPosition;
         private readonly GetRoutePositionsQuery _getPositions;  
@@ -36,6 +37,7 @@ namespace fletflow.Api.Controllers
             ChangeRouteStatusCommand changeStatus,
             GetRouteByIdQuery getById,
             GetRoutesQuery getAll,
+            GetRouteAssignmentOptionsQuery getAssignmentOptions,
             RegisterRoutePositionCommand registerPosition,
             GetRoutePositionsQuery getPositions,
             DeleteRouteCommand deleteRoute,
@@ -46,11 +48,24 @@ namespace fletflow.Api.Controllers
             _changeStatus = changeStatus;
             _getById = getById;
             _getAll = getAll;
+            _getAssignmentOptions = getAssignmentOptions;
             _registerPosition = registerPosition;
             _getPositions = getPositions;
             _deleteRoute = deleteRoute; 
             _unitOfWork = unitOfWork;
         }
+
+        /// <summary>
+        /// Obtiene sólo los datos operativos necesarios para asignar rutas.
+        /// </summary>
+        [HttpGet("assignment-options")]
+        [Authorize(Roles = "Admin,Manager,Logistics")]
+        public async Task<ActionResult<RouteAssignmentOptionsDto>> GetAssignmentOptions()
+        {
+            var result = await _getAssignmentOptions.Execute();
+            return Ok(result);
+        }
+
         /// <summary>
         /// Elimina una ruta por su ID.
         /// </summary>

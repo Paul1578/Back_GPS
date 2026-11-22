@@ -629,3 +629,11 @@ Cada cambio de API debe incluir validación de compilación, migraciones si apli
 
 - La inspección buscó `fletflow/Program.cs`, aunque el entry point está en la raíz del repositorio. `rg --files` localizó el archivo; se leyó el path correcto y se confirmó que el proceso toma variables de entorno antes de `.env`. No se ejecutó ni modificó configuración local por esa búsqueda fallida.
 - Prevención: consultar el inventario de archivos antes de asumir que el entry point está dentro del proyecto de dominio/API.
+# 2026-11-22 — Logistics no podía cargar recursos para crear rutas — EN VALIDACIÓN
+
+- Acciones previas: Logistics podía crear rutas, pero el frontend no podía consultar `/Vehicles` ni `/Drivers` (403), mientras que esos datos eran requeridos por el constructor.
+- Solución en curso: `GET /Routes/assignment-options` devuelve sólo vehículos/Drivers activos y campos operativos mínimos; Controller permite Admin/Manager/Logistics. Repositorios consultan mediante `FleetFlowDbContext`, cuyos query filters limitan `OwnerUserId` al propietario actual.
+- El smoke verifica Logistics 200 con los registros del tenant propietario sin documento/teléfono, User 403 y un segundo tenant con arrays vacíos.
+- Verificación local: Release build 0 warnings/0 errors, xUnit 64/64, `bash -n` y diff-check. Falta ejecutar smoke HTTP/MySQL y Actions tras publicar.
+- Error de comando: la primera invocación apuntó a `fletflow.sln`, que no existe; el nombre correcto es `BackEnd_Gps.sln`. El sistema `/usr/bin/dotnet` tampoco tiene runtime utilizable; se repitió con `/home/leonardo/.dotnet/dotnet` SDK 8.0.428.
+- Prevención: consultar `rg --files -g '*.sln'` antes de invocar build y usar el SDK local conocido cuando el host de sistema no tenga runtime.

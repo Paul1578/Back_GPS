@@ -5,6 +5,8 @@ using fletflow.Domain.Fleet.Entities;
 using fletflow.Infrastructure.Persistence.Contracts;  // IUnitOfWork
 using fletflow.Infrastructure.Security;
 using fletflow.Infrastructure.Security.Hashing;
+using fletflow.Domain.Fleet.Exceptions;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Logging;
 using System.Diagnostics;
@@ -31,8 +33,9 @@ namespace fletflow.Infrastructure.Services
         }
 
         // Access + Refresh
-        public async Task<AuthResponseDto> RegisterAsync(string username, string email, string password, string roleName = "User")
+        public async Task RegisterAsync(string username, string email, string password, string roleName = "User")
         {
+            email = email.Trim();
             var cmd = new RegisterUserCommand(_unitOfWork);
             var user = await cmd.Execute(
                 username,
@@ -59,11 +62,20 @@ namespace fletflow.Infrastructure.Services
 
                     var driver = Driver.Create(first, last, doc, phone, user.Id);
                     await _unitOfWork.Drivers.AddAsync(driver);
-                    await _unitOfWork.CommitAsync();
                 }
             }
 
-            return await IssueTokensAsync(user);
+            try
+            {
+                await _unitOfWork.CommitAsync();
+            }
+            catch (DbUpdateException)
+            {
+                // El índice único puede ganar una carrera luego del pre-check.
+                if (await _unitOfWork.Users.GetByEmailAsync(email) is not null)
+                    throw new BusinessConflictException("El correo ya fue registrado.");
+                throw;
+            }
         }
 
         // Access + Refresh

@@ -6,6 +6,7 @@ using fletflow.Application.Auth.Commands.ActivateAccount;
 using fletflow.Application.Auth.Commands.ResetPassword;
 using fletflow.Application.DTOs.Auth;
 using fletflow.Infrastructure.Services;
+using fletflow.Domain.Fleet.Exceptions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
@@ -32,12 +33,12 @@ namespace fletflow.Api.Controllers
         }
 
         /// <summary>
-        /// Registra un nuevo usuario y devuelve tokens de acceso y refresh.
+        /// Solicita el registro de una nueva empresa sin revelar si el correo ya existe.
         /// </summary>
         /// <param name="dto">Datos de registro (usuario, email, contraseña, rol).</param>
-        /// <returns>Tokens de acceso y refresh.</returns>
-        /// <response code="200">Usuario registrado correctamente.</response>
-        /// <response code="400">Datos inválidos o el correo ya fue registrado.</response>
+        /// <returns>Mensaje neutral; el usuario inicia sesión con sus credenciales.</returns>
+        /// <response code="200">Solicitud procesada.</response>
+        /// <response code="400">Datos con formato inválido.</response>
         [HttpPost("register")]
         [AllowAnonymous]
         public async Task<IActionResult> Register([FromBody] RegisterUserDto dto)
@@ -46,8 +47,16 @@ namespace fletflow.Api.Controllers
             // El alta pública crea la cuenta raíz Admin de una empresa nueva.
             // El rol es fijo en el servidor y nunca se toma del request; owner_id queda
             // asociado al usuario recién creado para aislar su empresa del resto.
-            var response = await _registrationService.RegisterAsync(dto.Username, dto.Email, dto.Password, "Admin");
-            return Ok(response);
+            try
+            {
+                await _registrationService.RegisterAsync(dto.Username, dto.Email, dto.Password, "Admin");
+            }
+            catch (BusinessConflictException)
+            {
+                // El payload y status se mantienen iguales para cuenta nueva y email existente.
+            }
+
+            return Ok(new { message = "Si el registro puede completarse, podrás iniciar sesión con tus credenciales." });
         }
 
         /// <summary>

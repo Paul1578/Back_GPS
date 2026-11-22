@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.FileProviders;
 using System.Security.Claims;
+using fletflow.Domain.Fleet.Exceptions;
 
 namespace BackEnd_Gps.Tests;
 
@@ -29,6 +30,24 @@ public class AuthControllerTests
 
         Assert.IsType<OkObjectResult>(result);
         Assert.Equal("Admin", registration.RoleName);
+    }
+
+    [Fact]
+    public async Task Register_ReturnsSameNeutralResponseWhenEmailAlreadyExists()
+    {
+        var existingEmailRegistration = new RecordingRegistrationService(duplicateEmail: true);
+        var controller = new AuthController(null!, existingEmailRegistration, null!, null!, new TestWebHostEnvironment("Development"));
+        var dto = new RegisterUserDto
+        {
+            Username = "operator",
+            Email = "operator@example.test",
+            Password = "safe-password",
+        };
+
+        var result = Assert.IsType<OkObjectResult>(await controller.Register(dto));
+
+        Assert.Equal("Si el registro puede completarse, podrás iniciar sesión con tus credenciales.",
+            result.Value!.GetType().GetProperty("message")!.GetValue(result.Value));
     }
 
     [Fact]
@@ -110,14 +129,16 @@ public class AuthControllerTests
         public IFileProvider ContentRootFileProvider { get; set; } = new NullFileProvider();
     }
 
-    private sealed class RecordingRegistrationService : IUserRegistrationService
+    private sealed class RecordingRegistrationService(bool duplicateEmail = false) : IUserRegistrationService
     {
         public string? RoleName { get; private set; }
 
-        public Task<AuthResponseDto> RegisterAsync(string username, string email, string password, string roleName = "User")
+        public Task RegisterAsync(string username, string email, string password, string roleName = "User")
         {
             RoleName = roleName;
-            return Task.FromResult(new AuthResponseDto());
+            return duplicateEmail
+                ? Task.FromException(new BusinessConflictException("El correo ya fue registrado."))
+                : Task.CompletedTask;
         }
     }
 }

@@ -497,10 +497,24 @@ public_registration_email="fletflow.e2e.register.ci.$(date +%s%N | tail -c 9)@ex
 public_registration_password="$(openssl rand -hex 24)"
 request POST /Auth/register "$(jq -nc --arg username "Public registration QA" --arg email "$public_registration_email" --arg password "$public_registration_password" '{username:$username,email:$email,password:$password,roleName:"Driver"}')" ""
 expect_status 200 "Registro público crea empresa raíz ignorando el rol solicitado"
+registration_neutral_response='{"message":"Si el registro puede completarse, podrás iniciar sesión con tus credenciales."}'
+jq -S . "$work_dir/response.json" >"$work_dir/register-new.sorted.json"
+printf '%s' "$registration_neutral_response" | jq -S . >"$work_dir/register-expected.sorted.json"
+cmp -s "$work_dir/register-new.sorted.json" "$work_dir/register-expected.sorted.json" || {
+  echo "El registro nuevo no devolvió el mensaje neutral esperado." >&2; cat "$work_dir/response.json" >&2; exit 1;
+}
+request POST /Auth/register "$(jq -nc --arg username "Duplicate registration QA" --arg email "$public_registration_email" --arg password "$public_registration_password" '{username:$username,email:$email,password:$password,roleName:"User"}')" ""
+expect_status 200 "Registro duplicado devuelve status neutral"
+jq -S . "$work_dir/response.json" >"$work_dir/register-duplicate.sorted.json"
+cmp -s "$work_dir/register-expected.sorted.json" "$work_dir/register-duplicate.sorted.json" || {
+  echo "El endpoint de registro permite distinguir email nuevo de existente." >&2; cat "$work_dir/response.json" >&2; exit 1;
+}
 mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" "$db_name" \
   --batch --skip-column-names -e "SELECT CONCAT(COUNT(DISTINCT ur.RoleId), ':', COALESCE(GROUP_CONCAT(DISTINCT LOWER(r.Name)), 'none')) FROM Users u LEFT JOIN UserRoles ur ON ur.UserId=u.Id LEFT JOIN Roles r ON r.Id=ur.RoleId WHERE u.Email='$public_registration_email';" >"$work_dir/registration_role.txt"
 registered_role_state="$(cat "$work_dir/registration_role.txt")"
 [[ "$registered_role_state" == "1:admin" ]] || { echo "Registro público produjo roles inesperados ($registered_role_state)." >&2; exit 1; }
+request POST /Auth/login "$(jq -nc --arg email "$public_registration_email" --arg password "$public_registration_password" '{email:$email,password:$password}')" ""
+expect_status 200 "Login después del registro público neutral"
 public_registration_token="$(jq -er '.token // .accessToken' "$work_dir/response.json")"
 public_registration_user_id="$(mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" "$db_name" \
   --batch --skip-column-names -e "SELECT Id FROM Users WHERE Email='$public_registration_email';")"

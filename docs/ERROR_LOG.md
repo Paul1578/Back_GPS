@@ -1117,13 +1117,21 @@ Cada cambio de API debe incluir validación de compilación, migraciones si apli
 - Al abortar temprano, cleanup borraba el vehículo antes que el perfil Driver vinculado; la FK `Drivers.VehicleId` rechazó el DELETE y dejó de ejecutarse el resto del bloque. Se mueve el borrado del Driver antes de vehículos, después de eliminar sus rutas. Verificar que la siguiente ejecución termine con cero fixtures.
 - Corrección verificada por Action `45064477054` en `1534828`: smoke HTTP/MySQL y cleanup success; 104/104 xUnit.
 
-## 2026-11-22 — Login distinguía correo desconocido de contraseña incorrecta — CORREGIDO LOCAL; CI PENDIENTE
+## 2026-11-22 — Login distinguía correo desconocido de contraseña incorrecta — CORREGIDO Y VALIDADO
 
 - La auditoría de seguridad confirmó `POST /Auth/login` respondía 400/mensaje “User does not exist” para cuentas ausentes y 401/mensaje “Incorrect password” para cuentas existentes; también distinguía cuentas pendientes de activación. Esto permitía enumerar usuarios.
 - Login ahora valida password con BCrypt incluso para correo desconocido usando un hash señuelo, rechaza cuenta inactiva/pendiente y usa un mismo 401/mensaje genérico en todos esos casos. Se agregaron pruebas unitarias y comparación de estado/mensaje en smoke HTTP.
 - Prevención: los errores de autenticación no deben confirmar si falló el nombre de cuenta, la contraseña o el estado de la cuenta. La comprobación temporal no reemplaza medición de timing bajo carga.
+- Backend Action `45064942603` pasó en `30bcb2f`: Release build/tests y smoke HTTP/MySQL de igualdad de status/mensaje.
 
 ## 2026-11-22 — Filtro jq de estado de Action usó precedencia incorrecta — CONSULTA CORREGIDA
 
 - Una expresión `gh run view --jq` combinó arreglo y pipeline sin paréntesis; jq devolvió `expected an object but got: string`. No afectó pruebas, código ni Actions.
 - Se corrigió seleccionando propiedades y agrupando el filtro de steps como una lista. Prevención: encerrar expresiones pipeline dentro de paréntesis al componer objetos jq.
+
+## 2026-11-22 — Registro público revelaba email existente con 409 — CORREGIDO LOCAL; CI PENDIENTE
+
+- `POST /Auth/register` respondía con tokens/200 a email nuevo y 409/mensaje explícito si ya existía, permitiendo enumerar cuentas y auto-iniciando una sesión sólo en el caso nuevo.
+- Alta nueva ahora se persiste sin crear sesión; respuesta 200 y payload neutral son idénticos para email nuevo/duplicado. Front muestra el mismo mensaje y redirige a Login. Manejo de carrera por índice único normaliza la colisión a conflicto interno que el controller neutraliza.
+- E2E compara respuestas, inicia sesión tras registro y smoke HTTP/MySQL verifica igualdad de payload. Release 107/107, build 0/0; CI integrado pendiente.
+- Prevención: probar también alta pública duplicada y comparar status y cuerpo; nunca retornar tokens en un branch de éxito si los conflictos se normalizan a respuesta pública genérica.

@@ -469,7 +469,7 @@ Nota de actualización: algunos resultados históricos de registro público más
 - La primera Action `45063802250` identificó que el smoke se ejecutaba antes de terminar la ruta y que cleanup borraba el vehículo antes del Driver (FK restrictiva). Ambos casos corregidos; nuevo CI pendiente.
 - Backend Action `45064477054` pasó en commit `1534828`: build, 104/104 xUnit, smoke HTTP/MySQL del cambio de rol y cleanup.
 
-## Seguridad — login anti-enumeración y hallazgo de registro pendiente
+## Seguridad — anti-enumeración en login y registro
 
-- Login ahora responde uniformemente ante email inexistente, password incorrecto, cuenta inactiva o pendiente; BCrypt usa hash señuelo para el usuario inexistente. Release build 0/0, xUnit **106/106**, shell syntax y diff-check pasan; CI pendiente.
-- El endpoint público de registro todavía confirma email existente vía 409. Está documentado en `SECURITY.md`; ajustar respuesta y flujo frontend antes del cierre global.
+- Login ahora responde uniformemente ante email inexistente, password incorrecto, cuenta inactiva o pendiente; BCrypt usa hash señuelo para el usuario inexistente. Registro público responde igual con email nuevo/duplicado, sin emitir sesión; Front lleva a Login.
+- Release build 0 warnings/0 errors, xUnit **107/107**, shell syntax, Front lint/build/discovery (33) y diff-check pasan localmente. Actions para registro neutral aún pendientes.

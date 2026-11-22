@@ -410,5 +410,9 @@
 
 ## 2026-11-22 — Login genérico contra enumeración de cuentas
 
-- Login ahora devuelve el mismo 401 y mensaje para correo inexistente, contraseña incorrecta, cuenta inactiva y cuenta pendiente de activación. Se ejecuta BCrypt contra hash señuelo cuando no existe usuario para reducir la diferencia temporal. Pruebas unitarias y smoke HTTP/MySQL agregados; CI pendiente.
-- Release build **0 warnings/0 errors** y xUnit **106/106**; `bash -n` y diff-check pasan. CI integrada pendiente.
+- Login ahora devuelve el mismo 401 y mensaje para correo inexistente, contraseña incorrecta, cuenta inactiva y cuenta pendiente de activación. Se ejecuta BCrypt contra hash señuelo cuando no existe usuario para reducir la diferencia temporal.
+- Release build **0 warnings/0 errors**, xUnit **106/106**; backend Action `45064942603` pasó build/tests y smoke HTTP/MySQL de login uniforme en `30bcb2f`.
+
+## 2026-11-22 — Registro neutral para no enumerar emails
+
+- Registro público responde igual si el email es nuevo o ya existe; ya no auto-emite tokens. Front muestra mensaje neutral y envía a login. Alta nueva y duplicada se validan en el E2E real. Release build 0/0, xUnit 107/107, lint/build/discovery Front pasan local; Actions pendientes.

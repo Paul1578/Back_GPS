@@ -594,7 +594,9 @@ Errores de migración, herramientas, QA y soluciones están en `docs/ERROR_LOG.m
 - Smoke `scripts/smoke-tenant-http.sh` ampliado para ejecutar Logistics→Driver en API/MySQL real y asegurar `Driver.isActive=false`. Error/causa/prevención en `docs/ERROR_LOG.md`; suite 104/104, bash syntax y diff-check pasan. Commit y Actions nuevas pendientes.
 - Action `45063802250` confirmó causa de test inválido: el cambio de rol se hizo con ruta pendiente (409 esperado). El ciclo se movió después de cancelar ruta; cleanup ahora elimina el Driver vinculado antes del vehículo para respetar FK. Action `45064477054` pasó el smoke y el cleanup.
 
-## Continuación — login genérico
+## Continuación — registro y login neutrales
 
 - Seguridad read-only encontró enumeración por mensajes/estados distintos en login. `LoginUserCommand` normaliza a 401/mensaje genérico para desconocido, contraseña incorrecta, cuenta inactiva y pendiente; ejecuta BCrypt con hash señuelo si no hay usuario. Se añadió xUnit y smoke HTTP que compara código/mensaje.
-- Release build **0 warnings/0 errors**, xUnit **106/106**, bash syntax y diff-check pasan. Falta commit y Actions. El registro público sigue revelando email duplicado con 409; SECURITY.md registra el pendiente para resolver con flujo UX neutral. Revisión temporal de recovery bajo carga aún necesaria.
+- Registro público ahora no emite tokens; email nuevo/duplicado recibe el mismo 200/payload. `RegisterForm` muestra aviso neutral y manda a Login; E2E compara respuestas y autentica cuenta nueva. Login también usa 401 neutral + hash BCrypt señuelo; smoke compara respuestas y bloquea cuentas inactivas/pendientes.
+- Local: backend Release build 0 warnings/0 errors, xUnit **107/107**, bash syntax y diff-check; Front lint/build y discovery **33**. Código/docs todavía sin commit en esta fase; publicar ramas y confirmar Actions integradas. Revisar recovery bajo carga después.
+- Backend Action `45064942603` validó login anti-enumeración en SHA `30bcb2f` (106 tests, HTTP/MySQL y cleanup); registro neutral es posterior y requiere nueva Action.

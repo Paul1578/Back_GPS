@@ -1011,9 +1011,24 @@ Cada cambio de API debe incluir validación de compilación, migraciones si apli
 - Solución: restaurar el contenido exacto del commit base y añadir el encabezado conservando sus bytes de newline. El diff neto quedó en 10 líneas nuevas; no se perdió historial.
 - Prevención: antes de escribir documentación histórica, detectar/preservar el newline original y revisar `git diff --stat` por archivo, no sólo `git diff --check`.
 
-## 2026-11-22 — Reasignación de Driver con ruta pendiente — CORREGIDO; smoke/CI PENDIENTES
+## 2026-11-22 — Reasignación de Driver con ruta pendiente — CORREGIDO Y VALIDADO
 
 - Auditoría reprodujo que un Driver podía reasignarse a otro vehículo con una ruta Pending activa y después iniciar esa ruta: la asignación de Driver y Vehicle de la ruta quedaban incompatibles. La transición sólo comprobaba que el Driver estuviera activo.
 - Solución en `AssignDriverToVehicleCommand`: bajo los locks compartidos de Driver/Vehicle, impedir cambiar de vehículo si hay rutas Pending o InProgress activas. Defensa adicional en `ChangeRouteStatusCommand`: volver a exigir `Driver.VehicleId == Route.VehicleId` antes de iniciar.
-- Se agregaron dos regresiones SQLite y un escenario HTTP/MySQL a `smoke-route-concurrency.sh`; el test y la suite Release local pasan 94/94. `bash -n` y `git diff --check` pasan. El smoke contra MySQL y la Action del SHA con el fix aún deben ejecutarse.
+- Se agregaron dos regresiones SQLite y un escenario HTTP/MySQL a `smoke-route-concurrency.sh`; el test y la suite Release local pasan 94/94. `bash -n` y `git diff --check` pasan. Action backend `45048795456` pasó en `27bf75a`: build Release, xUnit 94/94, smoke HTTP/tenant/MySQL y smoke de concurrencia de rutas; cleanup verificó cero fixtures.
 - Prevención: mantener checks redundantes de consistencia al iniciar la operación y al mutar la asignación; la comprobación debe ocurrir después de tomar los locks, no sólo en el controller.
+
+
+## 2026-11-22 — Literal UTF-8 inválido al actualizar documentación — CORREGIDO
+
+- Un comando Python de actualización documental falló antes de escribir archivos porque incluía texto no ASCII directamente en un literal `bytes`, que Python sólo permite en ASCII. No se modificó ningún archivo con ese intento.
+- Solución: usar strings Unicode (`str`) para el texto español y codificar al escribir mediante el mecanismo de texto del archivo; la actualización se reejecuta tras comprobar el error de sintaxis.
+- Prevención: no escribir texto UTF-8 dentro de literales `b"..."`; reservar bytes para contenido ASCII o codificar desde Unicode.
+
+## 2026-11-22 — Cambio de rol podía dejar refresh activo y baja de Driver invalidaba ruta pendiente — CORREGIDO; CI PENDIENTE
+
+- Auditoría independiente encontró dos problemas. (1) `ChangeUserRoleCommand` revocaba refresh tokens sin tomar el lock de fila User compartido con la rotación; una renovación concurrente podía insertar un sucesor después de listar tokens a revocar. (2) desasignar, desactivar Driver o cambiar su rol sólo bloqueaba rutas InProgress, dejando una ruta Pending sin su asignación original.
+- Solución de sesión: el cambio de rol bloquea la fila User bajo el mismo lock transaccional que refresh antes de releer usuario, incrementar TokenVersion y revocar sesiones. Smoke MySQL fuerza lock de usuario y compite refresh/cambio de rol; verifica 0 refresh activos y rechazo de sucesor si refresh alcanzó a responder 200.
+- Solución operativa: desasignación, baja Driver y cambio de rol rechazan con 409 mientras existan rutas activas Pending o InProgress. Pruebas unitarias verifican que usuario, conductor, vehículo/ruta y tokens no se muten. Smoke MySQL valida HTTP y estado persistido para Pending.
+- Release xUnit local **97/97**, build Release **0 warnings/0 errors** y `bash -n` pasan. Actions con smoke actualizado pendientes.
+- Prevención: toda operación que invalide sesiones debe compartir el row lock con refresh; cambios que quiten Vehicle/Driver de una ruta activa deben tomar locks de asignación y considerar Pending además de InProgress.

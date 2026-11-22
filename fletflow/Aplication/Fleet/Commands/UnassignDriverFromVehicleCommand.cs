@@ -30,12 +30,9 @@ namespace fletflow.Application.Fleet.Commands
                 await _uow.LockRouteAssignmentAsync(driver.VehicleId, driverId);
                 driver = await _drivers.GetByIdAsync(driverId)
                     ?? throw new KeyNotFoundException("Conductor no encontrado.");
-                var activeRoutes = await _routes.GetAllAsync(
-                    driverId: driverId,
-                    status: RouteStatus.InProgress,
-                    onlyActive: true);
-                if (activeRoutes.Count > 0)
-                    throw new BusinessConflictException("No se puede desasignar el vehículo de un conductor con una ruta en progreso.");
+                var activeRoutes = await _routes.GetAllAsync(driverId: driverId, onlyActive: true);
+                if (activeRoutes.Any(route => route.Status is RouteStatus.Pending or RouteStatus.InProgress))
+                    throw new BusinessConflictException("No se puede desasignar el vehículo de un conductor con rutas activas pendientes o en progreso.");
 
                 driver.UnassignVehicle();
 

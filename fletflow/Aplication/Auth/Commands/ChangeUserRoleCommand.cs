@@ -27,6 +27,8 @@ public class ChangeUserRoleCommand
                 throw new KeyNotFoundException("Usuario no encontrado.");
             var initialDriver = await _uow.Drivers.GetByUserIdAsync(userId);
             await _uow.LockRouteAssignmentAsync(initialDriver?.VehicleId, initialDriver?.Id);
+            // Share the user-row lock with refresh rotation before revoking sessions.
+            await _uow.LockLinkedUserForRouteAssignmentAsync(userId);
 
             // Re-read after taking the same assignment locks used by route start.
             var user = await _uow.Users.GetByIdAsync(userId)
@@ -41,12 +43,9 @@ public class ChangeUserRoleCommand
 
             if (!roleName.Equals("Driver", StringComparison.OrdinalIgnoreCase) && linkedDriver?.IsActive == true)
             {
-                var activeRoutes = await _uow.Routes.GetAllAsync(
-                    driverId: linkedDriver.Id,
-                    status: RouteStatus.InProgress,
-                    onlyActive: true);
-                if (activeRoutes.Count > 0)
-                    throw new BusinessConflictException("No se puede cambiar el rol mientras el conductor tenga una ruta en curso.");
+                var activeRoutes = await _uow.Routes.GetAllAsync(driverId: linkedDriver.Id, onlyActive: true);
+                if (activeRoutes.Any(route => route.Status is RouteStatus.Pending or RouteStatus.InProgress))
+                    throw new BusinessConflictException("No se puede cambiar el rol mientras el conductor tenga rutas activas pendientes o en progreso.");
                 linkedDriver.Deactivate();
                 linkedDriver.UnassignVehicle();
                 await _uow.Drivers.UpdateAsync(linkedDriver);

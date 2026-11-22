@@ -26,6 +26,7 @@ public class ChangeUserRoleTests
         Assert.Equal(1, user.TokenVersion);
         Assert.Equal(1, uow.CommitCount);
         Assert.Equal(1, ((RecordingRefreshTokenRepository)uow.RefreshTokens).RevokeAllCount);
+        Assert.Equal(1, uow.LockedUserCount);
     }
 
     [Fact]
@@ -92,6 +93,35 @@ public class ChangeUserRoleTests
         Assert.Equal(1, uow.RollbackCount);
     }
 
+    [Fact]
+    public async Task Execute_RejectsRoleChangeWhileLinkedDriverHasPendingRoute()
+    {
+        var driverRole = new Role { Name = "Driver" };
+        var logisticsRole = new Role { Name = "Logistics" };
+        var user = new User();
+        user.UserRoles.Add(new UserRole { User = user, Role = driverRole });
+        var driver = Driver.Create("Ana", "Paz", "100", "099", user.Id);
+        var vehicleId = Guid.NewGuid();
+        driver.AssignToVehicle(vehicleId);
+        var users = new RecordingUserRepository(user, driverRole.Id);
+        var uow = new RecordingUnitOfWork(
+            users,
+            new RecordingRoleRepository(driverRole, logisticsRole),
+            driver,
+            hasActiveRoute: true,
+            activeRouteStatus: RouteStatus.Pending);
+
+        await Assert.ThrowsAsync<BusinessConflictException>(() => new ChangeUserRoleCommand(uow).Execute(user.Id, "Logistics"));
+
+        Assert.True(driver.IsActive);
+        Assert.Equal(vehicleId, driver.VehicleId);
+        Assert.Equal(new[] { driverRole.Id }, users.RoleIds);
+        Assert.Equal(0, user.TokenVersion);
+        Assert.Equal(0, ((RecordingRefreshTokenRepository)uow.RefreshTokens).RevokeAllCount);
+        Assert.Equal(0, uow.CommitCount);
+        Assert.Equal(1, uow.RollbackCount);
+    }
+
     private sealed class RecordingUserRepository(User user, Guid existingRoleId) : IUserRepository
     {
         public HashSet<Guid> RoleIds { get; } = new() { existingRoleId };
@@ -128,19 +158,20 @@ public class ChangeUserRoleTests
         public Task<List<Driver>> GetAssignableAsync() => Task.FromResult(driver is null ? new List<Driver>() : new List<Driver> { driver });
     }
 
-    private sealed class RecordingRouteRepository(bool hasActiveRoute) : IRouteRepository
+    private sealed class RecordingRouteRepository(bool hasActiveRoute, RouteStatus activeRouteStatus) : IRouteRepository
     {
         public Task<RouteE?> GetByIdAsync(Guid id) => Task.FromResult<RouteE?>(null);
         public Task AddAsync(RouteE route) => Task.CompletedTask;
         public Task UpdateAsync(RouteE route) => Task.CompletedTask;
         public Task<List<RouteE>> GetAllAsync(Guid? vehicleId = null, Guid? driverId = null, RouteStatus? status = null, bool? onlyActive = null)
         {
-            if (!hasActiveRoute) return Task.FromResult(new List<RouteE>());
+            if (!hasActiveRoute || status.HasValue && status.Value != activeRouteStatus)
+                return Task.FromResult(new List<RouteE>());
             var point = RoutePoint.Create(0, 0);
             return Task.FromResult(new List<RouteE>
             {
                 RouteE.CreateExisting(Guid.NewGuid(), Guid.NewGuid(), driverId!.Value, "Ruta", point, point,
-                    new[] { point, point }, null, null, null, RouteStatus.InProgress, true)
+                    new[] { point, point }, null, null, null, activeRouteStatus, true)
             });
         }
     }
@@ -149,10 +180,12 @@ public class ChangeUserRoleTests
         IUserRepository users,
         IRoleRepository roles,
         Driver? driver = null,
-        bool hasActiveRoute = false) : IUnitOfWork
+        bool hasActiveRoute = false,
+        RouteStatus activeRouteStatus = RouteStatus.InProgress) : IUnitOfWork
     {
         public int CommitCount { get; private set; }
         public int RollbackCount { get; private set; }
+        public int LockedUserCount { get; private set; }
         public (Guid? VehicleId, Guid? DriverId)? LockedAssignment { get; private set; }
         public IUserRepository Users => users;
         public IRoleRepository Roles => roles;
@@ -160,7 +193,7 @@ public class ChangeUserRoleTests
         public IPasswordResetTokenRepository PasswordResetTokens => null!;
         public IVehicleRepository Vehicles => null!;
         public IDriverRepository Drivers => new RecordingDriverRepository(driver);
-        public IRouteRepository Routes => new RecordingRouteRepository(hasActiveRoute);
+        public IRouteRepository Routes => new RecordingRouteRepository(hasActiveRoute, activeRouteStatus);
         public IRoutePositionRepository RoutePositions => null!;
         public Task<int> CommitAsync() { CommitCount++; return Task.FromResult(1); }
         public Task LockRouteAssignmentAsync(Guid? vehicleId, Guid? driverId, Guid? routeId = null)
@@ -168,6 +201,7 @@ public class ChangeUserRoleTests
             LockedAssignment = (vehicleId, driverId);
             return Task.CompletedTask;
         }
+        public Task LockLinkedUserForRouteAssignmentAsync(Guid userId) { LockedUserCount++; return Task.CompletedTask; }
         public void Rollback() { RollbackCount++; }
     }
 

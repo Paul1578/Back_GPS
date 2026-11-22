@@ -196,6 +196,39 @@ public class DriverTests
         Assert.True(driver.IsActive);
     }
 
+    [Fact]
+    public async Task ChangeStatus_RejectsDeactivationWhileDriverHasPendingRoute()
+    {
+        var driver = Driver.Create("Ana", "Paz", "100", "099");
+        var vehicleId = Guid.NewGuid();
+        driver.AssignToVehicle(vehicleId);
+        var routes = new FakeRouteRepository(driver.Id, RouteStatus.Pending);
+        var unitOfWork = new FakeUnitOfWork();
+        var command = new ChangeDriverStatusCommand(unitOfWork, new FakeDriverRepository(driver), routes);
+
+        await Assert.ThrowsAsync<BusinessConflictException>(() => command.Execute(driver.Id, false));
+
+        Assert.True(driver.IsActive);
+        Assert.Equal(vehicleId, driver.VehicleId);
+        Assert.Equal(0, unitOfWork.CommitCount);
+    }
+
+    [Fact]
+    public async Task UnassignVehicle_RejectsWhenDriverHasPendingRoute()
+    {
+        var driver = Driver.Create("Ana", "Paz", "100", "099");
+        var vehicleId = Guid.NewGuid();
+        driver.AssignToVehicle(vehicleId);
+        var routes = new FakeRouteRepository(driver.Id, RouteStatus.Pending);
+        var unitOfWork = new FakeUnitOfWork();
+        var command = new UnassignDriverFromVehicleCommand(unitOfWork, new FakeDriverRepository(driver), routes);
+
+        await Assert.ThrowsAsync<BusinessConflictException>(() => command.Execute(driver.Id));
+
+        Assert.Equal(vehicleId, driver.VehicleId);
+        Assert.Equal(0, unitOfWork.CommitCount);
+    }
+
     private sealed class FakeDriverRepository(params Driver[] drivers) : IDriverRepository
     {
         private readonly List<Driver> _drivers = drivers.ToList();
@@ -219,7 +252,8 @@ public class DriverTests
         public Task UpdateAsync(RouteE route) => Task.CompletedTask;
         public Task<List<RouteE>> GetAllAsync(Guid? vehicleId = null, Guid? driverIdFilter = null, RouteStatus? statusFilter = null, bool? onlyActive = null)
         {
-            if (driverIdFilter != driverId || statusFilter != status) return Task.FromResult(new List<RouteE>());
+            if (driverIdFilter != driverId || statusFilter.HasValue && statusFilter != status || onlyActive == false)
+                return Task.FromResult(new List<RouteE>());
             var point = RoutePoint.Create(0, 0);
             var route = RouteE.CreateExisting(Guid.NewGuid(), Guid.NewGuid(), driverId, "Ruta", point, point,
                 new[] { point, point }, null, null, null, status, true);

@@ -134,9 +134,19 @@ pending_assignment_route="$(create_route "${prefix}pending_assignment" "$pending
 request PUT "/Drivers/$pending_assignment_driver/assign-vehicle" "$(jq -nc --arg vehicleId "$pending_assignment_target" '{vehicleId:$vehicleId}')"
 expect 409 "Impedir cambiar el vehículo de un conductor con ruta pendiente"
 pending_assignment_state="$(mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" --batch --skip-column-names "$db_name" \
-  -e "SELECT CONCAT(r.Status, ':', d.VehicleId, ':', v.Status, ':', target.Status) FROM Routes r JOIN Drivers d ON d.Id=r.DriverId JOIN Vehicles v ON v.Id=r.VehicleId JOIN Vehicles target ON target.Id='$pending_assignment_target' WHERE r.Id='$pending_assignment_route';")"
-if [[ "$pending_assignment_state" != "0:$pending_assignment_vehicle:0:0" ]]; then
+  -e "SELECT CONCAT(r.Status, ':', d.VehicleId, ':', v.Status, ':', target.Status, ':', CAST(d.IsActive AS UNSIGNED)) FROM Routes r JOIN Drivers d ON d.Id=r.DriverId JOIN Vehicles v ON v.Id=r.VehicleId JOIN Vehicles target ON target.Id='$pending_assignment_target' WHERE r.Id='$pending_assignment_route';")"
+if [[ "$pending_assignment_state" != "0:$pending_assignment_vehicle:0:0:1" ]]; then
   echo "Reasignar un Driver con ruta pendiente alteró el vínculo o los estados (Route:DriverVehicle:RouteVehicleStatus:TargetStatus=$pending_assignment_state)." >&2
+  exit 1
+fi
+request PUT "/Drivers/$pending_assignment_driver/unassign-vehicle" '{}'
+expect 409 "Impedir desasignar un Driver con ruta pendiente"
+request PUT "/Drivers/$pending_assignment_driver/status" '{"isActive":false}'
+expect 409 "Impedir desactivar un Driver con ruta pendiente"
+pending_assignment_state="$(mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" --batch --skip-column-names "$db_name" \
+  -e "SELECT CONCAT(r.Status, ':', d.VehicleId, ':', v.Status, ':', target.Status, ':', CAST(d.IsActive AS UNSIGNED)) FROM Routes r JOIN Drivers d ON d.Id=r.DriverId JOIN Vehicles v ON v.Id=r.VehicleId JOIN Vehicles target ON target.Id='$pending_assignment_target' WHERE r.Id='$pending_assignment_route';")"
+if [[ "$pending_assignment_state" != "0:$pending_assignment_vehicle:0:0:1" ]]; then
+  echo "Desasignar/desactivar un Driver con ruta pendiente mutó datos (Route:DriverVehicle:RouteVehicleStatus:TargetStatus:DriverActive=$pending_assignment_state)." >&2
   exit 1
 fi
 
@@ -281,14 +291,14 @@ wait "$role_start_pid"
 wait "$role_change_pid"
 role_start_status="$(cat "$work_dir/start_vs_role_change.status")"
 role_change_status="$(cat "$work_dir/role_change_vs_start.status")"
-if ! { [[ "$role_start_status" == 204 && "$role_change_status" == 409 ]] || [[ "$role_start_status" == 409 && "$role_change_status" == 200 ]]; }; then
-  echo "Inicio/cambio de rol concurrente: esperado 204/409 o 409/200; recibidos $role_start_status/$role_change_status." >&2
+if [[ "$role_start_status" != 204 || "$role_change_status" != 409 ]]; then
+  echo "Inicio/cambio de rol concurrente con ruta pendiente: esperado inicio 204 y cambio de rol 409; recibidos $role_start_status/$role_change_status." >&2
   cat "$work_dir/start_vs_role_change.json" "$work_dir/role_change_vs_start.json" >&2
   exit 1
 fi
 role_race_state="$(mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" --batch --skip-column-names "$db_name" \
   -e "SELECT CONCAT(r.Status, ':', CAST(d.IsActive AS UNSIGNED), ':', CAST(v.Status AS UNSIGNED), ':', ro.Name) FROM Routes r JOIN Drivers d ON d.Id=r.DriverId JOIN Vehicles v ON v.Id=r.VehicleId JOIN Users u ON u.Id=d.UserId JOIN UserRoles ur ON ur.UserId=u.Id JOIN Roles ro ON ro.Id=ur.RoleId WHERE r.Id='$role_race_route';")"
-if [[ "$role_race_state" != "1:1:1:Driver" && "$role_race_state" != "0:0:0:Logistics" ]]; then
+if [[ "$role_race_state" != "1:1:1:Driver" ]]; then
   echo "Carrera cambio de rol/inicio dejó estado incoherente (Route:Driver:Vehicle:Role=$role_race_state)." >&2
   exit 1
 fi

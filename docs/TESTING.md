@@ -469,3 +469,10 @@ La invitación envía sólo el enlace de activación; el usuario fija su contras
 - `dotnet test BackEnd_Gps.Tests/BackEnd_Gps.Tests.csproj -c Release --no-restore` con SDK aislado .NET 8.0.428: **94/94**.
 - Incluye pruebas SQLite para rechazar reasignación con ruta Pending y para defender el inicio ante un vínculo Driver/Vehicle inconsistente, comprobando que no se muten los estados.
 - `bash -n scripts/smoke-route-concurrency.sh scripts/run-e2e-local.sh` y `git diff --check`: correctos. Smoke HTTP/MySQL real de este cambio y CI remoto pendientes.
+- Action backend [45048795456](https://github.com/Paul1578/Back_GPS/actions/runs/45048795456), commit `27bf75a`: build Release exitoso; xUnit **94/94**; smoke `smoke-tenant-http.sh` y `smoke-route-concurrency.sh` pasaron contra MySQL 8 descartable. El smoke de concurrencia incluye el HTTP 409 al reasignar Driver con ruta Pending y consulta SQL que comprueba vehículo, ruta y asignación sin mutaciones. Cleanup: cero recursos QA.
+
+## Revocación concurrente y asignación operativa Pending — 2026-11-22
+
+- Suite Release local tras ampliar tests: **97/97**. Casos nuevos comprueban que cambiar a Logistics con ruta Pending no desactive ni desasigne el Driver ni cambie tokens; baja/desasignación también se rechazan sin persistencia.
+- Build Release: 0 warnings/0 errores. `bash -n scripts/smoke-tenant-http.sh scripts/smoke-route-concurrency.sh` y `git diff --check`: correctos.
+- Smokes actualizados: carrera MySQL real refresh/cambio de rol con row lock; HTTP 409 y SQL intacta para reasignación, desasignación y baja con ruta Pending. Ejecución Action pendiente.

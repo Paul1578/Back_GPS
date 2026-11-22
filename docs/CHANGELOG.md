@@ -374,3 +374,10 @@
 
 - Reasignar un Driver con una ruta activa Pending/InProgress ahora responde conflicto. La transición a InProgress también rechaza una ruta cuyo vehículo no coincide con la asignación vigente del Driver.
 - Se añadieron pruebas SQLite y smoke HTTP/MySQL para verificar que el conflicto no cambie ruta, conductor ni estados de vehículos.
+- Action [45048795456](https://github.com/Paul1578/Back_GPS/actions/runs/45048795456) confirmó 94/94 pruebas, build y smoke HTTP/MySQL/concurrencia, con cleanup de fixtures exitoso.
+
+## 2026-11-22 — Revocación de sesiones y asignaciones pendientes
+
+- El cambio de rol ahora serializa token-version/revocación con la rotación de refresh.
+- No se permite desasignar, dar de baja o sacar del rol Driver a un conductor con rutas activas pendientes o en progreso.
+- Pruebas y smoke ampliados para persistencia, conflicto y refresh concurrente.

@@ -32,10 +32,10 @@ public class ChangeDriverStatusCommand
 
             if (!isActive)
             {
-                var activeRoutes = await _routes.GetAllAsync(driverId: id, status: RouteStatus.InProgress, onlyActive: true);
-                if (activeRoutes.Count > 0)
+                var activeRoutes = await _routes.GetAllAsync(driverId: id, onlyActive: true);
+                if (activeRoutes.Any(route => route.Status is RouteStatus.Pending or RouteStatus.InProgress))
                     throw new fletflow.Domain.Fleet.Exceptions.BusinessConflictException(
-                        "No se puede desactivar un conductor con una ruta en curso.");
+                        "No se puede desactivar un conductor con rutas activas pendientes o en progreso.");
                 driver.Deactivate();
                 driver.UnassignVehicle();
             }

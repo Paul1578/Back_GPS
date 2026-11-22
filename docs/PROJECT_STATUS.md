@@ -1,5 +1,11 @@
 # Estado actual — 2026-11-22
 
+- Rama `chore/stabilize-fleet-platform`; `main` intacta. Commit `27bf75a` pasó Action `45048795456`: build Release, xUnit **94/94**, smokes HTTP/MySQL de tenant/concurrencia y cleanup cero.
+- Cambios locales pendientes: serializar cambio de rol con refresh; bloquear desasignación/baja/cambio de rol cuando Driver tiene ruta activa Pending; unit tests **97/97**, build Release **0 warnings/0 errors**, bash syntax/diff-check correctos. Action de smokes con estas adiciones pendiente.
+- Persisten cobertura pendiente CRUD/roles/responsive y pregunta de producto sobre Admin delegado. SMTP/PFX/infra producción externos; app nativa aplazada.
+
+# Estado actual — 2026-11-22
+
 - Rama `chore/stabilize-fleet-platform`; `main` no se modifica.
 - Último código publicado: `5c08dbc` pasó Action backend `45047639950` (Release xUnit 92/92 + smoke HTTP/MySQL y concurrencia/cleanup). Docs actuales `fcd7111` pasaron `45047712270`.
 - Cambio local pendiente de publicar: bloqueo de reasignación Driver con ruta Pending/InProgress y validación Driver/Vehicle al iniciar. Release xUnit **94/94**, `bash -n` y diff-check correctos; smoke HTTP/MySQL de concurrencia y Action sobre el SHA nuevo pendientes.
@@ -415,3 +421,4 @@ Nota de actualización: algunos resultados históricos de registro público más
 
 - Backend valida vigencia del token reset inmediatamente antes de envío; un mensaje obsoleto no se presenta como email enviado ni se reintenta como fallo SMTP.
 - Worker enfocado 3/3, suite local 92/92, build 0/0. Nuevo Actions backend y corrida Front integrada pendientes.
+- Cierre CI backend `27bf75a`: Action [45048795456](https://github.com/Paul1578/Back_GPS/actions/runs/45048795456) pasó. Release build, xUnit **94/94**, aislamiento HTTP/MySQL, regresión de reasignación con ruta pendiente, concurrencia de rutas y cleanup; no quedaron fixtures de smoke.

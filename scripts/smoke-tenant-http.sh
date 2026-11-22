@@ -843,8 +843,39 @@ jq -e '.status == 0 and .isActive == true' "$work_dir/response.json" >/dev/null 
   || { echo "El vehículo no volvió a Available al completar la ruta." >&2; cat "$work_dir/response.json" >&2; exit 1; }
 request DELETE "/Routes/$logistics_route_id" "" "$logistics_token"
 expect_status 204 "Dar de baja ruta completada como Logistics"
-request PUT "/Users/$logistics_user_id/role" '{"roleName":"User"}' "$token"
-expect_status 200 "Cambiar rol Logistics a User"
+# Forzar una carrera real: refresh y cambio de rol esperan por el mismo lock de Users.
+mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" "$db_name" \
+  -e "SET SESSION innodb_lock_wait_timeout=10; START TRANSACTION; SELECT Id FROM Users WHERE Id='$logistics_user_id' FOR UPDATE; DO SLEEP(2); COMMIT;" \
+  >"$work_dir/role_session_lock.out" 2>"$work_dir/role_session_lock.err" &
+role_session_lock_pid=$!
+sleep 0.2
+curl --silent --show-error --output "$work_dir/role_change_race.json" --write-out '%{http_code}' \
+  --request PUT "$api_base/Users/$logistics_user_id/role" \
+  --header 'Content-Type: application/json' --header "Authorization: Bearer $token" \
+  --data '{"roleName":"User"}' >"$work_dir/role_change_race.status" &
+role_change_race_pid=$!
+curl --silent --show-error --output "$work_dir/refresh_role_race.json" --write-out '%{http_code}' \
+  --request POST "$api_base/Auth/refresh" --header 'Content-Type: application/json' \
+  --data "$(jq -nc --arg refreshToken "$logistics_refresh_token" '{refreshToken:$refreshToken}')" \
+  >"$work_dir/refresh_role_race.status" &
+refresh_role_race_pid=$!
+wait "$role_change_race_pid"
+wait "$refresh_role_race_pid"
+wait "$role_session_lock_pid"
+role_change_race_status="$(cat "$work_dir/role_change_race.status")"
+refresh_role_race_status="$(cat "$work_dir/refresh_role_race.status")"
+[[ "$role_change_race_status" == "200" && ( "$refresh_role_race_status" == "200" || "$refresh_role_race_status" == "401" ) ]] || {
+  echo "Carrera cambio de rol/refresh: esperado rol 200 y refresh 200/401; recibidos $role_change_race_status/$refresh_role_race_status." >&2
+  exit 1
+}
+role_user_active_refreshes="$(mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" "$db_name" \
+  --batch --skip-column-names -e "SELECT COUNT(*) FROM RefreshTokens WHERE UserId='$logistics_user_id' AND RevokedAt IS NULL AND ExpiresAt > UTC_TIMESTAMP(6);")"
+[[ "$role_user_active_refreshes" == "0" ]] || { echo "Cambio de rol concurrente dejó $role_user_active_refreshes refresh tokens activos." >&2; exit 1; }
+if [[ "$refresh_role_race_status" == "200" ]]; then
+  role_race_successor="$(jq -er '.refreshToken' "$work_dir/refresh_role_race.json")"
+  request POST /Auth/refresh "$(jq -nc --arg refreshToken "$role_race_successor" '{refreshToken:$refreshToken}')" ""
+  expect_status 401 "El cambio de rol revoca el sucesor concurrente de refresh"
+fi
 request GET /Auth/me "" "$logistics_token"
 expect_status 401 "Invalidar access token tras cambio de rol"
 request POST /Auth/refresh "$(jq -nc --arg refreshToken "$logistics_refresh_token" '{refreshToken:$refreshToken}')" ""

@@ -1,3 +1,11 @@
+# Continuación — Sesión y Driver con ruta Pending — 2026-11-22
+
+- Rama Backend `chore/stabilize-fleet-platform`, Front `refactor/route-builder`; no main.
+- Backend `27bf75a` pasó Action `45048795456`: build, xUnit 94/94, tenant HTTP/MySQL, route concurrency y cleanup cero.
+- Lote backend local: cambio de rol toma row lock compartido con refresh; desasignación/baja/cambio de rol bloquean Driver con ruta Pending/InProgress. Suite Release 97/97, build 0 warnings/errors, bash syntax y diff-check. Smoke actualizado necesita Action.
+- Front Action `45048803279`: 26/28; ambos fallos por viewport desktop y locator hamburger móvil. Fix de viewport y los E2E de Mi Ruta nuevos aún deben pasar lint/build/integrated Action.
+- Seguir con auditorías CRUD/roles/responsive; no cerrar misión. SMTP/PFX externas; mobile aplazado; Admin delegado espera decisión.
+
 # Continuación — Validación de asignación Driver/ruta — 2026-11-22
 
 - Backend rama `chore/stabilize-fleet-platform`; Front `refactor/route-builder`; sin cambios en `main`.
@@ -527,4 +535,4 @@ Errores de migración, herramientas, QA y soluciones están en `docs/ERROR_LOG.m
 - Refresh: `ChangePasswordCommand`, `ResetPasswordCommand`, `ActivateAccountCommand`, `AuthService.ResetPasswordAsync` y `UpdateUserCommand` toman el lock de User antes de modificar password/estado y revocar. Se comparte con el lock de `TryRotateAsync`; Accounts con Driver siguen usando lock conjunto ruta/usuario.
 - Reset token: repositorio tiene consumo compare-and-set por `Id`, activo y no expirado; flows vuelven a leer token bajo lock y abortan si otro ya lo usó. Test SQLite de 1er consumo/2do rechazo.
 - GPS: `RegisterRoutePositionCommand` bloquea ruta/asignación y valida Driver solicitante después de recargar. `GET positions` mantiene lock y revalida hasta terminar la lectura. Test falso reasigna al adquirir lock, espera excepción, 0 posiciones y sin commit.
-- Validación local posterior: xUnit Release 91/91, build 0 warnings/0 errores. Backend smoke último Action `45046324866` falló por fixture de ruta de mantenimiento compartiendo agenda; script corregido a Vehicle/Driver propios, con limpieza y conteo SQL. Próximo paso: commit/push de todos los cambios, inspeccionar Actions y reparar cualquier fallo; luego disparar Front integrado contra backend nuevo.
+- Validación local posterior: xUnit Release 91/91, build 0 warnings/0 errores. Backend smoke último Action `45046324866` falló por fixture de ruta de mantenimiento compartiendo agenda; script corregido a Vehicle/Driver propios, con limpieza y conteo SQL. Próximo paso: commit/push de todos los cambios, inspeccionar Actions y reparar cualquier fallo; luego disparar Front integrado contra backend nuevo.- Backend Action `45048795456` pasó para `27bf75a`: build, xUnit **94/94**, smoke tenant HTTP/MySQL y concurrencia de rutas; cleanup cero fixtures. La integridad de Driver/ruta Pending queda validada.

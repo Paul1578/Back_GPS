@@ -174,3 +174,12 @@ La invitación envía sólo el enlace de activación; el usuario fija su contras
 - `scripts/run-e2e-local.sh` se hizo portable a GitHub Actions: cliente MySQL del host, credenciales por entorno y validación de DB `fletflow_ci*` en modo CI.
 - Repetición local autenticada en Chrome/API/MySQL: **8/8**, cleanup completo y base temporal descartada. Actions remoto no se ha ejecutado aún; requiere PR/branch publicados.
 - Actualización remota: backend PR #5 pasó todas las fases (48 tests y smoke HTTP/MySQL). Frontend PR #2 pasó lint/build/audit y responsive no mutante, pero el primer E2E abortó porque el runner exigió Next antes de que Playwright iniciara `webServer`; corrección ya publicada, falta nuevo resultado.
+
+## Protección de asignaciones concurrentes — 2026-11-21
+
+- `dotnet test BackEnd_Gps.sln -c Release --no-restore -m:1`: **50/50**, 0 fallidas, 0 omitidas.
+- `dotnet build BackEnd_Gps.sln -c Release --no-restore -m:1`: 0 warnings, 0 errores.
+- `dotnet list BackEnd_Gps.sln package --vulnerable --include-transitive`: sin paquetes vulnerables; `SQLitePCLRaw.lib.e_sqlite3` resuelve a 2.1.14.
+- Sobre MySQL/API local con DB temporal `fletflow_ci_validation_14`, smoke tenant pasó. El smoke de concurrencia comprobó Create con vehículo repetido, Create con Driver repetido, Update con ambos recursos repetidos, dos inicios del mismo vehículo y carrera inicio/desactivación; cada par devolvió un éxito y un HTTP 409. Los asserts MySQL verifican las rutas/vehículos persistidos y el estado Driver/vehículo coherente.
+- Cleanup detuvo la API y descartó el esquema de validación. Ambos scripts pasan `bash -n`; `git diff --check` limpio.
+- El job remoto backend aún debe ejecutarse con el cambio actualizado; el frontend requiere repetir Actions tras checkout de esta versión backend.

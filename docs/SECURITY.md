@@ -17,6 +17,9 @@
 - Las paradas validan estado/operación, evidencia JPEG/PNG/WebP y tamaño; el registro GPS valida coordenadas, velocidad, rumbo y consultas acotadas.
 - Excepciones internas devuelven mensaje genérico y TraceId. Logs SMTP omiten destinatario, host, credenciales y cuerpo.
 - `MySqlConnector` está fijado en 2.6.2 para incluir la corrección de [GHSA-473q-m89c-ghf8](https://github.com/advisories/GHSA-473q-m89c-ghf8). `dotnet list ... --vulnerable` no reporta vulnerabilidades.
+- Los locks de asignación usan consultas parametrizadas y `OwnerUserId`; no aceptan nombres de tablas externos. Las transiciones también bloquean Route antes de Vehicle/Driver para serializar cambios sobre el mismo recurso.
+- El provider SQLite de pruebas depende de SQLitePCLRaw.lib.e_sqlite3 2.1.14; NuGet audit confirma cero vulnerabilidades después de corregir CVE-2025-6965 presente en la resolución 2.1.10 inicial.
+- Durante una inspección local se imprimió por error el valor anterior de MySQL root; fue rotado para los hosts `%` y `localhost` y `.env` se mantuvo en modo 0600. La nueva credencial no se copió al repositorio ni a los logs.
 
 ## Pendientes
 

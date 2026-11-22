@@ -94,6 +94,9 @@ jobs:
       - name: Verify tenant isolation through HTTP and MySQL
         run: bash scripts/smoke-tenant-http.sh
 
+      - name: Verify route assignment concurrency through MySQL
+        run: bash scripts/smoke-route-concurrency.sh
+
       - name: Stop API
         if: always()
         run: |

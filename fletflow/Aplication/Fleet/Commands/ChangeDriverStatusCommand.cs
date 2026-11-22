@@ -19,24 +19,38 @@ public class ChangeDriverStatusCommand
 
     public async Task Execute(Guid id, bool isActive)
     {
-        var driver = await _drivers.GetByIdAsync(id)
-            ?? throw new KeyNotFoundException("Conductor no encontrado.");
-        if (driver.IsActive == isActive) return;
-
-        if (!isActive)
+        try
         {
-            var activeRoutes = await _routes.GetAllAsync(driverId: id, status: RouteStatus.InProgress, onlyActive: true);
-            if (activeRoutes.Count > 0)
-                throw new InvalidOperationException("No se puede desactivar un conductor con una ruta en curso.");
-            driver.Deactivate();
-            driver.UnassignVehicle();
-        }
-        else
-        {
-            driver.Activate();
-        }
+            await _uow.LockRouteAssignmentAsync(null, id);
+            var driver = await _drivers.GetByIdAsync(id)
+                ?? throw new KeyNotFoundException("Conductor no encontrado.");
+            if (driver.IsActive == isActive)
+            {
+                _uow.Rollback();
+                return;
+            }
 
-        await _drivers.UpdateAsync(driver);
-        await _uow.CommitAsync();
+            if (!isActive)
+            {
+                var activeRoutes = await _routes.GetAllAsync(driverId: id, status: RouteStatus.InProgress, onlyActive: true);
+                if (activeRoutes.Count > 0)
+                    throw new fletflow.Domain.Fleet.Exceptions.BusinessConflictException(
+                        "No se puede desactivar un conductor con una ruta en curso.");
+                driver.Deactivate();
+                driver.UnassignVehicle();
+            }
+            else
+            {
+                driver.Activate();
+            }
+
+            await _drivers.UpdateAsync(driver);
+            await _uow.CommitAsync();
+        }
+        catch
+        {
+            _uow.Rollback();
+            throw;
+        }
     }
 }

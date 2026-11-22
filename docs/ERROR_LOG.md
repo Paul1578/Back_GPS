@@ -341,3 +341,46 @@ Cada cambio de API debe incluir validación de compilación, migraciones si apli
 - El primer PR frontend pasó build, audit, lint y el chequeo responsive, pero el runner autenticado terminó con código 2: su precheck pedía `/login` antes de ejecutar Playwright. El job no llegó a provisionar usuarios E2E.
 - El runner ahora comprueba siempre Swagger/API y sólo exige frontend preiniciado fuera de CI; en CI Playwright `webServer` arranca Next.
 - Se actualizó checkout v4→v7 y setup-dotnet v4→v6 para abandonar Node 20 según advertencia de Actions. La próxima ejecución del workflow debe verificarlo.
+
+## 2026-11-21 — Asignaciones concurrentes podían solaparse y conductor inactivo podía iniciar ruta — CORREGIDO
+
+- Hallazgo: CreateRoute/UpdateRoute comprobaban disponibilidad antes de guardar sin serializar escrituras concurrentes. Dos solicitudes podían ver agendas libres y confirmar solapamientos. Además, Pending→InProgress no revalidaba que el conductor asignado siguiera activo.
+- Solución: transacción relacional y bloqueos `FOR UPDATE` de Vehicle y Driver, siempre en ese orden y con filtro por propietario; la agenda se vuelve a comprobar bajo los locks y el conflicto responde HTTP 409. El cambio de estado rechaza el Driver inactivo con 409. Las escrituras fallidas revierten la transacción.
+- Verificación real: MySQL descartable, pares concurrentes de creación (mismo vehículo / mismo Driver) y edición (mismo vehículo/conductor), cada par produjo un éxito y un 409. El smoke de aislamiento HTTP/MySQL también pasó. Release xUnit 49/49.
+
+## 2026-11-21 — Nueva prueba SQLite introdujo paquete nativo con CVE — CORREGIDO
+
+- Hallazgo: `Microsoft.EntityFrameworkCore.Sqlite` resolvía `SQLitePCLRaw.lib.e_sqlite3` 2.1.10, afectado por CVE-2025-6965 (GHSA-2m69-gcr7-jv3q); NuGet identificó severidad alta.
+- Solución: se fijó `SQLitePCLRaw.lib.e_sqlite3` 2.1.14 en el proyecto de pruebas. La versión estable publicada incluye SQLite posterior a la versión vulnerable; no se suprimió la alerta.
+- Verificación: `dotnet list BackEnd_Gps.sln package --vulnerable --include-transitive` no reporta paquetes afectados; xUnit Release 49/49. Fuentes: https://github.com/advisories/GHSA-2m69-gcr7-jv3q y https://www.nuget.org/packages/SQLitePCLRaw.lib.e_sqlite3.
+
+## 2026-11-21 — Rutas del mismo vehículo podían iniciarse a la vez — CORREGIDO
+
+- Hallazgo de revisión independiente: dos transiciones Pending→InProgress podían leer `Available` en paralelo y dejar ambas rutas activas para un vehículo.
+- Solución: las transiciones serializan la ruta y su asignación mediante locks owner-scoped; vuelven a leer el estado después de adquirirlos y rechazan con 409 si otra ruta del vehículo ya está en progreso. UpdateRoute usa el mismo lock de ruta y bloquea tanto la asignación previa como la nueva.
+- Verificación: xUnit Release 50/50; smoke HTTP/MySQL con dos solicitudes simultáneas de inicio devolvió un 204 y un 409. El smoke completo de tenant también pasó y la DB temporal se descartó.
+
+## 2026-11-21 — Inspección imprimió credencial MySQL local — MITIGADO
+
+- La consulta de nombres de variables de `.env` incluyó accidentalmente el valor de `MYSQL_ROOT_PASSWORD` en la salida de diagnóstico.
+- Se rotó la contraseña de `root` para los hosts MySQL `%` y `localhost`, se actualizó `.env` y se dejó con permisos `0600`.
+- Verificación: autenticación con el nuevo valor sin mostrarlo y creación/eliminación de DB temporal funcionaron; `.env` no está versionado. No se imprimió la credencial nueva.
+
+## 2026-11-21 — Regresión de Driver esperaba el código anterior al conflicto — CORREGIDO EN EL TEST
+
+- Al cambiar la desactivación de Driver con ruta en progreso a `BusinessConflictException` (HTTP 409), la prueba existente seguía exigiendo `InvalidOperationException` exactamente.
+- Se actualizó el assert al tipo de conflicto de negocio; no era un fallo de producto.
+- El primer ajuste usó el nombre plenamente cualificado dentro del namespace `BackEnd_Gps.Tests` y el compilador lo resolvió como `BackEnd_Gps.fletflow`; se añadió el `using` explícito y el assert ahora compila con `BusinessConflictException`.
+- La suite se vuelve a ejecutar después de alinear el test y corregir el namespace.
+
+## 2026-11-21 — Smoke interpretó el booleano MySQL como carácter NUL — CORREGIDO EN EL ASSERT
+
+- La primera corrida de la carrera inicio/desactivación produjo el estado coherente `Route Pending + Driver inactive`, pero la consulta `CONCAT` convirtió el `BIT` MySQL a carácter NUL y el comparador rechazó el resultado.
+- El smoke ahora castea `IsActive` a `UNSIGNED` antes de concatenarlo. La base temporal se eliminó por el `trap`; no hubo fuga de datos.
+- Repetir la suite completa para confirmar 204/409 y el estado permitido.
+
+## 2026-11-21 — Smoke de inicio simultáneo no verificaba persistencia — CUBIERTO
+
+- Revisión independiente observó que el smoke sólo validaba HTTP 204/409 para dos inicios concurrentes, sin comprobar la ruta y vehículo que quedaron guardados.
+- Se añadió consulta MySQL que exige exactamente una ruta InProgress, una Pending y el vehículo OnRoute. Para inicio contra desactivación de Driver, el estado persistido sólo admite `InProgress + Driver activo + OnRoute` o `Pending + Driver inactivo + Available`.
+- Repetición completa en DB temporal `fletflow_ci_validation_14` pasó con los asserts: una ruta InProgress, una Pending y vehículo OnRoute; la carrera con desactivación terminó en una de dos combinaciones consistentes. La DB se descartó con `trap`.

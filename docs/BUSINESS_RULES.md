@@ -28,6 +28,8 @@
 - El conductor asignado sólo puede mutar las paradas de su ruta.
 - Al iniciar una ruta, el vehículo pasa a en ruta; al cerrar, vuelve a disponible si no existe otra operación activa.
 - Pausar una ruta la devuelve a pendiente y libera el vehículo si ninguna otra ruta sigue en curso; reanudar exige que el vehículo esté disponible.
+- Un vehículo sólo puede tener una ruta activa en progreso a la vez; cambios concurrentes de ruta se serializan y el perdedor recibe HTTP 409.
+- El inicio exige Driver activo. La baja del Driver, la asignación manual y el cambio de estado del vehículo se serializan con inicio/edición para evitar estados incompatibles.
 # Aislamiento por empresa
 
 - La claim JWT `owner_id` representa al usuario raíz de la empresa; para cuentas miembro se deriva de `OwnerUserId`, para cuentas raíz de su propio `Id`.

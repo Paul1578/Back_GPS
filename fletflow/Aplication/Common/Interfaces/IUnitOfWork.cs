@@ -29,6 +29,7 @@ namespace fletflow.Infrastructure.Persistence.Contracts
         IDriverRepository Drivers { get; }
         IRouteRepository Routes { get; }
         IRoutePositionRepository RoutePositions { get; }
+        Task LockRouteAssignmentAsync(Guid? vehicleId, Guid? driverId, Guid? routeId = null) => Task.CompletedTask;
         void Rollback();
     }
 }

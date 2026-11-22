@@ -1,6 +1,7 @@
 // fletflow/Api/Middleware/ExceptionMiddleware.cs
 using System.Net;
 using System.Text.Json;
+using fletflow.Domain.Fleet.Exceptions;
 
 namespace fletflow.Api.Middleware
 {
@@ -23,6 +24,7 @@ namespace fletflow.Api.Middleware
             {
                 var status = ex switch
                 {
+                    BusinessConflictException => HttpStatusCode.Conflict,
                     ArgumentException or InvalidOperationException => HttpStatusCode.BadRequest,
                     UnauthorizedAccessException => HttpStatusCode.Unauthorized,
                     KeyNotFoundException => HttpStatusCode.NotFound,

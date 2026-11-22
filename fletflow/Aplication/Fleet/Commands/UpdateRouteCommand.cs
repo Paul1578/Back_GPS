@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using fletflow.Application.Fleet.Dtos;
 using fletflow.Application.Fleet.Mappings;
 using fletflow.Domain.Fleet.Entities;
+using fletflow.Domain.Fleet.Exceptions;
 using fletflow.Domain.Fleet.Repositories;
 using fletflow.Infrastructure.Persistence.Contracts;
 
@@ -61,38 +62,63 @@ namespace fletflow.Application.Fleet.Commands
             if (plannedStart.HasValue && plannedEnd.HasValue && plannedEnd <= plannedStart)
                 throw new ArgumentException("La fecha final debe ser posterior a la fecha inicial.", nameof(plannedEnd));
 
-            var vehicleRoutes = await _routes.GetAllAsync(vehicleId: vehicleId, onlyActive: true);
-            var driverRoutes = await _routes.GetAllAsync(driverId: driverId, onlyActive: true);
-            if (HasScheduleConflict(vehicleRoutes, id, plannedStart, plannedEnd) ||
-                HasScheduleConflict(driverRoutes, id, plannedStart, plannedEnd))
-                throw new InvalidOperationException("El vehículo o conductor ya tiene una ruta activa en ese horario.");
-
             var pointsList = points?.ToList() ?? new List<RoutePoint>();
             if (pointsList.Count < 2)
                 throw new ArgumentException("La ruta debe tener al menos origen y destino.", nameof(points));
 
-            route.Update(
-                vehicleId,
-                driverId,
-                name,
-                pointsList.First(),
-                pointsList.Last(),
-                pointsList,
-                cargoDescription,
-                plannedStart,
-                plannedEnd
-            );
-
-            if (driver.VehicleId != vehicleId)
+            try
             {
-                driver.AssignToVehicle(vehicleId);
-                await _drivers.UpdateAsync(driver);
+                await _uow.LockRouteAssignmentAsync(vehicleId, driverId, id);
+                // Reload route and parent state under the locks before checking availability.
+                route = await _routes.GetByIdAsync(id)
+                    ?? throw new KeyNotFoundException("Route not found.");
+                if (route.Status != RouteStatus.Pending)
+                    throw new BusinessConflictException("La ruta dejó de estar pendiente y no se puede editar.");
+
+                vehicle = await _vehicles.GetByIdAsync(vehicleId)
+                    ?? throw new KeyNotFoundException("Vehicle not found.");
+                driver = await _drivers.GetByIdAsync(driverId)
+                    ?? throw new KeyNotFoundException("Driver not found.");
+
+                if (!vehicle.IsActive || (vehicle.Status != VehicleStatus.Available && vehicleId != route.VehicleId))
+                    throw new BusinessConflictException("El vehículo ya no está disponible para asignarlo a una ruta.");
+                if (!driver.IsActive)
+                    throw new BusinessConflictException("El conductor ya no está disponible para asignarlo a una ruta.");
+
+                var vehicleRoutes = await _routes.GetAllAsync(vehicleId: vehicleId, onlyActive: true);
+                var driverRoutes = await _routes.GetAllAsync(driverId: driverId, onlyActive: true);
+                if (HasScheduleConflict(vehicleRoutes, id, plannedStart, plannedEnd) ||
+                    HasScheduleConflict(driverRoutes, id, plannedStart, plannedEnd))
+                    throw new BusinessConflictException("El vehículo o conductor ya tiene una ruta activa en ese horario.");
+
+                route.Update(
+                    vehicleId,
+                    driverId,
+                    name,
+                    pointsList.First(),
+                    pointsList.Last(),
+                    pointsList,
+                    cargoDescription,
+                    plannedStart,
+                    plannedEnd
+                );
+
+                if (driver.VehicleId != vehicleId)
+                {
+                    driver.AssignToVehicle(vehicleId);
+                    await _drivers.UpdateAsync(driver);
+                }
+
+                await _routes.UpdateAsync(route);
+                await _uow.CommitAsync();
+
+                return RouteApplicationMapper.ToDto(route);
             }
-
-            await _routes.UpdateAsync(route);
-            await _uow.CommitAsync();
-
-            return RouteApplicationMapper.ToDto(route);
+            catch
+            {
+                _uow.Rollback();
+                throw;
+            }
         }
 
         private static bool HasScheduleConflict(IEnumerable<RouteE> routes, Guid excludedRouteId, DateTime? start, DateTime? end)

@@ -4,6 +4,7 @@ using fletflow.Infrastructure.Persistence.Contracts;
 using fletflow.Application.Fleet.Commands;
 using fletflow.Domain.Auth.Repositories;
 using fletflow.Domain.Auth.Entities;
+using fletflow.Domain.Fleet.Exceptions;
 
 namespace BackEnd_Gps.Tests;
 
@@ -45,7 +46,7 @@ public class DriverTests
         var routes = new FakeRouteRepository(driver.Id, RouteStatus.InProgress);
         var command = new ChangeDriverStatusCommand(new FakeUnitOfWork(), new FakeDriverRepository(driver), routes);
 
-        await Assert.ThrowsAsync<InvalidOperationException>(() => command.Execute(driver.Id, false));
+        await Assert.ThrowsAsync<BusinessConflictException>(() => command.Execute(driver.Id, false));
         Assert.True(driver.IsActive);
     }
 

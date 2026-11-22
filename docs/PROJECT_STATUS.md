@@ -85,3 +85,14 @@ Fecha de corte: 2026-11-21.
 - Cobertura HTTP añadida para rol User: obtiene 403 en listados de Vehicles/Routes y alta de Vehicle; validación local en segunda DB MySQL temporal aprobada.
 - Workflow frontend integrado con MySQL, backend de la rama `chore/stabilize-fleet-platform` y Playwright autenticado 8 casos. La suite pasó localmente 8/8; resultado Actions remoto pendiente de publicar PR.
 - PRs publicados: frontend #2 y backend #5. Backend Actions pasó; primer frontend run reveló precheck de frontend antes de que Playwright lo iniciara. Corrección y upgrade de acciones Node 24 ya están en la rama, pendiente nuevo run.
+
+## Estabilización de concurrencia y validación del Driver — 2026-11-21
+
+- CreateRoute/UpdateRoute bloquean Vehicle y Driver por propietario bajo una transacción MySQL, en orden fijo, y vuelven a comprobar disponibilidad/agendas antes de guardar. Conflicto de agenda devuelve 409.
+- Una ruta pendiente asignada a Driver desactivado no puede iniciarse; la transición falla con 409 y no altera la ruta ni el vehículo.
+- Smoke concurrente agregado a CI: probó con MySQL real alta concurrente por mismo vehículo, mismo Driver y edición concurrente; cada pareja produjo un éxito y un 409. El smoke HTTP/MySQL de aislamiento también pasó localmente.
+- Cobertura Release xUnit: 49/49. Audit NuGet transitoria detectó CVE-2025-6965 en SQLitePCLRaw 2.1.10; fijado a 2.1.14 y audit posterior sin paquetes vulnerables.
+- Estos cambios aún no están publicados en PR; Actions y cobertura frontend deben repetirse después del push. Misión activa.
+- Revisión adicional detectó inicio simultáneo de rutas sobre un vehículo; la transición también toma lock de ruta/asignación y comprueba las demás rutas InProgress. xUnit final 50/50 y smoke MySQL concurrente: un HTTP 204 + un 409.
+- Smoke concurrente ampliado con verificación SQL: una ruta queda InProgress, la otra Pending y el vehículo OnRoute; carrera con baja de Driver deja exclusivamente estados coherentes. La base final `fletflow_ci_validation_14` pasó; cleanup descartó el esquema.
+- Durante la inspección local se mostró accidentalmente la credencial MySQL root en salida de diagnóstico; se rotó inmediatamente para `%` y `localhost`, `.env` quedó 0600 y la conexión temporal se verificó sin exponer la nueva clave.

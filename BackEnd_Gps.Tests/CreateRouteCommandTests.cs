@@ -51,7 +51,9 @@ public class CreateRouteCommandTests
         var persistedDriver = await drivers.GetByIdAsync(driver.Id);
         var persistedRoute = await routes.GetByIdAsync(created.Id);
         Assert.NotNull(created.CreatedAtUtc);
+        Assert.Equal(DateTimeKind.Utc, created.CreatedAtUtc!.Value.Kind);
         Assert.NotNull(persistedRoute!.CreatedAtUtc);
+        Assert.Equal(DateTimeKind.Utc, persistedRoute.CreatedAtUtc!.Value.Kind);
         Assert.Equal(created.CreatedAtUtc, persistedRoute.CreatedAtUtc);
         Assert.Equal(vehicle.Id, persistedDriver!.VehicleId);
         Assert.Equal(driver.Id, persistedRoute.DriverId);

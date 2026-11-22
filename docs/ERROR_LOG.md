@@ -728,7 +728,7 @@ Cada cambio de API debe incluir validación de compilación, migraciones si apli
 ## 2026-11-22 — `dotnet ef` no está instalado localmente — CORREGIDO
 
 - Al comprobar el generador de migraciones, `/home/leonardo/.dotnet/dotnet ef --version` informó que `dotnet-ef` no existe.
-- Solución prevista: habilitar EF CLI en un tool-path temporal, alineado con la versión del proyecto, o actualizar manualmente migración y snapshot si la instalación no está disponible.
+- Solución: instalar `dotnet-ef` 9.0.10 bajo `/tmp/fletflow-tools` y ejecutar la generación con `PATH=/home/leonardo/.dotnet:$PATH`, `DOTNET_ROOT`/`DOTNET_ROOT_X64=/home/leonardo/.dotnet` y `DOTNET_MULTILEVEL_LOOKUP=0`.
 - Prevención: verificar la herramienta antes de intentar generar migraciones.
 
 ## 2026-11-22 — Glob del `.csproj` desde subdirectorio equivocado — CORREGIDO
@@ -737,8 +737,15 @@ Cada cambio de API debe incluir validación de compilación, migraciones si apli
 - Solución: localizar proyectos con `rg --files | rg '\\.csproj$'` desde la raíz.
 - Prevención: confirmar ubicación del proyecto al iniciar comandos de herramientas.
 
-## 2026-11-22 — EF CLI no encontró el runtime .NET instalado — EN RESOLUCIÓN
+## 2026-11-22 — EF CLI no encontró el runtime .NET instalado — CORREGIDO
 
 - La primera ejecución de `/tmp/fletflow-tools/dotnet-ef` buscó `hostfxr` bajo `/usr/lib64/dotnet`, pero el SDK/runtime local está instalado en `/home/leonardo/.dotnet`.
 - Solución: `dotnet-ef` 9.0.10 se ejecuta con `PATH=/home/leonardo/.dotnet:$PATH`, `DOTNET_ROOT` y `DOTNET_ROOT_X64` apuntando a `/home/leonardo/.dotnet` y `DOTNET_MULTILEVEL_LOOKUP=0`; la migración se generó correctamente.
 - Prevención: este entorno necesita esas variables también para la metadata de MSBuild, no sólo para consultar la versión del apphost.
+
+## 2026-11-22 — Smoke comparaba timestamps con precisión distinta — CORREGIDO LOCAL; ACTIONS POR REPETIR
+
+- Actions `45019828759` pasó build/xUnit, pero falló el smoke al comparar el `CreatedAtUtc` devuelto al crear con el devuelto tras editar.
+- Causa: la respuesta inicial tenía precisión de DateTime .NET (100 ns); MySQL `datetime(6)` conserva microsegundos. El test comparaba strings exactos aunque ambas marcas coincidían a la precisión persistida.
+- Solución: normalizar la respuesta API a seis decimales y comparar ambos reads con `DATE_FORMAT(CreatedAtUtc)` de MySQL antes y después de editar.
+- Prevención: verificar timestamps a la precisión real de la columna y contrastar el valor persistido.

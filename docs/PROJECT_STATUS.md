@@ -262,3 +262,4 @@ Nota de actualización: algunos resultados históricos de registro público más
 - Hallazgo: el dashboard titulaba “Actividad Reciente” sobre un endpoint sin orden y Gestión de Rutas mostraba `PlannedStart` (o la hora actual inventada) como fecha de creación.
 - Migración aditiva nullable `CreatedAtUtc`; nuevas rutas guardan UTC, las existentes quedan sin fecha histórica inventada. API y repositorio exponen/ordenan datos; update preserva creación. Front ordena recientes con fecha de creación y muestra “No registrada” en históricos sin fecha.
 - Local Back Release build 0 warnings/errors, xUnit **73/73**, `bash -n` en ambos smokes; Front lint/build/discovery **18** y diff-check pasan. E2E/API/MySQL de Actions pendiente.
+- Primer Actions `45019828759`: build/xUnit pasaron; smoke encontró una comparación string demasiado estricta por precisión de .NET vs `datetime(6)`. Ahora normaliza a microsegundos y comprueba el valor de MySQL antes/después; Actions pendiente.

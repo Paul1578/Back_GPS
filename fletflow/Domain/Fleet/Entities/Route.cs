@@ -56,7 +56,9 @@ namespace fletflow.Domain.Fleet.Entities
             IsActive = isActive;
             StartedAt = startedAt;
             EndedAt = endedAt;
-            CreatedAtUtc = createdAtUtc;
+            CreatedAtUtc = createdAtUtc.HasValue
+                ? DateTime.SpecifyKind(createdAtUtc.Value, DateTimeKind.Utc)
+                : null;
         }
 
         public static RouteE Create(

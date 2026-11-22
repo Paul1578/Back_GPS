@@ -146,3 +146,4 @@
 - El smoke HTTP comprueba PickupAndDelivery, transición InProgress, evidencia, coordenadas GPS, estado Completed y vehículo devuelto a Available.
 - MySQL 8/DB descartable confirmó persistencia y cleanup en cero rutas, posiciones y vehículos. El primer conteo mezcló un warning MySQL; se separó stderr y la repetición pasó.
 - Actions `44990525889` para `d58c5ab`: build, xUnit 57/57 y smoke completo success. Después se añadió fallback de cleanup por nombre, probado localmente; queda pendiente Actions para ese ajuste.
+- Actions `44991032520` para `da53081` pasó build, xUnit 57/57 y smoke HTTP/MySQL; cleanup `0:0:0`. El fallback excepcional de ID ausente no se indujo.

@@ -362,3 +362,10 @@
 - Consumo de PasswordResetToken se vuelve condicional a `UsedAt IS NULL` y no expirado; los flujos ResetPassword/ActivateAccount vuelven a cargar el token tras obtener el lock y sólo guardan password/revocan refresh si lo consumen.
 - Registro GPS vuelve a cargar la ruta tras tomar lock de ruta/asignación y verifica Driver activo y dueño actual; lectura GPS de Driver mantiene lock durante la consulta. Añadida regresión de reasignación durante lock con cero posiciones escritas.
 - Tests Release **91/91**, build **0 warnings/0 errors** y test SQLite de consumo único. El smoke MySQL de mantenimiento se corrigió luego del 409 de fixture por agenda; requiere Actions nueva.
+
+
+## 2026-11-22 — Evitar enviar emails de recuperación caducados
+
+- `EmailOutboxWorker` valida que el token asociado al payload cifrado siga activo, no usado y sin expirar antes de enviar. Si quedó invalidado por una nueva solicitud/consumo/expiración, lo marca terminal como `ResetTokenInactive` y no envía un enlace muerto.
+- Test SQLite del worker verifica que no se llama al remitente, se registra supresión terminal, y no se incrementa el contador de fallos SMTP.
+- Worker enfocado **3/3**; suite Release **92/92**, build **0 warnings/0 errors**. CI backend/Front integrada pendiente.

@@ -166,3 +166,15 @@ El smoke anónimo solicitó rol Admin en el registro; la fila persistida conserv
 - La prueba de rotación conserva key ring y payload generados con el certificado anterior, abre un provider con actual + anterior, descifra el payload anterior y protege/descifra un payload nuevo.
 - La regresión de rotación valida certificado anterior para lectura y certificado actual para claves nuevas; backend local Release **86/86** y build **0 warnings/0 errores**. Actions del nuevo commit pendiente.
 - Actions `45040550853` validó Backend `b664b2c`: Release build, xUnit **86/86**, aislamiento HTTP/MySQL, concurrencia de asignación y cleanup success.
+
+
+### Retiro del certificado Data Protection anterior
+
+Si se conservó el mismo key ring cifrado con el certificado viejo, no quitar `FLETFLOW_DATA_PROTECTION_PREVIOUS_CERT_PATH` por tiempo transcurrido solamente: las entradas de claves viejas seguirán necesitando el PFX para poder leerse. La rotación de retiro requiere mantenimiento controlado:
+
+1. Respaldar cifrados el key ring/DB y coordinar una ventana sin escritura de correo de recuperación.
+2. Detener instancias/worker y eliminar/archivar los mensajes pendientes del outbox que no se enviarán; invalidar PasswordResetTokens activos para que ningún enlace antiguo se presente como válido. Los usuarios podrán solicitar uno nuevo.
+3. Configurar un directorio persistente de key ring nuevo y el certificado nuevo como actual, sin variables `PREVIOUS_CERT`; iniciar una sola instancia y comprobar health + un flujo de recuperación de prueba de extremo a extremo.
+4. Tras validar que ninguna instancia use el key ring viejo, retirar el PFX anterior del secreto activo. Si la política exige conservar la capacidad de restaurar el backup viejo, conservar PFX y backup cifrados bajo custodia separada; su destrucción vuelve irrecuperable ese key ring.
+
+Este proceso invalida los emails/token de recuperación que estén pendientes o activos durante el cambio; debe coordinarse como operación de despliegue y confirmarse con el operador responsable antes de ejecutarse en producción. No hay credenciales PFX/infra productiva en local para ejecutar este runbook aquí.

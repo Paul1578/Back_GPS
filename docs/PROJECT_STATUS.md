@@ -1,3 +1,11 @@
+# Estado actual — auditoría y estabilización integral — 2026-11-22
+
+- Backend branch `chore/stabilize-fleet-platform`; Front branch `refactor/route-builder`; `main` intacta.
+- Backend `a207c08` pasó Actions `45047226328`: build Release, xUnit **91/91**, HTTP/MySQL tenant/flota, smoke de asignación concurrente y cleanup correcto. El HTTP smoke cubrió vehículo en Maintenance al cancelar ruta Pending con fixture independiente.
+- Front `d05dcf8` pasó Actions `45046312974`: E2E API/MySQL **26/26**, responsive **1/1**, backend build/test, lint/audit y cleanup. Front docs `38c58d6` dispara integración contra backend a207; Action `45047502825` en progreso.
+- Lote local backend sin commit: Worker de correo suprime token reset usado/expirado; tests SQLite worker **3/3**, suite Release **92/92**, build **0 warnings/0 errors**. Nueva Action backend y Front integrado tras este commit siguen pendientes.
+- Criterios abiertos: más CRUD/roles y pruebas por viewport, política de creación/promoción Admin delegado (esperando decisión); SMTP/PFX e infraestructura productiva externas. App móvil nativa aplazada por el usuario.
+
 # Estado actual de estabilización — 2026-11-22
 
 - Rama `chore/stabilize-fleet-platform`; no se modifica `main`.
@@ -393,3 +401,9 @@ Nota de actualización: algunos resultados históricos de registro público más
 - xUnit cubre inicio de ruta denegado con cuenta inactiva y baja denegada durante ruta activa, sin mutaciones inconsistentes. `smoke-tenant-http.sh` añade verificación HTTP/MySQL de ambos caminos y limpieza de sus recursos.
 - Validación local: Release xUnit **88/88**, restore al día, Release build **0 warnings/0 errores**, `bash -n` y diff-check correctos. Backend `190f284` pasó Actions `45045070288`: build/tests Release, xUnit **88/88**, smoke HTTP/MySQL tenant+flota, concurrencia de asignación y cleanup.
 - Misión global sigue abierta: cobertura CRUD/responsive pendiente, política Admin delegado requiere decisión, credenciales SMTP/infraestructura PFX son externas; app móvil nativa aplazada por usuario.
+
+
+## Worker de recuperación — suppress de tokens inactivos — 2026-11-22
+
+- Backend valida vigencia del token reset inmediatamente antes de envío; un mensaje obsoleto no se presenta como email enviado ni se reintenta como fallo SMTP.
+- Worker enfocado 3/3, suite local 92/92, build 0/0. Nuevo Actions backend y corrida Front integrada pendientes.

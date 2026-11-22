@@ -461,3 +461,5 @@ La invitación envía sólo el enlace de activación; el usuario fija su contras
 - `/tmp/fletflow-dotnet/dotnet test BackEnd_Gps.sln --configuration Release --no-restore`: **91/91**, 0 omitidas. `dotnet build BackEnd_Gps.csproj --configuration Release --no-restore`: 0 warnings/0 errores. El path `/tmp` responde al entorno de esta sesión donde `/usr/bin/dotnet` no encuentra runtime; no es una ruta requerida para otros desarrolladores.
 - Unit tests: bloqueo de cambio de contraseña antes de revocar; reset/activación consumen token sólo una vez; repositorio SQLite devuelve true en primer consumo y false en el segundo; GPS Driver reasignado en lock no registra posición.
 - `bash -n scripts/smoke-tenant-http.sh` y `git diff --check`: correctos. Próxima Actions debe validar en MySQL el smoke de mantenimiento y el workflow backend completo.
+
+- `EmailOutboxWorkerTests` cubre supresión de payload cuando ResetToken ya se usó/invalidó; `dotnet test ... --filter FullyQualifiedName~EmailOutboxWorkerTests`: **3/3**. Suite Release actual: **92/92**.

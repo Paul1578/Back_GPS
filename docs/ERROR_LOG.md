@@ -996,3 +996,11 @@ Cada cambio de API debe incluir validación de compilación, migraciones si apli
 - Reset token se leía activo y luego se marcaba usado sin condición; dos solicitudes podían avanzar a la vez. `MarkUsedAsync` ahora hace UPDATE atómico sólo si `UsedAt IS NULL` y `ExpiresAt > now`, devuelve éxito/fallo; ResetPassword/ActivateAccount releen tras lock y abortan sin cambiar password si no lo consumen. SQLite verifica primera llamada true, segunda false.
 - GPS Driver se autorizaba en controller y se escribía después de cargar ruta sin lock/revalidación. Reasignación entre ambos pasos permitía que el Driver anterior guardara GPS. Command y consulta toman locks de asignación, recargan y vuelven a verificar Driver activo/asignado antes de crear/leer posiciones; unitaria simula reasignación y exige cero escrituras.
 - Validación local Release xUnit **91/91**, build 0 warnings/0 errors; integración MySQL/HTTP de esta tanda pendiente de Actions.
+
+
+## 2026-11-22 — Outbox podía enviar enlace de recuperación ya invalidado — CORREGIDO; CI PENDIENTE
+
+- El worker enviaba cada payload válido criptográficamente aunque una nueva solicitud hubiera invalidado el PasswordResetToken o ya hubiera sido usado/expirado; el destinatario podía abrir un enlace que no funcionaba.
+- Corrección: antes del envío, el worker calcula el hash del token descifrado y consulta que exista para ese usuario con `UsedAt IS NULL` y `ExpiresAt > now`. Si no, cierra mensaje sin enviar y registra `ResetTokenInactive` como estado terminal, intento SMTP intacto.
+- Regresión SQLite: token usado no llega al remitente, queda DeadLettered con tipo exacto, sin `SentAt`, sin lock y con cero intentos. Worker 3/3, suite 92/92 y build limpio. Actions del SHA posterior pendientes.
+- Prevención: los workers de correo deben comprobar vigencia/propiedad del token justo antes de una operación externa irreversible; no basta con que el payload esté cifrado.

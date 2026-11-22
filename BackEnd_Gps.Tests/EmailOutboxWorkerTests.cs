@@ -1,5 +1,6 @@
 using fletflow.Infrastructure.Persistence.Context;
 using fletflow.Infrastructure.Persistence.Entities;
+using fletflow.Infrastructure.Security.Hashing;
 using fletflow.Infrastructure.Services;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.Data.Sqlite;
@@ -39,13 +40,33 @@ public sealed class EmailOutboxWorkerTests
         Assert.Null(result.Message.LockedUntilUtc);
     }
 
-    private static async Task<WorkerResult> RunWorkerAsync(bool shouldFail, int initialAttemptCount)
+    [Fact]
+    public async Task Worker_SuppressesEmailWhenResetTokenWasAlreadyInvalidated()
+    {
+        var result = await RunWorkerAsync(shouldFail: false, initialAttemptCount: 0,
+            resetTokenIsActive: false, expectDelivery: false);
+
+        Assert.Null(result.SenderCall);
+        Assert.Null(result.Message.SentAtUtc);
+        Assert.NotNull(result.Message.DeadLetteredAtUtc);
+        Assert.Equal("ResetTokenInactive", result.Message.LastFailureType);
+        Assert.Equal(0, result.Message.AttemptCount);
+        Assert.Null(result.Message.LockToken);
+        Assert.Null(result.Message.LockedUntilUtc);
+    }
+
+    private static async Task<WorkerResult> RunWorkerAsync(
+        bool shouldFail,
+        int initialAttemptCount,
+        bool resetTokenIsActive = true,
+        bool expectDelivery = true)
     {
         await using var connection = new SqliteConnection("Data Source=:memory:");
         await connection.OpenAsync();
         var options = new DbContextOptionsBuilder<AppDbContext>().UseSqlite(connection).Options;
         var protectionProvider = new EphemeralDataProtectionProvider();
         var userId = Guid.NewGuid();
+        const string rawToken = "plain-reset-token";
         Guid messageId;
 
         await using (var db = new AppDbContext(options))
@@ -59,9 +80,18 @@ public sealed class EmailOutboxWorkerTests
                 PasswordHash = "not-a-real-password-hash",
                 CreatedAt = DateTime.UtcNow
             });
+            db.PasswordResetTokens.Add(new PasswordResetTokenEntity
+            {
+                Id = Guid.NewGuid(),
+                UserId = userId,
+                TokenHash = TokenHashing.Sha256(rawToken),
+                CreatedAt = DateTime.UtcNow,
+                ExpiresAt = DateTime.UtcNow.AddMinutes(10),
+                UsedAt = resetTokenIsActive ? null : DateTime.UtcNow
+            });
             var queue = new EmailDeliveryQueue(db, protectionProvider);
             await queue.QueuePasswordResetAsync(userId, "outbox-recipient@example.test",
-                "https://example.test/reset", "plain-reset-token");
+                "https://example.test/reset", rawToken);
             await db.SaveChangesAsync();
             var message = await db.EmailOutbox.SingleAsync();
             message.AttemptCount = initialAttemptCount;
@@ -83,8 +113,11 @@ public sealed class EmailOutboxWorkerTests
         try
         {
             await worker.StartAsync(CancellationToken.None);
-            var completed = await Task.WhenAny(sender.Called.Task, Task.Delay(TimeSpan.FromSeconds(5)));
-            Assert.Same(sender.Called.Task, completed);
+            if (expectDelivery)
+            {
+                var completed = await Task.WhenAny(sender.Called.Task, Task.Delay(TimeSpan.FromSeconds(5)));
+                Assert.Same(sender.Called.Task, completed);
+            }
 
             EmailOutboxEntity? persisted = null;
             var deadline = DateTime.UtcNow.AddSeconds(2);
@@ -99,7 +132,8 @@ public sealed class EmailOutboxWorkerTests
 
             Assert.NotNull(persisted);
             Assert.True(persisted!.SentAtUtc.HasValue || persisted.DeadLetteredAtUtc.HasValue);
-            return new WorkerResult(persisted, sender.Called.Task.Result);
+            Assert.Equal(expectDelivery, sender.Called.Task.IsCompletedSuccessfully);
+            return new WorkerResult(persisted, sender.Called.Task.IsCompletedSuccessfully ? sender.Called.Task.Result : null);
         }
         finally
         {

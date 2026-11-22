@@ -3,6 +3,7 @@ using fletflow.Infrastructure.Persistence.Context;
 using fletflow.Infrastructure.Persistence.Entities;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
+using fletflow.Infrastructure.Security.Hashing;
 
 namespace fletflow.Infrastructure.Services;
 
@@ -109,6 +110,24 @@ public sealed class EmailOutboxWorker : BackgroundService
             var json = protector.Unprotect(message.ProtectedPayload);
             var payload = JsonSerializer.Deserialize<PasswordResetEmailPayload>(json)
                 ?? throw new InvalidOperationException("El contenido cifrado del outbox no es válido.");
+
+            var tokenHash = TokenHashing.Sha256(payload.PlainToken);
+            var resetTokenIsActive = await db.PasswordResetTokens.AsNoTracking().AnyAsync(token =>
+                token.UserId == message.UserId && token.TokenHash == tokenHash
+                && token.UsedAt == null && token.ExpiresAt > DateTime.UtcNow, cancellationToken);
+            if (!resetTokenIsActive)
+            {
+                await db.Set<EmailOutboxEntity>()
+                    .Where(item => item.Id == message.Id && item.LockToken == lockToken)
+                    .ExecuteUpdateAsync(update => update
+                        .SetProperty(item => item.DeadLetteredAtUtc, DateTime.UtcNow)
+                        .SetProperty(item => item.LockedUntilUtc, (DateTime?)null)
+                        .SetProperty(item => item.LockToken, (Guid?)null)
+                        .SetProperty(item => item.LastFailureType, "ResetTokenInactive"), cancellationToken);
+                _logger.LogInformation("Password reset email suppressed because its token is no longer active.");
+                return;
+            }
+
             using (var sender = _scopeFactory.CreateScope())
             {
                 var emailSender = sender.ServiceProvider.GetRequiredService<IEmailSender>();

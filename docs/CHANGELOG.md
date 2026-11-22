@@ -1,3 +1,7 @@
+## 2026-11-22 — E2E cross-repo de ownership Driver
+
+- Actions Front `45002920723` + Back `41c01e7` pasó 18/18, incluyendo aislamiento por Driver y perfil inactivo, junto con Release/xUnit 61/61.
+
 ## 2026-11-22 — Cierre de fix GPS para Driver inactivo (backend)
 
 - Cambio centralizado en `IsCurrentDriverAssigned`, backend Release 61/61; Actions `45002238853` pasó. El E2E Front que comprueba denegación por otro Driver y perfil inactivo/reactivado queda pendiente de Actions.

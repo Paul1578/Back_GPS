@@ -1,3 +1,8 @@
+## Autorización de Driver cerrada por ejecución — 2026-11-22
+
+- Backend `41c01e7` bloquea detalle y GPS a perfiles Driver inactivos; Release/xUnit 61/61 y Actions backend `45002562048` success.
+- Front Actions `45002920723` probó el flujo completo en API/MySQL 18/18: Driver inactivo, ruta ajena, mutaciones de ruta/parada/evidencia/GPS denegadas y persistencia intacta. Cleanup completado.
+
 ## Actualización — autorización Driver/GPS — 2026-11-22
 
 - Backend `2fdc9e0` exige Driver activo/asignado en GET/POST GPS; Release 61/61 y Actions `45002238853` success con smoke HTTP/MySQL.

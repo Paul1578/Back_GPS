@@ -2,18 +2,12 @@
 
 - Branch backend `chore/stabilize-fleet-platform`; nuevo cambio local bloquea la desactivación de cuenta User vinculada a Driver con rutas activas `Pending`/`InProgress`, bajo locks de asignación y usuario. Test/domain y smoke HTTP/MySQL ya pasaron localmente; Action aún no lanzada hasta publicar el cambio.
 - Validación: Release xUnit 111/111, Release build 0 warnings/0 errors, `smoke-tenant-http.sh` completo sobre API + MySQL 8 descartable `fletflow_ci_user_deactivation`, cleanup correcto, bash syntax/diff-check correctos.
-- El contenedor `fletflow-route-deactivation-mysql` y API local deben detenerse y eliminarse si no se cerraron aún; no se tocó MySQL persistente.
-- Backend commit previo de documentación `777b905` ya está publicado y pasó la Action de `f564aa3`.
-- Front `5d4e290` publicado; Action `45071113746` aún ejecuta el E2E autenticado del registro duplicado UI al último chequeo. Esperar y registrar su resultado.
+- El contenedor `fletflow-route-deactivation-mysql` y API local se detuvieron y eliminaron; MySQL persistente no se tocó.
+- Backend commit `87b208e` pasó Action `45071475764`: xUnit 111/111, Release build, smoke HTTP/MySQL tenant, concurrencia y cleanup.
+- Front `5d4e290` Action `45071113746` pasó: 36/36 E2E, responsive 1/1, backend 110/110, audit/lint/build y cleanup. Front `340eb55` ya está publicado y su Action `45072015727` está en curso.
 - Continúa pendiente: política para otorgar Admin y requisito de desvincular User/Driver; seguir cobertura CRUD/responsive y pruebas reales. Móvil nativo pospuesto.
 
-# Continuación actual — 2026-11-22
-
-- Backend `chore/stabilize-fleet-platform` en `f564aa3`; Action `45070491409` terminó success (build, xUnit 110/110, smoke HTTP/MySQL tenant, concurrencia y cleanup).
-- La regla de evidencia para Completed/Skipped de parada está validada localmente y en CI; detalle y prevención en `ERROR_LOG.md`.
-- Front `refactor/route-builder` tiene Action integrada `45070512838` aún ejecutando E2E autenticado al momento de la nota. No afirmar su resultado antes de consultar GitHub.
-- Front tiene cambios locales sin commit en E2E de registro duplicado desde UI y cinco documentos; lint/build/audit/discovery pasaron localmente. Esperar resultado de Action antes de publicar.
-- Pendientes: decisión sobre quién puede otorgar rol Admin; definir si hace falta desvincular User/Driver conservando ambos; seguir CRUD/roles/responsive y pruebas reales. App nativa pospuesta; SMTP e infraestructura de producción son externos.
+# El estado vigente se mantiene al inicio de este handoff; las notas posteriores son registro histórico.
 
 ## Hallazgo y corrección — cerrar parada sin evidencia — 2026-11-22
 

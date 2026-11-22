@@ -214,3 +214,4 @@ Errores de migración, herramientas, QA y soluciones están en `docs/ERROR_LOG.m
 - CreateDriver/UpdateDriver y `POST /Users` ahora devuelven HTTP 409 para documento duplicado, sin crear usuario parcial, en vez de 400. Mensaje uniforme en español.
 - xUnit Release local 61/61; E2E Admin móvil agregado para mismo documento/otro correo: comprueba 409 y ausencia de email parcial. Front lint/build/discovery 16 correctos.
 - Pendiente publicar ambas ramas y verificar Actions cross-branch, persistencia y cleanup.
+- Actions `44997043103` para `a7f7c4e` success: build, xUnit 61/61, smokes tenant/concurrencia con MySQL efímero y cierre de servicios; la validación Front cross-branch sigue.

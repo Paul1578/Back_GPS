@@ -507,3 +507,4 @@ Cada cambio de API debe incluir validación de compilación, migraciones si apli
 - CreateDriver y UpdateDriver detectaban documento repetido pero usaban InvalidOperationException, que middleware transformaba en 400. El endpoint `POST /Users` prevalidaba duplicado y devolvía 400; semántica inconsistente con conflicto de identidad y la UI no tenía un estado estable para conflicto.
 - Corrección: usar BusinessConflictException/HTTP 409 y un mensaje español uniforme también en UserController, antes de crear la cuenta. Pruebas unitarias prueban rechazo sin mutación/commit; E2E agregado comprueba sin usuario parcial.
 - Suite backend Release local: 61/61; lint/build/discovery Front local: 16 casos. CI integrado pendiente.
+- Validación corregida confirmada: Actions `44997043103` para `a7f7c4e` pasó build, xUnit 61/61 y smokes MySQL tenant/concurrencia.

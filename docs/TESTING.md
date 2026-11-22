@@ -265,3 +265,4 @@ La invitación envía sólo el enlace de activación; el usuario fija su contras
 - Release local con SDK 8.0.428: `dotnet test BackEnd_Gps.sln --configuration Release --no-restore`, **61/61**, 0 fallidas/omitidas.
 - Unit tests validan que CreateDriver y UpdateDriver generan conflicto sin insertar, mutar ni hacer commit cuando el documento ya pertenece a otro Driver.
 - E2E frontend local lint/build/discovery 16 pasan; Actions integrado pendiente.
+- CI integrado: Actions `44997043103` en `a7f7c4e` pasó build, **61/61 xUnit** y smokes MySQL de tenant/concurrencia.

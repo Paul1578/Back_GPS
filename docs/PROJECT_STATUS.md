@@ -164,3 +164,4 @@ Actualización de estabilidad: duplicados de placa en creación/edición ahora s
 - Actions `44995681296` para `6ec5315` terminó success: build, xUnit, smoke tenant/roles HTTP+MySQL y concurrencia; MySQL/servicios temporales se limpiaron.
 
 - Integridad de conductores: crear Driver, alta de User con rol Driver y editar documento duplicado responden HTTP 409 con mensaje claro. Release local pasó 61/61; CI integrado pendiente.
+- Actions `44997043103` para `a7f7c4e` terminó success: build, xUnit 61/61, smokes HTTP/MySQL tenant y concurrencia; servicios desechables se cerraron correctamente.

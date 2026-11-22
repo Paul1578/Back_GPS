@@ -433,3 +433,13 @@ Cada cambio de API debe incluir validación de compilación, migraciones si apli
 - La verificación del rol User comparaba la salida completa de `mysql`; el cliente imprimía primero el encabezado de columna, por lo que el assert fallaba aunque la fila persistida fuera `1:user`.
 - Se añadió `--batch --skip-column-names` y se comprobó que haya exactamente un rol `user`. El smoke HTTP final pasó: el registro que solicita Admin queda User y recibe 403 en Vehicles. También pasó logout-all real y revocación del refresh.
 - Esquema, usuario SQL y fixtures de prueba se descartaron con el trap.
+
+## 2026-11-21 — Host dotnet del sistema sin runtime — DOCUMENTADO
+
+- `/usr/bin/dotnet test` terminó antes de compilar: `/usr/lib64/dotnet/host/fxr` no contiene una versión instalada.
+- La instalación utilizable está en `/home/leonardo/.dotnet` (SDK 8.0.428). Con `/home/leonardo/.dotnet/dotnet`, las cuatro pruebas nuevas y la suite completa pasaron (54/54). Problema del entorno, no del código.
+
+## 2026-11-21 — Primer test de recuperación no compiló por namespace de pruebas — CORREGIDO
+
+- El primer build de `PasswordRecoveryCommandTests` usó rutas `fletflow.Domain...` totalmente calificadas dentro del namespace `BackEnd_Gps.Tests`; C# resolvió el prefijo como `BackEnd_Gps.fletflow` y reportó interfaces de IUnitOfWork no implementadas.
+- Se importó `fletflow.Domain.Fleet.Repositories` y se usaron los nombres de interfaz cortos en las implementaciones explícitas. Compilación y suite completa posteriores: 54/54.

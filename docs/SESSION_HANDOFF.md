@@ -149,3 +149,10 @@ Errores de migración, herramientas, QA y soluciones están en `docs/ERROR_LOG.m
 - Matriz HTTP de mutaciones MySQL: Manager crea Vehicle/Driver/Route y edita Route; Logistics edita/elimina Route y recibe 403 al crear Vehicle/Driver; User y Driver no pueden crear Route. Smoke pasó y limpió schema/fixtures.
 - Registro público con `roleName=Admin` persistió un único rol User y recibió 403 en Vehicles. Logout-all real devolvió 200 y el refresh anterior dio 401.
 - Build Release final: 0 warnings/0 errors; documentación actualizada. Próximo: commit/push en la rama existente y esperar CI. Mantener misión activa: queda cobertura de CRUD/responsive no recorrida; SMTP externo y decisiones de despliegue delimitables; móvil nativo aplazado por decisión del usuario.
+
+## Handoff posterior: recovery y CI — 2026-11-21
+
+- Rama `chore/stabilize-fleet-platform`; añadido `BackEnd_Gps.Tests/PasswordRecoveryCommandTests.cs`. Suite Release completa: **54/54**.
+- Actions backend `44982244087` y frontend `44982243409` finalizaron `success` para los SHA publicados `4cf62a3` y `6e37c4d`.
+- `/usr/bin/dotnet` no tiene runtime; usar `/home/leonardo/.dotnet/dotnet` (SDK 8.0.428). No se envió SMTP.
+- Próximo: continuar la cobertura real CRUD/responsive restante y actualizar esta documentación. No declarar completo; SMTP requiere credenciales externas y app nativa se aplazó por decisión del usuario.

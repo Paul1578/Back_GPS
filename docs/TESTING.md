@@ -203,3 +203,9 @@ La invitación envía sólo el enlace de activación; el usuario fija su contras
 - Build Release final 0 warnings/0 errors y audit NuGet sin vulnerables. Nuevos runs GitHub Actions pendientes; CI verde previo corresponde a commits anteriores.
 - Nuevo smoke de escritura MySQL aprobado: Manager crea Vehicle/Driver/Route y edita Route; Logistics edita/elimina Route y recibe 403 en Vehicle/Driver; User y Driver reciben 403 al crear Route. Esquema temporal y fixtures eliminados.
 - Registro anónimo que pide Admin termina con un solo rol User y recibe 403 en Vehicles; `logout-all` responde 200 y el refresh invalidado devuelve 401.
+
+## Reset y activación — 2026-11-21
+
+- `PasswordRecoveryCommandTests`: cuatro pruebas con BCrypt real y repositorios controlados; comprueba cambio de hash, token de un uso, revocación de sesiones, limpieza de `MustChangePassword` y rechazos de token usado/confirmación distinta.
+- Suite completa `dotnet test BackEnd_Gps.sln --configuration Release --no-restore -m:1`: **54/54**, sin fallos ni omisiones. No se envió SMTP.
+- En este entorno usar `/home/leonardo/.dotnet/dotnet`.

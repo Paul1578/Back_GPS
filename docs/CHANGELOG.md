@@ -108,3 +108,8 @@
 - JWT rechaza roles obsoletos; smokes MySQL validan access/refresh revocados y consistencia concurrente.
 - Runner E2E normaliza URL local con/sin `/api`; suite frontend Chrome/API/MySQL: 14/14.
 - Smoke HTTP amplía permisos de escritura para Manager, Logistics, User y Driver; se verificó persistencia/denegación en MySQL temporal y se eliminó la base.
+
+## 2026-11-21 — Pruebas de recovery y CI
+
+- Se agregaron pruebas de reset/activación y revocación de sesiones.
+- Suite backend Release 54/54; Actions backend y frontend de los commits publicados finalizaron correctamente.

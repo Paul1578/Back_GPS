@@ -114,3 +114,9 @@ Fecha de corte: 2026-11-21.
 - Runner frontend con API y MySQL reales: Playwright **14/14**, incluye rol Usuario UI, operaciones CRUD, responsive y aislamiento multiempresa.
 - Falta publicar el lote y validar workflows remotos para sus SHA; continuar cobertura de CRUD/responsive no visitada. SMTP requiere credenciales vigentes; móvil nativo pospuesto por el usuario.
 - Smoke HTTP/MySQL también confirmó que registro público no eleva el rol y que logout-all revoca refresh tokens.
+
+## Recuperación y activación — 2026-11-21
+
+- Cuatro pruebas nuevas cubren reset/activación: persistencia con BCrypt real, consumo de token, revocación de refresh tokens, limpieza de `MustChangePassword`, token usado y confirmación desigual.
+- Suite backend Release: **54/54**; ambos workflows publicados terminaron `success`: backend `44982244087`, frontend `44982243409`.
+- No se envió correo. SMTP sigue dependiendo de credenciales externas vigentes. Continúa pendiente ampliar CRUD/responsive; móvil nativo está pospuesto. La misión sigue activa.

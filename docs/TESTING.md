@@ -438,3 +438,8 @@ La invitación envía sólo el enlace de activación; el usuario fija su contras
 - Producción requiere configuración de key ring persistente y certificado de cifrado; su disponibilidad depende de secretos/infraestructura externa y no se simuló con credenciales productivas.
 - Arranque de configuración Production: sin certificado y con ruta de key ring especificada, la API rechazó el inicio con `Producción requiere FLETFLOW_DATA_PROTECTION_CERT_PATH`; la comprobación enfocada posterior pasó. No se creó core file en el repositorio.
 - Actions [`45037399332`](https://github.com/Paul1578/Back_GPS/actions/runs/45037399332) validó Backend `94c3e90`: Release build 0 warnings/0 errors; xUnit **85/85**; smoke HTTP/MySQL tenant/roles/flota y smoke de concurrencia de asignación; cleanup success.
+
+## Data Protection: cifrado y persistencia del key ring
+
+- `DataProtectionKeyRingTests.CertificateProtectedKeyRing_IsEncryptedAndSurvivesProviderRestart` crea certificado temporal, valida `<encryptedSecret` en el XML persistido y comprueba que un provider nuevo descifre el payload tras reinicio. Directorio único eliminado en `finally`.
+- Prueba enfocada 1/1; suite Release **86/86**; build Release 0 warnings/0 errors; Actions de este test aún pendiente.

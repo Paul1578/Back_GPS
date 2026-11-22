@@ -321,3 +321,8 @@
 ## 2026-11-22 — Cierre integrado backend de seguridad
 
 - Actions `45037399332` validó commit de código `94c3e90`: xUnit 85/85, build sin warnings/errores, smokes HTTP/MySQL y concurrencia de rutas con cleanup.
+
+## 2026-11-22 — Test del cifrado/persistencia de Data Protection
+
+- Se prueba con certificado temporal que el key ring queda cifrado y sigue usable después de reiniciar el provider.
+- Release xUnit **86/86**; build 0 warnings/0 errores; Actions pendiente.

@@ -369,3 +369,4 @@ Nota de actualización: algunos resultados históricos de registro público más
 - Backend Release tests 85/85 y build 0 warnings/0 errors. Validación Actions pendiente.
 - Pendiente decisión de política: Admin delegado puede crear/promover Admin. También falta provisionar certificado/key ring en infraestructura productiva; el límite distribuido por IP requiere un servicio externo antes de escalar a varias réplicas.
 - Cierre CI backend `94c3e90`: Actions `45037399332` pasó build (0 warnings/0 errors), xUnit 85/85, smokes tenant/roles/flota y concurrencia MySQL, cleanup success. Cambios de seguridad locales ya integrados.
+- Seguridad Data Protection: prueba nueva verifica cifrado real del XML del key ring y descifrado tras reiniciar provider. Suite local backend 86/86; build 0 warnings/0 errors; CI de la prueba pendiente.

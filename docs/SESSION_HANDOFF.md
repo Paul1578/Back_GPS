@@ -462,3 +462,8 @@ Errores de migración, herramientas, QA y soluciones están en `docs/ERROR_LOG.m
 - Corrección de saturación incluida y publicada en Backend `94c3e90`; el código validado localmente es 85/85 y build limpio. Actions del SHA `94c3e90` debe confirmarse antes de usarlo como evidencia remota.
 - Verifiqué en local el guard de arranque `Production`: al configurar key ring sin certificado, la API rechaza el inicio con el mensaje requerido y no llega a DB. El primer assert de shell buscó el mensaje en inglés y falló; se corrigió a la frase real en español y pasó, documentado en ERROR_LOG.
 - Actions `45037399332` confirmó Backend `94c3e90`: build Release 0 warnings/errors, xUnit 85/85, tenant/roles/flota HTTP/MySQL, concurrencia y cleanup success. El run validó la corrección de saturación del rate limiter. Documentación de esta evidencia queda por publicar.
+
+## Test del key ring Data Protection
+
+- Nueva prueba `BackEnd_Gps.Tests/DataProtectionKeyRingTests.cs`: certificado autofirmado efímero, persistencia cifrada `<encryptedSecret`, restart provider y recuperación del payload. Limpia directorio aislado en `finally`.
+- Local después del test: Release 86/86, build 0 warnings/0 errors y diff-check limpio. Falta Actions del commit; el último CI validó 85 tests y no incluía esta prueba.

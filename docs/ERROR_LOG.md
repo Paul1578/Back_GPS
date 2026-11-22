@@ -930,3 +930,10 @@ Cada cambio de API debe incluir validación de compilación, migraciones si apli
 
 - Actions backend `45037399332` pasó con el código `94c3e90`: Release build 0 warnings/0 errors; xUnit **85/85**; smoke HTTP/MySQL de tenant/roles/flota y smoke concurrente de asignación, con cleanup correcto.
 - Se validó en Actions Development el API y los smokes de base real. El guard de configuración Production sin certificado quedó validado localmente; producción con certificado/infra real sigue pendiente de provisión externa.
+
+## 2026-11-22 — Falta de prueba de cifrado/persistencia del key ring — CUBIERTO
+
+- La corrección anterior hacía obligatorio cifrar el key ring de Production, pero sólo verificaba la configuración negativa (rechazo si falta certificado).
+- Se agregó `DataProtectionKeyRingTests`: genera certificado temporal, persiste una clave, comprueba `<encryptedSecret` en el XML y reinicia el provider con el mismo key ring/certificado para descifrar el payload.
+- Resultado: prueba enfocada 1/1; suite Release **86/86**; build 0 warnings/0 errors; diff-check limpio.
+- El test usa un key ring temporal único y lo borra en `finally`; no usa ni modifica certificados/datos locales de producción.

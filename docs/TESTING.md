@@ -392,6 +392,12 @@ La invitación envía sólo el enlace de activación; el usuario fija su contras
 - `ChangeRouteStatusAuthorizationTests.Execute_DriverReassignedAfterInitialRead_CannotChangeRouteStatus`: reemplaza la asignación cuando se adquiere el lock, como ocurriría si el Driver se reasigna después del chequeo inicial del controller.
 - Verifica `KeyNotFoundException`, una sola adquisición del lock, cero actualizaciones del repositorio y estado Pending conservado.
 - Resultado Release local: prueba enfocada 1/1; suite completa **78/78**, cero skips; build Release 0 warnings/0 errors. Validación remota pendiente.
+
+## Worker de EmailOutbox — tests SQLite 2026-11-22
+
+- `Worker_DecryptsAndMarksOutboxMessageSent`: ejecuta el worker real y verifica payload recuperado, llamada al sender, timestamp enviado, attempts y liberación de lock.
+- `Worker_DeadLettersMessageAfterTwelfthFailure`: fuerza fallo del sender desde intento 11 y confirma intento 12, `DeadLetteredAtUtc`, tipo de falla y lease libre.
+- Validación local: suite Release **80/80**, 0 skips; build Release 0 warnings/0 errors. Actions pendiente.
 # Incidente CI — precisión de `CreatedAtUtc`
 
 - Actions `45029094282`: build/tests pasaron, smoke HTTP falló en assert API/MySQL luego de editar ruta.

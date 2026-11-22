@@ -300,3 +300,8 @@
 - Agregada regresión unitaria que reasigna durante lock; el Driver anterior no puede cancelar ni actualizar la ruta.
 - Suite Release local: 78/78. Actions `45029374847` pasó build, xUnit, smoke HTTP/MySQL, concurrencia y cleanup.
 - Actions `45029798323` confirma HTTP/MySQL same-tenant: Driver ajeno no lee ni muta ruta/GPS, y cleanup success.
+
+# 2026-11-22 — Tests del worker de EmailOutbox
+
+- Agregados casos SQLite que ejecutan EmailOutboxWorker para entrega/descifrado exitosos y dead-letter al intento 12.
+- Suite Release 80/80; build 0 warnings/0 errors. Actions pendiente.

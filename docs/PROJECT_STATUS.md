@@ -330,8 +330,15 @@ Nota de actualización: algunos resultados históricos de registro público más
 - El helper ahora normaliza siempre a seis decimales, como MySQL `datetime(6)`, y el fallo imprime los cuatro valores para diagnóstico.
 - La repetición pasó en Actions `45029374847` para Backend `5103b51`: build Release, xUnit 78/78, smoke tenant/outbox HTTP/MySQL, concurrencia de rutas y cleanup success.
 
-## Matriz HTTP de Driver contra ruta ajena del mismo tenant — en validación
+## Matriz HTTP de Driver contra ruta ajena del mismo tenant — Actions validado
 
 - El auditor independiente confirmó que el E2E frontend cubre Driver ajeno, pero el smoke backend sólo probaba rutas de otro tenant.
 - `smoke-tenant-http.sh` autentica el Driver creado por la carrera de unicidad y comprueba filtro/listado, detalle, estado, parada, evidencia y GET/POST GPS sobre una ruta asignada a otro Driver del mismo tenant.
 - Admin vuelve a consultar ruta/GPS y confirma que estado, evidencia y posición persistida no cambiaron. Actions `45029798323` pasó en Backend `ec3ce52`: Release build, xUnit 78/78, smoke HTTP/MySQL, concurrencia y cleanup success (0 fixtures QA).
+
+## Outbox: worker, entrega y dead-letter automatizados — local validado
+
+- `EmailOutboxWorkerTests` ejecuta el BackgroundService contra SQLite y el sender fake, no mocks del flujo interno.
+- Caso de éxito comprueba descifrado de correo/link/token, llamada al sender, `SentAtUtc` y liberación del lease.
+- Caso de fallo inicia en el intento 11 y confirma llamada al sender, `AttemptCount=12`, dead-letter, failure type y lease liberado.
+- Suite Release local: **80/80**; build Release 0 warnings/0 errors. Actions del nuevo commit pendiente.

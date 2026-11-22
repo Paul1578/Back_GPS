@@ -81,6 +81,39 @@ public class RoutePointTests
     }
 
     [Theory]
+    [InlineData(RoutePointStatus.Completed)]
+    [InlineData(RoutePointStatus.Skipped)]
+    public void OperationalStopCannotCloseWithoutEvidence(RoutePointStatus terminalStatus)
+    {
+        var route = CreateRoute();
+        route.ChangeStatus(RouteStatus.InProgress);
+        if (terminalStatus == RoutePointStatus.Completed)
+            route.UpdatePointStatus(1, RoutePointStatus.InProgress);
+
+        Assert.Throws<InvalidOperationException>(() => route.UpdatePointStatus(1, terminalStatus));
+
+        Assert.Equal(
+            terminalStatus == RoutePointStatus.Completed ? RoutePointStatus.InProgress : RoutePointStatus.Pending,
+            route.Points[1].Status);
+        Assert.Empty(route.Points[1].Evidence);
+    }
+
+    [Fact]
+    public void OperationalStopCanBeSkippedAfterEvidenceIsRecorded()
+    {
+        var route = CreateRoute();
+        route.ChangeStatus(RouteStatus.InProgress);
+        route.AddPointEvidence(1, RoutePointEvidence.Create("note", "Cliente ausente", null));
+
+        route.UpdatePointStatus(1, RoutePointStatus.Skipped);
+        route.ChangeStatus(RouteStatus.Completed);
+
+        Assert.Equal(RoutePointStatus.Skipped, route.Points[1].Status);
+        Assert.Single(route.Points[1].Evidence);
+        Assert.Equal(RouteStatus.Completed, route.Status);
+    }
+
+    [Theory]
     [InlineData("note", "", null)]
     [InlineData("video", "content", null)]
     [InlineData("image", "data:image/svg+xml;base64,PHN2Zz4=", null)]

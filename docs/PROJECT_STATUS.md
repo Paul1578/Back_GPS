@@ -1,3 +1,9 @@
+## Evidencia obligatoria para estados terminales — local aprobado; CI pendiente
+
+- Se corrigió API que permitía Completed/Skipped sin evidencia y dejaba la operación atascada. El dominio exige evidencia y DriverView deshabilita Omitir sin evidencia.
+- Release xUnit 110/110, smoke HTTP/MySQL descartable y cleanup cero; 400 sin mutaciones para cierre de parada/ruta, y camino válido completo.
+- `bash -n`, diff-check pasan. Acción nueva para el código corregido todavía pendiente.
+
 ## Vínculo manual User/Driver y CRUD negativo — local aprobado
 
 - Smoke crea la cuenta User, la convierte al rol Driver y vincula después su perfil por `userId`; respuesta Driver, equipo y SQL verifican asociación única y tenant.

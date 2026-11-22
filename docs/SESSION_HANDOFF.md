@@ -1,3 +1,11 @@
+## Hallazgo y corrección — cerrar parada sin evidencia — 2026-11-22
+
+- Defecto confirmado: HTTP permitía `Pending→Skipped` y `InProgress→Completed` sin evidencia; luego la ruta no podía cerrarse y tampoco se podía añadir evidencia.
+- Backend `Route.UpdatePointStatus` ahora requiere evidencia antes de Completed/Skipped. Dos casos theory cubren rechazo y un caso permite Skip con nota. Release xUnit **110/110**.
+- Smoke HTTP/MySQL 8 descartable probó HTTP 400 para Skip/Complete/cierre ruta sin evidencia; compara SQL (status, EndedAt, PointsJson, Vehicle.Status) intacto en cada intento; camino válido registra nota/completa ruta y cleanup cero. Salida exit 0.
+- Front deshabilita Omitir sin evidencia; E2E Driver intenta ambos endpoints, verifica persistencia y sigue al cierre positivo. Lint/build/audit/discovery 36 pasan local; nueva Action frontend/backend todavía pendiente.
+- Cambios locales modificados en `fletflow/Domain/Fleet/Entities/Route.cs`, `BackEnd_Gps.Tests/RoutePointTests.cs`, `scripts/smoke-tenant-http.sh`; Front `DriverView.tsx` y `fleet-admin.spec.ts`. Documentar/correr Actions, corregir fallos y mantener ramas aisladas.
+
 ## Cobertura manual User/Driver — 2026-11-22
 
 - Smoke crea User normal, valida `driverId=null`, lo promociona a Driver, crea luego el perfil con `userId` y comprueba GET Driver, `my-team` y columnas SQL/tenant.

@@ -938,8 +938,34 @@ expect_status 200 "Leer vehículo en ruta como Admin QA"
 jq -e '.status == 1 and .isActive == true' "$work_dir/response.json" >/dev/null \
   || { echo "El vehículo no pasó a OnRoute al iniciar la ruta." >&2; cat "$work_dir/response.json" >&2; exit 1; }
 
+route_before_invalid_point_close="$(mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" "$db_name" \
+  --batch --skip-column-names -e "SELECT CONCAT(r.Status,':',COALESCE(CAST(r.EndedAt AS CHAR),'NULL'),':',r.PointsJson,':',(SELECT Status FROM Vehicles WHERE Id=r.VehicleId)) FROM Routes r WHERE r.Id='$logistics_route_id';")"
+request PUT "/Routes/$logistics_route_id/points/1/status" '{"status":4}' "$logistics_token"
+expect_status 400 "Rechazar omitir parada sin evidencia"
+route_after_invalid_skip="$(mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" "$db_name" \
+  --batch --skip-column-names -e "SELECT CONCAT(r.Status,':',COALESCE(CAST(r.EndedAt AS CHAR),'NULL'),':',r.PointsJson,':',(SELECT Status FROM Vehicles WHERE Id=r.VehicleId)) FROM Routes r WHERE r.Id='$logistics_route_id';")"
+[[ "$route_after_invalid_skip" == "$route_before_invalid_point_close" ]] || {
+  echo "Omitir una parada sin evidencia mutó ruta/parada/vehículo." >&2; exit 1;
+}
+
 request PUT "/Routes/$logistics_route_id/points/1/status" '{"status":1}' "$logistics_token"
 expect_status 200 "Iniciar parada operativa como Logistics"
+route_before_invalid_complete="$(mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" "$db_name" \
+  --batch --skip-column-names -e "SELECT CONCAT(r.Status,':',COALESCE(CAST(r.EndedAt AS CHAR),'NULL'),':',r.PointsJson,':',(SELECT Status FROM Vehicles WHERE Id=r.VehicleId)) FROM Routes r WHERE r.Id='$logistics_route_id';")"
+request PUT "/Routes/$logistics_route_id/points/1/status" '{"status":2}' "$logistics_token"
+expect_status 400 "Rechazar completar parada sin evidencia"
+route_after_invalid_complete="$(mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" "$db_name" \
+  --batch --skip-column-names -e "SELECT CONCAT(r.Status,':',COALESCE(CAST(r.EndedAt AS CHAR),'NULL'),':',r.PointsJson,':',(SELECT Status FROM Vehicles WHERE Id=r.VehicleId)) FROM Routes r WHERE r.Id='$logistics_route_id';")"
+[[ "$route_after_invalid_complete" == "$route_before_invalid_complete" ]] || {
+  echo "Completar una parada sin evidencia mutó ruta/parada/vehículo." >&2; exit 1;
+}
+request PUT "/Routes/$logistics_route_id/status" '{"status":2}' "$logistics_token"
+expect_status 400 "Rechazar completar ruta con parada sin evidencia"
+route_after_invalid_route_close="$(mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" "$db_name" \
+  --batch --skip-column-names -e "SELECT CONCAT(r.Status,':',COALESCE(CAST(r.EndedAt AS CHAR),'NULL'),':',r.PointsJson,':',(SELECT Status FROM Vehicles WHERE Id=r.VehicleId)) FROM Routes r WHERE r.Id='$logistics_route_id';")"
+[[ "$route_after_invalid_route_close" == "$route_before_invalid_complete" ]] || {
+  echo "Completar ruta con evidencia ausente mutó ruta/parada/vehículo." >&2; exit 1;
+}
 request POST "/Routes/$logistics_route_id/points/1/evidence" \
   "$(jq -nc --arg content "E2E QA Logistics $suffix" '{type:"note",content:$content,description:"Evidencia de entrega/recogida de smoke"}')" "$logistics_token"
 expect_status 200 "Registrar evidencia de parada como Logistics"

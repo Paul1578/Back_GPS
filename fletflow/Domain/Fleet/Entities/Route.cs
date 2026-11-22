@@ -171,6 +171,9 @@ namespace fletflow.Domain.Fleet.Entities
                 throw new InvalidOperationException("El origen y el destino no admiten estado de entrega/recogida.");
             if (!IsAllowedPointTransition(_points[pointIndex].Status, newStatus))
                 throw new InvalidOperationException("La transición de estado de la parada no es válida.");
+            if ((newStatus is RoutePointStatus.Completed or RoutePointStatus.Skipped) &&
+                _points[pointIndex].Evidence.Count == 0)
+                throw new InvalidOperationException("Registra evidencia antes de cerrar la parada.");
 
             var updatedPoints = _points.ToList();
             updatedPoints[pointIndex] = updatedPoints[pointIndex].WithStatus(newStatus);

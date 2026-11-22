@@ -184,3 +184,12 @@ La invitación envía sólo el enlace de activación; el usuario fija su contras
 - Cleanup detuvo la API y descartó el esquema de validación. Ambos scripts pasan `bash -n`; `git diff --check` limpio.
 - Al corte de la verificación local, Actions debía ejecutar la rama actualizada; el resultado remoto siguiente quedó registrado abajo.
 - Resultado remoto posterior: Actions backend run `44976384961`, commit `90da59a`, pasó todas las fases, incluyendo 50 xUnit y los smokes MySQL tenant/concurrencia.
+
+## Smoke de sesiones, bajas operativas y concurrencia de paradas — 2026-11-21
+
+- `dotnet test BackEnd_Gps.sln -c Release --no-restore -m:1`: **50/50**; Release build: 0 warnings, 0 errores.
+- `smoke-tenant-http.sh`: aislamiento de recursos, alta/login temporal, desactivación de Manager; access viejo y refresh viejo responden HTTP 401.
+- `smoke-route-concurrency.sh`: parejas concurrentes de creación/edición/inicio producen éxitos/conflictos esperados; confirma SQL de estados. Rechaza inicio con Vehicle inactivo, baja Route en progreso y desasignación Driver activo; acepta operaciones tras cancelar. Ciclo de baja/reactivación mantiene estado visible por API. Dos actualizaciones paralelas de estados de paradas quedan persistidas simultáneamente.
+- Ejecución local final con DB descartable: ambos scripts pasaron y la trampa eliminó el schema temporal. `bash -n` y `git diff --check` correctos.
+
+- Ampliación de autorización real del smoke: Manager HTTP 200 en listados Vehicle/Driver/Route; Logistics HTTP 200 en Routes y HTTP 403 en Vehicles/Drivers; User 403 en flota/rutas; Driver se verifica en E2E autenticado. `smoke-tenant-http.sh` y `smoke-route-concurrency.sh` volvieron a pasar juntos en `fletflow_ci_validation_roles20261121`, DB descartada. Actions remoto para este lote aún pendiente.

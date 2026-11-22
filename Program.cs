@@ -129,6 +129,24 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             RoleClaimType = ClaimTypes.Role,
             ClockSkew = TimeSpan.Zero
         };
+        options.Events = new JwtBearerEvents
+        {
+            OnTokenValidated = async context =>
+            {
+                var userIdValue = context.Principal?.FindFirstValue(ClaimTypes.NameIdentifier)
+                    ?? context.Principal?.FindFirstValue("nameid");
+                if (!Guid.TryParse(userIdValue, out var userId))
+                {
+                    context.Fail("Token sin identidad válida.");
+                    return;
+                }
+
+                var unitOfWork = context.HttpContext.RequestServices.GetRequiredService<IUnitOfWork>();
+                var user = await unitOfWork.Users.GetByIdAsync(userId);
+                if (user is null || !user.IsActive)
+                    context.Fail("La cuenta está desactivada.");
+            }
+        };
     });
 
 builder.Services.AddAuthorization();

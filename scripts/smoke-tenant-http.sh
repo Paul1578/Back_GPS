@@ -39,6 +39,8 @@ vehicle_id=""
 driver_id=""
 other_tenant_email=""
 restricted_user_email=""
+deactivated_user_email=""
+logistics_user_email=""
 route_name=""
 plate=""
 restricted_attempt_plate=""
@@ -64,6 +66,12 @@ cleanup() {
     fi
     if [[ -n "$restricted_user_email" ]]; then
       sql+=" SET @qa_user_id=(SELECT Id FROM Users WHERE Email='$restricted_user_email'); DELETE FROM RefreshTokens WHERE UserId=@qa_user_id; DELETE FROM PasswordResetTokens WHERE UserId=@qa_user_id; DELETE FROM UserRoles WHERE UserId=@qa_user_id; DELETE FROM Users WHERE Id=@qa_user_id;"
+    fi
+    if [[ -n "$deactivated_user_email" ]]; then
+      sql+=" SET @qa_user_id=(SELECT Id FROM Users WHERE Email='$deactivated_user_email'); DELETE FROM RefreshTokens WHERE UserId=@qa_user_id; DELETE FROM PasswordResetTokens WHERE UserId=@qa_user_id; DELETE FROM UserRoles WHERE UserId=@qa_user_id; DELETE FROM Users WHERE Id=@qa_user_id;"
+    fi
+    if [[ -n "$logistics_user_email" ]]; then
+      sql+=" SET @qa_user_id=(SELECT Id FROM Users WHERE Email='$logistics_user_email'); DELETE FROM RefreshTokens WHERE UserId=@qa_user_id; DELETE FROM PasswordResetTokens WHERE UserId=@qa_user_id; DELETE FROM UserRoles WHERE UserId=@qa_user_id; DELETE FROM Users WHERE Id=@qa_user_id;"
     fi
     sql+=" COMMIT;"
     mysql --protocol=TCP --host="$mysql_host" --user="$mysql_user" "$db_name" -e "$sql" >/dev/null 2>&1 || {
@@ -113,6 +121,40 @@ restricted_attempt_plate="E2EQA${suffix: -9}"
 request GET /Vehicles "" "$restricted_user_token"; expect_status 403 "Listar vehículos como User"
 request GET /Routes "" "$restricted_user_token"; expect_status 403 "Listar rutas como User"
 request POST /Vehicles "$(jq -nc --arg plate "$restricted_attempt_plate" '{plate:$plate,brand:"Blocked",model:"Blocked",year:2025}')" "$restricted_user_token"; expect_status 403 "Crear vehículo como User"
+
+deactivated_user_email="fletflow.e2e.deactivated.ci.$suffix@example.test"
+deactivated_user_password="$(openssl rand -hex 24)"
+request POST /Users "$(jq -nc --arg email "$deactivated_user_email" --arg password "$deactivated_user_password" --arg username "E2E CI deactivated $suffix" '{username:$username,email:$email,password:$password,roleName:"Manager"}')"
+expect_status 200 "Crear usuario para probar revocación"
+deactivated_user_id="$(jq -er '.id' "$work_dir/response.json")"
+mysql --protocol=TCP --host="$mysql_host" --user="$mysql_user" "$db_name" \
+  -e "UPDATE Users SET IsActive=1, MustChangePassword=0 WHERE Id='$deactivated_user_id';" >/dev/null
+request POST /Auth/login "$(jq -nc --arg email "$deactivated_user_email" --arg password "$deactivated_user_password" '{email:$email,password:$password}')" ""
+expect_status 200 "Login de usuario antes de desactivar"
+deactivated_access_token="$(jq -er '.token // .accessToken' "$work_dir/response.json")"
+deactivated_refresh_token="$(jq -er '.refreshToken' "$work_dir/response.json")"
+request GET /Vehicles "" "$deactivated_access_token"; expect_status 200 "Listar vehículos como Manager"
+request GET /Drivers "" "$deactivated_access_token"; expect_status 200 "Listar conductores como Manager"
+request GET /Routes "" "$deactivated_access_token"; expect_status 200 "Listar rutas como Manager"
+request PUT "/Users/$deactivated_user_id/status?isActive=false" "" "$token"
+expect_status 200 "Desactivar usuario de prueba"
+request GET /Auth/me "" "$deactivated_access_token"
+expect_status 401 "Bloquear access token de cuenta desactivada"
+request POST /Auth/refresh "$(jq -nc --arg refreshToken "$deactivated_refresh_token" '{refreshToken:$refreshToken}')" ""
+expect_status 401 "Bloquear refresh token de cuenta desactivada"
+
+logistics_user_email="fletflow.e2e.logistics.ci.$suffix@example.test"
+logistics_user_password="$(openssl rand -hex 24)"
+request POST /Users "$(jq -nc --arg email "$logistics_user_email" --arg password "$logistics_user_password" --arg username "E2E CI logistics $suffix" '{username:$username,email:$email,password:$password,roleName:"Logistics"}')"
+expect_status 200 "Crear usuario Logistics"
+mysql --protocol=TCP --host="$mysql_host" --user="$mysql_user" "$db_name" \
+  -e "UPDATE Users SET IsActive=1, MustChangePassword=0 WHERE Email='$logistics_user_email';" >/dev/null
+request POST /Auth/login "$(jq -nc --arg email "$logistics_user_email" --arg password "$logistics_user_password" '{email:$email,password:$password}')" ""
+expect_status 200 "Login Logistics"
+logistics_token="$(jq -er '.token // .accessToken' "$work_dir/response.json")"
+request GET /Routes "" "$logistics_token"; expect_status 200 "Listar rutas como Logistics"
+request GET /Vehicles "" "$logistics_token"; expect_status 403 "Denegar vehículos a Logistics"
+request GET /Drivers "" "$logistics_token"; expect_status 403 "Denegar conductores a Logistics"
 
 other_tenant_email="fletflow.e2e.admin.other.$suffix@example.test"
 other_tenant_password="$(openssl rand -hex 24)"
@@ -195,4 +237,4 @@ request GET "/Routes/$route_id" "" "$token"; expect_status 200 "Confirmar ruta t
 request GET "/Drivers/$driver_id" "" "$token"; expect_status 200 "Confirmar Driver tenant A intacto"
 request GET "/Vehicles/$vehicle_id" "" "$token"; expect_status 200 "Confirmar vehículo tenant A intacto"
 
-echo "OK: aislamiento HTTP/MySQL entre dos tenants para Vehicles, Drivers, Routes y RoutePositions."
+echo "OK: aislamiento HTTP/MySQL entre tenants; autorización User/Manager/Logistics; revocación de sesiones; Vehicles/Drivers/Routes/RoutePositions."

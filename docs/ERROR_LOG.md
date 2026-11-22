@@ -384,3 +384,25 @@ Cada cambio de API debe incluir validación de compilación, migraciones si apli
 - Revisión independiente observó que el smoke sólo validaba HTTP 204/409 para dos inicios concurrentes, sin comprobar la ruta y vehículo que quedaron guardados.
 - Se añadió consulta MySQL que exige exactamente una ruta InProgress, una Pending y el vehículo OnRoute. Para inicio contra desactivación de Driver, el estado persistido sólo admite `InProgress + Driver activo + OnRoute` o `Pending + Driver inactivo + Available`.
 - Repetición completa en DB temporal `fletflow_ci_validation_14` pasó con los asserts: una ruta InProgress, una Pending y vehículo OnRoute; la carrera con desactivación terminó en una de dos combinaciones consistentes. La DB se descartó con `trap`.
+
+## 2026-11-21 — Auditoría de seguridad encontró sesiones vivas tras baja de usuario — CORREGIDO
+
+- `UpdateUserCommand` sólo modificaba `IsActive` y no revocaba refresh tokens; `AuthService.RefreshAsync` permitía renovar cuentas inactivas y JWT no consultaba el estado de cuenta.
+- Se conserva la actualización EF de entidad rastreada, se revocan refresh tokens y JWT valida estado actual por cada autenticación. El refresh también rechaza cuenta inactiva.
+- Primera prueba local arrancó DLL no recompilado después del último ajuste del comando y respondió 200/activo; recompilación Release y smoke repetido verificaron 401 en `/Auth/me` y `/Auth/refresh`.
+
+## 2026-11-21 — Rutas/vehículos podían quedar operativamente huérfanos — CORREGIDO
+
+- Baja de ruta en curso dejaba vehículo `OnRoute` e impedía registrar GPS; Driver podía desasignarse durante recorrido; Vehicle inactivo podía empezar una ruta pendiente.
+- Se agregaron locks, chequeo de ruta/vehículo/conductor y conflictos 409. La baja de Vehicle exige desasignar Driver y resolver rutas pendientes/en curso.
+- La ruta temporal local dio inicialmente 500 creando placa QA demasiado larga; el prefijo/document ID se acortó dentro del máximo y el smoke pasó. IDs descartables se limpiaron por prefijo acotado y la DB efímera se descartó.
+
+## 2026-11-21 — Escrituras paralelas de puntos podían sobrescribirse — CORREGIDO
+
+- `UpdatePointStatus`/`AddPointEvidence` actualizaban `PointsJson` completo sin serialización de fila.
+- Ambos handlers toman lock de ruta/asignación, vuelven a leer después del lock y commitean la instantánea actual. Smoke MySQL realizó simultáneamente dos estados de parada y verificó ambos en la respuesta persistida.
+
+## 2026-11-21 — Configuración local de smoke no alineaba DB_PASSWORD y MYSQL_ROOT_PASSWORD — CORREGIDO EN EL ENTORNO DE PRUEBA
+
+- CLI MySQL usaba `MYSQL_ROOT_PASSWORD` mientras el backend usa `DB_PASSWORD`; los valores guardados localmente difieren y el API falló al iniciar con Access denied. No creó schema ni fixtures en esa primera llamada.
+- Se pasó la credencial MySQL activa a `DB_PASSWORD` sólo en el proceso de la corrida aislada. No se imprimió ni modificó el secreto guardado; smoke se ejecutó y descartó su base.

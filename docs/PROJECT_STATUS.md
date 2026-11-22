@@ -97,3 +97,11 @@ Fecha de corte: 2026-11-21.
 - Smoke concurrente ampliado con verificación SQL: una ruta queda InProgress, la otra Pending y el vehículo OnRoute; carrera con baja de Driver deja exclusivamente estados coherentes. La base final `fletflow_ci_validation_14` pasó; cleanup descartó el esquema.
 - Durante la inspección local se mostró accidentalmente la credencial MySQL root en salida de diagnóstico; se rotó inmediatamente para `%` y `localhost`, `.env` quedó 0600 y la conexión temporal se verificó sin exponer la nueva clave.
 - El commit `90da59a` está en PR #5. GitHub Actions run `44976384961` completó exitosamente: restore, Release build, xUnit, smoke tenant HTTP/MySQL y smoke concurrente Create/Update/start/desactivación.
+
+## Protección de sesión y consistencia operativa — 2026-11-21
+
+- Cuenta desactivada revoca refresh, y JWT emitidos previamente dejan de autorizar solicitudes. Refresh retorna 401. Smoke HTTP/MySQL lo verificó.
+- No se inicia ruta con vehículo inactivo; no se da de baja ruta en progreso ni Vehicle con conductor/ruta pendiente o activa; no se desasigna Driver durante ruta en progreso. Las escrituras concurrentes de dos paradas conservan ambos cambios.
+- Vehículo conserva historial y puede reactivarse vía `POST /Vehicles/{id}/reactivate`; el smoke comprobó GET `isActive=false`, POST 204 y GET `isActive=true`.
+- Release test local 50/50; Release build 0 warnings/0 errores. Smokes tenant y flota real en MySQL descartable pasaron. Estos cambios están locales en `chore/stabilize-fleet-platform`; Actions y commit/push pendientes.
+- La matriz local HTTP autenticada se amplió: Manager 200 en Vehicles/Drivers/Routes; Logistics 200 en Routes y 403 en Vehicles/Drivers; User 403; Driver verificado por Playwright. Smoke MySQL temporal pasó tras la ampliación.

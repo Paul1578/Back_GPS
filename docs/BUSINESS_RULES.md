@@ -37,3 +37,20 @@
 - Las altas de recursos reciben propietario del contexto autenticado en `SaveChanges`; el cliente no puede elegirlo.
 - Placas y documentos son únicos dentro de una empresa.
 - La migración de datos históricos requiere resolver recursos sin relaciones que permitan inferir el propietario.
+
+## Protecciones operativas añadidas — 2026-11-21
+
+- Una ruta no se puede dar de baja mientras está en progreso; primero debe completarse o cancelarse. API responde 409.
+- No se puede desasignar el vehículo de un Driver mientras tiene una ruta en progreso.
+- No se puede dar de baja un vehículo asignado a un Driver activo o vinculado a ruta pendiente/en curso. El inicio de una ruta también valida que Vehicle siga activo.
+- Un vehículo dado de baja se conserva para historial y puede reactivarse por `POST /api/Vehicles/{id}/reactivate`; reactivación bloquea vehículos con ruta en progreso. El estado operativo `OnRoute` huérfano vuelve a `Available` sólo al reactivar sin ruta en curso.
+- Las actualizaciones de estado/evidencia de paradas adquieren el lock de Route y vuelven a leer el JSON de puntos antes de guardar para evitar perder cambios concurrentes.
+- La baja de cuenta revoca refresh tokens y JWT no permite solicitudes nuevas de cuentas inactivas.
+
+## Matriz HTTP de rol verificada — 2026-11-21
+
+- Admin: smokes de CRUD, tenant e invariantes.
+- Manager: GET de Vehicles, Drivers y Routes devuelve 200.
+- Logistics: GET de Routes devuelve 200; Vehicles y Drivers devuelven 403.
+- User: Vehicles/Routes y creación de Vehicle devuelven 403.
+- Driver: Playwright autenticado verifica alcance de ruta propia y denegaciones de recursos administrativos.

@@ -93,3 +93,11 @@
 - Desactivación de Driver, asignación manual y cambios de estado de Vehicle comparten locks para evitar estados contradictorios con una ruta en progreso.
 - Smoke MySQL real para create/update/start y start/deactivate simultáneos; los asserts revisan estados persistidos, no sólo códigos HTTP.
 - Se fijó SQLitePCLRaw.lib.e_sqlite3 2.1.14 tras detectar CVE-2025-6965 en el artefacto de pruebas 2.1.10.
+
+## 2026-11-21 — Protección de sesiones y ciclo de vida de flota
+
+- Baja de usuario revoca refresh tokens; JWT y refresh rechazan cuentas inactivas.
+- Inicio con vehículo inactivo rechazado; se protege la ruta en curso de bajas y la desasignación de conductor.
+- Baja de vehículo valida relaciones operativas y se agrega endpoint de reactivación.
+- Escrituras concurrentes de estado/evidencia de paradas se serializan por Route.
+- Smokes HTTP/MySQL ampliados para sesión revocada, conflictos operativos, reactivación y pérdida de actualizaciones concurrentes.

@@ -182,4 +182,75 @@ if [[ "$route_state" != "1:1:1" && "$route_state" != "0:0:0" ]]; then
   exit 1
 fi
 
-echo "OK: CreateRoute, UpdateRoute, inicio y desactivación concurrentes sobre MySQL; cada par produjo un éxito y un HTTP 409 sin estado incoherente."
+guard_vehicle="$(create_vehicle "${prefix}GV")"
+guard_driver="$(create_driver "${prefix}GD")"
+guard_route="$(create_route "${prefix}guard_in_progress" "$guard_vehicle" "$guard_driver" "2037-04-05T10:00:00Z" "2037-04-05T11:00:00Z")"
+request PUT "/Drivers/$guard_driver/assign-vehicle" "$(jq -nc --arg vehicleId "$guard_vehicle" '{vehicleId:$vehicleId}')"
+expect 204 "Asignar vehículo al Driver de protección"
+request PUT "/Routes/$guard_route/status" '{"status":1}'
+expect 204 "Iniciar ruta de protección"
+request PUT "/Drivers/$guard_driver/unassign-vehicle" '{}'
+expect 409 "Impedir desasignar Driver en ruta"
+request DELETE "/Routes/$guard_route"
+expect 409 "Impedir dar de baja ruta en progreso"
+request PUT "/Routes/$guard_route/status" '{"status":3}'
+expect 204 "Cancelar ruta antes de baja"
+request DELETE "/Routes/$guard_route"
+expect 204 "Dar de baja ruta cancelada"
+request PUT "/Drivers/$guard_driver/unassign-vehicle" '{}'
+expect 204 "Desasignar Driver sin ruta activa"
+request DELETE "/Vehicles/$guard_vehicle"
+expect 204 "Dar de baja vehículo sin asignaciones"
+request GET "/Vehicles/$guard_vehicle"
+expect 200 "Consultar vehículo dado de baja"
+jq -e '.isActive == false' "$work_dir/response.json" >/dev/null || { echo "La baja de vehículo no se persistió." >&2; exit 1; }
+request POST "/Vehicles/$guard_vehicle/reactivate"
+expect 204 "Reactivar vehículo dado de baja"
+request GET "/Vehicles/$guard_vehicle"
+expect 200 "Consultar vehículo reactivado"
+jq -e '.isActive == true' "$work_dir/response.json" >/dev/null || { echo "La reactivación de vehículo no se persistió." >&2; exit 1; }
+request DELETE "/Vehicles/$guard_vehicle"
+expect 204 "Limpiar baja del vehículo de protección"
+
+inactive_vehicle="$(create_vehicle "${prefix}IV")"
+inactive_driver="$(create_driver "${prefix}ID")"
+inactive_route="$(create_route "${prefix}inactive_vehicle_route" "$inactive_vehicle" "$inactive_driver" "2038-04-05T10:00:00Z" "2038-04-05T11:00:00Z")"
+mysql --protocol=TCP --host="$mysql_host" --user="$mysql_user" "$db_name" \
+  -e "UPDATE Vehicles SET IsActive=0 WHERE Id='$inactive_vehicle';" >/dev/null
+request PUT "/Routes/$inactive_route/status" '{"status":1}'
+expect 409 "Impedir iniciar ruta con vehículo inactivo"
+inactive_state="$(mysql --protocol=TCP --host="$mysql_host" --user="$mysql_user" --batch --skip-column-names "$db_name" \
+  -e "SELECT CONCAT(r.Status, ':', CAST(v.IsActive AS UNSIGNED), ':', CAST(v.Status AS UNSIGNED)) FROM Routes r JOIN Vehicles v ON v.Id=r.VehicleId WHERE r.Id='${inactive_route}';")"
+if [[ "$inactive_state" != "0:0:0" ]]; then
+  echo "Intentar iniciar con vehículo inactivo alteró estado (RouteStatus:VehicleActive:VehicleStatus=$inactive_state)." >&2
+  exit 1
+fi
+
+points_vehicle="$(create_vehicle "${prefix}PV")"
+points_driver="$(create_driver "${prefix}PD")"
+points_json='[{"lat":-0.18,"lng":-78.46,"name":"Origin","operation":0},{"lat":-0.185,"lng":-78.465,"name":"Pickup","operation":1},{"lat":-0.19,"lng":-78.47,"name":"Delivery","operation":2},{"lat":-0.195,"lng":-78.475,"name":"Destination","operation":0}]'
+request POST /Routes "$(jq -nc --arg name "${prefix}point_writes" --arg vehicle "$points_vehicle" --arg driver "$points_driver" --argjson points "$points_json" '{name:$name,vehicleId:$vehicle,driverId:$driver,points:$points}')"
+expect 201 "Crear ruta con dos paradas para concurrencia"
+points_route="$(jq -er '.id' "$work_dir/response.json")"
+request PUT "/Routes/$points_route/status" '{"status":1}'
+expect 204 "Iniciar ruta con paradas para concurrencia"
+concurrent_request PUT "/Routes/$points_route/points/1/status" '{"status":1}' point_one & point_one_pid=$!
+concurrent_request PUT "/Routes/$points_route/points/2/status" '{"status":1}' point_two & point_two_pid=$!
+wait "$point_one_pid"
+wait "$point_two_pid"
+point_one_status="$(cat "$work_dir/point_one.status")"
+point_two_status="$(cat "$work_dir/point_two.status")"
+if [[ "$point_one_status" != 200 || "$point_two_status" != 200 ]]; then
+  echo "Escrituras concurrentes de paradas: esperado HTTP 200/200, recibido $point_one_status/$point_two_status." >&2
+  cat "$work_dir/point_one.json" "$work_dir/point_two.json" >&2
+  exit 1
+fi
+request GET "/Routes/$points_route"
+expect 200 "Verificar paradas después de escrituras concurrentes"
+jq -e '(.points[1].status == 1 or .points[1].status == "InProgress") and (.points[2].status == 1 or .points[2].status == "InProgress")' "$work_dir/response.json" >/dev/null || {
+  echo "Se perdió una actualización concurrente de estado de parada." >&2
+  jq '.points' "$work_dir/response.json" >&2
+  exit 1
+}
+
+echo "OK: concurrencia de agenda y paradas, protección de rutas/Driver/vehículo, vehículo inactivo y ciclo baja/reactivación; MySQL/API conserva estados coherentes."

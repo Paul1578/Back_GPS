@@ -11,3 +11,10 @@ Las rutas almacenan puntos ordenados como JSON en `Routes.PointsJson`. Cada punt
 `POST /api/Routes` y `PUT /api/Routes/{id}` reciben `points` con origen, paradas intermedias y destino en ese orden; también reciben `origin` y `destination` explícitos para compatibilidad. El mapper de frontend conserva los extremos y excluye sólo esos dos al mostrar la lista intermedia. El estado de una parada enviado por el cliente al crear/editar se ignora y se inicia como `Pending`.
 
 El conductor cambia estado con `PUT /api/Routes/{id}/points/{index}/status` y adjunta notas/fotos con `POST /api/Routes/{id}/points/{index}/evidence`. Completar una operación requiere evidencia y todos los puntos operativos deben quedar completados u omitidos para cerrar la ruta. La evidencia de imagen se conserva como data URL en el JSON (JPEG/PNG/WebP, máximo 4 MB); para cargas de producción a escala se recomienda mover binarios a object storage.
+
+## Concurrencia de operaciones y revocación de sesión — 2026-11-21
+
+- `UsersController` delega la baja de estado a `UpdateUserCommand`, que persiste `IsActive=false` y revoca refresh tokens mediante el mismo `AppDbContext`/unit of work.
+- El evento de validación JWT consulta el estado actual de la cuenta en cada autenticación de bearer. `AuthService.RefreshAsync` rechaza cuentas inactivas antes de rotar tokens.
+- Mutaciones de puntos de ruta (`RoutesController`) toman lock de asignación/ruta usando `IUnitOfWork.LockRouteAssignmentAsync`, releen `RouteE` y guardan la colección completa serializada. Las colisiones operativas siguen respondiendo 409.
+- Las operaciones de baja de Vehicle/Route y desasignación de Driver comparten transacciones/locks antes de validar rutas/asignaciones.

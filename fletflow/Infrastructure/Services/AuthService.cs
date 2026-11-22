@@ -73,6 +73,8 @@ namespace fletflow.Infrastructure.Services
 
             var user = await _unitOfWork.Users.GetByIdAsync(rt.UserId)
                 ?? throw new KeyNotFoundException("Usuario no encontrado.");
+            if (!user.IsActive)
+                throw new UnauthorizedAccessException("La cuenta está desactivada.");
 
             // rotacion de refresh
             var newRaw = RefreshTokenFactory.Create();

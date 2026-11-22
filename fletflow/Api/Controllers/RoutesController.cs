@@ -239,14 +239,26 @@ namespace fletflow.Api.Controllers
             int pointIndex,
             [FromBody] UpdateRoutePointStatusRequest request)
         {
-            var route = await _unitOfWork.Routes.GetByIdAsync(routeId);
-            if (route is null) return NotFound();
-            if (User.IsInRole("Driver") && !await IsCurrentDriverAssigned(route)) return NotFound();
+            try
+            {
+                var route = await _unitOfWork.Routes.GetByIdAsync(routeId);
+                if (route is null) return NotFound();
+                if (User.IsInRole("Driver") && !await IsCurrentDriverAssigned(route)) return NotFound();
+                await _unitOfWork.LockRouteAssignmentAsync(route.VehicleId, route.DriverId, routeId);
+                route = await _unitOfWork.Routes.GetByIdAsync(routeId);
+                if (route is null) { _unitOfWork.Rollback(); return NotFound(); }
+                if (User.IsInRole("Driver") && !await IsCurrentDriverAssigned(route)) { _unitOfWork.Rollback(); return NotFound(); }
 
-            route.UpdatePointStatus(pointIndex, request.Status);
-            await _unitOfWork.Routes.UpdateAsync(route);
-            await _unitOfWork.CommitAsync();
-            return Ok(await _getById.Execute(routeId));
+                route.UpdatePointStatus(pointIndex, request.Status);
+                await _unitOfWork.Routes.UpdateAsync(route);
+                await _unitOfWork.CommitAsync();
+                return Ok(await _getById.Execute(routeId));
+            }
+            catch
+            {
+                _unitOfWork.Rollback();
+                throw;
+            }
         }
 
         [HttpPost("{routeId:guid}/points/{pointIndex:int}/evidence")]
@@ -257,15 +269,27 @@ namespace fletflow.Api.Controllers
             int pointIndex,
             [FromBody] AddRoutePointEvidenceRequest request)
         {
-            var route = await _unitOfWork.Routes.GetByIdAsync(routeId);
-            if (route is null) return NotFound();
-            if (User.IsInRole("Driver") && !await IsCurrentDriverAssigned(route)) return NotFound();
+            try
+            {
+                var route = await _unitOfWork.Routes.GetByIdAsync(routeId);
+                if (route is null) return NotFound();
+                if (User.IsInRole("Driver") && !await IsCurrentDriverAssigned(route)) return NotFound();
+                await _unitOfWork.LockRouteAssignmentAsync(route.VehicleId, route.DriverId, routeId);
+                route = await _unitOfWork.Routes.GetByIdAsync(routeId);
+                if (route is null) { _unitOfWork.Rollback(); return NotFound(); }
+                if (User.IsInRole("Driver") && !await IsCurrentDriverAssigned(route)) { _unitOfWork.Rollback(); return NotFound(); }
 
-            var evidence = RoutePointEvidence.Create(request.Type, request.Content, request.Description);
-            route.AddPointEvidence(pointIndex, evidence);
-            await _unitOfWork.Routes.UpdateAsync(route);
-            await _unitOfWork.CommitAsync();
-            return Ok(await _getById.Execute(routeId));
+                var evidence = RoutePointEvidence.Create(request.Type, request.Content, request.Description);
+                route.AddPointEvidence(pointIndex, evidence);
+                await _unitOfWork.Routes.UpdateAsync(route);
+                await _unitOfWork.CommitAsync();
+                return Ok(await _getById.Execute(routeId));
+            }
+            catch
+            {
+                _unitOfWork.Rollback();
+                throw;
+            }
         }
 
         [HttpPost("{routeId:guid}/positions")]

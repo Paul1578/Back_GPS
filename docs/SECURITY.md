@@ -45,3 +45,14 @@ La prueba HTTP/MySQL cross-tenant de cierre cubre Vehicles, Drivers, Routes y cr
 ## Configuración por entorno y smoke CI
 
 `Program.cs` carga `.env` con `Env.NoClobber().Load()`: las variables inyectadas por proceso/deploy tienen precedencia. El workflow backend inicia MySQL descartable, genera clave JWT/credenciales bootstrap sólo por ejecución y corre el smoke tenant con restricciones a loopback y nombre `fletflow_ci*`. La limpieza borra IDs de los fixtures, no todos los usuarios QA por prefijo.
+
+## Revocación por estado de cuenta — 2026-11-21
+
+- Desactivar una cuenta revoca todos sus refresh tokens en el mismo `AppDbContext`/commit que persiste `IsActive=false`.
+- `JwtBearerEvents.OnTokenValidated` comprueba en base de datos que el usuario del access token exista y continúe activo; un token ya emitido deja de autorizar al desactivar la cuenta. `/Auth/refresh` aplica la misma regla antes de rotar tokens.
+- Verificado con HTTP real y MySQL descartable: después de la baja, `/Auth/me` y `/Auth/refresh` devuelven 401 para access/refresh emitidos antes de la operación.
+- Esta validación hace una consulta de usuario por autenticación de bearer. Si se optimiza con caché en el futuro, la expiración/invalidation debe conservar el efecto inmediato de una baja.
+
+## HTTP por rol en MySQL temporal — ampliación
+
+El smoke HTTP ahora verifica Admin, Manager, Logistics y User: Manager lista Vehicles/Drivers/Routes; Logistics lista Routes y recibe 403 en Vehicles/Drivers; User recibe 403 en flota/rutas. Driver mantiene recorrido real/denegaciones verificados por Playwright autenticado. Esta cobertura ya se ejecutó contra MySQL local descartable; se repetirá en Actions al publicar.

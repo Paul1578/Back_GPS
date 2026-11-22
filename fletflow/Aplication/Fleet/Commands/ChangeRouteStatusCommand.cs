@@ -57,6 +57,9 @@ namespace fletflow.Application.Fleet.Commands
 
                 if (status == RouteStatus.InProgress)
                 {
+                    if (!vehicle.IsActive)
+                        throw new BusinessConflictException("No se puede iniciar una ruta con un vehículo inactivo.");
+
                     var driver = await _drivers.GetByIdAsync(route.DriverId)
                         ?? throw new KeyNotFoundException("Driver assigned to the route not found.");
                     if (!driver.IsActive)

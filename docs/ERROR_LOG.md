@@ -913,3 +913,9 @@ Cada cambio de API debe incluir validación de compilación, migraciones si apli
 - Validación local: Release xUnit **85/85**, Release build **0 warnings/0 errors**, test concurrente enfocado 1/1 y `git diff --check` correcto.
 - Actions/MySQL integrado pendiente para estos cambios. Límites externos: certificado/secretos y volumen de producción deben provisionarse en despliegue. El rate limiter sigue siendo por proceso; varias réplicas requieren almacenamiento/limitador distribuido.
 - Prevención: las operaciones de límite deben ser atómicas de extremo a extremo; endpoints de diagnóstico SMTP deben limitar entorno y destinatario; nunca persistir claves criptográficas de producción sin proveedor de protección explícito.
+
+## 2026-11-22 — Auditoría ejecutada desde el repositorio Front — CORREGIDO
+
+- Una búsqueda de recuento de pruebas backend se lanzó con raíz `/home/leonardo/Front_gpsR`; `rg` devolvió ruta inexistente y recuento cero. No se interpretó como ausencia de pruebas.
+- Solución: ejecutar cada inspección en su repositorio propietario; Front y Backend comparten convenciones, pero no las carpetas de tests.
+- Prevención: fijar `workdir` al repo del artefacto antes de búsquedas/ejecuciones cruzadas.

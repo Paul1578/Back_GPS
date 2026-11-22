@@ -458,3 +458,5 @@ Errores de migración, herramientas, QA y soluciones están en `docs/ERROR_LOG.m
 - No marcar misión completa; seguir con Actions, seguridad, CRUD/responsive pendiente. SMTP real necesita credenciales externas y móvil nativo fue aplazado.
 
 - Revisión local posterior al primer commit de seguridad agregó saturación del contador en 61 para evitar overflow bajo una ráfaga extrema; Release xUnit **85/85** y build **0 warnings/0 errors** volvieron a pasar. Esta pequeña corrección está pendiente de commit y de la próxima Action.
+
+- Corrección de saturación incluida y publicada en Backend `94c3e90`; el código validado localmente es 85/85 y build limpio. Actions del SHA `94c3e90` debe confirmarse antes de usarlo como evidencia remota.

@@ -1,5 +1,10 @@
 # Handoff — 2026-11-22
 
+- Trabajo vigente en `chore/stabilize-fleet-platform`: smoke de roles añade cobertura HTTP para Driver (lecturas de Vehicle/Driver/opciones y POST Vehicle/Driver/Route denegados; SQL exige `0:0:0`). Unit tests Release **111/111** y smoke HTTP/MySQL 8 efímero completo pasan. Docs a actualizar/publicar y Action posterior pendiente.
+- Durante la revisión estática se detectó una comilla faltante en el JSON del POST Driver usado por el nuevo smoke; se corrigió antes de ejecutar la prueba. Detalle y prevención en `docs/ERROR_LOG.md`.
+- Front `refactor/route-builder` HEAD `2147be7` pasó Action `45076629351`: E2E **37/37**, responsive 1/1, build/lint/audit y cleanup. Estado documentado en el repo Front.
+- Nunca ejecutar pruebas destructivas sobre el MySQL persistente; esta validación usó MySQL 8 temporal en puerto 13316, DB `fletflow_ci_*`, eliminados al finalizar. Próximo: documentar y publicar ambos repos; continuar cobertura CRUD/roles/responsive.
+
 - Branch backend `chore/stabilize-fleet-platform`; nuevo cambio local bloquea la desactivación de cuenta User vinculada a Driver con rutas activas `Pending`/`InProgress`, bajo locks de asignación y usuario. Test/domain y smoke HTTP/MySQL ya pasaron localmente; Action aún no lanzada hasta publicar el cambio.
 - Validación: Release xUnit 111/111, Release build 0 warnings/0 errors, `smoke-tenant-http.sh` completo sobre API + MySQL 8 descartable `fletflow_ci_user_deactivation`, cleanup correcto, bash syntax/diff-check correctos.
 - El contenedor `fletflow-route-deactivation-mysql` y API local se detuvieron y eliminaron; MySQL persistente no se tocó.

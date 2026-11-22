@@ -1176,3 +1176,8 @@ Cada cambio de API debe incluir validación de compilación, migraciones si apli
 
 - La CI probaba creación/conflicto de Vehicle, pero no una edición positiva persistida ni la conservación independiente de `IsActive` y `Status` durante cambio operativo.
 - `smoke-tenant-http.sh` ahora cubre edición, paso a mantenimiento, baja lógica y reactivación, verificando respuestas HTTP, lectura API y valores SQL en cada fase. MySQL efímero pasó y cleanup eliminó fixtures; Actions nuevo pendiente.
+## 2026-11-22 — JSON inválido en nueva prueba negativa Driver — CORREGIDO ANTES DE EJECUCIÓN
+
+- Al revisar la ampliación del smoke de autorización Driver, el body de `POST /Drivers` tenía una comilla faltante en `phoneNumber`; la petición no representaba el caso planeado y podía hacer fallar `jq` antes de comprobar autorización.
+- Corrección: cerrar correctamente el string JSON y ejecutar `bash -n`, suite Release y smoke HTTP/MySQL completo en infraestructura descartable. Resultado: xUnit 111/111; smoke exit 0 con 403 y SQL `0:0:0` para los intentos de escritura denegados.
+- Prevención: validar/ejecutar el generador `jq -nc` de cada nuevo body, además de validar sintaxis Bash; bash -n no detecta JSON inválido dentro de una cadena de shell.

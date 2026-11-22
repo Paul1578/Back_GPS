@@ -634,9 +634,13 @@ duplicate_email_rows="$(mysql --protocol=TCP --host="$mysql_host" --port="$mysql
 [[ "$duplicate_email_rows" == "1:1:1" ]] || { echo "La carrera de email dejó persistencia parcial/inconsistente ($duplicate_email_rows)." >&2; exit 1; }
 restricted_attempt_plate="E2EQA${suffix: -9}"
 request GET /Vehicles "" "$restricted_user_token"; expect_status 403 "Listar vehículos como User"
+request GET /Drivers "" "$restricted_user_token"; expect_status 403 "Listar conductores como User"
 request GET /Routes "" "$restricted_user_token"; expect_status 403 "Listar rutas como User"
 request GET /Routes/assignment-options "" "$restricted_user_token"; expect_status 403 "Denegar opciones de asignación a User"
 request POST /Vehicles "$(jq -nc --arg plate "$restricted_attempt_plate" '{plate:$plate,brand:"Blocked",model:"Blocked",year:2025}')" "$restricted_user_token"; expect_status 403 "Crear vehículo como User"
+restricted_attempt_document="E2EQA${suffix: -9}U"
+request POST /Drivers "$(jq -nc --arg document "$restricted_attempt_document" '{firstName:"Blocked",lastName:"User",documentNumber:$document,phoneNumber:"0990000000"}')" "$restricted_user_token"
+expect_status 403 "Crear conductor como User"
 
 restricted_user_new_password="$(openssl rand -hex 24)"
 request POST /Auth/change-password "$(jq -nc --arg current "$restricted_user_password" --arg next "$restricted_user_new_password" '{currentPassword:$current,newPassword:$next,confirmNewPassword:$next}')" "$restricted_user_token"
@@ -1507,6 +1511,23 @@ mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_us
 request POST /Auth/login "$(jq -nc --arg email "$same_tenant_driver_email" --arg password "$driver_race_password" '{email:$email,password:$password}')" ""
 expect_status 200 "Autenticar Driver del mismo tenant"
 same_tenant_driver_token="$(jq -er '.token // .accessToken' "$work_dir/response.json")"
+request GET /Vehicles "" "$same_tenant_driver_token"; expect_status 403 "Denegar listado de vehículos a Driver"
+request GET /Drivers "" "$same_tenant_driver_token"; expect_status 403 "Denegar listado de conductores a Driver"
+request GET /Routes/assignment-options "" "$same_tenant_driver_token"; expect_status 403 "Denegar opciones de asignación a Driver"
+denied_driver_vehicle_plate="E2EQA${suffix: -9}D"
+denied_driver_document="E2EQA${suffix: -9}D"
+request POST /Vehicles "$(jq -nc --arg plate "$denied_driver_vehicle_plate" '{plate:$plate,brand:"Blocked",model:"Driver role",year:2025}')" "$same_tenant_driver_token"
+expect_status 403 "Denegar creación de vehículo a Driver"
+request POST /Drivers "$(jq -nc --arg document "$denied_driver_document" '{firstName:"Blocked",lastName:"Driver",documentNumber:$document,phoneNumber:"0990000000"}')" "$same_tenant_driver_token"
+expect_status 403 "Denegar creación de conductor a Driver"
+request POST /Routes "$(jq -nc --arg name "E2E QA ruta Driver denegada ${suffix: -9}" --arg vehicleId "$vehicle_id" --arg driverId "$driver_id" --argjson points "$points" '{name:$name,cargoDescription:"Driver role denial",vehicleId:$vehicleId,driverId:$driverId,points:$points}')" "$same_tenant_driver_token"
+expect_status 403 "Denegar creación de ruta a Driver"
+denied_driver_mutation_rows="$(mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" "$db_name" \
+  --batch --skip-column-names -e "SELECT CONCAT((SELECT COUNT(*) FROM Vehicles WHERE Plate='$denied_driver_vehicle_plate'), ':', (SELECT COUNT(*) FROM Drivers WHERE DocumentNumber='$denied_driver_document'), ':', (SELECT COUNT(*) FROM Routes WHERE Name='E2E QA ruta Driver denegada ${suffix: -9}'));" )"
+[[ "$denied_driver_mutation_rows" == "0:0:0" ]] || {
+  echo "Intentos HTTP denegados para Driver persistieron datos (vehículos:conductores:rutas=$denied_driver_mutation_rows)." >&2
+  exit 1
+}
 request GET "/Routes?driverId=$driver_id" "" "$same_tenant_driver_token"
 expect_status 200 "Driver no puede ampliar su filtro a otra asignación"
 jq -e 'length == 0' "$work_dir/response.json" >/dev/null \

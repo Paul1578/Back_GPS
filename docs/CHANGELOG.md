@@ -448,3 +448,8 @@
 - `smoke-tenant-http.sh` ahora comprueba editar vehículo con lectura persistida en HTTP/MySQL, cambio de estado a mantenimiento sin modificar `IsActive`, baja lógica y reactivación conservando estado.
 - `bash -n`, `git diff --check` y smoke completo sobre MySQL efímero aislado pasaron; cleanup sin fixtures. Action para este commit documental/código pendiente.
 - Primer arranque falló porque `/usr/bin/dotnet` apunta a instalación incompleta; se resolvió con el SDK local `/home/leonardo/.dotnet/dotnet`. No se usó la base local persistente.
+
+## 2026-11-22 — Ampliar denegaciones HTTP del rol Driver
+
+- El smoke tenant comprueba 403 para lecturas administrativas y POST Vehicle/Driver/Route de Driver autenticado.
+- Consulta MySQL exige que los intentos rechazados no creen ninguna fila. xUnit 111/111 y smoke API/MySQL 8 descartable pasan localmente; Action posterior al push pendiente.

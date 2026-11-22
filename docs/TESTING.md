@@ -550,3 +550,9 @@ La invitación envía sólo el enlace de activación; el usuario fija su contras
 - Backend Action `45066082294` pasó build/xUnit **107/107**, smoke HTTP/MySQL de alta nueva/duplicada, cuerpo neutral, tiempo >=450 ms y cleanup.
 - `smoke-tenant-http.sh` local valida el ciclo Vehicle HTTP/MySQL de edición, estado operativo independiente, baja lógica y reactivación. MySQL efímero pasó; cleanup correcto; Actions del nuevo cambio pendientes.
 - El smoke usa el SDK en `/home/leonardo/.dotnet/dotnet` porque el `dotnet` global del entorno no puede iniciar la API. No se mutó la DB persistente.
+## Denegaciones Driver en APIs de administración — validado localmente
+
+- El token Driver recibe HTTP 403 en `GET /Vehicles`, `GET /Drivers`, `GET /Routes/assignment-options`, `POST /Vehicles`, `POST /Drivers` y `POST /Routes`.
+- Consulta MySQL posterior confirma `0:0:0` filas Vehicle/Driver/Route creadas por las tres peticiones POST denegadas.
+- Smoke completo `scripts/smoke-tenant-http.sh` pasó contra API .NET 8 y MySQL 8 efímero (DB `fletflow_ci_driverroles_*`, puerto 13316); cleanup borró el contenedor. La base persistente local no se usó. `bash -n` y `git diff --check` pasan.
+- Release xUnit `dotnet test BackEnd_Gps.sln --configuration Release --no-restore -m:1`: **111/111**, cero omitidas. Action del cambio actual pendiente.

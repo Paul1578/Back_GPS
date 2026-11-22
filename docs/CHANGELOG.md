@@ -1,3 +1,7 @@
+## 2026-11-22 — Atomicidad alta Driver bajo concurrencia
+
+- El smoke HTTP/MySQL corre dos altas con documento idéntico y correos distintos; valida un ganador y un conflicto, y una única cuenta, perfil Driver y token de activación. Actions `45001599626` pasó con xUnit 61/61 y concurrencia de asignación.
+
 # Changelog
 
 ## 2026-11-21 — Rate limit Development y prueba E2E extendida

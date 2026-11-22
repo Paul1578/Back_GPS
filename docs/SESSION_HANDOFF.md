@@ -1,3 +1,10 @@
+## Alta concurrente Driver verificada — 2026-11-22
+
+- Backend `chore/stabilize-fleet-platform` corrigió el smoke para reflejar contrato actual: una solicitud de alta responde 200 (se admite 201 si cambia el endpoint) y la carrera perdedora 409. SQL exige exactamente una fila Users, Driver y PasswordResetToken.
+- Actions `45001599626` pasó: build, xUnit 61/61, smoke HTTP/MySQL tenant/roles/alta Driver y concurrencia de asignación; cleanup también success.
+- El test inicial falló sólo por esperar 201 cuando el controlador devolvió 200. La causa, 404 del primer dispatch y solución quedaron en `docs/ERROR_LOG.md`.
+- HEAD backend `6408988`; rama sincronizada. Front `1c108cc` está validando E2E responsive Vehicle en Actions `45001695962`.
+
 # Session handoff
 
 ## Onboarding público y alcance del rol Admin — validado

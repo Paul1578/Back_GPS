@@ -1,3 +1,8 @@
+## Actualización — 2026-11-22
+
+- Alta de usuarios Driver concurrente probada de punta a punta: un ganador HTTP 200, perdedor 409 y persistencia única Users/Driver/PasswordResetToken. Actions `45001599626` success, xUnit 61/61, smoke HTTP/MySQL y concurrencia de asignación incluidos.
+- Frontend amplió CRUD de vehículo a 320 y 768 px; lint/build/discovery 18 pasan localmente. E2E autenticado de Actions `45001695962` todavía en curso.
+
 # Estado del proyecto
 
 Fecha de corte: 2026-11-22.

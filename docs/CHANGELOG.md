@@ -247,4 +247,4 @@
 - Documento/teléfono se recortan y validan como requeridos, con máximo de 20 caracteres igual a las columnas MySQL y al comando de edición.
 - Añadidos tests para rechazar cada campo en 21 caracteres y permitir ambos en 20. Local: Release 0 warnings/0 errors, xUnit 68/68; Actions pendiente.
 - Actions `45016257332` validó el commit `24a9703`: Release, xUnit 68/68, smoke HTTP/MySQL tenant y concurrencia. Los casos de campos obligatorios añadidos después todavía esperan CI.
-- Suite local actualizada: Release 0 warnings/0 errores, xUnit 72/72; Actions del SHA que contiene los casos nuevos queda pendiente.
+- Suite local: Release 0 warnings/0 errores, xUnit 72/72. Actions `45016639356` pasó build/xUnit y smokes HTTP/MySQL tenant/roles/Logistics/concurrencia, cleanup correcto.

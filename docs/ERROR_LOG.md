@@ -12,7 +12,7 @@
 - El endpoint de alta no validaba longitud de documento/teléfono antes de ejecutar EF Core, mientras MySQL restringe ambos campos a 20 caracteres. En particular, el formulario de Manager aceptaba entradas mayores y el POST podía terminar en error de persistencia.
 - El comando ahora normaliza espacios, exige los cuatro campos y rechaza documento/teléfono mayores a 20 con `ArgumentException`, en línea con `UpdateDriverCommand` y `DriverConfiguration`.
 - xUnit añade rechazo de ambos campos en 21 caracteres, aceptación del límite exacto de 20 y verificación de que los rechazos no agregan ni confirman.
-- Verificación local: build Release 0 warnings/0 errors y xUnit 68/68. Smoke API/MySQL integrado de Actions queda por ejecutar.
+- Verificación local: build Release 0 warnings/0 errors y xUnit 72/72. Actions `45016639356` pasó para `8c28ccb`: xUnit 72/72, smoke HTTP/MySQL tenant/roles/concurrencia y cleanup.
 
 ## 2026-11-22 — Comando de perfil dependía del controlador para tenant — REFORZADO
 

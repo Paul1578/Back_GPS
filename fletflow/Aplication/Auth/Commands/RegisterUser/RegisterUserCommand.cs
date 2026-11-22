@@ -36,6 +36,10 @@ namespace fletflow.Application.Auth.Commands
             if (firstName?.Length > 100 || lastName?.Length > 100)
                 throw new ArgumentException("Nombres y apellidos no pueden exceder 100 caracteres.");
 
+            // Hacer el mismo trabajo de password hashing antes del pre-check reduce
+            // la diferencia temporal entre un email nuevo y uno ya registrado.
+            var passwordHash = BCrypt.Net.BCrypt.HashPassword(password);
+
             // 1) Verificar si el usuario ya existe
             var existingUser = await _unitOfWork.Users.GetByEmailAsync(email);
             if (existingUser is not null)
@@ -60,7 +64,7 @@ namespace fletflow.Application.Auth.Commands
                 FirstName = string.IsNullOrWhiteSpace(firstName) ? null : firstName.Trim(),
                 LastName = string.IsNullOrWhiteSpace(lastName) ? null : lastName.Trim(),
                 Email = email,
-                PasswordHash = BCrypt.Net.BCrypt.HashPassword(password),
+                PasswordHash = passwordHash,
                 IsActive = true,
                 MustChangePassword = mustChangePassword,
                 OwnerUserId = ownerUserId 

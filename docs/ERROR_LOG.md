@@ -1134,4 +1134,6 @@ Cada cambio de API debe incluir validación de compilación, migraciones si apli
 - `POST /Auth/register` respondía con tokens/200 a email nuevo y 409/mensaje explícito si ya existía, permitiendo enumerar cuentas y auto-iniciando una sesión sólo en el caso nuevo.
 - Alta nueva ahora se persiste sin crear sesión; respuesta 200 y payload neutral son idénticos para email nuevo/duplicado. Front muestra el mismo mensaje y redirige a Login. Manejo de carrera por índice único normaliza la colisión a conflicto interno que el controller neutraliza.
 - E2E compara respuestas, inicia sesión tras registro y smoke HTTP/MySQL verifica igualdad de payload. Release 107/107, build 0/0; CI integrado pendiente.
+- Mitigación temporal adicional: hashing BCrypt antes del pre-check de email y espera mínima 500 ms para ambos resultados; smoke verifica cada respuesta >=450 ms. La latencia bajo DB/red saturadas sigue siendo variable y se documenta como mitigación, no tiempo constante.
+- Action `45065747053` pasó el flujo de respuesta neutral/registro/login/cleanup; no incluye el último piso/hash temporal, que está en el siguiente commit.
 - Prevención: probar también alta pública duplicada y comparar status y cuerpo; nunca retornar tokens en un branch de éxito si los conflictos se normalizan a respuesta pública genérica.

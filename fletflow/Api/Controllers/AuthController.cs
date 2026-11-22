@@ -7,6 +7,7 @@ using fletflow.Application.Auth.Commands.ResetPassword;
 using fletflow.Application.DTOs.Auth;
 using fletflow.Infrastructure.Services;
 using fletflow.Domain.Fleet.Exceptions;
+using System.Diagnostics;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
@@ -44,6 +45,7 @@ namespace fletflow.Api.Controllers
         public async Task<IActionResult> Register([FromBody] RegisterUserDto dto)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
+            var startedAt = Stopwatch.GetTimestamp();
             // El alta pública crea la cuenta raíz Admin de una empresa nueva.
             // El rol es fijo en el servidor y nunca se toma del request; owner_id queda
             // asociado al usuario recién creado para aislar su empresa del resto.
@@ -55,6 +57,11 @@ namespace fletflow.Api.Controllers
             {
                 // El payload y status se mantienen iguales para cuenta nueva y email existente.
             }
+
+            var elapsed = Stopwatch.GetElapsedTime(startedAt);
+            var responseFloor = TimeSpan.FromMilliseconds(500);
+            if (elapsed < responseFloor)
+                await Task.Delay(responseFloor - elapsed);
 
             return Ok(new { message = "Si el registro puede completarse, podrás iniciar sesión con tus credenciales." });
         }

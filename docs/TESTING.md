@@ -514,3 +514,5 @@ La invitación envía sólo el enlace de activación; el usuario fija su contras
 
 - Login enum: xUnit verifica mismo 401/mensaje para email desconocido, contraseña incorrecta, cuenta inactiva y pendiente; smoke compara código y mensaje usando API/MySQL. Backend Action `45064942603` pasó build, xUnit **106/106**, smoke y cleanup.
 - Registro público nuevo/duplicado: controller entrega payload neutral en ambos casos; E2E compara cuerpos, luego autentica la cuenta creada. Smoke HTTP/MySQL incluido. Local Release **107/107**, build 0/0 y syntax shell; Actions pendientes.
+- Smoke de registro mide ambas respuestas >=450 ms (controlador fija piso de 500 ms); no certifica igualdad temporal bajo carga externa.
+- Backend Action `45065747053` pasó build/xUnit **107/107**, alta nueva/duplicada y cleanup, antes de la adición del piso temporal. Validar esa medición en la siguiente Action.

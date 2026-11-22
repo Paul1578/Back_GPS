@@ -415,4 +415,4 @@
 
 ## 2026-11-22 — Registro neutral para no enumerar emails
 
-- Registro público responde igual si el email es nuevo o ya existe; ya no auto-emite tokens. Front muestra mensaje neutral y envía a login. Alta nueva y duplicada se validan en el E2E real. Release build 0/0, xUnit 107/107, lint/build/discovery Front pasan local; Actions pendientes.
+- Registro público responde igual si el email es nuevo o ya existe; ya no auto-emite tokens. Front muestra mensaje neutral y envía a login. Backend Action `45065747053` pasó registro neutral en MySQL (antes del piso temporal). Nueva mitigación BCrypt antes del pre-check y espera 500 ms: Release build 0/0, xUnit 107/107, shell syntax y diff-check pasan; Actions pendientes.

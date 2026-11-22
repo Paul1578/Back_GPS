@@ -472,4 +472,4 @@ Nota de actualización: algunos resultados históricos de registro público más
 ## Seguridad — anti-enumeración en login y registro
 
 - Login ahora responde uniformemente ante email inexistente, password incorrecto, cuenta inactiva o pendiente; BCrypt usa hash señuelo para el usuario inexistente. Registro público responde igual con email nuevo/duplicado, sin emitir sesión; Front lleva a Login.
-- Release build 0 warnings/0 errors, xUnit **107/107**, shell syntax, Front lint/build/discovery (33) y diff-check pasan localmente. Actions para registro neutral aún pendientes.
+- Backend Action `45065747053` validó registro neutral en MySQL: 107/107, build, smoke y cleanup. Añadido luego hash antes de pre-check y piso temporal; local Release **107/107**, build 0/0 y bash syntax pasan. Nueva Action debe validar esta mejora.

@@ -50,6 +50,7 @@ public sealed class AuthServiceSecurityTests
         Assert.Single(unitOfWork.PasswordResetTokens.Added);
         Assert.Equal(1, unitOfWork.CommitCount);
         Assert.Equal(1, emailQueue.QueuedCount);
+        Assert.Equal(1, unitOfWork.LockUserSessionCount);
         Assert.True(knownElapsed >= TimeSpan.FromMilliseconds(200));
         Assert.True(unknownElapsed >= TimeSpan.FromMilliseconds(200));
     }
@@ -127,10 +128,10 @@ public sealed class AuthServiceSecurityTests
     private sealed class RecordingEmailQueue : IEmailDeliveryQueue
     {
         public int QueuedCount { get; private set; }
-        public bool TryQueuePasswordReset(string email, string resetLink, string plainToken)
+        public Task QueuePasswordResetAsync(Guid userId, string email, string resetLink, string plainToken)
         {
             QueuedCount++;
-            return false; // Queue unavailability must not change the public response.
+            return Task.CompletedTask;
         }
     }
 }

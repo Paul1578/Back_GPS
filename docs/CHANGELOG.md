@@ -287,3 +287,10 @@
 - Backend valida Username/FirstName/LastName hasta 100 y Email hasta 200, y traduce duplicados de email concurrentes a HTTP 409 con atomicidad.
 - Formulario TeamManagement refleja límites de API y trimea entradas antes del envío.
 - Smoke añade validación max/max+1, carrera HTTP/MySQL de email, Driver sin acceso a options y cleanup explícito de cuentas QA.
+
+## 2026-11-22 — Outbox durable para recuperación
+
+- Sustituida la cola de proceso por EmailOutbox cifrado con Data Protection y migración EF aditiva; token de reset y correo se guardan en el mismo commit.
+- Añadido worker con claim atómico, lease, token de fencing, reintentos con backoff, dead-letter y purga por retención.
+- Recuperaciones concurrentes se serializan por fila de usuario para invalidar cualquier token previo antes del commit.
+- Validación local: Release xUnit 77/77, API/MySQL 8 smoke aprobado, payload opaco, 1 token activo tras dos requests simultáneos y cleanup completo.

@@ -115,13 +115,22 @@ El smoke anónimo solicitó rol Admin en el registro; la fila persistida conserv
 
 ### Mitigación de timing en recuperación — 2026-11-22
 
-- SMTP dejó de ejecutarse dentro del request. Una cola bounded de proceso (`EmailDeliveryQueue`, capacidad 256) entrega en background y registra fallos sin filtrar existencia/entrega.
+- En la primera mitigación, SMTP dejó de ejecutarse dentro del request mediante una cola bounded de proceso. Ese mecanismo fue sustituido el 2026-11-22 por outbox cifrado y persistente descrito abajo.
 - Tanto correo existente como desconocido esperan un mínimo de 250 ms; el smoke HTTP compara respuestas JSON/códigos y exige al menos 200 ms para ambos casos.
 - MySQL 8 + API reales: ambas respuestas fueron HTTP 200 idénticas; el worker registró `SmtpHost no configurado` y no indicó éxito de envío. No se envió correo.
-- Límite residual: la cola es volátil; un reinicio o cola llena puede descartar solicitudes. El mensaje no confirma envío. Para uso productivo hace falta outbox durable y protección/encriptación del contenido sensible. La duración mínima reduce el canal temporal pero no garantiza igualdad bajo DB lenta/sobrecarga; tratar timing como mitigado parcialmente, no imposible.
+- Límite residual de timing: el piso temporal reduce la diferencia, pero no garantiza igualdad bajo DB lenta/sobrecarga; tratar timing como mitigado parcialmente, no imposible. La pérdida por reinicio/cola llena quedó corregida con el outbox descrito abajo.
 
 ## Creación concurrente de cuentas — 2026-11-22
 
 - La unicidad del correo se aplica por índice global MySQL. Si dos altas cruzan el pre-check, el guardado perdedor identifica el duplicado confirmado por DB y responde 409; no convierte otras excepciones DB a conflicto ni expone detalles internos.
 - `RegisterUserCommand` aplica límites de la entidad antes de persistir y el controller entrega 400 para campos fuera de contrato. MySQL smoke confirmó una sola cuenta/rol/token tras dos requests concurrentes al mismo email y ninguna persistencia para límites excedidos.
 - `/Routes/assignment-options` rechaza token Driver (403); la autorización en backend sigue siendo la fuente de verdad.
+
+## Outbox durable de recuperación — 2026-11-22
+
+- El token de reset y el mensaje outbox se guardan en el mismo AppDbContext/commit. EmailDeliveryQueue es scoped y sólo agrega el mensaje al contexto; EmailOutboxWorker es hosted y resuelve DB/proveedor mediante scope.
+- Email, enlace y token se serializan juntos y se protegen con ASP.NET Data Protection (FletFlow.EmailOutbox.PasswordReset.v1); no se guardan en claro. El UserId queda como metadato FK para lifecycle/diagnóstico y puede revelar que una cuenta solicitó recuperación.
+- Configuración: FLETFLOW_DATA_PROTECTION_KEYS_PATH permite fijar el directorio del key ring. En producción debe montarse un volumen persistente, restringido al usuario del proceso, respaldado y compartido con el mismo ApplicationName=FletFlow entre réplicas. Perder o rotar/eliminar prematuramente una clave vuelve ilegibles sus mensajes; el worker reintenta hasta 12 intentos y luego marca dead-letter. Monitorear DeadLetteredAtUtc y LastFailureType.
+- El claim usa actualización condicional atómica, lease de 2 minutos y LockToken para no sobrescribir una concesión posterior. El SMTP se llama fuera de transacción. La entrega es al menos una vez: si el proveedor acepta el email y la aplicación cae antes de marcar SentAtUtc, podría repetirse.
+- Los fallos reintentan con backoff exponencial, limitado a seis horas; tras 12 intentos van a dead-letter. Mensajes enviados se purgan después de 30 días y dead-letter después de 90 días.
+- Verificación HTTP/MySQL local: contenido persistido opaco, dos solicitudes concurrentes producen un token activo y ambos mensajes se guardan; SMTP sin credenciales no reporta éxito. Las credenciales SMTP válidas siguen siendo un requisito externo para la entrega real.

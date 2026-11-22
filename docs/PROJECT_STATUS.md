@@ -301,3 +301,15 @@ Nota de actualización: algunos resultados históricos de registro público más
 - User Create backend valida límites (100/200/100/100), trim y duplicate email race 409; Front aplica `maxLength` y valida trims en Gestión de Equipo.
 - Smoke HTTP/MySQL real pasó: valores límite aceptados, límite+1 HTTP 400 sin filas, altas concurrentes email 200/409 y una sola User/role/token; Driver options 403; cleanup limpio.
 - Front lint/build/discovery 19 pasó tras quitar dos props duplicadas detectadas en primera lint (error documentado). Integración navegador/API/MySQL y Actions para los HEAD nuevos pendiente.
+
+## Outbox durable de recuperación — validación local 2026-11-22
+
+- EmailOutbox cifrado y migración AddEmailOutbox; la API la aplicó al iniciar contra MySQL 8 descartable.
+- Token de reset + mensaje outbox se guardan en el mismo commit; recuperaciones concurrentes serializadas mediante lock de User.
+- Worker con claim atómico, lease/LockToken, backoff (máximo 6 h), dead-letter tras 12 fallos y purga de enviados a 30 días / dead-letter a 90 días.
+- Release xUnit 77/77 y smoke HTTP/API/MySQL completo aprobado; payload no contiene correo en texto claro, requests simultáneos dejaron un token activo y tres mensajes.
+- SMTP sigue requiriendo credenciales externas vigentes; configurar y persistir/compartir el key ring FLETFLOW_DATA_PROTECTION_KEYS_PATH en producción.
+- Pendientes generales: decisión de producto de Admin delegado, continuar auditoría CRUD/responsive y confirmar Actions de este nuevo commit. No cerrar la misión.
+
+- Verificación adicional post-reinicio: la fila cifrada sobrevivió al apagado de API/MySQL persistente y el proceso nuevo, con el key ring montado en la misma ruta, descifró el mensaje e incrementó AttemptCount; se observó el fallo esperado InvalidOperationException por SMTP sin configurar.
+- smoke-route-concurrency.sh pasó también tras aplicar AddEmailOutbox en una DB MySQL 8 limpia.

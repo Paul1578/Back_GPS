@@ -28,3 +28,9 @@ Mantener esta separación dentro del proyecto actual. No crear proyectos nuevos 
 - Nunca registrar tokens, contraseñas o secretos.
 - Ejecutar `dotnet restore` y `dotnet build` después de cambios.
 - Añadir pruebas para cada regla de seguridad o transición de estado.
+
+## Correo de recuperación durable
+
+- EmailDeliveryQueue debe seguir siendo scoped y escribir en el mismo AppDbContext que el token de reset; no ejecutar SaveChanges dentro del escritor.
+- El worker hosted debe mantener SMTP fuera de la transacción y no registrar email, URL, token o payload. Proteger FLETFLOW_DATA_PROTECTION_KEYS_PATH con volumen persistente y acceso restringido.
+- Mantener la cobertura HTTP/MySQL de requests concurrentes y leer docs/SECURITY.md antes de cambiar la política de reintentos/retención.

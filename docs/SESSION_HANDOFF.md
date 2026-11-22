@@ -385,7 +385,7 @@ Errores de migración, herramientas, QA y soluciones están en `docs/ERROR_LOG.m
 - Backend último commit remoto `bcf7bac`; Actions `45023615413` terminó `success`. Front último commit de producto `42b1b4b`, Actions `45023625523` terminó `success`; commit documental siguiente `bb028a9` publicado.
 - Cambios backend locales sin publicar: `EmailDeliveryQueue` bounded con background worker, SMTP ya no bloquea ForgotPassword, respuesta JSON igual y mínimo 250 ms en cuenta conocida/desconocida; smoke HTTP compara códigos/payload y exige >=200 ms.
 - Validación local posterior: Release xUnit 76/76, Release build 0 warnings/errors, smoke API/MySQL 8 exit 0; el worker registró SMTP sin configurar, y no se afirmó envío. Repetir Actions con SHA nuevo antes de cerrar.
-- Riesgo abierto: cola en memoria (hasta 256) no es durable y piso no garantiza timings idénticos bajo saturación. Añadir outbox durable protegido antes de garantía productiva. Credenciales SMTP siguen externas.
+- Riesgo abierto en ese corte: cola en memoria y piso temporal. El outbox protegido quedó implementado en la iteración más reciente de este handoff; timing sigue mitigado parcialmente y SMTP real requiere credenciales externas.
 - Otros pendientes: decisión del usuario sobre promoción de Admin por cuentas delegadas, cobertura CRUD/responsive restante, y no cerrar misión.
 - Backend commit `35ad393` quedó validado por Actions `45024262135`: Release build 0 warnings/0 errores, xUnit 76/76, smoke MySQL/API success y cleanup `0 rutas/posiciones/vehículos`.
 
@@ -395,4 +395,17 @@ Errores de migración, herramientas, QA y soluciones están en `docs/ERROR_LOG.m
 - Backend local: RegisterUserCommand trim/limits 100/200/100/100; UserController 400 para límites y 409 sólo al confirmar email duplicado tras DbUpdateException. Smoke MySQL real verifica límites, no persistencia inválida y carrera 200/409 con exactamente User/Role/PasswordResetToken; Driver options 403. Cleanup de fixtures completo.
 - Front local: `TeamManagement` maxLength y validación client-side trim/longitud; E2E de TeamManagement verifica atributos. `npm run lint`, `npm run build`, discovery 19 pasaron después de quitar props duplicadas detectadas por lint.
 - El primer smoke falló por una expectativa vieja que asumía username/nombres de fixture cortos; expectation ajustada a valores máximos, repetición completa exit 0. Error registrado.
-- Pendiente: ejecutar browser E2E contra API/MySQL en CI y Actions con estos SHA; no completar objetivo. Sigue abierta política Admin delegado, outbox durable/SMTP y límites externos anotados.
+- Pendiente en ese corte: browser E2E y Actions para esos SHA. El outbox quedó implementado después; la validación Actions del nuevo commit sigue pendiente. Política Admin delegado aún abierta.
+
+## Outbox durable SMTP — lote local 2026-11-22
+
+- HEAD previo: backend 8d3cb32 (chore/stabilize-fleet-platform), frontend 000d6cb (refactor/route-builder); ambos Actions previos 45025304021 y 45025319275 terminaron success.
+- Backend local cambia EmailDeliveryQueue a escritor scoped que agrega payload cifrado al AppDbContext; ForgotPasswordAsync agrega token y mensaje y hace commit conjunto, con lock User para serializar requests simultáneos.
+- EmailOutboxWorker reclama filas con update condicional/lease/LockToken, SMTP fuera de transacción, backoff 2^attempt capped 6h, dead-letter a 12 y purga de enviados 30d/dead-letter 90d. Nueva migración EF AddEmailOutbox.
+- Configuración: FLETFLOW_DATA_PROTECTION_KEYS_PATH; en producción montar key ring persistente y compartido por réplicas con ApplicationName FletFlow. SMTP real externo pendiente; at-least-once permite duplicado en crash tras aceptación del proveedor.
+- Tests locales después del lote: Release xUnit 77/77; smoke API+MySQL 8 real aprobado con cifrado, dos requests reset simultáneos, token activo único y cleanup completo. bash -n y diff-check correctos. La corrida usó el SDK explícito /home/leonardo/.dotnet/dotnet.
+- Errores de migración (namespace faltante), runtime global incorrecto y orden de limpieza rechazada están en ERROR_LOG con prevención.
+- Próximo: auditar diff completo/worker, ejecutar dotnet build Release y smoke de concurrencia de rutas en MySQL; publicar cambios backend en la rama; esperar Actions. Luego continuar pendientes CRUD/responsive front y backend. No cerrar misión. Política de promoción de Admin delegado continúa sin respuesta.
+
+- Verificación adicional ya terminada: restart API con DB + key ring persistentes confirmó que EmailOutbox se descifra y se reintenta después del reinicio; sender llegó al fallo esperado SMTP no configurado. Smoke separado de concurrencia de asignación de rutas también exit 0.
+- El primer assert de restart esperaba un contador fijo y falló; se cambió por baseline comparativo y la repetición pasó. ERROR_LOG incluye ambos resultados.

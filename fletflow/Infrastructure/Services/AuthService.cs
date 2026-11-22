@@ -156,18 +156,19 @@ namespace fletflow.Infrastructure.Services
 
             if (user != null)
             {
+                // Serialize password-recovery requests for this account so concurrent
+                // requests cannot leave two newly issued reset tokens active.
+                await _unitOfWork.LockUserSessionAsync(user.Id);
                 await _unitOfWork.PasswordResetTokens.InvalidateAllForUserAsync(user.Id);
 
                 var (token, plainToken) = _passwordResetTokenFactory.Create(user.Id, _emailSettings.ResetTokenMinutes);
                 raw = plainToken;
 
-                await _unitOfWork.PasswordResetTokens.AddAsync(token);
-                await _unitOfWork.CommitAsync();
-
                 var encoded = Uri.EscapeDataString(plainToken);
                 var link = $"{_emailSettings.ResetPasswordUrl}?token={encoded}";
-                if (!_emailDeliveryQueue.TryQueuePasswordReset(user.Email, link, plainToken))
-                    _logger.LogError("Password reset email queue is full; delivery was not queued.");
+                await _unitOfWork.PasswordResetTokens.AddAsync(token);
+                await _emailDeliveryQueue.QueuePasswordResetAsync(user.Id, user.Email, link, plainToken);
+                await _unitOfWork.CommitAsync();
             }
 
             // SMTP latency must not expose account existence. Keep both response paths

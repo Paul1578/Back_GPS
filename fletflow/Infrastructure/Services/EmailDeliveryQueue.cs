@@ -1,54 +1,32 @@
-using System.Threading.Channels;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
+using System.Text.Json;
+using fletflow.Infrastructure.Persistence.Context;
+using fletflow.Infrastructure.Persistence.Entities;
+using Microsoft.AspNetCore.DataProtection;
 
 namespace fletflow.Infrastructure.Services;
 
-public sealed class EmailDeliveryQueue : BackgroundService, IEmailDeliveryQueue
+/// <summary>Adds a protected message to the current request's DbContext/unit of work.</summary>
+public sealed class EmailDeliveryQueue : IEmailDeliveryQueue
 {
-    private readonly Channel<PasswordResetEmail> _queue = Channel.CreateBounded<PasswordResetEmail>(
-        new BoundedChannelOptions(256)
+    private readonly AppDbContext _db;
+    private readonly IDataProtector _protector;
+
+    public EmailDeliveryQueue(AppDbContext db, IDataProtectionProvider protectionProvider)
+    {
+        _db = db;
+        _protector = protectionProvider.CreateProtector("FletFlow.EmailOutbox.PasswordReset.v1");
+    }
+
+    public Task QueuePasswordResetAsync(Guid userId, string email, string resetLink, string plainToken)
+    {
+        var serialized = JsonSerializer.Serialize(new PasswordResetEmailPayload(email, resetLink, plainToken));
+        _db.Set<EmailOutboxEntity>().Add(new EmailOutboxEntity
         {
-            FullMode = BoundedChannelFullMode.Wait,
-            SingleReader = true,
-            SingleWriter = false
+            UserId = userId,
+            ProtectedPayload = _protector.Protect(serialized),
+            CreatedAtUtc = DateTime.UtcNow,
+            NextAttemptAtUtc = DateTime.UtcNow
         });
-    private readonly IServiceScopeFactory _scopeFactory;
-    private readonly ILogger<EmailDeliveryQueue> _logger;
-
-    public EmailDeliveryQueue(IServiceScopeFactory scopeFactory, ILogger<EmailDeliveryQueue> logger)
-    {
-        _scopeFactory = scopeFactory;
-        _logger = logger;
+        return Task.CompletedTask;
     }
-
-    public bool TryQueuePasswordReset(string email, string resetLink, string plainToken) =>
-        _queue.Writer.TryWrite(new PasswordResetEmail(email, resetLink, plainToken));
-
-    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
-    {
-        await foreach (var message in _queue.Reader.ReadAllAsync(stoppingToken))
-        {
-            try
-            {
-                using var scope = _scopeFactory.CreateScope();
-                var sender = scope.ServiceProvider.GetRequiredService<IEmailSender>();
-                await sender.SendPasswordResetEmailAsync(
-                    message.Email,
-                    message.ResetLink,
-                    message.PlainToken,
-                    stoppingToken);
-            }
-            catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
-            {
-                break;
-            }
-            catch (Exception exception)
-            {
-                _logger.LogError(exception, "Password reset email delivery failed.");
-            }
-        }
-    }
-
-    private sealed record PasswordResetEmail(string Email, string ResetLink, string PlainToken);
 }

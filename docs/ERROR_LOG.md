@@ -832,3 +832,24 @@ Cada cambio de API debe incluir validación de compilación, migraciones si apli
 - También se agregó HTTP Driver para `/Routes/assignment-options`; Driver recibe 403. El mismo contrato se conserva para User y permitido para Logistics/Managers según matriz.
 - Primer smoke falló después de llegar al test cross-tenant porque el fixture a longitud máxima ya no coincidía con una expectativa anterior de username/nombre corto. Solución: comparar contra valores máximos de ese fixture; repetición completa exit 0.
 - Error de exploración: se intentó leer `e2e/fleet-admin.spec.ts` desde Back y `src/Components/...` desde Backend; rutas relativas no existen ahí y no hubo modificación. Solución: repetir desde checkout Front. Prevención: separar comandos por repositorio al agrupar inspecciones.
+
+## 2026-11-22 — Outbox durable de recuperación y pruebas reales — ERRORES CORREGIDOS
+
+- Generar AddEmailOutbox falló al compilar porque faltaba el namespace de extensiones Microsoft.AspNetCore.DataProtection para SetApplicationName. dotnet build expuso CS1061; se agregó el using y EF generó la migración.
+- El primer smoke inició el host global /usr/bin/dotnet, que no tiene runtime (/usr/lib64/dotnet/host/fxr sin runtime). Se canceló antes de enviar requests; se repitió con /home/leonardo/.dotnet/dotnet, DOTNET_ROOT y el SDK local.
+- Una orden de limpieza demasiado amplia con rm -rf fue rechazada antes de ejecutarse por el guard del terminal. Se reemplazó por limpieza explícita del único contenedor descartable identificado (docker stop y docker rm por nombre); no hubo cambios de archivos por la orden rechazada.
+- La primera pasada de outbox fue seguida por una prueba más fuerte de dos solicitudes concurrentes; el smoke actualizado pasó y ahora comprueba dos HTTP 200, un token activo y tres filas cifradas. No se ocultó ni se contó la primera corrida como cobertura concurrente.
+- Prevención: importar la extensión de DataProtection antes de generar migraciones; invocar el dotnet local documentado; destruir recursos descartables por nombre exacto; esperar el resultado del smoke que contiene el caso que se quiere reportar.
+
+## 2026-11-22 — Recuperaciones concurrentes podían mantener múltiples tokens válidos — CORREGIDO Y VALIDADO
+
+- El auditor de solo lectura detectó que invalidar tokens y crear uno nuevo sin bloquear el usuario permite que dos recuperaciones simultáneas dejen ambos tokens activos.
+- Solución: ForgotPasswordAsync toma el lock transaccional de la fila User que también coordina sesiones; invalida tokens anteriores y agrega token y outbox en el mismo commit.
+- El smoke HTTP/MySQL ejecutó dos requests concurrentes reales: ambos respondieron 200, SQL confirmó exactamente un reset token activo y tres filas outbox (una inicial más dos concurrentes). El payload protegido no contiene el email en texto claro. DB MySQL 8 y API fueron descartables.
+
+## 2026-11-22 — Aserción de contador asumía un intento previo al reinicio — CORREGIDA
+
+- El primer experimento de restart esperaba que el contador final fuera exactamente 2/3; en la ejecución real el worker había completado cero intentos antes del primer apagado, así que el resultado correcto fue 1. La condición de prueba falló aunque el worker reiniciado descifró el payload y llamó al sender (tipo InvalidOperationException de SMTP sin configurar).
+- Solución: comparar el número de intentos final con el valor capturado antes de reiniciar y exigir que aumente, además del tipo de fallo SMTP esperado.
+- Repetición en MySQL 8 descartable: antes 1 fila/0 intentos; después 1 intento/InvalidOperationException. Aprobado.
+- Prevención: probar la propiedad del sistema (contador aumenta frente a baseline) en vez de asumir cuándo el worker alcanzó su primer poll.

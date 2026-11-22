@@ -73,6 +73,53 @@ namespace BackEnd_Gps.fletflow.Infrastructure.Migrations
                     b.ToTable("Drivers", (string)null);
                 });
 
+            modelBuilder.Entity("fletflow.Infrastructure.Persistence.Entities.EmailOutboxEntity", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("char(36)");
+
+                    b.Property<int>("AttemptCount")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<DateTime?>("DeadLetteredAtUtc")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("LastFailureType")
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
+
+                    b.Property<Guid?>("LockToken")
+                        .HasColumnType("char(36)");
+
+                    b.Property<DateTime?>("LockedUntilUtc")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<DateTime>("NextAttemptAtUtc")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("ProtectedPayload")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<DateTime?>("SentAtUtc")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("char(36)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("SentAtUtc", "DeadLetteredAtUtc", "NextAttemptAtUtc", "LockedUntilUtc");
+
+                    b.ToTable("EmailOutbox");
+                });
+
             modelBuilder.Entity("fletflow.Infrastructure.Persistence.Entities.PasswordResetTokenEntity", b =>
                 {
                     b.Property<Guid>("Id")
@@ -416,6 +463,17 @@ namespace BackEnd_Gps.fletflow.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Restrict);
 
                     b.Navigation("Vehicle");
+                });
+
+            modelBuilder.Entity("fletflow.Infrastructure.Persistence.Entities.EmailOutboxEntity", b =>
+                {
+                    b.HasOne("fletflow.Infrastructure.Persistence.Entities.UserEntity", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("fletflow.Infrastructure.Persistence.Entities.PasswordResetTokenEntity", b =>

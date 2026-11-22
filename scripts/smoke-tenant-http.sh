@@ -229,6 +229,30 @@ awk -v known="$known_recovery_seconds" -v unknown="$unknown_recovery_seconds" \
   echo "Forgot-password no respetó la duración mínima uniforme (conocido=$known_recovery_seconds desconocido=$unknown_recovery_seconds)." >&2
   exit 1
 }
+recovery_outbox_state="$(mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" "$db_name" \
+  --batch --skip-column-names -e "SELECT CONCAT(COUNT(*), ':', COALESCE(SUM(ProtectedPayload LIKE CONCAT('%', '$admin_email', '%')), 0)) FROM EmailOutbox WHERE UserId=(SELECT Id FROM Users WHERE Email='$admin_email');")"
+[[ "$recovery_outbox_state" == "1:0" ]] || {
+  echo "Forgot-password no dejó exactamente un mensaje cifrado en outbox para la cuenta conocida ($recovery_outbox_state)." >&2
+  exit 1
+}
+for request_number in 1 2; do
+  curl --silent --show-error --output "$work_dir/forgot-concurrent-$request_number.json" --write-out '%{http_code}' \
+    --header 'Content-Type: application/json' --data "$(jq -nc --arg email "$admin_email" '{email:$email}')" \
+    "$api_base/Auth/forgot-password" >"$work_dir/forgot-concurrent-$request_number.status" &
+done
+wait
+concurrent_recovery_status_a="$(cat "$work_dir/forgot-concurrent-1.status")"
+concurrent_recovery_status_b="$(cat "$work_dir/forgot-concurrent-2.status")"
+[[ "$concurrent_recovery_status_a:$concurrent_recovery_status_b" == "200:200" ]] || {
+  echo "Solicitudes concurrentes de recuperación devolvieron estados inesperados ($concurrent_recovery_status_a/$concurrent_recovery_status_b)." >&2
+  exit 1
+}
+concurrent_recovery_state="$(mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" "$db_name" \
+  --batch --skip-column-names -e "SELECT CONCAT((SELECT COUNT(*) FROM PasswordResetTokens WHERE UserId=(SELECT Id FROM Users WHERE Email='$admin_email') AND UsedAt IS NULL AND ExpiresAt > UTC_TIMESTAMP()), ':', (SELECT COUNT(*) FROM EmailOutbox WHERE UserId=(SELECT Id FROM Users WHERE Email='$admin_email')));")"
+[[ "$concurrent_recovery_state" == "1:3" ]] || {
+  echo "Solicitudes concurrentes dejaron tokens de recuperación activos no serializados o mensajes faltantes ($concurrent_recovery_state)." >&2
+  exit 1
+}
 
 public_registration_email="fletflow.e2e.register.ci.$(date +%s%N | tail -c 9)@example.test"
 public_registration_password="$(openssl rand -hex 24)"

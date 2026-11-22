@@ -24,3 +24,7 @@ El conductor cambia estado con `PUT /api/Routes/{id}/points/{index}/status` y ad
 ## Perfil de usuario de equipo — 2026-11-22
 
 PUT /api/Users/{id}/profile valida rol, propietario, raíz, campos y longitudes en UsersController, y ejecuta UpdateUserProfileCommand para cambiar User y Driver enlazado en el mismo AppDbContext/commit. El correo no forma parte del contrato. Al actualizar un Driver, UpdateDriverCommand sincroniza el User vinculado sólo si ambos registros comparten OwnerUserId.
+
+## Recuperación de contraseña y outbox de correo — 2026-11-22
+
+AuthService.ForgotPasswordAsync bloquea la fila de usuario para serializar recuperaciones simultáneas, invalida tokens anteriores, agrega el nuevo token y agrega un payload protegido a EmailOutbox; un único UnitOfWork.CommitAsync guarda ambos. El escritor scoped (EmailDeliveryQueue) comparte AppDbContext con el request. El worker hosted (EmailOutboxWorker) reclama filas con una actualización condicional y lease+token de lock, crea scope para DB y IEmailSender, reintenta con backoff y dead-letter tras 12 intentos. No mantiene una transacción DB durante SMTP. Key ring Data Protection debe conservarse en despliegues y compartirse entre réplicas.

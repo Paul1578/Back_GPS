@@ -92,10 +92,16 @@ Cambiar, restablecer o activar una contraseña incrementa `User.TokenVersion`, r
 ## Recuperación de contraseña y entrega de correo — 2026-11-22
 
 - La API devuelve contenido idéntico para correo conocido/desconocido y un mínimo de 250 ms de respuesta; el envío SMTP se realiza fuera del request en worker bounded.
-- Error SMTP se registra como fallo y no se comunica entrega exitosa. La cola actual es local a proceso y no durable; no utilizarla como garantía de entrega en producción hasta añadir outbox persistente protegido.
+- Error SMTP se registra como fallo y no se comunica entrega exitosa. La nota histórica de cola en memoria fue sustituida el 2026-11-22 por EmailOutbox cifrado y persistente; revisar la sección de recuperación de cuenta al cambiar esa política.
 
 ## Altas de miembros — límites y duplicados concurrentes (2026-11-22)
 
 - Máximos de persistencia y API: Username 100, FirstName 100, LastName 100 y Email 200 caracteres; recortar espacios periféricos antes de guardar.
 - Correo ya existente, incluida carrera concurrente protegida por índice único global, produce conflicto 409; una carrera debe persistir una sola cuenta y un único conjunto de UserRole/token de activación.
 - Driver no puede consultar `/Routes/assignment-options`; Admin, Manager y Logistics tienen acceso según sus permisos operativos; User también recibe 403.
+
+## Recuperación de cuenta y entrega de correo — 2026-11-22
+
+- Solicitudes de recuperación conocidas e inexistentes conservan la misma respuesta pública. Para un usuario existente, las solicitudes se serializan por lock de su fila; se invalida cualquier token anterior y sólo queda un token activo.
+- El token y el email cifrado de outbox se confirman juntos. La respuesta HTTP no afirma que el proveedor ya haya entregado el correo.
+- El worker reintenta fallos y deja registro dead-letter después de 12 intentos. La entrega SMTP externa requiere configuración válida; el almacenamiento durable no equivale a entrega exactamente una vez.

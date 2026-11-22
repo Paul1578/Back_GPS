@@ -32,6 +32,7 @@ namespace fletflow.Infrastructure.Persistence.Context
         public DbSet<UserRoleEntity> UserRoles { get; set; } = default!;
         public DbSet<RefreshTokenEntity> RefreshTokens { get; set; } = default!;
         public DbSet<PasswordResetTokenEntity> PasswordResetTokens { get; set; } = default!;
+        public DbSet<EmailOutboxEntity> EmailOutbox { get; set; } = default!;
         public DbSet<VehicleEntity> Vehicles { get; set; } = default!;
         public DbSet<DriverEntity> Drivers { get; set; } = default!;
         public DbSet<RouteEntity> Routes { get; set; } = default!;
@@ -59,6 +60,15 @@ namespace fletflow.Infrastructure.Persistence.Context
                       .WithMany()
                       .HasForeignKey(x => x.UserId)
                       .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            modelBuilder.Entity<EmailOutboxEntity>(entity =>
+            {
+                entity.HasIndex(x => new { x.SentAtUtc, x.DeadLetteredAtUtc, x.NextAttemptAtUtc, x.LockedUntilUtc });
+                entity.HasOne(x => x.User)
+                    .WithMany()
+                    .HasForeignKey(x => x.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
             });
 
             modelBuilder.ApplyConfiguration(new VehicleConfiguration());

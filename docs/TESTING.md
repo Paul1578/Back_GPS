@@ -360,7 +360,7 @@ La invitación envía sólo el enlace de activación; el usuario fija su contras
 
 - xUnit Release: 76/76, incluyendo respuesta genérica, token sólo para cuenta conocida, cola de entrega y duración mínima >=200 ms para conocidas/desconocidas.
 - Smoke HTTP/MySQL real comparó JSON ordenado y HTTP 200 para ambas cuentas; ambas duraciones fueron >=200 ms. La cola ejecutó el worker y registró `SmtpHost no configurado`; no se envió email ni se comunicó como enviado.
-- `EmailDeliveryQueue` es volátil y bounded (256). Falta outbox durable y prueba de entrega SMTP cuando haya credenciales vigentes.
+- Estado histórico previo al lote de outbox: `EmailDeliveryQueue` era volátil y bounded (256). Ya se reemplazó por outbox durable; sigue pendiente probar la entrega SMTP con credenciales vigentes.
 - Actions Backend `45024262135` para SHA `35ad3934daadafd16d553c11b999011d44ea2753`: `success`; build 0 warnings/0 errors, xUnit 76/76, smoke HTTP/MySQL tenant/concurrencia y cleanup cero.
 
 ## Alta de miembros y opciones de asignación por Driver — 2026-11-22
@@ -369,3 +369,16 @@ La invitación envía sólo el enlace de activación; el usuario fija su contras
 - Dos POST `/Users` concurrentes con correo igual: exactamente HTTP 200 y 409; MySQL confirma exactamente `1 User : 1 UserRole : 1 PasswordResetToken` y cleanup borra la cuenta.
 - Driver autenticado probó GET `/Routes/assignment-options` y recibió 403; smoke también valida User 403 y acceso Logistics 200 sin filtrar datos cross-tenant.
 - Corrida completa contra API real + MySQL 8 desechable terminó exit code 0; cleanup verificó 0 rutas, posiciones y vehículos y retiró usuarios QA.
+
+## Outbox durable de recuperación — 2026-11-22
+
+- Agregada prueba xUnit EmailDeliveryQueueTests: crea un mensaje outbox y comprueba que email, URL y token no aparecen en el payload persistido.
+- AuthServiceSecurityTests comprueba una sola cola/commit y lock del usuario durante recuperación. Suite Release actual: 77/77, sin fallos ni skips.
+- API .NET local + MySQL 8 descartable fletflow_ci_outbox_20261122: startup aplicó AddEmailOutbox; smoke-tenant-http.sh pasó. SQL confirmó payload cifrado (1:0 en correo conocido), dos solicitudes de reset concurrentes HTTP 200, exactamente un token activo y tres filas outbox.
+- El smoke completo verificó aislamiento/roles, operación logística con pickup+delivery, evidencia, GPS, estados y limpieza 0 rutas / 0 posiciones / 0 vehículos; el contenedor DB se detuvo y eliminó.
+- bash -n scripts/smoke-tenant-http.sh y git diff --check pasan. Repetir build, xUnit y Actions después de publicar ambos heads.
+- SMTP no configurado durante la ejecución: el worker registró fallo y no envió ni simuló correo exitoso.
+
+- Reinicio con key ring persistente en ruta temporal: se encoló una recuperación, se capturó el baseline, se detuvo la API, se hizo elegible la fila y se reinició API con el mismo key ring. MySQL confirmó que aumentó el intento y LastFailureType=InvalidOperationException (SMTP ausente, payload descifrado y sender invocado).
+- El primer assert del restart asumió un conteo fijo y falló; se corrigió a comparar con el baseline. Causa/solución en ERROR_LOG.
+- Smoke independiente smoke-route-concurrency.sh también pasó contra API + MySQL 8 descartables tras la migración.

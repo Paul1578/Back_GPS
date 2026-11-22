@@ -1,6 +1,7 @@
 ﻿using DotNetEnv;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
@@ -33,6 +34,14 @@ Env.NoClobber().Load();
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddHttpContextAccessor();
+var keyRingPath = Environment.GetEnvironmentVariable("FLETFLOW_DATA_PROTECTION_KEYS_PATH");
+var dataProtection = builder.Services.AddDataProtection().SetApplicationName("FletFlow");
+if (!string.IsNullOrWhiteSpace(keyRingPath))
+{
+    var fullKeyRingPath = Path.GetFullPath(keyRingPath);
+    Directory.CreateDirectory(fullKeyRingPath);
+    dataProtection.PersistKeysToFileSystem(new DirectoryInfo(fullKeyRingPath));
+}
 
 // =====================
 // DB (.env)
@@ -70,9 +79,8 @@ builder.Services.AddScoped<JwtTokenService>();
 builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<IUserRegistrationService>(services => services.GetRequiredService<AuthService>());
 builder.Services.AddScoped<IEmailSender, EmailService>();
-builder.Services.AddSingleton<EmailDeliveryQueue>();
-builder.Services.AddSingleton<IEmailDeliveryQueue>(services => services.GetRequiredService<EmailDeliveryQueue>());
-builder.Services.AddHostedService(services => services.GetRequiredService<EmailDeliveryQueue>());
+builder.Services.AddScoped<IEmailDeliveryQueue, EmailDeliveryQueue>();
+builder.Services.AddHostedService<EmailOutboxWorker>();
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 
 // =====================

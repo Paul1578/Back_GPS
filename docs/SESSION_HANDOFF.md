@@ -207,3 +207,4 @@ Errores de migración, herramientas, QA y soluciones están en `docs/ERROR_LOG.m
 - El host `/usr/bin/dotnet` falló inicialmente porque `/usr/lib64/dotnet/host/fxr` está vacío; se repitió correctamente con SDK 8.0.428 desde `/home/leonardo/.dotnet`.
 - Frontend añadió E2E móvil que intenta crear una segunda unidad con la misma placa, espera HTTP 409, verifica el mensaje y que quede una sola tarjeta. Lint/build/discovery 16 pasaron; CI integrado sigue pendiente.
 - Siguiente: revisar diff, publicar backend y verificar Actions; publicar luego el E2E frontend y comprobar ambos branches integrados con API/MySQL.
+- Actions `44995681296` terminó success en `6ec5315`: build, xUnit y smokes tenant/concurrencia HTTP+MySQL completados y recursos temporales detenidos.

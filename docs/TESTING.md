@@ -258,3 +258,4 @@ La invitación envía sólo el enlace de activación; el usuario fija su contras
 - `DOTNET_ROOT=/home/leonardo/.dotnet PATH=/home/leonardo/.dotnet:$PATH /home/leonardo/.dotnet/dotnet test BackEnd_Gps.sln --configuration Release --no-restore`: **59/59**, 0 fallidas/omitidas.
 - Dos pruebas unitarias verifican que crear o editar con placa ya utilizada devuelve `BusinessConflictException` y no persiste cambios.
 - Frontend lint/build/discovery pasó con 16 E2E; la ejecución navegador/API/MySQL del nuevo rechazo visual queda pendiente del Actions cross-branch.
+- Confirmación backend: Actions `44995681296` en `6ec5315` terminó success con build, xUnit y smokes de aislamiento tenant y concurrencia sobre MySQL temporal.

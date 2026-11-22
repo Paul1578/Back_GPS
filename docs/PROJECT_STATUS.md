@@ -160,3 +160,5 @@ Actualización de estabilidad: duplicados de placa en creación/edición ahora s
 - Smoke HTTP ampliado localmente con paradas de tres puntos y operación PickupAndDelivery, transición InProgress, estado/evidencia de parada, GPS, Completed y devolución del vehículo a Available.
 - API temporal + MySQL 8 efímero confirmaron persistencia y cleanup de cero rutas, posiciones y vehículos QA. `bash -n`, `git diff --check` y Release build 0 warnings/errores pasaron.
 - El primer intento tuvo un falso fallo de verificación porque el warning MySQL contaminó stdout; corrección y repetición aprobada en `docs/ERROR_LOG.md`. Actions `44990525889` confirmó el ciclo y xUnit 57/57. Se añadió fallback de cleanup por nombre; Actions `44991032520` para `da53081` volvió a pasar build, xUnit 57/57 y smoke cleanup `0:0:0`.
+
+- Actions `44995681296` para `6ec5315` terminó success: build, xUnit, smoke tenant/roles HTTP+MySQL y concurrencia; MySQL/servicios temporales se limpiaron.

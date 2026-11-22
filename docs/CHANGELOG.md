@@ -152,3 +152,4 @@
 
 - Crear y editar un vehículo con placa ya usada ahora lanzan conflicto de negocio HTTP 409 con un mensaje en español; antes se convertía en 400 con detalle técnico en inglés.
 - Se añadieron pruebas unitarias para ambos comandos; suite Release local 59/59. CI integrado pendiente.
+- Actions `44995681296` confirmó `6ec5315`: build, pruebas unitarias y smokes HTTP/MySQL de tenant y concurrencia en success.

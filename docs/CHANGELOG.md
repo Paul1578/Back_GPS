@@ -294,3 +294,8 @@
 - Añadido worker con claim atómico, lease, token de fencing, reintentos con backoff, dead-letter y purga por retención.
 - Recuperaciones concurrentes se serializan por fila de usuario para invalidar cualquier token previo antes del commit.
 - Validación local: Release xUnit 77/77, API/MySQL 8 smoke aprobado, payload opaco, 1 token activo tras dos requests simultáneos y cleanup completo.
+# 2026-11-22 — Revalidación de ownership Driver al cambiar estado
+
+- `ChangeRouteStatusCommand` vuelve a validar el Driver solicitante después de adquirir locks y recargar la ruta, cerrando TOCTOU por reasignación concurrente.
+- Agregada regresión unitaria que reasigna durante lock; el Driver anterior no puede cancelar ni actualizar la ruta.
+- Suite Release local: 78/78.

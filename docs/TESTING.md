@@ -387,3 +387,8 @@ La invitación envía sólo el enlace de activación; el usuario fija su contras
 
 - Backend commit 5049dea: Actions 45027017954 success. Release build 0 warnings; xUnit 77/77; smoke HTTP/MySQL y concurrencia rutas success; cleanup completo.
 - El reinicio con key ring persistente se comprobó localmente en DB/API descartables y quedó documentado arriba; SMTP sin credenciales sólo produjo el fallo esperado.
+# Regresión de autorización por reasignación concurrente — 2026-11-22
+
+- `ChangeRouteStatusAuthorizationTests.Execute_DriverReassignedAfterInitialRead_CannotChangeRouteStatus`: reemplaza la asignación cuando se adquiere el lock, como ocurriría si el Driver se reasigna después del chequeo inicial del controller.
+- Verifica `KeyNotFoundException`, una sola adquisición del lock, cero actualizaciones del repositorio y estado Pending conservado.
+- Resultado Release local: prueba enfocada 1/1; suite completa **78/78**, cero skips; build Release 0 warnings/0 errors. Validación remota pendiente.

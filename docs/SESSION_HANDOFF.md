@@ -412,3 +412,10 @@ Errores de migración, herramientas, QA y soluciones están en `docs/ERROR_LOG.m
 
 - CI backend cerró success después de la publicación: Actions 45027017954 para 5049dea, Release build sin warnings, xUnit 77/77, smoke tenant/outbox y concurrencia de rutas completos; cleanup de servicio MySQL descartable success.
 - Actions Front 45027026835 fue success en 82941b8 y Backend 5049dea, con backend/lint/build/responsive/E2E integrados. No incluye los nuevos cambios Front aún locales.
+# Continuación — revalidación de Driver bajo lock — 2026-11-22
+
+- Auditoría independiente de RoutesController encontró ventana TOCTOU en PUT `/Routes/{id}/status`: controller autorizaba con la asignación anterior, command bloqueaba y recargaba sin comparar nuevamente al Driver actor.
+- Backend cambia `ChangeRouteStatusCommand.Execute` para recibir el Driver/User solicitante y repetir la autorización post-lock/post-reload, incluyendo Driver activo. Nueva prueba simula reasignación justo al adquirir lock y afirma que no hay cambio de estado.
+- Suite Release local 78/78, test nuevo 1/1 y build Release 0 warnings/0 errors. Error inicial CS1061/CS9113 del fixture corregido y documentado en ERROR_LOG. Pendiente Actions del backend.
+- Front relacionado está limpio en `505d6c3`; Actions integrada `45028577152` pasó previamente en `da70521` con backend `f2f18cd`, E2E 20/20. El commit Front posterior sólo actualizó documentos.
+- Misión activa: continuar CRUD/responsive, agregar HTTP backend del ownership Driver mismo tenant y ampliar cobertura outbox en test automatizado. Política Admin delegado sigue pendiente de decisión; SMTP externo y app móvil nativa aplazada.

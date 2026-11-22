@@ -144,14 +144,23 @@ namespace fletflow.Api.Controllers
         [Authorize(Roles = "Admin,Manager,Logistics,Driver")]
         public async Task<IActionResult> ChangeStatus(Guid id, [FromBody] ChangeRouteStatusRequest request)
         {
+            Guid? requestingDriverId = null;
+            Guid? requestingUserId = null;
             if (User.IsInRole("Driver"))
             {
                 var route = await _unitOfWork.Routes.GetByIdAsync(id);
                 if (route is null || !await IsCurrentDriverAssigned(route))
                     return NotFound();
+
+                requestingUserId = GetUserIdFromClaims();
+                if (!requestingUserId.HasValue)
+                    return Forbid();
+                requestingDriverId = await ResolveDriverIdAsync(requestingUserId.Value);
+                if (!requestingDriverId.HasValue)
+                    return Forbid();
             }
 
-            await _changeStatus.Execute(id, request.Status);
+            await _changeStatus.Execute(id, request.Status, requestingDriverId, requestingUserId);
             return NoContent();
         }
 

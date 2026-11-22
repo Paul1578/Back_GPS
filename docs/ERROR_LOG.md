@@ -853,3 +853,7 @@ Cada cambio de API debe incluir validación de compilación, migraciones si apli
 - Solución: comparar el número de intentos final con el valor capturado antes de reiniciar y exigir que aumente, además del tipo de fallo SMTP esperado.
 - Repetición en MySQL 8 descartable: antes 1 fila/0 intentos; después 1 intento/InvalidOperationException. Aprobado.
 - Prevención: probar la propiedad del sistema (contador aumenta frente a baseline) en vez de asumir cuándo el worker alcanzó su primer poll.
+# 2026-11-22 — Sombreado de parámetros en prueba de carrera de Driver
+
+- Error: la primera compilación de `ChangeRouteStatusAuthorizationTests` falló con `CS1061` porque el parámetro del constructor primario `vehicleId` quedó sombreado por un parámetro del método y `this.vehicleId` no es miembro de la clase. También emitió `CS9113` por el parámetro de constructor sin uso.
+- Solución: convertir el fixture de prueba a clase explícita con campos `_vehicleId`, `_newDriverId` y `_routes`. La prueba enfocada pasó 1/1 y la suite completa 78/78.

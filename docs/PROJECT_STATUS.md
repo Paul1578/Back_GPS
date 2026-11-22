@@ -318,3 +318,9 @@ Nota de actualización: algunos resultados históricos de registro público más
 
 - Commit 5049dea validado por Actions 45027017954: build Release 0 warnings, xUnit 77/77, smoke HTTP/MySQL tenant/outbox y concurrencia rutas success; cleanup de contenedor success.
 - Front Actions 45027026835 también pasó en Front 82941b8 y backend feature branch; ese run es previo a los nuevos casos E2E de filtros/roles/responsive.
+# Autorización Driver al cambiar estado — cerrada con regresión de carrera
+
+- Auditoría independiente señaló una ventana TOCTOU: `RoutesController` verificaba asignación antes de llamar al command, mientras `ChangeRouteStatusCommand` bloqueaba y recargaba la ruta sin volver a validar al Driver actor.
+- El command ahora recibe los IDs del Driver y usuario solicitantes; después del lock y reload verifica que el Driver siga activo y que continúe asignado, incluyendo compatibilidad con rutas históricas que guardan `UserId`. Rechazo uniforme mediante `KeyNotFoundException`.
+- Nueva prueba `ChangeRouteStatusAuthorizationTests` sustituye la ruta al momento del lock para simular reasignación concurrente; demuestra que el Driver antiguo no cambia estado ni persiste modificaciones.
+- Prueba enfocada 1/1; suite backend Release `dotnet test ... -m:1`: **78/78**, cero fallidas/omitidas; `dotnet build -c Release --no-restore -m:1`: 0 warnings/0 errors. Actions del commit con el cambio pendiente.

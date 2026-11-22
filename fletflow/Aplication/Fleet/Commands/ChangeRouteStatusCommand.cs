@@ -25,7 +25,11 @@ namespace fletflow.Application.Fleet.Commands
             _drivers = drivers;
         }
 
-        public async Task Execute(Guid id, RouteStatus status)
+        public async Task Execute(
+            Guid id,
+            RouteStatus status,
+            Guid? requestingDriverId = null,
+            Guid? requestingUserId = null)
         {
             if (!Enum.IsDefined(typeof(RouteStatus), status))
                 throw new ArgumentException("Estado de ruta no válido.", nameof(status));
@@ -39,6 +43,18 @@ namespace fletflow.Application.Fleet.Commands
                 await _uow.LockRouteAssignmentAsync(route.VehicleId, route.DriverId, id);
                 route = await _routes.GetByIdAsync(id)
                     ?? throw new KeyNotFoundException("Route not found.");
+
+                // Revalidate Driver ownership after acquiring the same route and assignment
+                // locks used by reassignment. The controller's earlier check alone leaves a
+                // window where a Driver could be removed from the route before this update.
+                if (requestingDriverId.HasValue)
+                {
+                    var requestingDriver = await _drivers.GetByIdAsync(requestingDriverId.Value);
+                    var stillAssigned = route.DriverId == requestingDriverId.Value
+                        || requestingUserId.HasValue && route.DriverId == requestingUserId.Value;
+                    if (requestingDriver?.IsActive != true || !stillAssigned)
+                        throw new KeyNotFoundException("Route not found.");
+                }
 
                 if (!route.IsActive)
                     throw new InvalidOperationException("Cannot change the status of an inactive route.");

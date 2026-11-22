@@ -15,7 +15,7 @@ namespace fletflow.Infrastructure.Security
             _jwtSettings = jwtOptions.Value;
         }
 
-        public string GenerateToken(Guid userId, string username, string email, string role, Guid ownerUserId)
+        public string GenerateToken(Guid userId, string username, string email, string role, Guid ownerUserId, int tokenVersion = 0)
         {
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtSettings.Key));
 
@@ -25,6 +25,7 @@ namespace fletflow.Infrastructure.Security
                 new Claim(JwtRegisteredClaimNames.UniqueName, username),
                 new Claim(JwtRegisteredClaimNames.Email, email),
                 new Claim("owner_id", ownerUserId.ToString()),
+                new Claim("token_version", tokenVersion.ToString(System.Globalization.CultureInfo.InvariantCulture)),
                 new Claim(ClaimTypes.Role, role.Trim())
             };
 

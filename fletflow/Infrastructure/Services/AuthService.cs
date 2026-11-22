@@ -192,7 +192,7 @@ namespace fletflow.Infrastructure.Services
                 throw new InvalidOperationException("La cuenta debe tener exactamente un rol antes de iniciar sesión.");
             var role = user.UserRoles.First().Role.Name.Trim();
 
-            var access = _jwtService.GenerateToken(user.Id, user.Username, user.Email, role, user.OwnerUserId ?? user.Id);
+            var access = _jwtService.GenerateToken(user.Id, user.Username, user.Email, role, user.OwnerUserId ?? user.Id, user.TokenVersion);
 
             var raw = RefreshTokenFactory.Create();
             var hash = TokenHashing.Sha256(raw);
@@ -213,7 +213,7 @@ namespace fletflow.Infrastructure.Services
         private AuthResponseDto BuildResponse(User user, string refreshRaw, DateTime rtExp)
         {
             var role = user.UserRoles.First().Role.Name.Trim();
-            var access = _jwtService.GenerateToken(user.Id, user.Username, user.Email, role, user.OwnerUserId ?? user.Id);
+            var access = _jwtService.GenerateToken(user.Id, user.Username, user.Email, role, user.OwnerUserId ?? user.Id, user.TokenVersion);
 
             return new AuthResponseDto
             {

@@ -61,3 +61,7 @@
 - El cambio de rol y el inicio de ruta comparten lock de la asignación para preservar el estado si llegan simultáneamente.
 - Al cambiar el rol, access tokens con el rol anterior dejan de autenticar y refresh tokens previos se revocan.
 - Verificación en MySQL: la carrera sólo puede dejar ruta en progreso con Driver activo y Vehicle OnRoute, o ruta pendiente con Driver inactivo, rol Logistics y Vehicle Available.
+
+## Sesiones después de cambiar contraseña — 2026-11-21
+
+Cambiar, restablecer o activar una contraseña incrementa `User.TokenVersion`, revoca refresh tokens y hace que JWT previos sean rechazados en la siguiente solicitud autenticada. El usuario debe volver a iniciar sesión. Se persiste en `Users.TokenVersion`, default 0 para conservar compatibilidad de registros existentes; la migración aditiva se aplica antes de usar la versión nueva de la API.

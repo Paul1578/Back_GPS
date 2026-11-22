@@ -209,3 +209,9 @@ La invitación envía sólo el enlace de activación; el usuario fija su contras
 - `PasswordRecoveryCommandTests`: cuatro pruebas con BCrypt real y repositorios controlados; comprueba cambio de hash, token de un uso, revocación de sesiones, limpieza de `MustChangePassword` y rechazos de token usado/confirmación distinta.
 - Suite completa `dotnet test BackEnd_Gps.sln --configuration Release --no-restore -m:1`: **54/54**, sin fallos ni omisiones. No se envió SMTP.
 - En este entorno usar `/home/leonardo/.dotnet/dotnet`.
+
+## Cambio de contraseña revoca JWT antiguos — 2026-11-21
+
+- Smoke HTTP agrega cambio de contraseña autenticado: access token y refresh previos deben dar 401, contraseña anterior debe fallar y la nueva debe iniciar sesión.
+- `PasswordRecoveryCommandTests` comprueba que reset/activación incrementan `TokenVersion` junto con hash, uso de token y revocación refresh.
+- Suite local Release: 54/54; build 0 warnings/0 errores; `bash -n scripts/smoke-tenant-http.sh` correcto. Integración contra MySQL queda en Actions después del push.

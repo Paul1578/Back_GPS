@@ -120,3 +120,9 @@ Fecha de corte: 2026-11-21.
 - Cuatro pruebas nuevas cubren reset/activación: persistencia con BCrypt real, consumo de token, revocación de refresh tokens, limpieza de `MustChangePassword`, token usado y confirmación desigual.
 - Suite backend Release: **54/54**; ambos workflows publicados terminaron `success`: backend `44982244087`, frontend `44982243409`.
 - No se envió correo. SMTP sigue dependiendo de credenciales externas vigentes. Continúa pendiente ampliar CRUD/responsive; móvil nativo está pospuesto. La misión sigue activa.
+
+## Invalidación de JWT tras cambio de contraseña — 2026-11-21
+
+- Corregido hueco: la rotación de refresh no invalidaba access JWT ya emitidos. `TokenVersion` persistida incrementa en cambio/reset/activación; middleware JWT verifica claim y versión actual.
+- Migración aditiva añade `Users.TokenVersion` con default 0; una comprobación al estilo de cambio de contraseña verifica 401 para token viejo y login con contraseña nueva. Smoke MySQL se ejecutará en Actions después del push.
+- xUnit 54/54, Release build 0 warnings/0 errors; `bash -n` del smoke y `git diff --check` correctos. No marcar completo hasta validar integración CI y seguir cobertura restante.

@@ -443,3 +443,14 @@ Cada cambio de API debe incluir validación de compilación, migraciones si apli
 
 - El primer build de `PasswordRecoveryCommandTests` usó rutas `fletflow.Domain...` totalmente calificadas dentro del namespace `BackEnd_Gps.Tests`; C# resolvió el prefijo como `BackEnd_Gps.fletflow` y reportó interfaces de IUnitOfWork no implementadas.
 - Se importó `fletflow.Domain.Fleet.Repositories` y se usaron los nombres de interfaz cortos en las implementaciones explícitas. Compilación y suite completa posteriores: 54/54.
+
+## 2026-11-21 — dotnet-ef usó host del sistema y no pudo comprobar migración en DB — CORREGIDO/DOCUMENTADO
+
+- La herramienta local inicialmente invocó `/usr/bin/dotnet` y falló porque no tiene `host/fxr`; se instaló `dotnet-ef` 9.0.10 en `/tmp` y se ejecutó con `DOTNET_ROOT=/home/leonardo/.dotnet` y ese SDK en `PATH`.
+- Al regenerar la migración, `migrations remove` no pudo consultar si estaba aplicada: acceso denegado para `root` desde el host del contenedor. La migración recién generada no se había aplicado; EF la retiró del código/snapshot y se regeneró como `20261122040123_InvalidateAccessTokensAfterPasswordChange`. Ningún dato o esquema local fue modificado por estas operaciones de scaffold.
+- Validación de aplicación pendiente mediante workflow MySQL descartable, que ejecuta las migraciones desde cero; el acceso root local no se reutilizará para probar ni migrar una base persistente.
+
+## 2026-11-21 — Llamada existente a GenerateToken quedó incompatible — CORREGIDO
+
+- El primer build tras agregar el argumento `tokenVersion` encontró el test `TenantIsolationTests` que llama directamente al generador.
+- El argumento ahora tiene default 0 para compatibilidad de generación directa; AuthService siempre pasa la versión persistida real. Suite posterior pasó 54/54.

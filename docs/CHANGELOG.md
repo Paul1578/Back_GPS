@@ -113,3 +113,8 @@
 
 - Se agregaron pruebas de reset/activación y revocación de sesiones.
 - Suite backend Release 54/54; Actions backend y frontend de los commits publicados finalizaron correctamente.
+
+## 2026-11-21 — Invalidación inmediata de JWT de password anterior
+
+- Se agregó versión de credenciales por usuario y validación del claim en cada request; cualquier cambio de password invalida inmediatamente access y refresh previos.
+- Migración EF Core aditiva `TokenVersion` default 0; smoke HTTP verifica cambio de contraseña, tokens revocados y login con password nueva.

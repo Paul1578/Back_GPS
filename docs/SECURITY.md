@@ -68,3 +68,10 @@ El smoke anónimo solicitó rol Admin en el registro; la fila persistida conserv
 - Si el usuario tiene Driver asociado, el comando toma el lock de Vehicle/Driver compartido con la transición de ruta y vuelve a leer el estado bajo lock. Se impide la carrera que podía dejar ruta InProgress con Driver desactivado.
 - La consulta de usuario para esa relectura es `AsNoTracking`, así que no devuelve una entidad cargada antes de esperar por el lock.
 - Pruebas HTTP/MySQL descartables comprobaron 401 para access/refresh viejos y estados válidos de la carrera inicio vs cambio Driver→Logistics. Queda pendiente repetir en Actions tras push.
+
+## Revocación inmediata al cambiar contraseña — 2026-11-21
+
+- Hallazgo: los comandos de cambio/restablecimiento revocaban refresh tokens, pero un access JWT ya emitido seguía aceptándose hasta expirar. La revocación de sesión no era inmediata.
+- Se agregó `Users.TokenVersion` (migración aditiva con default 0). Cada cambio/reset/activación incrementa la versión y emite JWT con claim `token_version`; `OnTokenValidated` compara el claim con la versión actual en DB. Cambiar contraseña invalida access y refresh anteriores inmediatamente.
+- La operación mantiene password hash, incremento y revocación de refresh dentro del mismo `UnitOfWork`/commit. La migración debe aplicarse al desplegar esta rama; los tokens anteriores al cambio, sin claim de versión, requerirán iniciar sesión nuevamente.
+- xUnit: 54/54. Smoke HTTP de cambio de contraseña extendido para MySQL; validar en el nuevo run Actions antes de declarar verificado extremo a extremo.

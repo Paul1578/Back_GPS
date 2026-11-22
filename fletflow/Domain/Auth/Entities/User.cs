@@ -6,6 +6,7 @@ namespace fletflow.Domain.Auth.Entities
         public string Username { get; set; } = default!;
         public string Email { get; set; } = default!;
         public string PasswordHash { get; set; } = default!;
+        public int TokenVersion { get; set; }
         public bool IsActive { get; set; } = true;
         public bool MustChangePassword { get; set; } = false;
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

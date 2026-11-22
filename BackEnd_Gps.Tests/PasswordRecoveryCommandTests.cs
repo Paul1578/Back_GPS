@@ -21,6 +21,7 @@ public class PasswordRecoveryCommandTests
 
         Assert.True(new PasswordHasher().Verify("NewPass123", scenario.User.PasswordHash));
         Assert.NotEqual("old-hash", scenario.User.PasswordHash);
+        Assert.Equal(1, scenario.User.TokenVersion);
         Assert.NotNull(scenario.Token.UsedAt);
         Assert.Equal(1, scenario.RefreshTokens.RevokeAllCount);
         Assert.Equal(1, scenario.CommitCount);
@@ -67,6 +68,7 @@ public class PasswordRecoveryCommandTests
         await command.ExecuteAsync(scenario.RawToken, "Welcome123", "Welcome123");
 
         Assert.True(new PasswordHasher().Verify("Welcome123", scenario.User.PasswordHash));
+        Assert.Equal(1, scenario.User.TokenVersion);
         Assert.False(scenario.User.MustChangePassword);
         Assert.NotNull(scenario.Token.UsedAt);
         Assert.Equal(1, scenario.RefreshTokens.RevokeAllCount);
@@ -118,11 +120,13 @@ public class PasswordRecoveryCommandTests
             public Task UpdatePasswordHashAsync(Guid userId, string newPasswordHash)
             {
                 user.PasswordHash = newPasswordHash;
+                user.TokenVersion++;
                 return Task.CompletedTask;
             }
             public Task UpdatePasswordAndClearFlagAsync(Guid userId, string newPasswordHash, bool clearMustChangePassword)
             {
                 user.PasswordHash = newPasswordHash;
+                user.TokenVersion++;
                 if (clearMustChangePassword) user.MustChangePassword = false;
                 return Task.CompletedTask;
             }

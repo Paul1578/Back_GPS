@@ -312,6 +312,11 @@ namespace BackEnd_Gps.fletflow.Infrastructure.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("varchar(500)");
 
+                    b.Property<int>("TokenVersion")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(0);
+
                     b.Property<string>("Username")
                         .IsRequired()
                         .HasMaxLength(100)

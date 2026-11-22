@@ -150,6 +150,13 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                 }
 
                 var currentRoles = user.UserRoles.Select(userRole => userRole.Role.Name.Trim()).ToArray();
+                var tokenVersionValue = context.Principal?.FindFirstValue("token_version");
+                if (!int.TryParse(tokenVersionValue, out var tokenVersion) || tokenVersion != user.TokenVersion)
+                {
+                    context.Fail("La contraseña cambió. Inicia sesión nuevamente.");
+                    return;
+                }
+
                 var tokenRoles = context.Principal?.FindAll(ClaimTypes.Role)
                     .Select(claim => claim.Value.Trim()).ToArray() ?? Array.Empty<string>();
                 if (currentRoles.Length != 1 || tokenRoles.Length != 1 ||

@@ -752,18 +752,20 @@ Cada cambio de API debe incluir validación de compilación, migraciones si apli
 
 - Resolución confirmada por Actions `45020146775`: migración y smoke MySQL pasaron, incluyendo comparación a precisión `datetime(6)` antes/después de editar.
 
-## 2026-11-22 — Access JWT revivía al reactivar cuenta — CORREGIDO LOCAL; ACTIONS PENDIENTE
+## 2026-11-22 — Access JWT revivía al reactivar cuenta — CORREGIDO Y VALIDADO
 
 - Auditoría backend confirmó que desactivar sólo revocaba refresh tokens. El access JWT fallaba mientras `IsActive=false`, pero volvía a cumplir las validaciones al reactivar porque `TokenVersion` no cambiaba.
 - Solución local: incrementar `TokenVersion` en cada transición de estado; desactivación revoca refresh tokens y reactivación conserva la invalidez del token viejo. Se añadió xUnit y smoke que reutilizan el mismo JWT después de reactivar y comprueban login/token nuevos.
-- Verificación local: Release xUnit **74/74**; smoke HTTP/MySQL 8 aislado aprobado, incluido token viejo 401 después de reactivar y nuevo JWT 200; cleanup verificado. Falta Actions en el SHA de esta corrección.
+- Verificación local: Release xUnit **74/74**; smoke HTTP/MySQL 8 aislado aprobado, incluido token viejo 401 después de reactivar y nuevo JWT 200; cleanup verificado. Actions `45021088919` confirmó el cambio.
 - Prevención: probar el access token antes/durante/después de reactivar, no sólo el refresh token al desactivar.
+- Actions `45021088919` confirmó backend Release, xUnit **74/74**, prueba HTTP/MySQL de reactivación y smoke concurrente; cleanup correcto.
 
-## 2026-11-22 — Admin de tenant podía mutar catálogo global de Roles — CORREGIDO LOCAL; ACTIONS PENDIENTE
+## 2026-11-22 — Admin de tenant podía mutar catálogo global de Roles — CORREGIDO Y VALIDADO
 
 - `Roles` es tabla global sin owner y el API autorizaba `POST`/`DELETE` a cualquier rol Admin tenant. El frontend no consume esas mutaciones y no existe rol/endpoint de administrador de plataforma.
 - Solución local: conservar `GET /Roles` y devolver 403 a mutaciones tenant para evitar que una empresa altere roles compartidos. Smoke HTTP verifica el contrato sin crear ni borrar roles.
-- Verificación local: incluido en smoke MySQL 8 aprobado; Actions de este SHA pendiente.
+- Verificación local: incluido en smoke MySQL 8 aprobado; Actions `45021088919` pasó.
+- Actions `45021088919` confirmó GET 200 y mutaciones POST/DELETE 403 durante smoke HTTP/MySQL.
 
 ## 2026-11-22 — Inspección usó rutas/nombres de archivo supuestos — CORREGIDO
 
@@ -776,3 +778,9 @@ Cada cambio de API debe incluir validación de compilación, migraciones si apli
 - Un parche esperaba una etiqueta de login que no coincidía con el script (`Login tenant A`); `apply_patch` rechazó el cambio íntegro, sin modificar archivos.
 - Solución: localizar la sección exacta con `rg`/`sed` y volver a aplicar cambios con las anclas existentes.
 - Prevención: comprobar el contexto vigente antes de redactar el parche.
+
+## 2026-11-22 — Corrección documental reutilizó una línea ya actualizada — CORREGIDO
+
+- Un segundo parche buscaba el estado “Actions pendiente” tras una aplicación anterior que ya lo había sustituido; `apply_patch` rechazó ese parche completo y no alteró los archivos.
+- Solución: consultar la ocurrencia actual con `rg` y actualizar sólo el texto restante con contexto exacto.
+- Prevención: tras aplicar un parche, releer el resultado antes de preparar otro que dependa de sus líneas.

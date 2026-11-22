@@ -261,11 +261,12 @@ Nota de actualización: algunos resultados históricos de registro público más
 
 - Hallazgo: el dashboard titulaba “Actividad Reciente” sobre un endpoint sin orden y Gestión de Rutas mostraba `PlannedStart` (o la hora actual inventada) como fecha de creación.
 - Migración aditiva nullable `CreatedAtUtc`; nuevas rutas guardan UTC, las existentes quedan sin fecha histórica inventada. API y repositorio exponen/ordenan datos; update preserva creación. Front ordena recientes con fecha de creación y muestra “No registrada” en históricos sin fecha.
-- Local Back Release build 0 warnings/errors, xUnit **73/73**, `bash -n` en ambos smokes; Front lint/build/discovery **18** y diff-check pasan. E2E/API/MySQL de Actions pendiente.
+- Local Back Release build 0 warnings/errors, xUnit **73/73**, `bash -n` en ambos smokes; Front lint/build/discovery **18** y diff-check pasan. E2E/API/MySQL de Actions `45021088919` pasó.
 - Primer Actions `45019828759`: build/xUnit pasaron; smoke encontró comparación string demasiado estricta entre precisión .NET y `datetime(6)`. Se normalizó a microsegundos y se verifica el valor MySQL antes/después. Actions `45020146775` pasó build, xUnit **73/73**, migración y smoke HTTP/MySQL más concurrencia; cleanup correcto.
 
-## Seguridad de sesiones y catálogo global de Roles — en validación
+## Seguridad de sesiones y catálogo global de Roles — validada
 
 - Hallazgo: access JWT podía volver a funcionar después de reactivar una cuenta; ahora se incrementa `TokenVersion` en ambas transiciones y se revoca refresh al desactivar.
 - Hallazgo: Admin tenant podía mutar `Roles` global. GET se conserva; POST/DELETE tenant quedan denegados (403) hasta que exista administración de plataforma.
-- Local Backend Release xUnit **74/74**; smoke API/MySQL desechable pasó con token antiguo rechazado tras reactivación, nuevo login permitido, mutaciones de Roles denegadas y cleanup completo. Actions pendiente.
+- Local Backend Release xUnit **74/74**; smoke API/MySQL desechable pasó con token antiguo rechazado tras reactivación, nuevo login permitido, mutaciones de Roles denegadas y cleanup completo. Actions `45021088919` pasó.
+- Actions `45021088919` pasó Release build/xUnit **74/74**, smoke tenant/estado/Roles HTTP/MySQL, concurrencia y cleanup.

@@ -29,27 +29,22 @@ namespace fletflow.Api.Controllers
             return Ok(roles);
         }
 
-        public class CreateRoleDto { public string Name { get; set; } = default!; }
-
         /// <summary>
-        /// Crea un nuevo rol.
+        /// La creación está reservada a una futura administración de plataforma.
         /// </summary>
-        /// <param name="dto">Datos del rol.</param>
-        /// <response code="201">Rol creado correctamente.</response>
-        /// <response code="400">Datos inválidos o rol ya existe.</response>
+        /// <response code="403">Un Admin de empresa no puede modificar el catálogo global.</response>
         [HttpPost]
-        public IActionResult Create([FromBody] CreateRoleDto dto)
+        public IActionResult Create()
         {
             // Roles are a shared global catalog. Tenant Admins must not mutate it.
             return Forbid();
         }
 
         /// <summary>
-        /// Elimina un rol por nombre.
+        /// La eliminación está reservada a una futura administración de plataforma.
         /// </summary>
         /// <param name="name">Nombre del rol.</param>
-        /// <response code="200">Rol eliminado correctamente.</response>
-        /// <response code="404">Rol no encontrado.</response>
+        /// <response code="403">Un Admin de empresa no puede modificar el catálogo global.</response>
         [HttpDelete("{name}")]
         public IActionResult Delete(string name)
         {

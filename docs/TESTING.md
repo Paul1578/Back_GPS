@@ -336,4 +336,4 @@ La invitación envía sólo el enlace de activación; el usuario fija su contras
 
 - `UpdateUserCommandTests` comprueba incremento persistido de `TokenVersion` al desactivar/reactivar y que repetir el estado no rota sesiones.
 - `smoke-tenant-http.sh` conserva el mismo JWT: `/Auth/me` devuelve 401 durante la baja y tras reactivar; una sesión nueva devuelve 200. Comprueba además GET `/Roles` 200 y POST/DELETE 403 para Admin de tenant.
-- Release xUnit local **74/74**, smoke contra MySQL 8/API efímeros aprobado, cleanup verificado; Actions en espera para el commit nuevo.
+- Release xUnit local **74/74**, smoke contra MySQL 8/API efímeros aprobado, cleanup verificado. Actions `45021088919` también pasó build, 74/74, smoke HTTP/MySQL y concurrencia.

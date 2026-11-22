@@ -264,4 +264,5 @@
 
 - Estado de usuario ahora incrementa `TokenVersion` en cada transición, incluida reactivación; una sesión anterior no puede revivir. Repetir el mismo estado no cambia la versión. Refresh tokens se revocan al desactivar.
 - Los Admin de tenant mantienen lectura de `/Roles`; POST/DELETE responden 403 porque `Roles` es catálogo global sin propietario ni rol de plataforma definido.
-- xUnit Release **74/74**. Smoke HTTP/MySQL 8 efímero pasó incluyendo token viejo 401 tras reactivación, sesión nueva 200, catálogo protegido, multi-tenant y cleanup cero residuos. Actions de este cambio pendiente.
+- xUnit Release **74/74**. Smoke HTTP/MySQL 8 efímero pasó incluyendo token viejo 401 tras reactivación, sesión nueva 200, catálogo protegido, multi-tenant y cleanup cero residuos. Actions `45021088919` confirmó este cambio.
+- Actions `45021088919` para `eaeb495` pasó: Release/xUnit **74/74**, smoke HTTP/MySQL y concurrencia con cleanup exitoso.

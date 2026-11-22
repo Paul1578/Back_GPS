@@ -27,6 +27,7 @@ done
 work_dir="$(mktemp -d)"
 token=""
 prefix="CQ$(date +%s%N | tail -c 7)_"
+role_race_user_email=""
 cleanup() {
   local status=$?
   trap - EXIT
@@ -37,6 +38,12 @@ DELETE rp FROM RoutePositions rp JOIN Routes r ON r.Id=rp.RouteId WHERE r.Name L
 DELETE FROM Routes WHERE Name LIKE '${prefix}%';
 DELETE FROM Drivers WHERE DocumentNumber LIKE '${prefix}%';
 DELETE FROM Vehicles WHERE Plate LIKE '${prefix}%';
+SET @qa_user_id=(SELECT Id FROM Users WHERE Email='${role_race_user_email}');
+DELETE FROM Drivers WHERE UserId=@qa_user_id;
+DELETE FROM RefreshTokens WHERE UserId=@qa_user_id;
+DELETE FROM PasswordResetTokens WHERE UserId=@qa_user_id;
+DELETE FROM UserRoles WHERE UserId=@qa_user_id;
+DELETE FROM Users WHERE Id=@qa_user_id;
 COMMIT;
 SQL
   fi
@@ -46,9 +53,10 @@ SQL
 trap cleanup EXIT
 
 request() {
-  local method="$1" path="$2" payload="${3:-}"
+  local method="$1" path="$2" payload="${3:-}" request_token="$token"
+  if (( $# >= 4 )); then request_token="$4"; fi
   local args=(-sS --max-time 30 -o "$work_dir/response.json" -w '%{http_code}' -X "$method"
-    -H 'Content-Type: application/json' -H "Authorization: Bearer $token")
+    -H 'Content-Type: application/json' -H "Authorization: Bearer $request_token")
   [[ -z "$payload" ]] || args+=(-d "$payload")
   http_status="$(curl "${args[@]}" "$api_base$path")"
 }
@@ -182,6 +190,41 @@ if [[ "$route_state" != "1:1:1" && "$route_state" != "0:0:0" ]]; then
   exit 1
 fi
 
+role_race_user_email="fletflow.e2e.role.race.$(date +%s%N | tail -c 9)@example.test"
+role_race_password="$(openssl rand -hex 24)"
+role_race_suffix="${prefix//_/}RR"
+request POST /Users "$(jq -nc --arg email "$role_race_user_email" --arg password "$role_race_password" --arg username "$role_race_suffix" --arg document "$role_race_suffix" '{username:$username,email:$email,password:$password,roleName:"Driver",firstName:"Role",lastName:"Race",documentNumber:$document,phoneNumber:"0990000000"}')"
+expect 200 "Crear Driver para carrera cambio de rol/inicio"
+role_race_user_id="$(jq -er '.id' "$work_dir/response.json")"
+role_race_driver_id="$(jq -er '.driverId' "$work_dir/response.json")"
+mysql --protocol=TCP --host="$mysql_host" --user="$mysql_user" "$db_name" \
+  -e "UPDATE Users SET IsActive=1, MustChangePassword=0 WHERE Id='$role_race_user_id';" >/dev/null
+role_race_vehicle="$(create_vehicle "${prefix}RRV")"
+request POST /Auth/login "$(jq -nc --arg email "$role_race_user_email" --arg password "$role_race_password" '{email:$email,password:$password}')"
+expect 200 "Login Driver para validar autorización de creación"
+role_race_driver_token="$(jq -er '.token // .accessToken' "$work_dir/response.json")"
+role_race_points='[{"lat":-0.18,"lng":-78.46,"name":"Origin"},{"lat":-0.19,"lng":-78.47,"name":"Destination"}]'
+request POST /Routes "$(jq -nc --arg name "${prefix}driver_forbidden_create" --arg vehicleId "$role_race_vehicle" --arg driverId "$role_race_driver_id" --argjson points "$role_race_points" '{name:$name,vehicleId:$vehicleId,driverId:$driverId,points:$points}')" "$role_race_driver_token"
+expect 403 "Denegar creación de ruta a Driver"
+role_race_route="$(create_route "${prefix}role_change_race" "$role_race_vehicle" "$role_race_driver_id" "2039-04-05T10:00:00Z" "2039-04-05T11:00:00Z")"
+concurrent_request PUT "/Routes/$role_race_route/status" '{"status":1}' start_vs_role_change & role_start_pid=$!
+concurrent_request PUT "/Users/$role_race_user_id/role" '{"roleName":"Logistics"}' role_change_vs_start & role_change_pid=$!
+wait "$role_start_pid"
+wait "$role_change_pid"
+role_start_status="$(cat "$work_dir/start_vs_role_change.status")"
+role_change_status="$(cat "$work_dir/role_change_vs_start.status")"
+if ! { [[ "$role_start_status" == 204 && "$role_change_status" == 409 ]] || [[ "$role_start_status" == 409 && "$role_change_status" == 200 ]]; }; then
+  echo "Inicio/cambio de rol concurrente: esperado 204/409 o 409/200; recibidos $role_start_status/$role_change_status." >&2
+  cat "$work_dir/start_vs_role_change.json" "$work_dir/role_change_vs_start.json" >&2
+  exit 1
+fi
+role_race_state="$(mysql --protocol=TCP --host="$mysql_host" --user="$mysql_user" --batch --skip-column-names "$db_name" \
+  -e "SELECT CONCAT(r.Status, ':', CAST(d.IsActive AS UNSIGNED), ':', CAST(v.Status AS UNSIGNED), ':', ro.Name) FROM Routes r JOIN Drivers d ON d.Id=r.DriverId JOIN Vehicles v ON v.Id=r.VehicleId JOIN Users u ON u.Id=d.UserId JOIN UserRoles ur ON ur.UserId=u.Id JOIN Roles ro ON ro.Id=ur.RoleId WHERE r.Id='$role_race_route';")"
+if [[ "$role_race_state" != "1:1:1:Driver" && "$role_race_state" != "0:0:0:Logistics" ]]; then
+  echo "Carrera cambio de rol/inicio dejó estado incoherente (Route:Driver:Vehicle:Role=$role_race_state)." >&2
+  exit 1
+fi
+
 guard_vehicle="$(create_vehicle "${prefix}GV")"
 guard_driver="$(create_driver "${prefix}GD")"
 guard_route="$(create_route "${prefix}guard_in_progress" "$guard_vehicle" "$guard_driver" "2037-04-05T10:00:00Z" "2037-04-05T11:00:00Z")"
@@ -189,6 +232,18 @@ request PUT "/Drivers/$guard_driver/assign-vehicle" "$(jq -nc --arg vehicleId "$
 expect 204 "Asignar vehículo al Driver de protección"
 request PUT "/Routes/$guard_route/status" '{"status":1}'
 expect 204 "Iniciar ruta de protección"
+mysql --protocol=TCP --host="$mysql_host" --user="$mysql_user" "$db_name" \
+  -e "UPDATE Vehicles SET IsActive=0 WHERE Id='$guard_vehicle';" >/dev/null
+request POST "/Vehicles/$guard_vehicle/reactivate"
+expect 409 "Impedir reactivar vehículo con ruta en curso"
+guard_reactivation_state="$(mysql --protocol=TCP --host="$mysql_host" --user="$mysql_user" --batch --skip-column-names "$db_name" \
+  -e "SELECT CONCAT(r.Status, ':', CAST(v.IsActive AS UNSIGNED)) FROM Routes r JOIN Vehicles v ON v.Id=r.VehicleId WHERE r.Id='$guard_route';")"
+if [[ "$guard_reactivation_state" != "1:0" ]]; then
+  echo "La reactivación de vehículo con ruta en curso alteró estado (RouteStatus:VehicleActive=$guard_reactivation_state)." >&2
+  exit 1
+fi
+mysql --protocol=TCP --host="$mysql_host" --user="$mysql_user" "$db_name" \
+  -e "UPDATE Vehicles SET IsActive=1 WHERE Id='$guard_vehicle';" >/dev/null
 request PUT "/Drivers/$guard_driver/unassign-vehicle" '{}'
 expect 409 "Impedir desasignar Driver en ruta"
 request DELETE "/Routes/$guard_route"
@@ -253,4 +308,4 @@ jq -e '(.points[1].status == 1 or .points[1].status == "InProgress") and (.point
   exit 1
 }
 
-echo "OK: concurrencia de agenda y paradas, protección de rutas/Driver/vehículo, vehículo inactivo y ciclo baja/reactivación; MySQL/API conserva estados coherentes."
+echo "OK: concurrencia de agenda, roles, rutas y paradas; protección de Driver/vehículo, vehículo inactivo y ciclo baja/reactivación; MySQL/API conserva estados coherentes."

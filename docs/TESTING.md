@@ -193,3 +193,13 @@ La invitación envía sólo el enlace de activación; el usuario fija su contras
 - Ejecución local final con DB descartable: ambos scripts pasaron y la trampa eliminó el schema temporal. `bash -n` y `git diff --check` correctos.
 
 - Ampliación de autorización real del smoke: Manager HTTP 200 en listados Vehicle/Driver/Route; Logistics HTTP 200 en Routes y HTTP 403 en Vehicles/Drivers; User 403 en flota/rutas; Driver se verifica en E2E autenticado. `smoke-tenant-http.sh` y `smoke-route-concurrency.sh` volvieron a pasar juntos en `fletflow_ci_validation_roles20261121`, DB descartada. Actions remoto para este lote aún pendiente.
+
+## Cambio de rol, sesiones y estados concurrentes — 2026-11-21
+
+- `dotnet test BackEnd_Gps.sln --configuration Release --no-restore`: **50/50**; `dotnet list ... package --vulnerable --include-transitive`: ningún paquete vulnerable.
+- `smoke-tenant-http.sh`: User/Manager/Logistics, aislamiento de tenant y cambio Logistics→User; access/refresh anteriores devuelven 401.
+- `smoke-route-concurrency.sh`: carreras de inicio/cambio Driver→Logistics y de estados de paradas; MySQL comprobó los estados que quedaron persistidos. Reactivación con ruta activa devuelve 409.
+- Ambas pruebas pasaron con API/MySQL de esquema temporal. Frontend autenticado Playwright **14/14** en Chrome/API/MySQL real. Limpieza y descarte de schema confirmados.
+- Build Release final 0 warnings/0 errors y audit NuGet sin vulnerables. Nuevos runs GitHub Actions pendientes; CI verde previo corresponde a commits anteriores.
+- Nuevo smoke de escritura MySQL aprobado: Manager crea Vehicle/Driver/Route y edita Route; Logistics edita/elimina Route y recibe 403 en Vehicle/Driver; User y Driver reciben 403 al crear Route. Esquema temporal y fixtures eliminados.
+- Registro anónimo que pide Admin termina con un solo rol User y recibe 403 en Vehicles; `logout-all` responde 200 y el refresh invalidado devuelve 401.

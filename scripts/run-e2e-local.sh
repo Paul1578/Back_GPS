@@ -13,6 +13,7 @@ fi
 
 frontend_env_file="$frontend_dir/.env.local"
 api_origin="${FLETFLOW_API_URL:-}"
+api_origin="${api_origin%/api}"
 client_api_base="${NEXT_PUBLIC_API_BASE_URL:-}"
 
 if [[ -f "$frontend_env_file" ]]; then

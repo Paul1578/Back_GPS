@@ -41,10 +41,15 @@ other_tenant_email=""
 restricted_user_email=""
 deactivated_user_email=""
 logistics_user_email=""
+logistics_user_id=""
+public_registration_email=""
 route_name=""
 plate=""
 restricted_attempt_plate=""
 document_number=""
+manager_vehicle_id=""
+manager_driver_id=""
+manager_route_id=""
 
 cleanup() {
   local status=$?
@@ -56,10 +61,13 @@ cleanup() {
     elif [[ -n "$route_name" ]]; then
       sql+=" DELETE rp FROM RoutePositions rp JOIN Routes r ON r.Id=rp.RouteId WHERE r.Name='$route_name'; DELETE FROM Routes WHERE Name='$route_name';"
     fi
+    if [[ -n "$manager_route_id" ]]; then sql+=" DELETE FROM RoutePositions WHERE RouteId='$manager_route_id'; DELETE FROM Routes WHERE Id='$manager_route_id';"; fi
     if [[ -n "$driver_id" ]]; then sql+=" DELETE FROM Drivers WHERE Id='$driver_id';"
     elif [[ -n "$document_number" ]]; then sql+=" DELETE FROM Drivers WHERE DocumentNumber='$document_number';"; fi
+    if [[ -n "$manager_driver_id" ]]; then sql+=" DELETE FROM Drivers WHERE Id='$manager_driver_id';"; fi
     if [[ -n "$vehicle_id" ]]; then sql+=" DELETE FROM Vehicles WHERE Id='$vehicle_id';"
     elif [[ -n "$plate" ]]; then sql+=" DELETE FROM Vehicles WHERE Plate='$plate';"; fi
+    if [[ -n "$manager_vehicle_id" ]]; then sql+=" DELETE FROM Vehicles WHERE Id='$manager_vehicle_id';"; fi
     if [[ -n "$restricted_attempt_plate" ]]; then sql+=" DELETE FROM Vehicles WHERE Plate='$restricted_attempt_plate';"; fi
     if [[ -n "$other_tenant_email" ]]; then
       sql+=" SET @qa_user_id=(SELECT Id FROM Users WHERE Email='$other_tenant_email'); DELETE FROM RefreshTokens WHERE UserId=@qa_user_id; DELETE FROM PasswordResetTokens WHERE UserId=@qa_user_id; DELETE FROM UserRoles WHERE UserId=@qa_user_id; DELETE FROM Users WHERE Id=@qa_user_id;"
@@ -72,6 +80,9 @@ cleanup() {
     fi
     if [[ -n "$logistics_user_email" ]]; then
       sql+=" SET @qa_user_id=(SELECT Id FROM Users WHERE Email='$logistics_user_email'); DELETE FROM RefreshTokens WHERE UserId=@qa_user_id; DELETE FROM PasswordResetTokens WHERE UserId=@qa_user_id; DELETE FROM UserRoles WHERE UserId=@qa_user_id; DELETE FROM Users WHERE Id=@qa_user_id;"
+    fi
+    if [[ -n "$public_registration_email" ]]; then
+      sql+=" SET @qa_user_id=(SELECT Id FROM Users WHERE Email='$public_registration_email'); DELETE FROM RefreshTokens WHERE UserId=@qa_user_id; DELETE FROM PasswordResetTokens WHERE UserId=@qa_user_id; DELETE FROM UserRoles WHERE UserId=@qa_user_id; DELETE FROM Users WHERE Id=@qa_user_id;"
     fi
     sql+=" COMMIT;"
     mysql --protocol=TCP --host="$mysql_host" --user="$mysql_user" "$db_name" -e "$sql" >/dev/null 2>&1 || {
@@ -107,6 +118,18 @@ request POST /Auth/login "$(jq -nc --arg email "$admin_email" --arg password "$a
 expect_status 200 "Login tenant A"
 token="$(jq -er '.token // .accessToken' "$work_dir/response.json")"
 
+public_registration_email="fletflow.e2e.register.ci.$(date +%s%N | tail -c 9)@example.test"
+public_registration_password="$(openssl rand -hex 24)"
+request POST /Auth/register "$(jq -nc --arg username "Public registration QA" --arg email "$public_registration_email" --arg password "$public_registration_password" '{username:$username,email:$email,password:$password,roleName:"Admin"}')" ""
+expect_status 200 "Registro público con intento de elevar rol"
+mysql --protocol=TCP --host="$mysql_host" --user="$mysql_user" "$db_name" \
+  --batch --skip-column-names -e "SELECT CONCAT(COUNT(DISTINCT ur.RoleId), ':', COALESCE(GROUP_CONCAT(DISTINCT LOWER(r.Name)), 'none')) FROM Users u LEFT JOIN UserRoles ur ON ur.UserId=u.Id LEFT JOIN Roles r ON r.Id=ur.RoleId WHERE u.Email='$public_registration_email';" >"$work_dir/registration_role.txt"
+registered_role_state="$(cat "$work_dir/registration_role.txt")"
+[[ "$registered_role_state" == "1:user" ]] || { echo "Registro público produjo roles inesperados ($registered_role_state)." >&2; exit 1; }
+public_registration_token="$(jq -er '.token // .accessToken' "$work_dir/response.json")"
+request GET /Vehicles "" "$public_registration_token"
+expect_status 403 "Denegar flota a registro público User"
+
 suffix="$(date +%s%N | tail -c 10)"
 restricted_user_email="fletflow.e2e.user.ci.$suffix@example.test"
 restricted_user_password="$(openssl rand -hex 24)"
@@ -136,6 +159,24 @@ deactivated_refresh_token="$(jq -er '.refreshToken' "$work_dir/response.json")"
 request GET /Vehicles "" "$deactivated_access_token"; expect_status 200 "Listar vehículos como Manager"
 request GET /Drivers "" "$deactivated_access_token"; expect_status 200 "Listar conductores como Manager"
 request GET /Routes "" "$deactivated_access_token"; expect_status 200 "Listar rutas como Manager"
+manager_plate="E2EM${suffix: -9}"
+manager_document="E2ED${suffix: -9}"
+role_points='[{"lat":-0.18,"lng":-78.46,"name":"Role origin"},{"lat":-0.19,"lng":-78.47,"name":"Role destination"}]'
+request POST /Vehicles "$(jq -nc --arg plate "$manager_plate" '{plate:$plate,brand:"CI Manager",model:"Fleet",year:2025}')" "$deactivated_access_token"
+expect_status 201 "Crear vehículo como Manager"
+manager_vehicle_id="$(jq -er '.id' "$work_dir/response.json")"
+request POST /Drivers "$(jq -nc --arg document "$manager_document" '{firstName:"CI Manager",lastName:"Driver",documentNumber:$document,phoneNumber:"0990000000"}')" "$deactivated_access_token"
+expect_status 201 "Crear Driver como Manager"
+manager_driver_id="$(jq -er '.id' "$work_dir/response.json")"
+manager_route_name="E2E manager route $suffix"
+manager_route_payload="$(jq -nc --arg name "$manager_route_name" --arg vehicleId "$manager_vehicle_id" --arg driverId "$manager_driver_id" --argjson points "$role_points" '{name:$name,cargoDescription:"Role matrix",vehicleId:$vehicleId,driverId:$driverId,points:$points}')"
+request POST /Routes "$manager_route_payload" "$deactivated_access_token"
+expect_status 201 "Crear ruta como Manager"
+manager_route_id="$(jq -er '.id' "$work_dir/response.json")"
+request PUT "/Routes/$manager_route_id" "$(jq -nc --arg name "$manager_route_name updated" --arg vehicleId "$manager_vehicle_id" --arg driverId "$manager_driver_id" --argjson points "$role_points" '{name:$name,cargoDescription:"Role matrix updated",vehicleId:$vehicleId,driverId:$driverId,points:$points}')" "$deactivated_access_token"
+expect_status 200 "Editar ruta como Manager"
+request POST /Routes "$manager_route_payload" "$restricted_user_token"
+expect_status 403 "Denegar creación de ruta a User"
 request PUT "/Users/$deactivated_user_id/status?isActive=false" "" "$token"
 expect_status 200 "Desactivar usuario de prueba"
 request GET /Auth/me "" "$deactivated_access_token"
@@ -147,14 +188,38 @@ logistics_user_email="fletflow.e2e.logistics.ci.$suffix@example.test"
 logistics_user_password="$(openssl rand -hex 24)"
 request POST /Users "$(jq -nc --arg email "$logistics_user_email" --arg password "$logistics_user_password" --arg username "E2E CI logistics $suffix" '{username:$username,email:$email,password:$password,roleName:"Logistics"}')"
 expect_status 200 "Crear usuario Logistics"
+logistics_user_id="$(jq -er '.id' "$work_dir/response.json")"
 mysql --protocol=TCP --host="$mysql_host" --user="$mysql_user" "$db_name" \
   -e "UPDATE Users SET IsActive=1, MustChangePassword=0 WHERE Email='$logistics_user_email';" >/dev/null
 request POST /Auth/login "$(jq -nc --arg email "$logistics_user_email" --arg password "$logistics_user_password" '{email:$email,password:$password}')" ""
 expect_status 200 "Login Logistics"
 logistics_token="$(jq -er '.token // .accessToken' "$work_dir/response.json")"
+logistics_refresh_token="$(jq -er '.refreshToken' "$work_dir/response.json")"
 request GET /Routes "" "$logistics_token"; expect_status 200 "Listar rutas como Logistics"
 request GET /Vehicles "" "$logistics_token"; expect_status 403 "Denegar vehículos a Logistics"
 request GET /Drivers "" "$logistics_token"; expect_status 403 "Denegar conductores a Logistics"
+request POST /Vehicles "$(jq -nc --arg plate "BLOCK${suffix: -8}" '{plate:$plate,brand:"Blocked",model:"Blocked",year:2025}')" "$logistics_token"
+expect_status 403 "Denegar creación de vehículo a Logistics"
+request POST /Drivers '{"firstName":"Blocked","lastName":"Blocked","documentNumber":"BLOCK00001","phoneNumber":"0990000000"}' "$logistics_token"
+expect_status 403 "Denegar creación de Driver a Logistics"
+request POST /Auth/logout-all '{}' "$logistics_token"
+expect_status 200 "Cerrar todas las sesiones Logistics"
+request POST /Auth/refresh "$(jq -nc --arg refreshToken "$logistics_refresh_token" '{refreshToken:$refreshToken}')" ""
+expect_status 401 "Revocar refresh por logout-all"
+request POST /Auth/login "$(jq -nc --arg email "$logistics_user_email" --arg password "$logistics_user_password" '{email:$email,password:$password}')" ""
+expect_status 200 "Nueva sesión Logistics para probar cambio de rol"
+logistics_token="$(jq -er '.token // .accessToken' "$work_dir/response.json")"
+logistics_refresh_token="$(jq -er '.refreshToken' "$work_dir/response.json")"
+request PUT "/Routes/$manager_route_id" "$(jq -nc --arg name "${manager_route_name} logistics" --arg vehicleId "$manager_vehicle_id" --arg driverId "$manager_driver_id" --argjson points "$role_points" '{name:$name,cargoDescription:"Logistics update",vehicleId:$vehicleId,driverId:$driverId,points:$points}')" "$logistics_token"
+expect_status 200 "Editar ruta como Logistics"
+request DELETE "/Routes/$manager_route_id" "" "$logistics_token"
+expect_status 204 "Dar de baja ruta como Logistics"
+request PUT "/Users/$logistics_user_id/role" '{"roleName":"User"}' "$token"
+expect_status 200 "Cambiar rol Logistics a User"
+request GET /Auth/me "" "$logistics_token"
+expect_status 401 "Invalidar access token tras cambio de rol"
+request POST /Auth/refresh "$(jq -nc --arg refreshToken "$logistics_refresh_token" '{refreshToken:$refreshToken}')" ""
+expect_status 401 "Invalidar refresh token tras cambio de rol"
 
 other_tenant_email="fletflow.e2e.admin.other.$suffix@example.test"
 other_tenant_password="$(openssl rand -hex 24)"

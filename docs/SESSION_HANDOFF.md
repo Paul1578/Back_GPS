@@ -137,3 +137,15 @@ Errores de migración, herramientas, QA y soluciones están en `docs/ERROR_LOG.m
 - Diferencias del entorno local: dotnet de sistema no tiene runtimes; usar `/home/leonardo/.dotnet/dotnet`. `.env` guarda `DB_PASSWORD` distinto de `MYSQL_ROOT_PASSWORD`; para los smokes exportar el valor activo a `DB_PASSWORD` sólo en el proceso. No imprimir secretos. Ambas causas fueron registradas.
 - Próximo: revisar diff, publicar rama y esperar Actions; revisar/repetir frontend Actions al backend nuevo. Aún faltan pruebas exhaustivas Manager/Logistics/Driver en HTTP, cobertura completa restante y los externos SMTP/producción. Nativo móvil queda aplazado. No cerrar objetivo.
 - Ampliación posterior de smoke real de roles también pasó: Manager 200 Vehicles/Drivers/Routes; Logistics 200 Routes y 403 Vehicles/Drivers; User 403; Driver se cubre con Playwright. DB `fletflow_ci_validation_roles20261121` descartada.
+
+## Continuación — cambio de rol seguro durante operaciones — 2026-11-21
+
+- Rama backend: `chore/stabilize-fleet-platform`. `ChangeUserRoleCommand` comparte los locks de asignación con el inicio de ruta, vuelve a leer Driver/usuario bajo el lock, revoca refresh tokens al cambiar el rol y revierte ante conflicto.
+- JWT valida en cada request que el usuario esté activo y que su único rol actual coincida con el claim firmado. Un rol anterior deja de autorizar de inmediato.
+- MySQL descartable: smokes HTTP/tenant/roles y concurrencia aprobados. La carrera de cambiar Driver→Logistics contra inicio sólo acepta `InProgress+Driver activo+Vehicle OnRoute` o `Pending+Logistics+Driver inactivo+Vehicle Available`. Reactivar Vehicle con ruta en progreso da 409 sin alterar la ruta.
+- `dotnet test` Release **50/50**; auditoría NuGet sin vulnerables; validaciones `bash -n` y `git diff --check` limpias. Playwright integrado del repo frontend pasó **14/14** contra API/MySQL reales; se descartó el schema.
+- El runner `run-e2e-local.sh` ahora normaliza `FLETFLOW_API_URL` con o sin `/api`; Actions anterior verde corresponde al SHA previo, así que falta publicar el lote y revisar ambos runs nuevos.
+- Errores/harness corregidos en `ERROR_LOG.md`: la invocación del wrapper `dotnet run` conectó con usuario DB inesperado; el binario directo con usuario DB temporal funcionó. Scripts sin permiso ejecutable se invocan con `bash`. Dos expectativas de Playwright se alinearon al DOM/DTO real.
+- Matriz HTTP de mutaciones MySQL: Manager crea Vehicle/Driver/Route y edita Route; Logistics edita/elimina Route y recibe 403 al crear Vehicle/Driver; User y Driver no pueden crear Route. Smoke pasó y limpió schema/fixtures.
+- Registro público con `roleName=Admin` persistió un único rol User y recibió 403 en Vehicles. Logout-all real devolvió 200 y el refresh anterior dio 401.
+- Build Release final: 0 warnings/0 errors; documentación actualizada. Próximo: commit/push en la rama existente y esperar CI. Mantener misión activa: queda cobertura de CRUD/responsive no recorrida; SMTP externo y decisiones de despliegue delimitables; móvil nativo aplazado por decisión del usuario.

@@ -56,3 +56,15 @@ La prueba HTTP/MySQL cross-tenant de cierre cubre Vehicles, Drivers, Routes y cr
 ## HTTP por rol en MySQL temporal — ampliación
 
 El smoke HTTP ahora verifica Admin, Manager, Logistics y User: Manager lista Vehicles/Drivers/Routes; Logistics lista Routes y recibe 403 en Vehicles/Drivers; User recibe 403 en flota/rutas. Driver mantiene recorrido real/denegaciones verificados por Playwright autenticado. Esta cobertura ya se ejecutó contra MySQL local descartable; se repetirá en Actions al publicar.
+
+Las mutaciones también se comprobaron con HTTP/MySQL: Manager puede crear Vehicle/Driver/Route y editar Route; Logistics puede editar/eliminar Route pero no crear Vehicle/Driver; User y Driver reciben 403 al crear Route.
+
+El smoke anónimo solicitó rol Admin en el registro; la fila persistida conserva únicamente User y el token no puede consultar Vehicles. Logout-all se ejecutó con un refresh real: HTTP 200 y refresh posterior 401.
+
+## Revocación de permisos al cambiar rol — 2026-11-21
+
+- Cada request autenticado verifica en DB que la cuenta continúe activa y que su único rol actual coincida con el claim firmado del access token. Cambiar rol invalida inmediatamente access tokens previos, incluso antes de su expiración.
+- `ChangeUserRoleCommand` revoca los refresh tokens del usuario en el mismo commit del cambio de rol.
+- Si el usuario tiene Driver asociado, el comando toma el lock de Vehicle/Driver compartido con la transición de ruta y vuelve a leer el estado bajo lock. Se impide la carrera que podía dejar ruta InProgress con Driver desactivado.
+- La consulta de usuario para esa relectura es `AsNoTracking`, así que no devuelve una entidad cargada antes de esperar por el lock.
+- Pruebas HTTP/MySQL descartables comprobaron 401 para access/refresh viejos y estados válidos de la carrera inicio vs cambio Driver→Logistics. Queda pendiente repetir en Actions tras push.

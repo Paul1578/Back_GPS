@@ -406,3 +406,30 @@ Cada cambio de API debe incluir validación de compilación, migraciones si apli
 
 - CLI MySQL usaba `MYSQL_ROOT_PASSWORD` mientras el backend usa `DB_PASSWORD`; los valores guardados localmente difieren y el API falló al iniciar con Access denied. No creó schema ni fixtures en esa primera llamada.
 - Se pasó la credencial MySQL activa a `DB_PASSWORD` sólo en el proceso de la corrida aislada. No se imprimió ni modificó el secreto guardado; smoke se ejecutó y descartó su base.
+
+## 2026-11-21 — Harness local mezcló usuario de DB, wrapper de API y URL de runner — CORREGIDO
+
+- Una primera preparación con `dotnet run` dio `Access denied` para el usuario root aunque se había creado DB QA. Se abandonó esa invocación ambigua y se inició el DLL Release directamente con un usuario SQL efímero limitado al esquema; API y migrations conectaron correctamente. Usuario y DB se eliminaron con trap.
+- Los scripts smoke no tienen permiso ejecutable en este checkout; llamarlos directamente dio `Permission denied`. Se ejecutaron con `bash script.sh`; no se abrió permiso global ni se modificó la base principal.
+- `run-e2e-local.sh` rechazó `FLETFLOW_API_URL` terminada en `/api`, mientras smokes requieren precisamente esa ruta. El runner ahora elimina el sufijo opcional antes de validar que el host sea local; una repetición completa pasó.
+- Un primer E2E tampoco exportó `FLETFLOW_E2E_ADMIN_EMAIL/PASSWORD` y se detuvo antes de crear fixtures; la corrida siguiente asignó variables explícitas.
+- En E2E, se corrigieron dos supuestos: el rol Usuario tiene nombre accesible más descripción, y el endpoint `/Users/my-team` devuelve `roles[]`. El snapshot DOM y DTO indicaron las aserciones correctas; Playwright final pasó 14/14.
+- Smokes HTTP/tenant y concurrencia pasaron después; todas las bases, cuentas SQL y fixtures efímeros fueron eliminados.
+
+## 2026-11-21 — Cambio de rol Driver podía competir con inicio de ruta — CORREGIDO
+
+- El comando comprobaba rutas activas y desactivaba el Driver sin el lock compartido por el inicio; una carrera podía conservar ruta en progreso con conductor inactivo.
+- Se toma el lock de asignación, se vuelve a leer Driver/usuario y se comprueba ruta activa dentro de la sección serializada; cualquier fallo ejecuta rollback. El inicio y el cambio de rol ahora compiten por el mismo lock de Driver.
+- Se añadió smoke concurrente real que exige 204/409 y verifica en MySQL uno de dos resultados íntegros. La ejecución pasó.
+
+## 2026-11-21 — Access token conservaba permisos después de cambiar el rol — CORREGIDO
+
+- La validación JWT sólo consultaba `IsActive`, por lo que un JWT ya emitido seguía llevando el rol anterior tras cambiar la cuenta.
+- El middleware compara el claim de rol con el único rol actual en DB y falla autenticación si no coincide; `ChangeUserRoleCommand` revoca refresh tokens al cambiarlo.
+- Smoke HTTP con MySQL comprobó que access token antiguo y refresh token antiguo responden 401 inmediatamente después del cambio.
+
+## 2026-11-21 — Assert de registro público leía encabezado SQL como resultado — CORREGIDO
+
+- La verificación del rol User comparaba la salida completa de `mysql`; el cliente imprimía primero el encabezado de columna, por lo que el assert fallaba aunque la fila persistida fuera `1:user`.
+- Se añadió `--batch --skip-column-names` y se comprobó que haya exactamente un rol `user`. El smoke HTTP final pasó: el registro que solicita Admin queda User y recibe 403 en Vehicles. También pasó logout-all real y revocación del refresh.
+- Esquema, usuario SQL y fixtures de prueba se descartaron con el trap.

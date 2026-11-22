@@ -101,3 +101,10 @@
 - Baja de vehículo valida relaciones operativas y se agrega endpoint de reactivación.
 - Escrituras concurrentes de estado/evidencia de paradas se serializan por Route.
 - Smokes HTTP/MySQL ampliados para sesión revocada, conflictos operativos, reactivación y pérdida de actualizaciones concurrentes.
+
+## 2026-11-21 — Roles y locks de ruta
+
+- Cambio de rol serializado con inicio de ruta y revocación de refresh tokens.
+- JWT rechaza roles obsoletos; smokes MySQL validan access/refresh revocados y consistencia concurrente.
+- Runner E2E normaliza URL local con/sin `/api`; suite frontend Chrome/API/MySQL: 14/14.
+- Smoke HTTP amplía permisos de escritura para Manager, Logistics, User y Driver; se verificó persistencia/denegación en MySQL temporal y se eliminó la base.

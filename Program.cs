@@ -144,7 +144,17 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                 var unitOfWork = context.HttpContext.RequestServices.GetRequiredService<IUnitOfWork>();
                 var user = await unitOfWork.Users.GetByIdAsync(userId);
                 if (user is null || !user.IsActive)
+                {
                     context.Fail("La cuenta está desactivada.");
+                    return;
+                }
+
+                var currentRoles = user.UserRoles.Select(userRole => userRole.Role.Name.Trim()).ToArray();
+                var tokenRoles = context.Principal?.FindAll(ClaimTypes.Role)
+                    .Select(claim => claim.Value.Trim()).ToArray() ?? Array.Empty<string>();
+                if (currentRoles.Length != 1 || tokenRoles.Length != 1 ||
+                    !currentRoles[0].Equals(tokenRoles[0], StringComparison.OrdinalIgnoreCase))
+                    context.Fail("El rol de la cuenta cambió. Inicia sesión nuevamente.");
             }
         };
     });

@@ -105,3 +105,12 @@ Fecha de corte: 2026-11-21.
 - Vehículo conserva historial y puede reactivarse vía `POST /Vehicles/{id}/reactivate`; el smoke comprobó GET `isActive=false`, POST 204 y GET `isActive=true`.
 - Release test local 50/50; Release build 0 warnings/0 errores. Smokes tenant y flota real en MySQL descartable pasaron. Estos cambios están locales en `chore/stabilize-fleet-platform`; Actions y commit/push pendientes.
 - La matriz local HTTP autenticada se amplió: Manager 200 en Vehicles/Drivers/Routes; Logistics 200 en Routes y 403 en Vehicles/Drivers; User 403; Driver verificado por Playwright. Smoke MySQL temporal pasó tras la ampliación.
+
+## Validación posterior de roles y concurrencia — 2026-11-21
+
+- Cambio de rol sincronizado con inicio de ruta mediante locks de Vehicle/Driver; revoca refresh tokens y JWT anteriores con claim de rol obsoleto reciben 401.
+- Backend Release xUnit **50/50**; paquete NuGet vulnerable: ninguno. Smoke MySQL de tenant/roles, cambio de rol concurrente, baja/reactivación y estados persistidos aprobados; DB y cuenta SQL temporales eliminadas.
+- Build Release **0 warnings/0 errors**. Matriz HTTP de mutaciones pasó: Manager crea flota/ruta, Logistics modifica rutas y queda bloqueado en flota, User/Driver no crean rutas. Registro anónimo no eleva rol; logout-all revoca refresh.
+- Runner frontend con API y MySQL reales: Playwright **14/14**, incluye rol Usuario UI, operaciones CRUD, responsive y aislamiento multiempresa.
+- Falta publicar el lote y validar workflows remotos para sus SHA; continuar cobertura de CRUD/responsive no visitada. SMTP requiere credenciales vigentes; móvil nativo pospuesto por el usuario.
+- Smoke HTTP/MySQL también confirmó que registro público no eleva el rol y que logout-all revoca refresh tokens.

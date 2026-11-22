@@ -37,6 +37,7 @@ namespace fletflow.Infrastructure.Persistence.Repositories
         public async Task<User?> GetByIdAsync(Guid id)
         {
             var entity = await _context.Users
+                .AsNoTracking()
                 .Include(u => u.UserRoles).ThenInclude(ur => ur.Role)
                 .FirstOrDefaultAsync(u => u.Id == id);
 

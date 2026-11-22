@@ -18,3 +18,5 @@ El conductor cambia estado con `PUT /api/Routes/{id}/points/{index}/status` y ad
 - El evento de validación JWT consulta el estado actual de la cuenta en cada autenticación de bearer. `AuthService.RefreshAsync` rechaza cuentas inactivas antes de rotar tokens.
 - Mutaciones de puntos de ruta (`RoutesController`) toman lock de asignación/ruta usando `IUnitOfWork.LockRouteAssignmentAsync`, releen `RouteE` y guardan la colección completa serializada. Las colisiones operativas siguen respondiendo 409.
 - Las operaciones de baja de Vehicle/Route y desasignación de Driver comparten transacciones/locks antes de validar rutas/asignaciones.
+- `ChangeUserRoleCommand` bloquea la asignación Driver/Vehicle al cambiar el rol; `UserRepository.GetByIdAsync` usa `AsNoTracking` para que la relectura posterior al lock refleje el estado ya confirmado por una solicitud concurrente.
+- `JwtBearerEvents.OnTokenValidated` compara el único rol persistido con el claim de rol firmado. El cambio de rol también revoca refresh tokens en la misma transacción de persistencia.

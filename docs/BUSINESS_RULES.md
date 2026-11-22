@@ -54,3 +54,10 @@
 - Logistics: GET de Routes devuelve 200; Vehicles y Drivers devuelven 403.
 - User: Vehicles/Routes y creación de Vehicle devuelven 403.
 - Driver: Playwright autenticado verifica alcance de ruta propia y denegaciones de recursos administrativos.
+
+## Cambio de rol y rutas activas
+
+- Cambiar una cuenta desde Driver a otro rol desactiva y desasigna su perfil Driver, salvo que exista ruta en progreso; ese conflicto devuelve 409.
+- El cambio de rol y el inicio de ruta comparten lock de la asignación para preservar el estado si llegan simultáneamente.
+- Al cambiar el rol, access tokens con el rol anterior dejan de autenticar y refresh tokens previos se revocan.
+- Verificación en MySQL: la carrera sólo puede dejar ruta en progreso con Driver activo y Vehicle OnRoute, o ruta pendiente con Driver inactivo, rol Logistics y Vehicle Available.

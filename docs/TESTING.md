@@ -505,3 +505,5 @@ La invitación envía sólo el enlace de activación; el usuario fija su contras
 - Los fixtures se eliminan mediante `scripts/cleanup-e2e.sql`. La validación de sintaxis pasa localmente; falta confirmar provisioning, E2E y cleanup en la Action nueva.
 
 - Backend Action `45061524504` pasó para SHA `3f87af8`: build/tests Release, smoke de tenant HTTP/MySQL, concurrencia de rutas y cleanup de contenedores.
+
+- Vehicle validation/concurrency: Release xUnit **103/103**; Release build **0 warnings, 0 errors**. El primer intento tuvo 102/103 por fake mutable de EF, corregido y registrado en `ERROR_LOG.md`. Smoke tenant HTTP/MySQL ahora comprueba límites 400 y placas duplicadas 409 en create/update; requiere Action integrada.

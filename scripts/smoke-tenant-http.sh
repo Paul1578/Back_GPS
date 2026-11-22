@@ -44,6 +44,8 @@ maintenance_vehicle_plate=""
 maintenance_driver_id=""
 maintenance_driver_document=""
 vehicle_id=""
+duplicate_vehicle_id=""
+duplicate_vehicle_plate=""
 driver_id=""
 other_tenant_email=""
 other_tenant_member_email=""
@@ -131,6 +133,8 @@ cleanup() {
     if [[ -n "$manager_driver_id" ]]; then sql+=" DELETE FROM Drivers WHERE Id='$manager_driver_id';"; fi
     if [[ -n "$vehicle_id" ]]; then sql+=" DELETE FROM Vehicles WHERE Id='$vehicle_id';"
     elif [[ -n "$plate" ]]; then sql+=" DELETE FROM Vehicles WHERE Plate='$plate';"; fi
+    if [[ -n "$duplicate_vehicle_id" ]]; then sql+=" DELETE FROM Vehicles WHERE Id='$duplicate_vehicle_id';"
+    elif [[ -n "$duplicate_vehicle_plate" ]]; then sql+=" DELETE FROM Vehicles WHERE Plate='$duplicate_vehicle_plate';"; fi
     if [[ -n "$maintenance_vehicle_id" ]]; then sql+=" UPDATE Vehicles SET Status=0 WHERE Id='$maintenance_vehicle_id'; DELETE FROM Vehicles WHERE Id='$maintenance_vehicle_id';"
     elif [[ -n "$maintenance_vehicle_plate" ]]; then sql+=" DELETE FROM Vehicles WHERE Plate='$maintenance_vehicle_plate';"; fi
     if [[ -n "$foreign_reactivate_vehicle_id" ]]; then sql+=" DELETE FROM Vehicles WHERE Id='$foreign_reactivate_vehicle_id';"; fi
@@ -378,6 +382,12 @@ token="$(jq -er '.token // .accessToken' "$work_dir/response.json")"
 request GET /Roles "" "$token"; expect_status 200 "Consultar catálogo global de roles como Admin de tenant"
 request POST /Roles '{"name":"Admin"}' "$token"; expect_status 403 "Impedir modificar catálogo global de roles desde un tenant"
 request DELETE "/Roles/E2EQA_missing" "" "$token"; expect_status 403 "Impedir eliminar roles globales desde un tenant"
+
+long_vehicle_plate="$(printf 'X%.0s' {1..21})"
+request POST /Vehicles "$(jq -nc --arg plate "$long_vehicle_plate" '{plate:$plate,brand:"CI QA",model:"Invalid",year:2025}')" "$token"
+expect_status 400 "Rechazar placa de más de 20 caracteres"
+request POST /Vehicles '{"plate":"E2EINVALIDYEAR","brand":"CI QA","model":"Invalid","year":1800}' "$token"
+expect_status 400 "Rechazar año de vehículo fuera del rango"
 
 known_recovery_metrics="$(curl --silent --show-error --output "$work_dir/forgot-known.json" --write-out '%{http_code} %{time_total}' \
   --header 'Content-Type: application/json' --data "$(jq -nc --arg email "$admin_email" '{email:$email}')" \
@@ -1104,6 +1114,19 @@ fi
 request POST /Vehicles "$(jq -nc --arg plate "$plate" '{plate:$plate,brand:"CI QA",model:"Tenant",year:2025}')"
 expect_status 201 "Crear vehículo tenant A"
 vehicle_id="$(jq -er '.id' "$work_dir/response.json")"
+request POST /Vehicles "$(jq -nc --arg plate "$plate" '{plate:$plate,brand:"CI QA",model:"Duplicate",year:2025}')" "$token"
+expect_status 409 "Rechazar placa de vehículo duplicada"
+duplicate_vehicle_plate="E2ED${suffix: -8}"
+request POST /Vehicles "$(jq -nc --arg plate "$duplicate_vehicle_plate" '{plate:$plate,brand:"CI QA",model:"Update duplicate",year:2025}')" "$token"
+expect_status 201 "Crear vehículo para probar duplicidad al editar"
+duplicate_vehicle_id="$(jq -er '.id' "$work_dir/response.json")"
+request PUT "/Vehicles/$vehicle_id" "$(jq -nc --arg plate "$duplicate_vehicle_plate" '{plate:$plate,brand:"CI QA",model:"Tenant",year:2025}')" "$token"
+expect_status 409 "Rechazar placa duplicada al editar vehículo"
+request GET "/Vehicles/$vehicle_id" "" "$token"
+expect_status 200 "Confirmar placa original tras rechazo de edición duplicada"
+jq -e --arg plate "$plate" '.plate == $plate' "$work_dir/response.json" >/dev/null || {
+  echo "El rechazo de placa duplicada modificó el vehículo original." >&2; cat "$work_dir/response.json" >&2; exit 1;
+}
 
 request POST /Drivers "$(jq -nc --arg document "$document_number" '{firstName:"E2E QA",lastName:"Driver A",documentNumber:$document,phoneNumber:"0990000000"}')"
 expect_status 201 "Crear Driver tenant A"

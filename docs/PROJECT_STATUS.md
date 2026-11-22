@@ -455,3 +455,10 @@ Nota de actualización: algunos resultados históricos de registro público más
 - La sintaxis del runner pasa localmente. Action integrado de backend pendiente para verificar provisioning y cleanup en MySQL efímero.
 
 - Backend Action `45061524504` pasó para `3f87af8`: Release build, xUnit, smoke de aislamiento HTTP/MySQL, concurrencia de asignaciones y cleanup. El commit también contiene el fixture Driver adicional; la comprobación del runner dentro del flujo frontend sigue en curso.
+
+## Validación y carrera de placas de Vehículos — código actualizado; tests pendientes
+
+- Auditoría detectó campos que podían exceder límites de persistencia y una carrera create/update de placa única que salía como 500. Contratos y comandos ahora validan en borde HTTP y de aplicación y traducen sólo duplicidad confirmada a 409.
+- Se añadieron pruebas de entrada inválida y carrera duplicada. Ejecutar Release con DOTNET_ROOT local; el host `/usr/bin/dotnet` del sistema estaba roto, la repetición usa `/home/leonardo/.dotnet`.
+
+- Vehicle Release local: xUnit **103/103**, build **0 warnings/0 errors** con SDK `8.0.428` seleccionada desde `/home/leonardo/.dotnet`; `bash -n` smoke y diff-check pasan. Smoke HTTP/MySQL extendido para `400` de placa/año, `409` de alta duplicada y edición duplicada; Actions de SHA nuevo pendiente.

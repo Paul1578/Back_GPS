@@ -1080,3 +1080,22 @@ Cada cambio de API debe incluir validación de compilación, migraciones si apli
 
 - Backend Action `45061524504` pasó tras añadir el segundo Driver QA al runner: compilación Release, xUnit, aislamiento por tenant HTTP/MySQL, concurrencia de rutas y cleanup de contenedores.
 - El runner de browser se valida además en Front Action `45061522878`, que sigue en progreso al registrar esta entrada.
+
+## 2026-11-22 — dotnet del sistema apuntaba a instalación sin host/fxr — CORREGIDO EN COMANDO
+
+- Dos comandos locales `dotnet test/build` fallaron antes de MSBuild con `/usr/lib64/dotnet/host/fxr` vacío; no probaron ni compilaron el código. La SDK/runtime 8.0.428 sí está instalada bajo `/home/leonardo/.dotnet`.
+- Solución: invocar explícitamente `/home/leonardo/.dotnet/dotnet` y `DOTNET_ROOT=/home/leonardo/.dotnet`; test Release repetido.
+- Prevención: verificar `dotnet --info` y la instalación escogida antes de interpretar un fallo de host como error del proyecto.
+
+## 2026-11-22 — Límites de entrada de Vehículos y carrera de placa duplicada — CORRECCIÓN LOCAL; TEST PENDIENTE
+
+- Auditoría estática identificó que tamaños fuera de columnas persistidas/año inválido podían alcanzar EF y producir 500; dos altas/ediciones simultáneas de la misma placa pueden superar el pre-check y golpear el índice único como `DbUpdateException` no clasificada.
+- Fix local: DataAnnotations en CREATE/UPDATE; normalización/validación compartida en comandos (placa 20, marca/modelo 100, descripción 1000, año 1900–2100); al capturar `DbUpdateException`, reconsultar placa por owner y mapear sólo conflicto duplicado a `BusinessConflictException` (HTTP 409), relanzando cualquier otro error.
+- Se agregaron pruebas unitarias para valores inválidos y carrera de insert/update. Release local con DOTNET_ROOT correcto en curso; Action/MySQL posterior al push pendiente.
+- Prevención: mantener la restricción única de base y tratar la colisión concurrente en la capa de comando; no asumir que un query de duplicidad elimina la carrera.
+
+## 2026-11-22 — Primer doble de UpdateVehicle simulaba una entidad rastreada — TEST CORREGIDO
+
+- El primer Release test completo tras introducir la traducción de carrera tuvo 102/103. `UpdateVehicle_MapsConcurrentDuplicatePlateToConflictWithoutChangingPersistedVehicle` devolvió el `DbUpdateException` porque `FakeVehicles.GetByIdAsync` compartía la instancia que el comando había mutado; la reconsulta encontraba el valor pendiente del mismo vehículo y no el registro del competidor.
+- Solución: el fake devuelve una copia de dominio como el repositorio productivo `AsNoTracking`; el competidor de la placa aparece como registro separado. Repetición Release: **103/103**; build Release: **0 warnings, 0 errors**.
+- Prevención: los fakes de repositorios deben modelar el tracking/copia real de EF; una prueba de concurrencia no debe hacer que la entidad pendiente parezca ya persistida.

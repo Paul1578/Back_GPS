@@ -3,6 +3,7 @@ using fletflow.Application.Fleet.Mappings;
 using fletflow.Domain.Fleet.Exceptions;
 using fletflow.Domain.Fleet.Repositories;
 using fletflow.Infrastructure.Persistence.Contracts;
+using Microsoft.EntityFrameworkCore;
 
 namespace fletflow.Application.Fleet.Commands
 {
@@ -28,10 +29,11 @@ namespace fletflow.Application.Fleet.Commands
             var vehicle = await _vehicles.GetByIdAsync(id)
                 ?? throw new KeyNotFoundException("Vehicle not found.");
 
-            plate = plate.Trim();
-            brand = brand.Trim();
-            model = model.Trim();
-            description = string.IsNullOrWhiteSpace(description) ? null : description.Trim();
+            plate = VehicleCommandInput.Required(plate, "La placa", 20);
+            brand = VehicleCommandInput.Required(brand, "La marca", 100);
+            model = VehicleCommandInput.Required(model, "El modelo", 100);
+            year = VehicleCommandInput.Year(year);
+            description = VehicleCommandInput.Optional(description, "La descripción", 1000);
 
             if (!string.Equals(vehicle.Plate, plate, StringComparison.OrdinalIgnoreCase))
             {
@@ -45,7 +47,17 @@ namespace fletflow.Application.Fleet.Commands
 
             // Ahora sí se lo decimos al repositorio para que lo aplique a EF
             await _vehicles.UpdateAsync(vehicle);
-            await _uow.CommitAsync();
+            try
+            {
+                await _uow.CommitAsync();
+            }
+            catch (DbUpdateException)
+            {
+                var existing = await _vehicles.GetByPlateAsync(plate);
+                if (existing is not null && existing.Id != vehicle.Id)
+                    throw new BusinessConflictException($"Ya existe otro vehículo con la placa {plate} en esta empresa.");
+                throw;
+            }
 
             return VehicleApplicationMapper.ToDto(vehicle);
         }

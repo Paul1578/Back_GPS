@@ -575,3 +575,15 @@ Errores de migración, herramientas, QA y soluciones están en `docs/ERROR_LOG.m
 - `bash -n` y diff-check pasan. Backend Action `45060714338` validó el SHA anterior; ejecutar CI al publicar este cambio.
 
 - Backend Action `45061524504` terminó success en `3f87af8`: build/tests Release, smoke HTTP/MySQL y concurrencia/cleanup. Front Action integrada `45061522878` sigue ejecutando E2E Playwright con ambos branches actualizados.
+
+## Continuación — validación de Vehicle y colisiones únicas
+
+- Código/tests locales en `chore/stabilize-fleet-platform`: DataAnnotations y reglas comunes (Plate 20, Brand/Model 100, Description 1000, Year 1900–2100) en Create/Update Vehicle; mapeo condicional `DbUpdateException` a conflicto sólo al confirmar la placa existente; pruebas Create/Update con colisión concurrente y límite inválido.
+- Primera invocación de dotnet fue al host roto `/usr/bin/dotnet`; usar `DOTNET_ROOT=/home/leonardo/.dotnet /home/leonardo/.dotnet/dotnet`. Test Release en curso. Después correr build, pruebas HTTP/MySQL de límites, documentar, commit/push y verificar Action.
+
+## Continuación — límites de vehículo y carrera de placa
+
+- Auditoría backend read-only detectó límites de Vehicle ausentes y colisión índice único no traducida. Create/Update request usan DataAnnotations; comandos normalizan/validan igual en aplicación (Plate 20, Brand/Model 100, Description 1000, Year 1900–2100). `DbUpdateException` sólo se traduce a conflicto si la reconsulta confirma placa de otro vehículo.
+- Se extendió `VehicleCommandTests` para input inválido, create race y update race; smoke HTTP/MySQL verifica 400 y 409 con persistencia de la placa original intacta.
+- Primera suite Release fue **102/103**: el fake de Update devolvía misma instancia mutable. Fake ajustado a copia no rastreada; suite **103/103**, build **0 warnings/0 errors**, bash -n/diff-check pasan con `/home/leonardo/.dotnet`.
+- Pendiente commit/push y Action para probar smoke en MySQL real desechable. No olvidar revisión P3 cambio rol a Driver con cuenta inactiva y seguridad restante.

@@ -397,3 +397,8 @@
 - Regresión SQLite para edición de ruta pendiente con cuenta inactiva sin cambios parciales.
 - Smoke HTTP/MySQL para denegar edición/inicio con cuenta inactiva y probar activation/reset token único, cambio de contraseña y revocación de refresh.
 - Test focal 10/10 y sintaxis shell correctos; integración completa pendiente.
+
+## 2026-11-22 — Validación de Vehicle y colisión de placa concurrente
+
+- Contratos y comandos CREATE/UPDATE rechazan campos fuera de rango con 400. Colisión confirmada del índice único por placa devuelve 409 también si dos peticiones compiten.
+- Cobertura Release xUnit 103/103 y smoke HTTP para límites/duplicados; CI integrada pendiente.

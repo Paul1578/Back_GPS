@@ -6,7 +6,8 @@
 - Test focal `UnlinkDriverFromUserTests`: **5/5**, incluyendo persistencia `UserId=null` usando `DriverRepository` + EF; suite Release **144/144**. Smoke `scripts/smoke-tenant-http.sh` ampliado para probar API/MySQL, persistencia y reautenticación; `bash -n` y `git diff --check` pasan. Action integrada aún pendiente.
 - Error de compilación del test por namespace y fake `IRouteRepository` documentado en `docs/ERROR_LOG.md`, ya corregido.
 - El frontend ya añade botón con ConfirmDialog en Gestión de Equipo y amplía Playwright para cancelar/confirmar unlink, comprobar API y conservar rol/perfil; lint/build/discovery 51 pasan localmente. Front CI integrado aún pendiente.
-- Siguiente: publicar rama backend y corregir fallos de smoke/Action; después publicar Front y validar ambos contra API/MySQL descartables.
+- Action backend `45172421318` ejecutó build/xUnit y smokes; el smoke tenant paró al iniciar sesión con el fixture `/Users`, porque permanecía inactivo y requería cambio de clave. El script ahora fija `IsActive=1, MustChangePassword=0` en MySQL efímero antes del login. Nueva Action pendiente.
+- Front `a75b1da` ya fue publicado con E2E de unlink; Action integrada se encontraba en curso al actualizar este handoff.
 
 ## Smokes backend de reasignación y baja lógica — Action pendiente
 

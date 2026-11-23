@@ -4,7 +4,7 @@
 
 - `PATH=/home/leonardo/.dotnet:$PATH dotnet test BackEnd_Gps.Tests/BackEnd_Gps.Tests.csproj -c Release --no-restore --filter FullyQualifiedName~UnlinkDriverFromUserTests`: **5/5**.
 - Cubre rutas Pending/InProgress sin mutación, baja de token/refresh al desvincular, preservación del perfil, persistencia EF de `UserId=null` y unlink idempotente.
-- Suite completa Release **144/144** pasó; `bash -n scripts/smoke-tenant-http.sh` y `git diff --check` pasan. Smoke real HTTP/MySQL y Action siguen pendientes.
+- Suite completa Release **144/144** pasó; `bash -n scripts/smoke-tenant-http.sh` y `git diff --check` pasan. Action `45172421318` encontró que el fixture manual User seguía inactivo y con `MustChangePassword=true`, así que el login del unlink devolvió 401. Runner corregido para activar y limpiar la marca de cambio de clave; nueva verificación integrada pendiente.
 
 Las notas posteriores con fechas o versiones anteriores son el historial de su momento; para el resultado actual consultar esta sección y `docs/PROJECT_STATUS.md`.
 

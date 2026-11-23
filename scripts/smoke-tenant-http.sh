@@ -1424,6 +1424,8 @@ expected_manual_profile_sql="$manual_profile_username:Nombre actualizado:Apellid
   exit 1
 }
 
+mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" "$db_name" \
+  -e "UPDATE Users SET IsActive=1, MustChangePassword=0 WHERE Id='$manual_link_user_id';" >/dev/null
 request POST /Auth/login "$(jq -nc --arg email "$manual_link_user_email" --arg password "$manual_link_user_password" '{email:$email,password:$password}')" ""
 expect_status 200 "Iniciar sesión con cuenta Driver vinculada antes de desvincular"
 manual_link_user_token="$(jq -er '.token // .accessToken' "$work_dir/response.json")"

@@ -1493,3 +1493,9 @@ Cada cambio de API debe incluir validación de compilación, migraciones si apli
 - `DriverRepository.UpdateAsync` ahora guarda `UserId`; el test usa EF InMemory con el repositorio productivo y relee tras limpiar el change tracker. Suite focal actual **5/5**.
 - Una lectura buscó `AppDbContext.cs`, pero el archivo real es `FleetFlowDbContext.cs`; otra intentó leer `e2e/fleet-admin.spec.ts` desde el checkout Backend. Se localizaron los paths mediante `rg --files` y se repitió desde Front.
 - Prevención: cuando un fake de UoW valida persistencia, su `CommitAsync` debe guardar cambios; resolver nombre/ruta de archivos en el checkout propietario antes de leer.
+# 2026-11-23 — Smoke unlink usó una cuenta con activación pendiente — CORREGIDO
+
+- Action `45172421318` completó build/xUnit y gran parte de HTTP, pero el smoke no pudo iniciar sesión con el User creado por `POST /Users`: el endpoint deja la cuenta inactiva y `MustChangePassword=true` mientras espera activación, así que Auth respondió 401.
+- Solución: en la DB MySQL descartable, activar el fixture y limpiar `MustChangePassword` antes del login. La clave enviada por el request ya está guardada; el smoke no depende de SMTP.
+- Una lectura buscó `RegisterUserCommand.cs` bajo una ruta parcial. `rg --files` localizó el path completo `Aplication/Auth/Commands/RegisterUser/RegisterUserCommand.cs`.
+- Prevención: inspeccionar y preparar el estado de activación en fixtures de login; resolver rutas completas con `rg --files` antes de abrirlos.

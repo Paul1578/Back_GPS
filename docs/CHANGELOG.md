@@ -1,6 +1,6 @@
 # 2026-11-23 — Desvincular User del perfil Driver
 
-- Añadido endpoint de desvinculación User–Driver que conserva cuenta, perfil y rol Driver, bloquea rutas activas y revoca sesiones existentes; tests focales 5/5 y suite 144/144. Smoke HTTP/MySQL ampliado; validación integrada pendiente.
+- Añadido endpoint de desvinculación User–Driver que conserva cuenta, perfil y rol Driver, bloquea rutas activas y revoca sesiones existentes; tests focales 5/5 y suite 144/144. La Action inicial encontró precondición de activación omitida en el fixture; runner corregido y validación integrada pendiente.
 
 # 2026-11-23 — Carrera de inicio de ruta y mantenimiento
 

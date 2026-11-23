@@ -10,7 +10,7 @@
 - No hay evidencia de defecto en aislamiento de tenant ni en la política root-only; el backend aprobó Action `45090274537` (build Release, xUnit 113/113, smoke HTTP/MySQL, concurrencia y cleanup).
 - La misión de rutas aún requiere probar el ciclo de una ruta con varias paradas operativas hasta completar evidencias y cerrar ruta. La evidencia actual cubre creación de varios tipos y cierre con una operación.
 - Decisión confirmada: se permiten rutas de traslado entre origen/destino sin recogida/entrega; el ciclo está cubierto por prueba de dominio.
-- Seguridad confirmada: claves nuevas con mínimo 12 caracteres y login limitado a 10 intentos/minuto por IP, sin bloqueo de cuenta. Pruebas xUnit locales 120/120; CI del nuevo commit pendiente.
+- Seguridad confirmada: claves nuevas con mínimo 12 caracteres y login limitado a 10 intentos/minuto por IP, sin bloqueo de cuenta. Action [`45096399172`](https://github.com/Paul1578/Back_GPS/actions/runs/45096399172) pasó Release, xUnit 120/120, aislamiento tenant/concurrencia HTTP/MySQL y cleanup.
 - Backend commit `33e2499` Action [`45096399172`](https://github.com/Paul1578/Back_GPS/actions/runs/45096399172) pasó Release, xUnit **120/120**, smoke HTTP/MySQL de aislamiento tenant y concurrencia, cleanup correcto.
 - Data Protection persistente/compartido para reinicios y réplicas sigue pendiente de configuración y prueba de despliegue. Móvil nativo aplazado; SMTP real depende de credenciales.
 

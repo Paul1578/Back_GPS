@@ -1,7 +1,8 @@
 ## Revisión de autorización/tenant read-only — 2026-11-23
 
 - HEAD revisado: `chore/stabilize-fleet-platform` `4993e3c`; sin modificaciones ni pruebas en ese pase. Roles de Users, Drivers y Routes y las reglas de unlink coinciden estáticamente con las decisiones de producto.
-- `OwnerUserId IS NULL` define root para claims y endpoints Admin; un delegado legado con owner nulo sería riesgoso, pero no hay evidencia actual de ese registro y el supuesto ya está documentado en `docs/SECURITY.md`. Validar únicamente con consulta agregada read-only antes de diseñar una migración.
+- `OwnerUserId IS NULL` define root para claims y endpoints Admin. Reconsulta local agregada encontró 5 usuarios, 2 roots Admin con owner nulo y 0 Admins con propietario asignado; no muestra delegado inconsistente en esta DB. Otros ambientes no se inspeccionaron; evidencia en `docs/SECURITY.md`.
+- La lectura inicial asumió `fletflow/Program.cs`; `Program.cs` vive en la raíz. No hubo mutaciones; se corrigió con `rg --files` y se registró en `docs/ERROR_LOG.md`.
 - Actions recientes del HEAD: Release/xUnit 165/165, migración tenant desechable, SQL-like HTTP/MySQL, concurrencia y rate limit [`45254278511`](https://github.com/Paul1578/Back_GPS/actions/runs/45254278511), [`45254291858`](https://github.com/Paul1578/Back_GPS/actions/runs/45254291858).
 
 ## Trabajo actual — upgrade histórico ownership / seguridad de filtros — 2026-11-23

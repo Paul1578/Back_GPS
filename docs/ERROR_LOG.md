@@ -1,3 +1,9 @@
+## 2026-11-23 — Lectura inicial usó ruta de Program.cs asumida — RESUELTO
+
+- La consulta inicial buscó `fletflow/Program.cs`, pero el host del backend está en la raíz del repositorio. Fue una ruta de solo lectura que no existía; no cambió archivos.
+- Solución: localizar con `rg --files` y confirmar el path real `Program.cs` antes de revisar configuración.
+- Prevención: derivar los paths desde la estructura actual del checkout, no desde el esquema arquitectónico esperado.
+
 ## 2026-11-23 — Prueba de migración usó `.env` local y fixture legacy incompleto — CORREGIDO
 
 - **Incidente de aislamiento:** el primer borrador de `smoke-tenant-migration.sh` ejecutó EF desde el repositorio y `AppDbContextDesignTimeFactory` cargó `.env`; `DotNetEnv.Env.Load()` sustituyó la configuración temporal y revirtió migraciones de la base local durante la preparación del esquema histórico.

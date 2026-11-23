@@ -1,3 +1,8 @@
+## 2026-11-23 — Revalidación read-only de cuentas raíz
+
+- Consulta MySQL local encontró 5 usuarios: los 2 con `OwnerUserId IS NULL` tienen rol Admin y hay 0 Admins con propietario asignado. No se encontraron delegados con owner nulo en esta base.
+- No hubo mutaciones ni exposición de nombres/secretos; no se puede extrapolar a bases de otros ambientes. Ver `SECURITY.md`.
+
 ## 2026-11-23 — Pruebas de upgrade histórico y filtros seguros
 
 - Se incorpora `scripts/smoke-tenant-migration.sh`: arranca MySQL efímero, actualiza un esquema legacy hasta `TenantFleetOwnership`, verifica owners/datos y prueba rechazo de rutas discordantes antes de DDL.

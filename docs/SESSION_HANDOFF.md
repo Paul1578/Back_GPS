@@ -9,6 +9,8 @@
 - Backend `f8edbcd` pasó Action `45084368819` (Release build/xUnit 113/113, smoke tenant HTTP/MySQL y concurrencia); backend runner/docs `387b62f` pasó Action `45084501616`. Pendiente ver resultado Front autenticado y confirmar el E2E Manager mapa en ejecución.
 - Front Actions `45084368342`/`45084699175` pasaron 38/39; Manager mapa quedó como el único fallo, por navegación mobile-only y rol residual después de timeout. Runner actual crea fixtures Manager y Driver aislados; limpiar con SQL y repetir Front Action.
 - Backend commit `1ce4d45` validado por Action `45085910280`: Release build, suite xUnit, smoke HTTP/MySQL de aislamiento de tenant y concurrencia de asignación; resultado `success`, cleanup incluido. Queda pendiente la Action Front `45085920993` para el E2E aislado Manager.
+- Runner `2619531` exporta `FLETFLOW_E2E_MAP_FIXTURE_SUFFIX` estable para que un restart de worker reutilice el nombre durante cleanup; `bash -n`/diff-check pasan localmente, debe verificarse en la siguiente Action Front.
+- Action Backend `45086298118` para `2619531` pasó. La Front Action anterior `45085920993` terminó 39/39 antes de consumir esta variable; la nueva Front `104723a` valida el sufijo estable.
 - No marcar objetivo completo; continuar matriz CRUD/roles/responsive después del resultado Front.
 
 - `76c2cc8` pasó Action `45077658712`; `229076d` pasó Action `45078321298` (Release build, xUnit 111/111, HTTP/MySQL tenant, concurrencia y cleanup), incluidos los 403 y la ausencia de mutaciones User en Users/Roles.

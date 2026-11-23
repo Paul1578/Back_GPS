@@ -6,6 +6,8 @@
 - Runner E2E exporta también el UserId de la cuenta Driver QA que necesita la prueba de Manager mapa.
 - Tras fallos del mapa, runner ahora provisiona Manager y Driver de ruta exclusivos para aislar rol/asignación; cleanup cubre la cuenta Manager temporal.
 - Action `45085910280` confirmó build, pruebas unitarias, aislamiento multiempresa HTTP/MySQL y concurrencia de asignación; cleanup completo.
+- El runner entrega sufijo estable al spec Manager para que un retry tras restart de worker limpie la ruta y vehículo previos.
+- Action `45086298118` para `2619531` pasó build, xUnit, isolation/concurrency smoke y cleanup.
 
 # 2026-11-22 — Bloquear baja de cuenta Driver con ruta activa — VALIDADO EN CI
 

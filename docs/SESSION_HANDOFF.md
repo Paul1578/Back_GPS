@@ -1,3 +1,9 @@
+## Handoff vigente — payload de evidencia bajo demanda
+
+- Backend chore/stabilize-fleet-platform: RouteApplicationMapper.ToDtoList omite contenido de imágenes Base64; ToDto de detalle conserva bytes. DTO hace Content nullable.
+- RouteApplicationMapperTests valida omisión en lista, metadata y nota presentes, detalle completo. Release 158/158, build 0 warnings/0 errors usando DOTNET_ROOT=/home/leonardo/.dotnet.
+- Action y smokes HTTP/MySQL para este commit pendientes. La lista entrega resumen; endpoint individual conserva detalle.
+
 ## Handoff vigente — integridad de rutas heredadas
 
 - Rama backend `chore/stabilize-fleet-platform`; `main` intacta. Commit `492f8f9` agrega una guarda a `TenantFleetOwnership` para detenerse si una ruta enlaza Driver y Vehicle de distintos tenants, antes de DDL, y una migración que hace fallar el arranque si la migración anterior dejó esa ruta con owner nulo.

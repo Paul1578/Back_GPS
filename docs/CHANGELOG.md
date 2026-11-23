@@ -1,3 +1,8 @@
+## 2026-11-23 — Evitar Base64 repetido en listados de rutas
+
+- DTO de lista omite Content de evidencias tipo imagen. Metadata y notas se conservan; endpoint de detalle devuelve imágenes.
+- Agregada prueba de contrato. Release 158/158 y build limpio local; Action pendiente.
+
 ## 2026-11-23 — Límites de evidencia agregada por ruta
 
 - Una ruta acepta como máximo 50 evidencias y hasta 8 MB de contenido acumulado; los rechazos no modifican la ruta.

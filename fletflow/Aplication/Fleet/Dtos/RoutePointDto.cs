@@ -15,7 +15,7 @@ namespace fletflow.Application.Fleet.Dtos
     public class RoutePointEvidenceDto
     {
         public string Type { get; set; } = string.Empty;
-        public string Content { get; set; } = string.Empty;
+        public string? Content { get; set; }
         public string? Description { get; set; }
         public DateTime CreatedAtUtc { get; set; }
     }

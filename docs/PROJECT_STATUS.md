@@ -1,3 +1,9 @@
+## Payload de evidencias de rutas — validación local; smoke CI pendiente
+
+- GET /Routes omite contenido Base64 de imágenes y mantiene metadata; GET /Routes/{id} conserva evidencia completa. Las notas mantienen su texto.
+- Prueba nueva del mapper confirma el contrato de lista frente a detalle. Suite Release: 158/158; build Release: 0 warnings, 0 errors.
+- Action posterior al commit y smokes HTTP/MySQL descartables pendientes.
+
 ## Integridad de rutas heredadas — Backend CI aprobado
 
 - La revisión encontró que `TenantFleetOwnership` dejaba `OwnerUserId=NULL` cuando Driver y Vehicle pertenecían a empresas diferentes; el filtro tenant ocultaba entonces la ruta.

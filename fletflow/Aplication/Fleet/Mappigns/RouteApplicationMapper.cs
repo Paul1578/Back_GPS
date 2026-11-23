@@ -14,9 +14,9 @@ namespace fletflow.Application.Fleet.Mappings
                 VehicleId = route.VehicleId,
                 DriverId = route.DriverId,
                 Name = route.Name,
-                Origin = ToPointDto(route.Origin),
-                Destination = ToPointDto(route.Destination),
-                Points = route.Points.Select(ToPointDto).ToList(),
+                Origin = ToPointDto(route.Origin, includeImageContent: true),
+                Destination = ToPointDto(route.Destination, includeImageContent: true),
+                Points = route.Points.Select(point => ToPointDto(point, includeImageContent: true)).ToList(),
                 CargoDescription = route.CargoDescription,
                 PlannedStart = route.PlannedStart,
                 PlannedEnd = route.PlannedEnd,
@@ -29,9 +29,31 @@ namespace fletflow.Application.Fleet.Mappings
         }
 
         public static List<RouteDto> ToDtoList(IEnumerable<RouteE> routes)
-            => routes.Select(ToDto).ToList();
+            => routes.Select(route => ToDtoListItem(route)).ToList();
 
-        private static RoutePointDto ToPointDto(RoutePoint point)
+        private static RouteDto ToDtoListItem(RouteE route)
+        {
+            return new RouteDto
+            {
+                Id = route.Id,
+                VehicleId = route.VehicleId,
+                DriverId = route.DriverId,
+                Name = route.Name,
+                Origin = ToPointDto(route.Origin, includeImageContent: false),
+                Destination = ToPointDto(route.Destination, includeImageContent: false),
+                Points = route.Points.Select(point => ToPointDto(point, includeImageContent: false)).ToList(),
+                CargoDescription = route.CargoDescription,
+                PlannedStart = route.PlannedStart,
+                PlannedEnd = route.PlannedEnd,
+                StartedAt = route.StartedAt,
+                EndedAt = route.EndedAt,
+                CreatedAtUtc = route.CreatedAtUtc,
+                Status = route.Status,
+                IsActive = route.IsActive
+            };
+        }
+
+        private static RoutePointDto ToPointDto(RoutePoint point, bool includeImageContent)
         {
             return new RoutePointDto
             {
@@ -43,7 +65,7 @@ namespace fletflow.Application.Fleet.Mappings
                 Evidence = point.Evidence.Select(evidence => new RoutePointEvidenceDto
                 {
                     Type = evidence.Type,
-                    Content = evidence.Content,
+                    Content = includeImageContent || evidence.Type != "image" ? evidence.Content : null,
                     Description = evidence.Description,
                     CreatedAtUtc = evidence.CreatedAtUtc
                 }).ToList()

@@ -1,3 +1,11 @@
+## 2026-11-23 — GET de lista repetía fotos Base64 — CORREGIDO LOCALMENTE
+
+- El polling consultaba rutas con contenido completo de cada foto, multiplicando el payload por tenant.
+- Solución: mapper de lista conserva metadata sin Content; mapper de detalle entrega evidencia íntegra. Test cubre ambos contratos y texto de nota.
+- Verificación: Release 158/158, build sin warnings/errores. Smokes HTTP/MySQL de CI pendientes.
+- Error de entorno: dotnet del PATH usa /usr/lib64/dotnet sin runtime, aunque .NET 8 reside en /home/leonardo/.dotnet. Solución: DOTNET_ROOT=/home/leonardo/.dotnet e invocar ese binario.
+- Prevención: revisar resolución de host y runtime antes de declarar que falta el SDK.
+
 ## 2026-11-23 — La evidencia no tenía límite agregado por ruta — CORREGIDO LOCALMENTE
 
 - La validación anterior limitaba cada imagen a 4 MB y cada request a 6 MB, pero repetidas solicitudes podían añadir evidencia ilimitada a una misma ruta; GET/listados serializaban cada payload Base64.

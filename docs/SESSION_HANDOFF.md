@@ -1,8 +1,7 @@
 # Handoff vigente — 2026-11-23
 
-- Backend `chore/stabilize-fleet-platform` HEAD `96b50cc`; Front `refactor/route-builder` HEAD `f859b19` (Action en curso). Ambas ramas separadas de `main`.
-- Backend Action [`45112158616`](https://github.com/Paul1578/Back_GPS/actions/runs/45112158616) pasó Release build, xUnit **135/135**, smoke HTTP/MySQL tenant, concurrencia y cleanup.
-- Front Action [`45112755472`](https://github.com/Paul1578/Front_gpsR/actions/runs/45112755472) pasó audit/lint/build, responsive **1/1**, Playwright API/MySQL **49/49** y cleanup; incluye reset/activación reales desde UI con fixtures de esta rama.
+- Backend `chore/stabilize-fleet-platform` HEAD `6f48f06`; Front `refactor/route-builder` HEAD `23e964e`. Ambas ramas separadas de `main`.
+- Backend Action [`45113700212`](https://github.com/Paul1578/Back_GPS/actions/runs/45113700212) pasó Release/xUnit **135/135**, smoke HTTP/MySQL tenant, concurrencia y cleanup. Front Action [`45114492930`](https://github.com/Paul1578/Front_gpsR/actions/runs/45114492930) pasó audit/lint/build, responsive **1/1**, API/MySQL **50/50** y cleanup; valida auth, tema y horario conservado al editar ruta.
 - Front `f71ae7d` añade comprobación E2E de carga inicial del Dashboard y configura `webServer` de Playwright con el puerto de `PLAYWRIGHT_BASE_URL`; con servidor limpio :3010, focal 4/4 y discovery 46 local. El error por servidor Next obsoleto/puerto fijo y su prevención están en Front `docs/ERROR_LOG.md`.
 - Cleanup FK 1451 resuelto en Backend `7ea14a6`: borrar puntos/rutas ligadas al Driver QA antes del Driver. Confirmado por Front Action `45103761122` y repetición documental `45104448741`.
 - Seguridad implementada: 12 caracteres claves nuevas, login 10/min/IP, reset 5/10 min/IP sin bloqueo por cuenta, token 256 bits, TTL 60 min por defecto (1–1440), URLs HTTPS en Production.
@@ -12,8 +11,9 @@
 
 ## Auditoría de seguridad de datos heredados — 2026-11-23
 
-- Revisión estática read-only identificó precondiciones de migración que deben comprobarse en la base objetivo: Admins con `OwnerUserId IS NULL` pueden interpretarse como raíz por el fallback de JWT; el índice único de roles falla si algún usuario conserva múltiples filas `UserRoles`; rutas inconsistentes pueden quedar con propietario nulo y ocultas por el filtro tenant.
-- No se infiere que esos registros existan: la consulta de conteos en MySQL local falló con `Access denied` (contraseña en `.env` no coincide con credencial del contenedor). Ningún dato se leyó ni alteró. Reintentar sólo cuando la credencial de una copia local/descartable se haya sincronizado; usar SQL documentado en `SECURITY.md`.
+- La revisión estática identificó precondiciones de migración; el preflight read-only local ya confirmó 5 usuarios, 2 Admin sin `OwnerUserId`, 0 usuarios con múltiples roles, 0 rutas sin propietario y 0 discrepancias de propietario. Las dos cuentas Admin raíz coinciden con la regla informada por usuario. Un vehículo sin conductor ya pertenece al Admin raíz más antiguo elegido.
+- Causa del acceso denegado: `.env` local tenía `DB_PASSWORD` distinta de `MYSQL_ROOT_PASSWORD`; el contenedor conserva una contraseña de inicialización antigua. Se sincronizó DB_PASSWORD en el archivo local ignorado, sin imprimir credenciales. No se editaron filas.
+- Al iniciar API local se aplicaron cuatro migraciones pendientes revisadas como aditivas: TokenVersion, nombres User/Driver, CreatedAtUtc en Routes y tabla EmailOutbox. Migraciones aplicadas **26/26**; conteo Users se mantuvo en 5 y EmailOutbox está vacía. Swagger HTTP 200. Release build 0 warnings y xUnit 135/135.
 - Otros riesgos de despliegue confirmados por revisión estática: IP de rate limit detrás de proxy y límite en memoria por proceso; rate específico/antiabuso de registro; posible diferencia temporal en recuperación. No se probó configuración de proxy ni una instancia de producción.
 - Auditoría Front independiente: exportación, responsive secundario y ciclo real reset/activación están validados. Persistencia del tema se añadió en Front `f859b19`; Action `45113527889` está pendiente.
 - Backend `585fcb0` implementó límite público 5/10 min/IP. Action `45110342238` confirmó build Release, xUnit **135/135**, smoke tenant HTTP/MySQL y concurrencia, cleanup limpio.

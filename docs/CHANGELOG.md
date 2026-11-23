@@ -517,3 +517,9 @@
 - Smoke Logistics recorre en una misma ruta una recogida, entrega y parada combinada; guarda evidencia y completa cada una en secuencia.
 - Verifica `PointsJson` en MySQL, estados/timestamps de ruta completada y vehículo disponible, además de cleanup QA.
 - Backend `a29a2fa`; Action [`45108549336`](https://github.com/Paul1578/Back_GPS/actions/runs/45108549336) pasó con Release/xUnit **133/133**, smoke HTTP/MySQL y cleanup limpio.
+
+## 2026-11-23 — Credenciales locales y migraciones — PREFLIGHT COMPLETADO
+
+- Se corrigió `DB_PASSWORD` desincronizada en `.env` local usando `MYSQL_ROOT_PASSWORD` actual, sin imprimir ni versionar secretos.
+- Preflight read-only confirmó 0 usuarios con roles múltiples, 0 rutas sin owner y 0 discrepancias entre owners de rutas; dos Admin sin Owner coinciden con las dos cuentas raíz que producto confirmó. El vehículo sin Driver está asignado al root más antiguo elegido.
+- El arranque API aplicó cuatro migraciones aditivas pendientes; historia EF 26/26, Users=5, EmailOutbox=0. Swagger HTTP 200; build y xUnit **135/135** locales.

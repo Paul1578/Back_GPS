@@ -1375,8 +1375,10 @@ Cada cambio de API debe incluir validación de compilación, migraciones si apli
 - Repetir el smoke en la misma instancia dejó rate limit por IP en memoria y mensajes anteriores del outbox, dando resultados no deterministas. La corrida final usó proceso API y MySQL 8 descartables limpios.
 - Verificación real: restore/build Release (0 warnings/errores), `bash -n`, `git diff --check`, smoke HTTP/MySQL completo local y Backend Action [`45108549336`](https://github.com/Paul1578/Back_GPS/actions/runs/45108549336); tres paradas con evidencia, ruta Completed/EndedAt, vehículo Available y cleanup sin fixtures.
 - Prevención: normalizar tipos SQL en assertions y usar una DB/proceso limpios al repetir flujos que consumen rate limit y email queue.
-# 2026-11-23 — Credencial del MySQL local no coincide con servidor — SIN CAMBIOS EN DATOS
+# 2026-11-23 — Credencial local MySQL desincronizada — CORREGIDA Y PREFLIGHT COMPLETADO
 
-- Las consultas agregadas read-only de preflight no autentican con `DB_PASSWORD` de `.env`. Se inspeccionó la variable declarada por el contenedor sin imprimirla; también falló con 1045 por TCP y socket desde `mysql-gps`.
-- Resultado: no se consultaron filas ni se alteraron datos. No se reinició la contraseña root ni se recreó el volumen porque eso puede afectar datos persistentes.
-- Solución para continuar la auditoría heredada: sincronizar la credencial del entorno mediante operador o trabajar sobre una copia/DB desechable y correr las consultas de `SECURITY.md`.
+- Causa: `.env` tenía `DB_PASSWORD` diferente de `MYSQL_ROOT_PASSWORD`; además el contenedor conserva su variable antigua de inicialización, que no refleja la clave root rotada. Con la variable actual de `.env` se conectó read-only y sin imprimir secretos.
+- Solución: sincronizar `DB_PASSWORD` en `.env` local ignorado por Git. Build Release 0 warnings/errores, xUnit 135/135, API local inició y Swagger respondió 200.
+- Preflight agregado: 5 Users; 2 Admin sin OwnerUserId (las dos cuentas raíz confirmadas por el usuario); 0 usuarios con varios roles; 0 rutas sin propietario o con propietarios discordantes; el vehículo sin Driver está con el Admin raíz más antiguo elegido.
+- API aplicó cuatro migraciones pendientes y EF registró 26/26. No hubo inserciones ni eliminaciones manuales; `AddUserProfileNames` ejecuta su backfill previsto desde Driver asociado. Users siguió en 5 y EmailOutbox quedó vacía. No se reinició root ni se recreó el volumen.
+- Prevención: al depurar, diferenciar credencial runtime `.env` de variable de inicialización del contenedor; no asumir que la variable declarada por Docker representa la contraseña actual del servidor.

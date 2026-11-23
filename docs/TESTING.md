@@ -1,5 +1,13 @@
 # Estado vigente — 2026-11-23
 
+## Verificación de DB local y arranque API — 2026-11-23
+
+- `DB_PASSWORD` local se sincronizó con `MYSQL_ROOT_PASSWORD` (archivo `.env` ignorado; ningún valor secreto salió en consola). API inició en Development y `/swagger/index.html` respondió HTTP 200.
+- EF aplicó cuatro migraciones revisadas como aditivas; `__EFMigrationsHistory` quedó en **26/26**, Users se mantuvo en 5 y EmailOutbox está vacía.
+- Preflight read-only: 2 Admin sin propietario, 0 usuarios con roles duplicados, 0 rutas sin propietario, 0 asociaciones de ruta discordantes y 1 vehículo sin Driver asignado al Admin raíz más antiguo elegido por producto.
+- `dotnet build BackEnd_Gps.sln -c Release --no-restore -m:1`: 0 warnings/errores. `dotnet test ... --no-build --no-restore -m:1`: **135/135**.
+- Front dev responde `/login` con 200; reescritura hacia `/Auth/me` devuelve 401 sin sesión.
+
 ## Recuperación y política de URL — cambios locales
 
 - Cobertura xUnit añadida para cinco solicitudes `forgot-password` admitidas y sexta 429 por IP, incluso desde loopback Development, con `Retry-After` y acceso posterior no bloqueado a `GET /api/Routes`.

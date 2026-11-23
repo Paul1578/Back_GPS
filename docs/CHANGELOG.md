@@ -523,3 +523,8 @@
 - Se corrigió `DB_PASSWORD` desincronizada en `.env` local usando `MYSQL_ROOT_PASSWORD` actual, sin imprimir ni versionar secretos.
 - Preflight read-only confirmó 0 usuarios con roles múltiples, 0 rutas sin owner y 0 discrepancias entre owners de rutas; dos Admin sin Owner coinciden con las dos cuentas raíz que producto confirmó. El vehículo sin Driver está asignado al root más antiguo elegido.
 - El arranque API aplicó cuatro migraciones aditivas pendientes; historia EF 26/26, Users=5, EmailOutbox=0. Swagger HTTP 200; build y xUnit **135/135** locales.
+
+## 2026-11-23 — Sincronización de evidencia de CI
+
+- Se corrigieron SHA/Actions citados en el inicio de status y handoff y se registró la solución en `ERROR_LOG.md`.
+- Backend HEAD documental `ec15ea6` pasó Action `45115773126`; Front HEAD documental `d0a9342` pasó Action `45115772569` (**50/50 E2E**, responsive, audit/lint/build y cleanup). La validación funcional backend `6f48f06` pasó `45113924558` (**135/135 xUnit** y smoke HTTP/MySQL).

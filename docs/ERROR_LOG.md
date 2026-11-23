@@ -1382,3 +1382,9 @@ Cada cambio de API debe incluir validación de compilación, migraciones si apli
 - Preflight agregado: 5 Users; 2 Admin sin OwnerUserId (las dos cuentas raíz confirmadas por el usuario); 0 usuarios con varios roles; 0 rutas sin propietario o con propietarios discordantes; el vehículo sin Driver está con el Admin raíz más antiguo elegido.
 - API aplicó cuatro migraciones pendientes y EF registró 26/26. No hubo inserciones ni eliminaciones manuales; `AddUserProfileNames` ejecuta su backfill previsto desde Driver asociado. Users siguió en 5 y EmailOutbox quedó vacía. No se reinició root ni se recreó el volumen.
 - Prevención: al depurar, diferenciar credencial runtime `.env` de variable de inicialización del contenedor; no asumir que la variable declarada por Docker representa la contraseña actual del servidor.
+
+## 2026-11-23 — Evidencia de CI apuntaba a un SHA anterior — CORREGIDO
+
+- La cabecera vigente de status/handoff enlazaba Action `45113700212`, cuyo `headSha` era `62726c8`, como evidencia del código `6f48f06`. El workflow correcto para `6f48f06` es `45113924558`; se comprobó cada vínculo con `gh run view` y se corrigió el status para distinguir validación funcional y documental.
+- También se actualizó el estado local de migraciones: el preflight no estaba bloqueado; DB_PASSWORD local se sincronizó y cuatro migraciones se aplicaron tras revisión.
+- Prevención: validar el `headSha`, conclusión y estado de cada Action enlazado antes de copiar IDs a documentación vigente. Action `45115773126` pasó para HEAD documental `ec15ea6`.

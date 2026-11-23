@@ -1,5 +1,15 @@
 # Estado vigente — 2026-11-23
 
+## Carrera inicio de ruta / mantenimiento — validación en progreso
+
+- xUnit SQLite `ChangeRouteStatus_RejectsStartingPendingRouteWhenVehicleIsInMaintenance_WithoutChangingState`: **1/1 pasó**; verifica ruta `Pending` y vehículo `Maintenance` después del conflicto.
+- `smoke-route-concurrency.sh` ahora dispara ambas peticiones HTTP a la vez y acepta sólo los resultados coherentes `Pending/Maintenance` o `InProgress/OnRoute`; el smoke MySQL/CI de esta modificación está pendiente.
+- Suite Release **138/138**, build Release **0 advertencias/0 errores**, test focalizado **1/1**, `bash -n scripts/smoke-route-concurrency.sh` y `git diff --check` pasan. Action integrada sigue pendiente.
+
+## xUnit multi-operación — CI integrado
+
+- Action [`45141029124`](https://github.com/Paul1578/Back_GPS/actions/runs/45141029124) pasó Release build, **137/137 xUnit**, aislamiento tenant HTTP/MySQL, concurrencia previa, login rate limit y cleanup. Incluye ciclo de dominio pickup/delivery/both.
+
 ## xUnit de dominio — ciclo multi-parada
 
 - Nuevo caso `RouteWithPickupDeliveryAndCombinedStopsRequiresEveryStopBeforeCompletion`: completa pickup, delivery y PickupAndDelivery con evidencia; intenta cerrar temprano y verifica que la ruta siga InProgress; después de cerrar las tres, completa la ruta.

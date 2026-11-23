@@ -247,6 +247,21 @@ if [[ "$started_routes" != "1:1:1" ]]; then
   exit 1
 fi
 
+maintenance_race_vehicle="$(create_vehicle "${prefix}maintenance_race_vehicle")"
+maintenance_race_driver="$(create_driver "${prefix}maintenance_race_driver")"
+maintenance_race_route="$(create_route "${prefix}maintenance_race_route" "$maintenance_race_vehicle" "$maintenance_race_driver" "2035-05-05T10:00:00Z" "2035-05-05T11:00:00Z")"
+concurrent_request PUT "/Routes/$maintenance_race_route/status" '{"status":1}' start_vs_maintenance & start_maintenance_pid=$!
+concurrent_request PUT "/Vehicles/$maintenance_race_vehicle/status" '{"status":2}' maintenance_vs_start & maintenance_pid=$!
+wait "$start_maintenance_pid"
+wait "$maintenance_pid"
+assert_one_created_one_conflict start_vs_maintenance maintenance_vs_start "Inicio de ruta/cambio de vehículo a mantenimiento concurrentes" 204
+maintenance_race_state="$(mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" --batch --skip-column-names "$db_name" \
+  -e "SELECT CONCAT(r.Status, ':', CAST(v.Status AS UNSIGNED)) FROM Routes r JOIN Vehicles v ON v.Id=r.VehicleId WHERE r.Id='${maintenance_race_route}';")"
+if [[ "$maintenance_race_state" != "0:2" && "$maintenance_race_state" != "1:1" ]]; then
+  echo "Inicio/mantenimiento concurrente dejó estado incoherente (RouteStatus:VehicleStatus=$maintenance_race_state)." >&2
+  exit 1
+fi
+
 route_deactivation="$(create_route "${prefix}driver_deactivation" "$v4" "$d4" "2036-04-05T10:00:00Z" "2036-04-05T11:00:00Z")"
 concurrent_request PUT "/Routes/$route_deactivation/status" '{"status":1}' start_vs_deactivate & start_pid=$!
 curl -sS --max-time 60 -o "$work_dir/deactivate_driver.json" -w '%{http_code}' -X PUT \

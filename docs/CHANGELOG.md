@@ -1,3 +1,8 @@
+# 2026-11-23 — Carrera de inicio de ruta y mantenimiento
+
+- Agregado test SQLite que impide iniciar ruta con vehículo en Maintenance y verifica que ambos estados permanezcan intactos.
+- Ampliado smoke de concurrencia con inicio HTTP y cambio a Maintenance simultáneos; SQL acepta únicamente `Pending/Maintenance` o `InProgress/OnRoute`. Suite Release **138/138**, build limpio y bash syntax pasan; validación HTTP/MySQL integrada pendiente.
+
 # 2026-11-23 — Corrección del estado de cobertura multi-parada
 
 - La auditoría confirmó que el ciclo con tres paradas operativas y evidencia ya estaba cubierto por `smoke-tenant-http.sh` y Action `45132350399`; se retiró el pendiente obsoleto del estado vigente y se distinguió de la cobertura xUnit de dominio con una sola parada.
@@ -6,7 +11,7 @@
 
 # 2026-11-23 — xUnit de dominio para múltiples operaciones en una ruta
 
-- Añadido ciclo con pickup, delivery y PickupAndDelivery, evidencia individual, rechazo de cierre incompleto y cierre válido. Test focalizado **1/1**, suite Release **137/137** y build Release **0 advertencias/0 errores**; Action integrada de la rama pendiente.
+- Añadido ciclo con pickup, delivery y PickupAndDelivery, evidencia individual, rechazo de cierre incompleto y cierre válido. Test focalizado **1/1**, suite Release **137/137**, build limpio y Action [`45141029124`](https://github.com/Paul1578/Back_GPS/actions/runs/45141029124) integrada exitosa.
 
 # 2026-11-22 — Serializar edición Driver y asignación Vehicle
 

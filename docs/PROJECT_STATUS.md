@@ -3,7 +3,8 @@
 ## Estado vigente
 
 - Front más reciente: Actions [`45138088658`](https://github.com/Paul1578/Front_gpsR/actions/runs/45138088658) (cambio de rol persistido por UI) y [`45139564823`](https://github.com/Paul1578/Front_gpsR/actions/runs/45139564823) (username largo responsive) pasaron **51/51 E2E**; API/MySQL, responsive, Release/xUnit y cleanup correctos.
-- xUnit agrega ciclo de dominio con pickup, delivery y PickupAndDelivery: cierre rechazado mientras quede una parada pendiente y exitoso cuando las tres tienen evidencia. Resultado local Release: **137/137 xUnit**, build **0 advertencias/0 errores**. Workflow HTTP/MySQL sobre la rama de trabajo pendiente; el smoke ya cubre la ruta multi-parada integrada.
+- xUnit agrega ciclo de dominio con pickup, delivery y PickupAndDelivery: cierre rechazado mientras quede una parada pendiente y exitoso cuando las tres tienen evidencia. Action [`45141029124`](https://github.com/Paul1578/Back_GPS/actions/runs/45141029124) pasó build, **137/137 xUnit**, tenant HTTP/MySQL, concurrencia y login rate limit; cleanup correcto.
+- QA detectó una carrera sin cobertura entre inicio de ruta y cambio de vehículo a mantenimiento. Se añadió xUnit SQLite para rechazo sin mutaciones y smoke HTTP/MySQL concurrente que acepta sólo estados coherentes. Suite Release **138/138**, build **0 advertencias/0 errores**, test enfocado **1/1**, `bash -n` y diff-check pasan; Action integrada pendiente.
 
 - Revisión de seguridad independiente read-only sobre Backend `391792e` y Front `6555858`: no encontró un nuevo bypass tenant/roles/JWT ni XSS explotable dentro del alcance revisado. Confirmó filtros globales, root-only y `TokenVersion` en `OnTokenValidated`; las comprobaciones dinámicas permanecen en las Actions HTTP/MySQL citadas.
 

@@ -10,6 +10,12 @@
 - Solución: localizar fuente con `rg --files fletflow/Domain` y usar `Route.cs`.
 - Prevención: distinguir nombre de clase del nombre del archivo y resolver rutas antes de `sed`/`rg` con ruta literal.
 
+## 2026-11-23 — Primera lectura del test de estado usó nombre de archivo incorrecto — RESUELTO
+
+- Se intentó leer `BackEnd_Gps.Tests/ChangeRouteStatusCommandTests.cs`; los escenarios de este comando viven en `CreateRouteCommandTests.cs`. No hubo cambios ni efecto de prueba.
+- Solución: localizar pruebas con `rg -n` y leer el archivo real `BackEnd_Gps.Tests/CreateRouteCommandTests.cs`.
+- Prevención: buscar primero el nombre del método o símbolo cuando el archivo de tests no coincide con el nombre del command.
+
 # 2026-11-22 — Fixture del E2E Manager mapa compartía rol y no se limpiaba tras timeout — CORREGIDO LOCALMENTE
 
 - Front Actions `45084368342`/`45084699175` pasaron 38/39; el único fallo fue el E2E de mapa que reutilizaba una cuenta Driver, cambiaba su rol y podía expirar antes de restaurarlo. El siguiente retry veía `Manager` y fallaba esperando `Driver`; también quedaban ruta y vehículo QA.

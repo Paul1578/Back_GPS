@@ -398,6 +398,50 @@ public class CreateRouteCommandTests
     }
 
     [Fact]
+    public async Task ChangeRouteStatus_RejectsStartingPendingRouteWhenVehicleIsInMaintenance_WithoutChangingState()
+    {
+        var ownerId = Guid.NewGuid();
+        using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder<AppDbContext>().UseSqlite(connection).Options;
+        var http = new DefaultHttpContext
+        {
+            User = new ClaimsPrincipal(new ClaimsIdentity([new Claim("owner_id", ownerId.ToString())], "test"))
+        };
+        await using var context = new AppDbContext(options, new HttpContextAccessor { HttpContext = http });
+        await context.Database.EnsureCreatedAsync();
+
+        var vehicles = new VehicleRepository(context);
+        var drivers = new DriverRepository(context);
+        var routes = new RouteRepository(context);
+        var vehicle = Vehicle.Create("QA-START-MAINTENANCE", "Test", "Van", 2025, null);
+        var driver = Driver.Create("Maintenance", "Driver", "QA-START-MAINTENANCE-D", "0990000000");
+        await vehicles.AddAsync(vehicle);
+        await drivers.AddAsync(driver);
+        await context.SaveChangesAsync();
+
+        var unitOfWork = new UnitOfWork(context, null!, null!, null!, null!, vehicles, drivers, routes, null!);
+        var route = await new CreateRouteCommand(unitOfWork, routes, vehicles, drivers).Execute(
+            vehicle.Id,
+            driver.Id,
+            "Pending route with vehicle in maintenance",
+            [RoutePoint.Create(-0.2, -78.5, "Origin"), RoutePoint.Create(-0.21, -78.51, "Destination")],
+            null,
+            null,
+            null);
+
+        vehicle.SetStatus(VehicleStatus.Maintenance);
+        await vehicles.UpdateAsync(vehicle);
+        await context.SaveChangesAsync();
+
+        var command = new ChangeRouteStatusCommand(unitOfWork, routes, vehicles, drivers, null!);
+        await Assert.ThrowsAsync<BusinessConflictException>(() => command.Execute(route.Id, RouteStatus.InProgress));
+
+        Assert.Equal(RouteStatus.Pending, (await routes.GetByIdAsync(route.Id))!.Status);
+        Assert.Equal(VehicleStatus.Maintenance, (await vehicles.GetByIdAsync(vehicle.Id))!.Status);
+    }
+
+    [Fact]
     public async Task ChangeRouteStatus_RejectsStartingRouteWhenLinkedUserIsInactive_WithoutChangingRouteOrVehicle()
     {
         var ownerId = Guid.NewGuid();

@@ -1,14 +1,21 @@
 # Handoff vigente — 2026-11-23
 
-- Backend `chore/stabilize-fleet-platform` HEAD `a29a2fa`; Front `refactor/route-builder` HEAD `f71ae7d`. Ambas ramas están separadas de `main`, que permanece intacta.
-- Backend Action [`45108549336`](https://github.com/Paul1578/Back_GPS/actions/runs/45108549336) pasó Release build, xUnit **133/133**, smoke HTTP/MySQL tenant y concurrencia. El smoke de Logistics completó en una ruta tres operaciones (pickup, delivery y ambas), verificó evidencia persistida, estado Completed/EndedAt y vehículo Available, con cleanup cero.
-- Front Action [`45108539423`](https://github.com/Paul1578/Front_gpsR/actions/runs/45108539423) pasó audit/lint/build, responsive **1/1**, Playwright API/MySQL **46/46** y cleanup; incluye la nueva prueba de carga inicial del Dashboard.
+- Backend `chore/stabilize-fleet-platform` HEAD `06078cd`; Front `refactor/route-builder` HEAD `862f64a`. Ambas ramas están separadas de `main`, que permanece intacta.
+- Backend Action [`45109126972`](https://github.com/Paul1578/Back_GPS/actions/runs/45109126972) pasó Release build, xUnit **133/133**, smoke HTTP/MySQL tenant y concurrencia. El ciclo Logistics confirmó tres operaciones en una ruta, evidencia persistida, Completed/EndedAt, vehículo Available y cleanup cero.
+- Front Action [`45109125961`](https://github.com/Paul1578/Front_gpsR/actions/runs/45109125961) pasó audit/lint/build, responsive **1/1**, Playwright API/MySQL **46/46** y cleanup.
 - Front `f71ae7d` añade comprobación E2E de carga inicial del Dashboard y configura `webServer` de Playwright con el puerto de `PLAYWRIGHT_BASE_URL`; con servidor limpio :3010, focal 4/4 y discovery 46 local. El error por servidor Next obsoleto/puerto fijo y su prevención están en Front `docs/ERROR_LOG.md`.
 - Cleanup FK 1451 resuelto en Backend `7ea14a6`: borrar puntos/rutas ligadas al Driver QA antes del Driver. Confirmado por Front Action `45103761122` y repetición documental `45104448741`.
 - Seguridad implementada: 12 caracteres claves nuevas, login 10/min/IP, reset 5/10 min/IP sin bloqueo por cuenta, token 256 bits, TTL 60 min por defecto (1–1440), URLs HTTPS en Production.
 - Riesgos productivos restantes: SMTP credenciales; rate limiter distribuido e IP confiable con proxy; Data Protection persistente; despliegue productivo no validado. Misión amplia sigue abierta.
 - Decisiones de usuario: sólo raíz asigna Admin; traslados sin paradas sí; una parada puede ser pickup/delivery/ambas; móvil nativo aplazado.
 - Las notas históricas debajo pueden estar superadas. Usa este resumen y `PROJECT_STATUS.md` vigente para continuar.
+
+## Auditoría de seguridad de datos heredados — 2026-11-23
+
+- Revisión estática read-only identificó precondiciones de migración que deben comprobarse en la base objetivo: Admins con `OwnerUserId IS NULL` pueden interpretarse como raíz por el fallback de JWT; el índice único de roles falla si algún usuario conserva múltiples filas `UserRoles`; rutas inconsistentes pueden quedar con propietario nulo y ocultas por el filtro tenant.
+- No se infiere que esos registros existan: la consulta de conteos en MySQL local falló con `Access denied` (contraseña en `.env` no coincide con credencial del contenedor). Ningún dato se leyó ni alteró. Reintentar sólo cuando la credencial de una copia local/descartable se haya sincronizado; usar SQL documentado en `SECURITY.md`.
+- Otros riesgos de despliegue confirmados por revisión estática: IP de rate limit detrás de proxy y límite en memoria por proceso; rate específico/antiabuso de registro; posible diferencia temporal en recuperación. No se probó configuración de proxy ni una instancia de producción.
+- Auditoría Front independiente concluye que faltan E2E de UI para recuperación/restablecimiento/activación, exportación real, preferencia de tema y responsive en esas pantallas. Son brechas de evidencia, no defectos confirmados; backend ya cubre root-only por HTTP/MySQL.
 
 ## Verificación de ruta multi-parada — 2026-11-23
 

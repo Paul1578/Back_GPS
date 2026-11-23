@@ -1,12 +1,26 @@
 # Seguridad
 
-## Endurecimiento de recuperación — cambios locales pendientes de publicar
+## Estado vigente de endurecimiento y riesgos de despliegue — 2026-11-23
 
 - `POST /api/Auth/forgot-password` permite cinco solicitudes por diez minutos y por IP, incluso desde loopback en Development. El contador no usa correo/ID de cuenta, no bloquea cuentas y devuelve 429 con `Retry-After` al exceder el límite.
 - El limitador y sus ventanas residen en memoria del proceso: reiniciar el backend reinicia los contadores; varias réplicas no comparten el límite. `RemoteIpAddress` se utiliza directamente. No se configura `ForwardedHeaders`; no confiar en `X-Forwarded-For` enviado por el cliente. El despliegue debe establecer proxies confiables antes de usar la IP reenviada y considerar un backend distribuido para escalar.
 - Los tokens de reset se generan con 32 bytes aleatorios (256 bits) y sólo se persiste su SHA-256. El TTL por defecto es 60 minutos; `Email:ResetTokenMinutes` sigue siendo configurable y se valida entre 1 y 1440 minutos.
 - `Email:ResetPasswordUrl` y `Email:ActivationUrl` deben ser URLs absolutas HTTPS fuera de Development. En Development se permite HTTP sólo para hosts loopback. `ValidateOnStart` y la resolución explícita de opciones antes de sembrar DB fallan con nombres de configuración y sin imprimir valores de URL.
 - SMTP conserva su comportamiento de error: el limitador no declara que el correo fue enviado. Outbox persistente y Data Protection siguen dependiendo de volúmenes, certificado y secretos de despliegue correctamente configurados.
+- Validación CI Backend Action `45109126972`: Release, xUnit 133/133, aislamiento tenant y concurrencia por HTTP/MySQL con DB descartable. Esto no sustituye validación de proxies, réplicas, SMTP ni base de datos de producción.
+
+## Precondiciones pendientes para migrar datos existentes — no inferir desde el código
+
+- `AuthService` emite `owner_id = OwnerUserId ?? User.Id`, y `UserController` considera raíz cuando ese ID coincide con el usuario. En datos heredados, un Admin delegado con `OwnerUserId IS NULL` podría tener autoridad de raíz. No se debe asignar OwnerUserId automáticamente sin identificar raíces válidas; el modelo no ofrece suficiente información para distinguir todos los nulos.
+- La migración `20261121062438_RouteLifecycleAndSingleRole` añade índice único en `UserRoles.UserId`; puede fallar si hay usuarios con más de un rol. Antes de aplicarla sobre una copia de datos existentes, revisar `SELECT UserId, COUNT(*) FROM UserRoles GROUP BY UserId HAVING COUNT(*) > 1;` y definir la regla de resolución.
+- Revisar rutas sin propietario y relaciones incompatibles en una copia: `SELECT COUNT(*) FROM Routes WHERE OwnerUserId IS NULL;` y comparar propietario de `Routes.DriverId`/`VehicleId` con `Routes.OwnerUserId`. La migración tenant deja NULL cuando no puede asignar un propietario consistente; el filtro global las oculta para evitar fuga entre empresas, pero pueden quedar operaciones inaccesibles.
+- Intenté consultar sólo agregados (sin exponer identificadores) en el MySQL local; ambos accesos fallaron `ERROR 1045 Access denied` con la clave configurada en `.env`, incluso desde el contenedor. No se ejecutó ninguna mutación. Repetir esas consultas de solo lectura cuando se sincronice la credencial local o en una DB clonada/descartable.
+
+## Otros riesgos por validar en despliegue
+
+- `SimpleRateLimitMiddleware` usa `RemoteIpAddress` y memoria estática. Tras proxy, varios usuarios pueden compartir límite; varias réplicas no comparten contadores. Configurar proxies de confianza y almacenamiento distribuido antes de escalar.
+- Registro público permite crear nuevos tenants y sólo hereda el límite general de 60 solicitudes/minuto/IP. Evaluar antiabuso/límite específico con prueba de carga en entorno descartable.
+- Recuperación devuelve cuerpo uniforme y tiene un piso temporal, pero la rama de cuenta existente hace más escrituras que la inexistente. La diferencia temporal potencial no se midió bajo carga.
 
 ## Hallazgo corregido — revocación de refresh por cuenta — 2026-11-22
 

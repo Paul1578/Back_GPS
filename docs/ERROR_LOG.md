@@ -20,6 +20,20 @@
 
 ## 2026-11-23 — Admin delegado podía crear o promover otros Admin — CORREGIDO LOCALMENTE; CI PENDIENTE
 
+## 2026-11-23 — Lectura de precondiciones de migración local rechazada por MySQL — SIN CAMBIOS DE DATOS
+
+- **Objetivo:** consultar sólo conteos agregados para verificar cuentas Admin sin propietario, usuarios con roles duplicados y rutas sin propietario después de una auditoría estática.
+- **Síntoma:** el cliente MariaDB/MySQL recibió `ERROR 1045 (28000): Access denied` usando la clave configurada en `.env`; repetir desde el contenedor también falló. La contraseña de configuración no coincide con la que acepta el servidor local.
+- **Impacto:** no se ejecutaron los SELECT y no se modificó ni imprimió información de usuarios/vehículos/rutas. El estado de esas precondiciones queda sin confirmar.
+- **Prevención:** sincronizar credenciales sólo en entorno local autorizado o usar una copia/DB descartable; después ejecutar las consultas agregadas de `SECURITY.md`. No probar una reasignación de roles ni migrar datos de producción para resolverlo.
+
+## 2026-11-23 — Auditoría estática encontró precondiciones de migración tenant/rol
+
+- **Hallazgos condicionados a datos heredados:** Admin con `OwnerUserId IS NULL` recibe `owner_id` igual a su propio ID; roles múltiples pueden impedir el índice único de `UserRoles.UserId`; rutas sin propietario tras una asignación inconsistente quedan ocultas por filtros tenant.
+- **Clasificación:** riesgos verificables, no defectos confirmados en datos actuales. El acceso de solo lectura a la DB falló con 1045 y no permitió comprobar su existencia.
+- **Acción segura:** inspeccionar conteos/relaciones en copia local con credencial válida; resolver propietario/rol según datos de negocio antes de la migración. No elegir reglas automáticas que puedan otorgar privilegios o abandonar operaciones.
+- **Revisión independiente adicional:** IP/proxy y rate limit por proceso, antiabuso de registro y diferencia temporal potencial de recuperación; detalle vigente en `SECURITY.md`.
+
 - El endpoint limitaba el miembro al mismo tenant, pero cualquier Admin del equipo podía otorgar el máximo rol mediante POST `/Users`, PUT `/{id}/role` o el alias POST `/{id}/roles/Admin`.
 - El usuario definió que sólo la cuenta raíz de la empresa puede hacerlo. Backend compara el ID autenticado con el `owner_id` firmado; Admin delegado recibe 403. El smoke verifica allow root, deny delegado y snapshots/persistencia MySQL.
 - La primera compilación del cambio reportó dos CS8604 porque los DTO/parámetros de rol podían ser null antes de llamar al comando. Se añadieron validaciones 400 para rol vacío y se pasa un nombre normalizado no nulo; repetir Release build para confirmar 0 warnings.

@@ -1,18 +1,18 @@
 # Estado actual de estabilización — 2026-11-23
 
-## Seguridad de recuperación — implementación local pendiente de commit
+## Estado vigente
 
-- `forgot-password`: 5 solicitudes/10 minutos/IP; sin límite por correo/cuenta ni bloqueo. El contador es local al proceso y la IP usa `RemoteIpAddress`; el forwarding de proxy no está configurado ni debe confiarse sin lista de proxies confiables.
-- Token de recuperación actualizado a 32 bytes aleatorios (256 bits); TTL por defecto 60 minutos, override validado entre 1 y 1440 minutos.
-- En Production, `Email:ResetPasswordUrl` y `Email:ActivationUrl` deben ser absolutas HTTPS. En Development sólo se admite HTTP para loopback. La validación corre antes de sembrar/conectar la DB y el mensaje no expone URLs configuradas; Production debe sobrescribir los localhost de `appsettings.json`.
-- SMTP sigue siendo una limitación externa: no se informa éxito de envío cuando el proveedor no está configurado o falla.
-- Verificación local: tests focalizados Release **17/17** y suite Release `BackEnd_Gps.sln` **133/133**, sin fallos ni omisiones; build Release 0 warnings/0 errores.
-- El rate limit es por proceso y no incorpora headers reenviados; la topología de proxy/replicas productiva y el key ring persistente siguen requiriendo configuración externa y validación de despliegue.
+- Ramas activas separadas de `main`: Backend `chore/stabilize-fleet-platform` (`3db7f03`); Front `refactor/route-builder` (`dd11ce4`). `main` intacta.
+- Backend Action [`45104450114`](https://github.com/Paul1578/Back_GPS/actions/runs/45104450114) y Action [`45103732510`](https://github.com/Paul1578/Back_GPS/actions/runs/45103732510) pasaron build Release, xUnit **133/133**, smoke HTTP/MySQL tenant y concurrencia. Front Action [`45104448741`](https://github.com/Paul1578/Front_gpsR/actions/runs/45104448741) pasó responsive 1/1, Playwright **43/43**, cleanup y build/backend checks.
+- Rutas: múltiples paradas; operación de parada pickup, delivery o ambas; se permiten traslados sin operación. CI verifica creación/ciclo multi-parada y cierre con evidencia; el E2E Front verifica persistencia del traslado.
+- Sólo la cuenta raíz puede crear/promover Admin. Password nuevo mínimo 12; login 10/minuto/IP; recuperación 5/10 minutos/IP, sin bloqueo de cuenta. Token reset usa 256 bits; TTL predeterminado 60 minutos y rango 1–1440. Production requiere URLs absolutas HTTPS para reset/activación.
+- `scripts/cleanup-e2e.sql` elimina primero RoutePositions/Routes asociadas a Driver QA antes de retirar Driver; Front Action `45103761122` validó **43/43 + cleanup** después del fix de FK 1451.
+- Pendientes externos de producción: SMTP actualizado; rate limiting distribuido y configuración segura de IP detrás de proxies; persistencia/rotación del key ring Data Protection. No se probó despliegue productivo.
+- La misión global permanece abierta para continuar la auditoría de funcionalidad y cobertura UI/roles/responsive. La app móvil nativa se pospuso por decisión del usuario.
 
-- HEAD backend `df88238` en `chore/stabilize-fleet-platform`; Front relacionado `9d84562` (la rama avanzó luego a `992053d`) en `refactor/route-builder`; ambas ramas separadas de `main`.
-- Política confirmada por el usuario: sólo la cuenta raíz puede crear/promover Admin. Action backend `45088129188` pasó la política y edición/sincronización de perfil vía HTTP/MySQL, xUnit 113/113, Release build limpio, concurrencia y cleanup. Action `45088881490` también pasó para el commit documental.
-- Front oculta “Gerente” (rol Admin API) a Admin delegado; Action `45091340306` aprobó la integración con **40/40 E2E**, responsive 1/1, audit, lint/build y backend xUnit.
-- La misión permanece abierta por cobertura CRUD/responsive y configuración externa de producción. Móvil nativo aplazado; SMTP real requiere credenciales vigentes.
+## Historial de auditoría y fases anteriores
+
+Las notas siguientes conservan evidencia histórica; pueden describir estados ya resueltos y no sustituyen el bloque vigente.
 
 ## Hallazgos de auditoría en curso — 2026-11-23
 

@@ -1,3 +1,15 @@
+# Handoff vigente — 2026-11-23
+
+- Backend `chore/stabilize-fleet-platform` HEAD `3db7f03`; Front `refactor/route-builder` HEAD `dd11ce4`; ambas ramas limpias, `main` intacta.
+- Backend Action `45104450114`: success. Release build/xUnit 133/133 y smoke HTTP/MySQL tenant/concurrencia. Front Action `45104448741`: success, audit/lint/build, responsive 1/1, E2E API/MySQL 43/43 y cleanup.
+- Cleanup FK 1451 resuelto en Backend `7ea14a6`: borrar puntos/rutas ligadas al Driver QA antes del Driver. Confirmado por Front Action `45103761122` y repetición documental `45104448741`.
+- Seguridad implementada: 12 caracteres claves nuevas, login 10/min/IP, reset 5/10 min/IP sin bloqueo por cuenta, token 256 bits, TTL 60 min por defecto (1–1440), URLs HTTPS en Production.
+- Riesgos productivos restantes: SMTP credenciales; rate limiter distribuido e IP confiable con proxy; Data Protection persistente; despliegue productivo no validado. Misión amplia sigue abierta.
+- Decisiones de usuario: sólo raíz asigna Admin; traslados sin paradas sí; una parada puede ser pickup/delivery/ambas; móvil nativo aplazado.
+- Las notas históricas debajo pueden estar superadas. Usa este resumen y `PROJECT_STATUS.md` vigente para continuar.
+
+---
+
 # Handoff — 2026-11-23
 
 ## Estado vigente — seguridad de recuperación en trabajo local

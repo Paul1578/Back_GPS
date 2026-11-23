@@ -1404,3 +1404,9 @@ Cada cambio de API debe incluir validación de compilación, migraciones si apli
 ## Smoke HTTP de login rate limit validado en CI
 
 - Action [`45126308692`](https://github.com/Paul1578/Back_GPS/actions/runs/45126308692), SHA `88f669d`: éxito. xUnit 136/136, smokes tenant/concurrencia, 10 login HTTP 401, intento 11 429 con Retry-After, misma cuenta autenticada desde otra IP; teardown MySQL/API/container correcto.
+
+## 2026-11-23 — Búsqueda de auditoría con path equivocado y backticks del shell — RESUELTO
+
+- Una búsqueda inicial apuntó a `BackEnd_Gps/fletflow/...`, estructura que no existe; `rg` informó paths faltantes y no alteró archivos. La estructura real está en `fletflow/Infrastructure/...` y `fletflow/Api/...`.
+- En otra búsqueda, backticks dentro de comillas dobles se interpretaron como sustitución de comandos por Bash (`ForwardedHeaders: command not found`). No se modificaron archivos ni se ejecutó una operación del proyecto.
+- Solución: localizar paths con `rg --files` y envolver patrones con backticks en comillas simples. Prevención: verificar la estructura y tratar `cmd` como shell ejecutable antes de enviar búsquedas.

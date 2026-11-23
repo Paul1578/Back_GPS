@@ -787,3 +787,10 @@ La invitación envía sólo el enlace de activación; el usuario fija su contras
 - Action Backend [45153378636](https://github.com/Paul1578/Back_GPS/actions/runs/45153378636), SHA `f49ee13`: Release, xUnit **139/139**, smoke tenant HTTP/MySQL, concurrencia de rutas y rate limit de login Staging pasaron.
 - La carrera verificó respuesta y persistencia API/SQL de ruta ganadora/perdedora y asignaciones de Drivers. La baja comprobó `isActive=false`, exclusión de `onlyActive=true` y fila MySQL.
 - Rate limit validó XFF no confiable ignorado, 10 respuestas 401 por IP confiable, intento 11 en 429 con `Retry-After`, y login 200 desde otra IP. Cleanup/teardown exitosos.
+
+## Carrera concurrente por DocumentNumber de Driver — 2026-11-23
+
+- `DriverTests.CreateDriver_ConcurrentDocumentInsertReturnsBusinessConflict` y `UpdateDriver_ConcurrentDocumentChangeReturnsBusinessConflict` usan SQLite relacional, índice único y contextos concurrentes. El segundo cambio se introduce durante el commit después de que el comando superó el precheck; se comprueba `BusinessConflictException` y que la fila ganadora permanezca intacta.
+- `CreateDriver_RethrowsDatabaseFailureWhenDocumentConflictIsNotConfirmed` y `UpdateDriver_RethrowsDatabaseFailureWhenOtherDriverDoesNotOwnDocument` aseguran que una falla de persistencia sin otro Driver confirmado no se convierta en conflicto de negocio.
+- Verificación Release local: **162/162 xUnit**; build Release **0 warnings, 0 errors**. `bash -n scripts/smoke-tenant-http.sh` y `git diff --check` pasan.
+- El smoke MySQL ahora sincroniza dos `POST /Drivers` después del precheck mediante un trigger temporal en una DB `fletflow_ci*`; verifica HTTP 201/409 y una sola fila. Ejecución de este smoke en CI **pendiente**. No se usó la DB persistente local `fletflow`.

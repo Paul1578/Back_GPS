@@ -6,6 +6,7 @@ using fletflow.Domain.Fleet.Entities;
 using fletflow.Domain.Fleet.Exceptions;
 using fletflow.Domain.Fleet.Repositories;
 using fletflow.Infrastructure.Persistence.Contracts;
+using Microsoft.EntityFrameworkCore;
 
 namespace fletflow.Application.Fleet.Commands
 {
@@ -66,7 +67,17 @@ namespace fletflow.Application.Fleet.Commands
             var driver = Driver.Create(firstName, lastName, documentNumber, phoneNumber, userId);
 
             await _drivers.AddAsync(driver);
-            await _uow.CommitAsync();
+            try
+            {
+                await _uow.CommitAsync();
+            }
+            catch (DbUpdateException)
+            {
+                if (await _drivers.GetByDocumentAsync(documentNumber) is not null)
+                    throw new BusinessConflictException($"Ya existe un conductor con el documento {documentNumber} en esta empresa.");
+
+                throw;
+            }
 
             return DriverApplicationMapper.ToDto(driver);
         }

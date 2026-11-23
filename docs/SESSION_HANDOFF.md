@@ -1,3 +1,14 @@
+# Handoff vigente — carrera de DocumentNumber Driver — 2026-11-23
+
+- Rama activa `chore/stabilize-fleet-platform`; árbol inicial limpio; `main` no se tocó.
+- Cambio acotado: `CreateDriverCommand` y `UpdateDriverCommand` capturan `DbUpdateException` del commit, reconsultan por documento y devuelven `BusinessConflictException` sólo si existe otro Driver dentro del tenant. Si no se confirma duplicado, relanzan el error original.
+- Cobertura xUnit de SQLite relacional fuerza colisión de índice concurrente durante commit tanto para alta como edición, verifica el registro ganador y conserva fallos de DB no relacionados. Suite Release **162/162**; build Release **0 warnings/0 errors**. `bash -n scripts/smoke-tenant-http.sh` y `git diff --check` pasan.
+- Añadido al smoke HTTP/MySQL trigger temporal con demora para hacer que dos POST pasen el precheck antes del insert; comprueba 201/409 y una fila, y elimina trigger/fixture. **Pendiente ejecutar en CI**. No ejecutar en la DB local `fletflow`: no es descartable; no se modificó.
+- Error de prueba resuelto y documentado: fixture del test negativo de Update superaba 20 caracteres, se acortó; suite Release final pasa.
+- Próximo paso: ejecutar Actions del Backend sobre este cambio y confirmar smoke MySQL/cleanup; actualizar este handoff con resultado o fallo de CI. Archivos clave: ambos comandos Driver, `BackEnd_Gps.Tests/DriverTests.cs`, `scripts/smoke-tenant-http.sh`, `docs/ERROR_LOG.md`, `docs/TESTING.md`, `docs/PROJECT_STATUS.md`.
+
+---
+
 ## Handoff vigente — payload de evidencia bajo demanda — 2026-11-23
 
 - Backend chore/stabilize-fleet-platform: RouteApplicationMapper.ToDtoList omite contenido de imágenes Base64; ToDto de detalle conserva bytes. DTO hace Content nullable.

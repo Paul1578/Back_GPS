@@ -66,7 +66,18 @@ public class UpdateDriverCommand
                 }
             }
 
-            await _uow.CommitAsync();
+            try
+            {
+                await _uow.CommitAsync();
+            }
+            catch (DbUpdateException)
+            {
+                var conflictingDriver = await _drivers.GetByDocumentAsync(documentNumber);
+                if (conflictingDriver is not null && conflictingDriver.Id != id)
+                    throw new BusinessConflictException("Ya existe otro conductor con ese documento en la empresa.");
+
+                throw;
+            }
             return DriverApplicationMapper.ToDto(driver);
         }
         catch

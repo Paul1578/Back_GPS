@@ -90,6 +90,8 @@ root_user_id=""
 driver_race_email_a=""
 driver_race_email_b=""
 driver_race_document=""
+driver_document_race_document=""
+driver_document_race_trigger=""
 same_tenant_driver_email=""
 same_tenant_driver_token=""
 same_tenant_driver_id=""
@@ -117,7 +119,11 @@ cleanup() {
   local status=$?
   trap - EXIT
   if [[ -n "$token" ]]; then
-    local sql="START TRANSACTION;"
+    local sql=""
+    if [[ -n "$driver_document_race_trigger" ]]; then
+      sql+=" DROP TRIGGER IF EXISTS $driver_document_race_trigger;"
+    fi
+    sql+=" START TRANSACTION;"
     if [[ -n "$route_id" ]]; then
       sql+=" DELETE FROM RoutePositions WHERE RouteId='$route_id'; DELETE FROM Routes WHERE Id='$route_id';"
     elif [[ -n "$route_name" ]]; then
@@ -162,6 +168,7 @@ cleanup() {
     elif [[ -n "$maintenance_driver_document" ]]; then sql+=" DELETE FROM Drivers WHERE DocumentNumber='$maintenance_driver_document';"; fi
     if [[ -n "$foreign_driver_id" ]]; then sql+=" DELETE FROM Drivers WHERE Id='$foreign_driver_id';"; fi
     if [[ -n "$driver_race_document" ]]; then sql+=" DELETE FROM Drivers WHERE DocumentNumber='$driver_race_document';"; fi
+    if [[ -n "$driver_document_race_document" ]]; then sql+=" DELETE FROM Drivers WHERE DocumentNumber='$driver_document_race_document';"; fi
     if [[ -n "$other_tenant_driver_id" ]]; then sql+=" DELETE FROM Drivers WHERE Id='$other_tenant_driver_id';"; fi
     if [[ -n "$manager_crud_driver_id" ]]; then sql+=" DELETE FROM Drivers WHERE Id='$manager_crud_driver_id';"
     elif [[ -n "$manager_crud_driver_document" ]]; then sql+=" DELETE FROM Drivers WHERE DocumentNumber='$manager_crud_driver_document';"; fi
@@ -467,6 +474,42 @@ expect_status 200 "Consultar identidad raíz tenant A"
 jq -e '.isRootAccount == true' "$work_dir/response.json" >/dev/null || {
   echo "La API no identificó como raíz a la cuenta propietaria." >&2; cat "$work_dir/response.json" >&2; exit 1;
 }
+
+# Pause both inserts after the commands' duplicate prechecks, so MySQL itself
+# resolves the simultaneous unique-index collision instead of the precheck.
+driver_document_race_trigger="fletflow_driver_race_${suffix: -8}"
+driver_document_race_document="RCD${suffix: -8}"
+mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" "$db_name" \
+  -e "CREATE TRIGGER $driver_document_race_trigger BEFORE INSERT ON Drivers FOR EACH ROW SET @fletflow_driver_race_delay = SLEEP(2);"
+driver_race_payload="$(jq -nc --arg document "$driver_document_race_document" '{firstName:"Concurrent",lastName:"Driver",documentNumber:$document,phoneNumber:"0990000000"}')"
+curl -sS --max-time 20 -o "$work_dir/driver-document-race-a.json" -w '%{http_code}' -X POST \
+  -H 'Content-Type: application/json' -H "Authorization: Bearer $token" -d "$driver_race_payload" \
+  "$api_base/Drivers" >"$work_dir/driver-document-race-a.status" &
+driver_document_race_pid_a=$!
+curl -sS --max-time 20 -o "$work_dir/driver-document-race-b.json" -w '%{http_code}' -X POST \
+  -H 'Content-Type: application/json' -H "Authorization: Bearer $token" -d "$driver_race_payload" \
+  "$api_base/Drivers" >"$work_dir/driver-document-race-b.status" &
+driver_document_race_pid_b=$!
+wait "$driver_document_race_pid_a" || true
+wait "$driver_document_race_pid_b" || true
+driver_document_race_status_a="$(cat "$work_dir/driver-document-race-a.status")"
+driver_document_race_status_b="$(cat "$work_dir/driver-document-race-b.status")"
+if ! { [[ "$driver_document_race_status_a" == "201" && "$driver_document_race_status_b" == "409" ]] ||
+       [[ "$driver_document_race_status_a" == "409" && "$driver_document_race_status_b" == "201" ]]; }; then
+  echo "La carrera HTTP/MySQL de DocumentNumber esperaba 201 y 409; recibió $driver_document_race_status_a y $driver_document_race_status_b." >&2
+  cat "$work_dir/driver-document-race-a.json" "$work_dir/driver-document-race-b.json" >&2
+  exit 1
+fi
+driver_document_race_count="$(mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" "$db_name" \
+  --batch --skip-column-names -e "SELECT COUNT(*) FROM Drivers WHERE DocumentNumber='$driver_document_race_document';")"
+[[ "$driver_document_race_count" == "1" ]] || {
+  echo "La carrera HTTP/MySQL dejó $driver_document_race_count Drivers con el mismo DocumentNumber; se esperaba exactamente 1." >&2
+  exit 1
+}
+mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" "$db_name" \
+  -e "DROP TRIGGER $driver_document_race_trigger;"
+driver_document_race_trigger=""
+echo "Carrera HTTP/MySQL DocumentNumber: un POST 201, uno 409 y una fila persistida." >&2
 
 request GET /RoutesPRUEBA/admin "" "$token"
 expect_status 404 "No publicar endpoints de rutas de prueba fuera del producto"

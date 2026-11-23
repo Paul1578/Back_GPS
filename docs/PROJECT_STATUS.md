@@ -1,3 +1,11 @@
+## Estado vigente — conflicto concurrente de DocumentNumber — validado localmente, CI pendiente — 2026-11-23
+
+- Rama `chore/stabilize-fleet-platform`; cambios limitados a CreateDriver/UpdateDriver, sus pruebas, smoke de tenant y documentación. `main` y la DB local persistente no se modificaron.
+- Ambos comandos traducen a `BusinessConflictException` el `DbUpdateException` únicamente cuando una consulta tenant confirma que otro Driver tiene el `DocumentNumber`; fallos de persistencia sin ese duplicado conservan la excepción original.
+- xUnit relacional SQLite fuerza las carreras durante el commit de alta y edición, valida que sólo persista el ganador y comprueba los fallos no duplicados. Suite Release **162/162**; build Release **0 warnings/0 errors**.
+- El smoke `scripts/smoke-tenant-http.sh` incluye carrera HTTP/MySQL sincronizada con trigger temporal en DB descartable: esperado 201/409 y una fila. Sintaxis Bash y diff-check locales pasan. **El smoke HTTP/MySQL está pendiente de CI**: el entorno disponible sólo tiene `fletflow` persistente y no se tocó.
+- Error de fixture detectado y corregido: un documento de test excedía 20 caracteres y fallaba antes del commit. Ver `docs/ERROR_LOG.md`.
+
 ## Estado vigente — 2026-11-23
 
 - Rama `chore/stabilize-fleet-platform`; `main` no se modificó.

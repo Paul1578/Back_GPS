@@ -7,6 +7,8 @@ using fletflow.Domain.Auth.Repositories;
 using fletflow.Infrastructure.Persistence.Context;
 using fletflow.Infrastructure.Persistence.Entities;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Data.Sqlite;
+using fletflow.Infrastructure.Persistence.Repositories;
 using Microsoft.AspNetCore.Http;
 using System.Security.Claims;
 
@@ -28,6 +30,107 @@ public class DriverTests
         Assert.Contains("Ya existe un conductor", error.Message);
         Assert.Equal(0, repository.AddCount);
         Assert.Equal(0, unitOfWork.CommitCount);
+    }
+
+    [Fact]
+    public async Task CreateDriver_ConcurrentDocumentInsertReturnsBusinessConflict()
+    {
+        var ownerId = Guid.NewGuid();
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder<AppDbContext>().UseSqlite(connection).Options;
+        var accessor = CreateOwnerAccessor(ownerId);
+        await using (var setup = new AppDbContext(options, accessor))
+            await setup.Database.EnsureCreatedAsync();
+
+        await using var context = new AppDbContext(options, accessor);
+        await using var competingContext = new AppDbContext(options, accessor);
+        var unitOfWork = new CommitInterleavingUnitOfWork(context, async () =>
+        {
+            competingContext.Drivers.Add(new DriverEntity
+            {
+                Id = Guid.NewGuid(),
+                FirstName = "Concurrent",
+                LastName = "Winner",
+                DocumentNumber = "DOC-CREATE-RACE",
+                PhoneNumber = "0990000000",
+                IsActive = true
+            });
+            await competingContext.SaveChangesAsync();
+        });
+        var command = new CreateDriverCommand(unitOfWork, new DriverRepository(context));
+
+        var error = await Assert.ThrowsAsync<BusinessConflictException>(() =>
+            command.Execute("Concurrent", "Loser", "DOC-CREATE-RACE", "0990000001"));
+
+        Assert.Contains("Ya existe un conductor", error.Message);
+        Assert.Equal(1, await context.Drivers.CountAsync(driver => driver.DocumentNumber == "DOC-CREATE-RACE"));
+    }
+
+    [Fact]
+    public async Task UpdateDriver_ConcurrentDocumentChangeReturnsBusinessConflict()
+    {
+        var ownerId = Guid.NewGuid();
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder<AppDbContext>().UseSqlite(connection).Options;
+        var accessor = CreateOwnerAccessor(ownerId);
+        var currentId = Guid.NewGuid();
+        var competingId = Guid.NewGuid();
+        await using (var setup = new AppDbContext(options, accessor))
+        {
+            await setup.Database.EnsureCreatedAsync();
+            setup.Drivers.AddRange(
+                NewDriverEntity(currentId, "Current", "DOC-UPDATE-OLD", ownerId),
+                NewDriverEntity(competingId, "Concurrent", "DOC-UPDATE-OTHER", ownerId));
+            await setup.SaveChangesAsync();
+        }
+
+        await using var context = new AppDbContext(options, accessor);
+        await using var competingContext = new AppDbContext(options, accessor);
+        var unitOfWork = new CommitInterleavingUnitOfWork(context, async () =>
+        {
+            var other = await competingContext.Drivers.SingleAsync(driver => driver.Id == competingId);
+            other.DocumentNumber = "DOC-UPDATE-RACE";
+            await competingContext.SaveChangesAsync();
+        });
+        var command = new UpdateDriverCommand(unitOfWork, new DriverRepository(context), context);
+
+        var error = await Assert.ThrowsAsync<BusinessConflictException>(() =>
+            command.Execute(currentId, "Current", "Driver", "DOC-UPDATE-RACE", "0990000000"));
+
+        Assert.Contains("Ya existe otro conductor", error.Message);
+        Assert.Equal("DOC-UPDATE-OLD", await context.Drivers.Where(driver => driver.Id == currentId)
+            .Select(driver => driver.DocumentNumber).SingleAsync());
+        Assert.Equal("DOC-UPDATE-RACE", await context.Drivers.Where(driver => driver.Id == competingId)
+            .Select(driver => driver.DocumentNumber).SingleAsync());
+    }
+
+    [Fact]
+    public async Task CreateDriver_RethrowsDatabaseFailureWhenDocumentConflictIsNotConfirmed()
+    {
+        var repository = new FakeDriverRepository();
+        var unitOfWork = new FakeUnitOfWork { CommitException = new DbUpdateException("Non-unique database failure.") };
+        var command = new CreateDriverCommand(unitOfWork, repository);
+
+        await Assert.ThrowsAsync<DbUpdateException>(() =>
+            command.Execute("New", "Driver", "DOC-NO-CONFLICT", "0990000000"));
+    }
+
+    [Fact]
+    public async Task UpdateDriver_RethrowsDatabaseFailureWhenOtherDriverDoesNotOwnDocument()
+    {
+        var current = Driver.Create("Current", "Driver", "DOC-NOCONFLICT1", "0990000000");
+        var repository = new FakeDriverRepository(current);
+        var unitOfWork = new FakeUnitOfWork { CommitException = new DbUpdateException("Non-unique database failure.") };
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseInMemoryDatabase($"driver-update-db-error-{Guid.NewGuid()}")
+            .Options;
+        await using var context = new AppDbContext(options);
+        var command = new UpdateDriverCommand(unitOfWork, repository, context);
+
+        await Assert.ThrowsAsync<DbUpdateException>(() =>
+            command.Execute(current.Id, "Current", "Driver", "DOC-NOCONFLICT1", "0990000000"));
     }
 
     [Theory]
@@ -252,6 +355,45 @@ public class DriverTests
         Assert.Equal(0, unitOfWork.CommitCount);
     }
 
+    private static IHttpContextAccessor CreateOwnerAccessor(Guid ownerId) => new HttpContextAccessor
+    {
+        HttpContext = new DefaultHttpContext
+        {
+            User = new ClaimsPrincipal(new ClaimsIdentity(
+                [new Claim("owner_id", ownerId.ToString())],
+                authenticationType: "test"))
+        }
+    };
+
+    private static DriverEntity NewDriverEntity(Guid id, string firstName, string documentNumber, Guid ownerId) => new()
+    {
+        Id = id,
+        FirstName = firstName,
+        LastName = "Driver",
+        DocumentNumber = documentNumber,
+        PhoneNumber = "0990000000",
+        IsActive = true,
+        OwnerUserId = ownerId
+    };
+
+    private sealed class CommitInterleavingUnitOfWork(AppDbContext context, Func<Task> beforeCommit) : IUnitOfWork
+    {
+        public IUserRepository Users => null!;
+        public IRoleRepository Roles => null!;
+        public IRefreshTokenRepository RefreshTokens => null!;
+        public IPasswordResetTokenRepository PasswordResetTokens => null!;
+        public IVehicleRepository Vehicles => null!;
+        public IDriverRepository Drivers => null!;
+        public IRouteRepository Routes => null!;
+        public IRoutePositionRepository RoutePositions => null!;
+        public async Task<int> CommitAsync()
+        {
+            await beforeCommit();
+            return await context.SaveChangesAsync();
+        }
+        public void Rollback() { }
+    }
+
     private sealed class FakeDriverRepository(params Driver[] drivers) : IDriverRepository
     {
         private readonly List<Driver> _drivers = drivers.ToList();
@@ -312,6 +454,7 @@ public class DriverTests
     private sealed class FakeUnitOfWork : IUnitOfWork
     {
         public int CommitCount { get; private set; }
+        public Exception? CommitException { get; init; }
         public Action? OnLockRouteAssignment { get; init; }
         public Guid? LockedDriverId { get; private set; }
         public IUserRepository Users => null!;
@@ -322,7 +465,13 @@ public class DriverTests
         public IDriverRepository Drivers => null!;
         public IRouteRepository Routes => null!;
         public IRoutePositionRepository RoutePositions => null!;
-        public Task<int> CommitAsync() { CommitCount++; return Task.FromResult(1); }
+        public Task<int> CommitAsync()
+        {
+            CommitCount++;
+            if (CommitException is not null)
+                throw CommitException;
+            return Task.FromResult(1);
+        }
         public Task LockRouteAssignmentAsync(Guid? vehicleId, Guid? driverId, Guid? routeId = null)
         {
             LockedDriverId = driverId;

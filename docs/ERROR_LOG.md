@@ -1557,3 +1557,14 @@ Cada cambio de API debe incluir validación de compilación, migraciones si apli
 
 - Un parche combinado falló porque asumía que `SESSION_HANDOFF.md` iniciaba con un encabezado distinto al real. `apply_patch` no aplicó el lote. Se inspeccionaron las primeras líneas y se reintentó con anclas verificadas; prevención: comprobar encabezados reales antes de construir parches multiarchivo.
 - El primer `git diff --check` señaló líneas vacías extra al final de `CHANGELOG.md` y `ERROR_LOG.md` tras insertar el registro documental. Se recortaron los finales a un único salto de línea y el chequeo pasó.
+
+## 2026-11-23 — Carrera concurrente de DocumentNumber en Drivers — corregida localmente, CI pendiente
+
+- **Síntoma:** `CreateDriverCommand` y `UpdateDriverCommand` consultaban primero si `DocumentNumber` estaba libre. Dos solicitudes podían pasar la consulta; el índice único `(OwnerUserId, DocumentNumber)` protegía los datos, pero la solicitud perdedora propagaba `DbUpdateException` y el middleware respondía HTTP 500.
+- **Causa:** la comprobación previa no es atómica con el `INSERT`/`UPDATE`; faltaba traducir el conflicto que ocurre durante `CommitAsync`.
+- **Solución:** ambos comandos capturan solamente `DbUpdateException`, vuelven a consultar el documento dentro del tenant y traducen a `BusinessConflictException` si se confirma otro Driver con ese documento. `UpdateDriverCommand` excluye el propio ID. Si la consulta no confirma otro registro, se vuelve a lanzar la excepción original; otros tipos de excepción no se interceptan.
+- **Regresión xUnit:** SQLite con el índice único real y dos contextos fuerza un insert/edición competidores justo antes del commit de cada comando. También se cubren fallos de persistencia sin documento duplicado para asegurar que sigan siendo `DbUpdateException`.
+- **Smoke integrado añadido:** `scripts/smoke-tenant-http.sh` crea temporalmente un trigger con demora en DB QA desechable para sincronizar dos POST tras el precheck; exige un HTTP 201, un HTTP 409 y una sola fila MySQL. El trigger y el Driver tienen cleanup incluso ante fallo.
+- **Error durante la prueba:** el primer fixture del test negativo de Update superaba el máximo de 20 caracteres y fallaba en validación antes de ejercitar el commit. Se reemplazó por un documento dentro del límite; la suite completa final pasó.
+- **Evidencia local final:** `dotnet test BackEnd_Gps.sln -c Release --no-restore` **162/162**; `dotnet build ... -c Release --no-restore` **0 warnings/0 errors**; `bash -n scripts/smoke-tenant-http.sh` y `git diff --check` correctos.
+- **CI pendiente:** el smoke HTTP/MySQL no se ejecutó localmente. El único `.env` disponible apunta a la DB `fletflow` persistente, que el runner rechaza; no se mutó. Además, no hay credenciales bootstrap QA disponibles. Ejecutar el smoke con el workflow/DB `fletflow_ci*` antes de marcar la validación HTTP/MySQL como completada.

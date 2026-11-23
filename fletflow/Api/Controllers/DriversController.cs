@@ -3,6 +3,7 @@ using System.Security.Claims;
 using fletflow.Application.Fleet.Commands;
 using fletflow.Application.Fleet.Dtos;
 using fletflow.Application.Fleet.Queries;
+using fletflow.Application.Shared;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -76,6 +77,20 @@ namespace fletflow.Api.Controllers
         public async Task<ActionResult<List<DriverDto>>> GetAll([FromQuery] bool? onlyActive)
         {
             var result = await _getAll.Execute(onlyActive);
+            return Ok(result);
+        }
+
+        [HttpGet("page")]
+        public async Task<IActionResult> GetPage(
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = PaginationLimits.DefaultPageSize,
+            [FromQuery] string? search = null,
+            [FromQuery] bool? onlyActive = null)
+        {
+            if (!PaginationLimits.IsValid(page, pageSize))
+                return BadRequest("page debe ser >= 1 y pageSize debe estar entre 1 y 100.");
+
+            var result = await _getAll.ExecutePage(page, pageSize, search, onlyActive);
             return Ok(result);
         }
 

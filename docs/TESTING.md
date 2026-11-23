@@ -1,3 +1,10 @@
+## Paginación Usuarios/Drivers — validación local y smoke HTTP pendiente en CI
+
+- Backend `dotnet test BackEnd_Gps.sln --configuration Release --no-restore`: **151/151**; incluye 7 pruebas nuevas: orden estable entre páginas, búsqueda/rol/estado, páginas vacías y `int.MaxValue`, filtros tenant, ACL, compatibilidad y bounds.
+- Front `npm run lint`, `npm run build`, Playwright discovery **52 tests**, `git diff --check`: pasan. El spec nuevo de navegación usa 26 filas controladas; ejecución focal local se omitió por no tener `FLETFLOW_E2E_ADMIN_EMAIL`/`PASSWORD`.
+- Smoke `smoke-tenant-http.sh`: bash syntax/diff-check pasan; añadidos asserts HTTP/API/MySQL para arrays legado vs paginado, páginas 1/2, búsqueda y aislamiento cross-tenant. Action integrada pendiente.
+- El endpoint de desvinculación y el guard Pending quedaron verificados con backend API/MySQL en Action [`45174526072`](https://github.com/Paul1578/Back_GPS/actions/runs/45174526072); Front E2E de unlink pasó **51/51** en [`45174598922`](https://github.com/Paul1578/Front_gpsR/actions/runs/45174598922).
+
 ## Desvincular User del perfil Driver — smoke HTTP activo pendiente en CI
 
 - Action `45173035947` (`fd6ad1e`) pasó build Release, **144/144 xUnit**, smoke HTTP/MySQL tenant, concurrencia, rate limit de login y cleanup. La ejecución anterior `45172421318` falló en login por precondición del fixture. La corrección crea token de activación efímero y llama `POST /Auth/activate-account` antes de autenticar, sin mutar flags de cuenta por SQL.

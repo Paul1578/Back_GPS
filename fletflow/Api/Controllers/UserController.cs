@@ -9,6 +9,7 @@ using fletflow.Api.Security;
 using fletflow.Domain.Fleet.Entities;
 using fletflow.Infrastructure.Services;
 using fletflow.Infrastructure.Persistence.Contracts;
+using fletflow.Application.Shared;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -93,6 +94,22 @@ namespace fletflow.Api.Controllers
             var users = await _getMyTeamUsersQuery.Execute(ownerId);
 
             return Ok(users);
+        }
+
+        [HttpGet("my-team/page")]
+        public async Task<IActionResult> GetMyTeamPage(
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = PaginationLimits.DefaultPageSize,
+            [FromQuery] string? search = null,
+            [FromQuery] string? role = null,
+            [FromQuery] bool? isActive = null)
+        {
+            if (!PaginationLimits.IsValid(page, pageSize))
+                return BadRequest("page debe ser >= 1 y pageSize debe estar entre 1 y 100.");
+
+            var result = await _getMyTeamUsersQuery.ExecutePage(
+                GetCurrentOwnerId(), page, pageSize, search, role, isActive);
+            return Ok(result);
         }
 
         /// <summary>

@@ -149,6 +149,8 @@ builder.Services.AddScoped<IPasswordResetTokenRepository, PasswordResetTokenRepo
 
 builder.Services.AddScoped<IVehicleRepository, VehicleRepository>();
 builder.Services.AddScoped<IDriverRepository, DriverRepository>();
+builder.Services.AddScoped<IDriverPageRepository>(services =>
+    (IDriverPageRepository)services.GetRequiredService<IDriverRepository>());
 builder.Services.AddScoped<IRouteRepository, RouteRepository>();
 builder.Services.AddScoped<IRoutePositionRepository, RoutePositionRepository>();
 

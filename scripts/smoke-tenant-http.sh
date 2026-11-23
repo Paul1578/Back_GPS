@@ -1500,6 +1500,20 @@ expect_status 200 "Conservar cuenta User en el equipo después del unlink"
 jq -e --arg userId "$manual_link_user_id" 'any(.[]; .id == $userId and .driverId == null and any(.roles[]; ascii_downcase == "driver"))' "$work_dir/response.json" >/dev/null || {
   echo "La cuenta/rol Driver no se conservaron tras desvincular el perfil." >&2; cat "$work_dir/response.json" >&2; exit 1;
 }
+manual_team_total="$(jq 'length' "$work_dir/response.json")"
+request GET "/Users/my-team/page?page=1&pageSize=1"
+expect_status 200 "Paginar miembros del equipo con tamaño mínimo"
+manual_team_page_one_id="$(jq -er '.items[0].id' "$work_dir/response.json")"
+jq -e --argjson total "$manual_team_total" '.page == 1 and .pageSize == 1 and .totalCount == $total and .totalPages == $total and (.items | length) == 1' "$work_dir/response.json" >/dev/null || {
+  echo "La página de equipo no respetó metadatos/tamaño/conteo ($manual_team_total filas)." >&2; cat "$work_dir/response.json" >&2; exit 1;
+}
+if (( manual_team_total > 1 )); then
+  request GET "/Users/my-team/page?page=2&pageSize=1"
+  expect_status 200 "Consultar segunda página de miembros"
+  jq -e --arg first "$manual_team_page_one_id" '.page == 2 and (.items | length) == 1 and .items[0].id != $first' "$work_dir/response.json" >/dev/null || {
+    echo "La paginación de equipo repitió filas o devolvió una página incorrecta." >&2; cat "$work_dir/response.json" >&2; exit 1;
+  }
+fi
 manual_unlink_sql="$(mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" "$db_name" \
   --batch --skip-column-names -e "SELECT CONCAT((SELECT LOWER(r.Name) FROM UserRoles ur JOIN Roles r ON r.Id=ur.RoleId WHERE ur.UserId='$manual_link_user_id'),':',(SELECT COUNT(*) FROM Users WHERE Id='$manual_link_user_id'),':',(SELECT COUNT(*) FROM Drivers WHERE Id='$manual_link_driver_id'),':',(SELECT COALESCE(CAST(UserId AS CHAR),'NULL') FROM Drivers WHERE Id='$manual_link_driver_id'),':',(SELECT TokenVersion FROM Users WHERE Id='$manual_link_user_id'));" )"
 expected_manual_link_token_version=$((manual_link_token_version_before_unlink + 1))
@@ -1545,6 +1559,14 @@ jq -e --arg own "$other_tenant_member_id" --argjson tenantAIds "$tenant_a_user_i
   cat "$work_dir/response.json" >&2
   exit 1
 }
+request GET "/Users/my-team/page?page=1&pageSize=1&search=$other_tenant_member_email" "" "$other_token"
+expect_status 200 "Buscar miembro dentro de la página del tenant B"
+jq -e --arg own "$other_tenant_member_id" '.totalCount == 1 and .page == 1 and .items[0].id == $own' "$work_dir/response.json" >/dev/null \
+  || { echo "La búsqueda paginada no encontró el miembro del tenant B." >&2; cat "$work_dir/response.json" >&2; exit 1; }
+request GET "/Users/my-team/page?page=1&pageSize=1&search=$other_tenant_member_email" "" "$token"
+expect_status 200 "Aislar búsqueda paginada de usuarios entre tenants"
+jq -e '.totalCount == 0 and (.items | length) == 0' "$work_dir/response.json" >/dev/null \
+  || { echo "La búsqueda paginada expuso un miembro de tenant B a tenant A." >&2; cat "$work_dir/response.json" >&2; exit 1; }
 user_scope_after="$(mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" "$db_name" \
   --batch --skip-column-names -e "SELECT CONCAT(COALESCE((SELECT CAST(OwnerUserId AS CHAR) FROM Users WHERE Id='$root_user_id'),'NULL'), ':', COALESCE((SELECT CAST(OwnerUserId AS CHAR) FROM Users WHERE Id='$restricted_user_id'),'NULL'), ':', COALESCE((SELECT CAST(OwnerUserId AS CHAR) FROM Users WHERE Id='$other_tenant_root_id'),'NULL'), ':', COALESCE((SELECT CAST(OwnerUserId AS CHAR) FROM Users WHERE Id='$other_tenant_member_id'),'NULL'));")"
 [[ "$user_scope_after" == "$user_scope_before" ]] || {
@@ -1808,6 +1830,24 @@ request GET /Drivers?onlyActive=false
 expect_status 200 "Consultar Drivers inactivos"
 jq -e --arg id "$driver_id" 'any(.[]; .id == $id and .isActive == false)' "$work_dir/response.json" >/dev/null \
   || { echo "El filtro onlyActive=false no incluyó el Driver desactivado." >&2; cat "$work_dir/response.json" >&2; exit 1; }
+driver_total="$(jq 'length' "$work_dir/response.json")"
+request GET "/Drivers/page?page=1&pageSize=1&search=$document_number&onlyActive=false"
+expect_status 200 "Buscar Driver inactivo con paginación HTTP"
+jq -e --arg id "$driver_id" '.totalCount == 1 and .page == 1 and .pageSize == 1 and .items[0].id == $id and .items[0].isActive == false' "$work_dir/response.json" >/dev/null \
+  || { echo "La página de Drivers no respetó búsqueda o filtro onlyActive=false." >&2; cat "$work_dir/response.json" >&2; exit 1; }
+request GET "/Drivers/page?page=1&pageSize=1&onlyActive=false"
+expect_status 200 "Paginar lista de Drivers con bajas"
+driver_page_one_id="$(jq -er '.items[0].id' "$work_dir/response.json")"
+jq -e --argjson total "$driver_total" '.page == 1 and .pageSize == 1 and .totalCount == $total and .totalPages == $total and (.items | length) == 1' "$work_dir/response.json" >/dev/null || {
+  echo "La página de Drivers no respetó el conteo/tamaño solicitado ($driver_total filas)." >&2; cat "$work_dir/response.json" >&2; exit 1;
+}
+if (( driver_total > 1 )); then
+  request GET "/Drivers/page?page=2&pageSize=1&onlyActive=false"
+  expect_status 200 "Consultar segunda página de Drivers"
+  jq -e --arg first "$driver_page_one_id" '.page == 2 and (.items | length) == 1 and .items[0].id != $first' "$work_dir/response.json" >/dev/null || {
+    echo "La paginación de Drivers repitió filas o devolvió una página incorrecta." >&2; cat "$work_dir/response.json" >&2; exit 1;
+  }
+fi
 request PUT "/Drivers/$driver_id/status" '{"isActive":true}'
 expect_status 204 "Reactivar Driver propio"
 request GET "/Drivers/$driver_id"

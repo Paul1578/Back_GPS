@@ -1,3 +1,14 @@
+# 2026-11-23 — Errores corregidos al implementar paginación
+
+- El primer build de tests resolvió namespaces del test de paginación de forma distinta a lo esperado; se corrigieron imports/referencias fully-qualified. Dos casos SQLite fallaron por collation sensible a mayúsculas en búsqueda y por `HttpContextAccessor` que no conservó contexto fuera del scope async; se ajustaron fixtures/claims y luego **151/151** pasó. Se revisó también el offset para evitar overflow con `page=int.MaxValue`, usando cálculo `long` acotado.
+- Prevención: comprobar traducción y collation con el proveedor relacional de tests; fijar contexto HTTP dentro del scope async; probar límites numéricos extremos.
+
+# 2026-11-23 — Parche de smoke paginado no coincidió con contexto del script — RESUELTO
+
+- El primer parche agrupado usó copy del assert tenant distinto al actual y se rechazó sin modificar el archivo.
+- Solución: releer el bloque exacto en `scripts/smoke-tenant-http.sh` y aplicar inserciones independientes en el test de unlink, aislamiento de Users y estado de Drivers. `bash -n` y diff-check pasaron.
+- Prevención: validar contexto literal antes de un parche grande y separar regiones del script.
+
 # 2026-11-23 — Patch de documentación con contexto obsoleto — CORREGIDO
 
 - El primer parche agrupado de estado/handoff/testing/changelog no coincidió con el texto vigente de handoff y se rechazó de forma atómica; no cambió archivos. La inspección inicial también produjo una salida truncada que ocultaba los encabezados de cada documento.

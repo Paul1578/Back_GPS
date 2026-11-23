@@ -1,3 +1,14 @@
+# 2026-11-23 — Paginación server-side de Equipo y Conductores
+
+- Añadidos endpoints y contrato paginado compatibles con las rutas-array actuales; filtros server-side, orden estable, límite máximo de página y protección de tenant.
+- Front añade búsqueda debounced, filtro de rol/estado y controles responsive en Equipo y Conductores, más E2E con 26 elementos controlados.
+- Backend Release **151/151**, Front lint/build/discovery **52 tests** pasan local. Smoke API/MySQL y Actions de esta fase pendientes.
+
+# 2026-11-23 — Desvinculación Driver validada extremo a extremo
+
+- Backend Action [`45174526072`](https://github.com/Paul1578/Back_GPS/actions/runs/45174526072) pasó HTTP 409 con ruta pendiente, invariancia MySQL, unlink exitoso, token revocado, rol/cuenta/perfil conservados y cleanup.
+- Front Action [`45174598922`](https://github.com/Paul1578/Front_gpsR/actions/runs/45174598922) pasó **51/51 E2E**, incluida confirmación y persistencia del unlink.
+
 # 2026-11-23 — Smoke de desvinculación con ruta activa
 
 - El fixture manual ahora activa la cuenta usando el endpoint de activación y token efímero.

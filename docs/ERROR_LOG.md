@@ -1480,3 +1480,16 @@ Cada cambio de API debe incluir validación de compilación, migraciones si apli
 - Una lectura inicial de `.github/workflows/ci.yml` sólo cubrió hasta el primer bloque `Test`, y no las secciones inferiores donde ya se instalaba MySQL, iniciaba API y ejecutaban los smokes tenant, concurrencia y rate limit. Se preparó temporalmente un segundo bloque duplicado.
 - La revisión completa del workflow detectó la duplicación antes de commit/push; se eliminó el bloque nuevo y se conservó únicamente el cambio del trigger para la rama de estabilización. No se ejecutó Action ni producto con la versión duplicada.
 - Prevención: leer workflow completo o localizar todos sus pasos con `rg` antes de añadir pipelines; alinear el plan con lo que ya ejecuta el final del archivo.
+# 2026-11-23 — Pruebas de unlink compilaron con namespace y fixture incorrectos — CORREGIDO
+
+- El primer build del test `UnlinkDriverFromUserTests` calificó interfaces como `fletflow.Domain...` dentro del namespace `BackEnd_Gps.Tests`; C# resolvió el prefijo como `BackEnd_Gps.fletflow` y falló. La firma de fake `IRouteRepository` también usó nombres de parámetros que no coinciden con la interfaz, y luego se refirió a parámetros de constructor primario como campos.
+- Solución: usar interfaces ya importadas (`IRoleRepository`, `IPasswordResetTokenRepository`), copiar las firmas exactas del contrato y declarar campos explícitos en el fake de rutas. Test focal posterior: 4/4.
+- Un parche documental agrupado asumió un encabezado de handoff inexistente y fue rechazado sin cambiar archivos. Se releyeron los títulos reales y se aplicarán bloques independientes con contexto confirmado.
+- Prevención: revisar el `namespace`/imports del test y copiar la firma de la interfaz real antes de completar fakes; confirmar encabezados exactos antes de parchar varios documentos.
+
+## Persistencia Driver unlink — prueba integrada corrigió al fake de unidad — RESUELTO
+
+- La primera prueba EF verificó `UserId` antes de simular `IUnitOfWork.CommitAsync`, por lo que la fila aún tenía el valor anterior. El test pasó a llamar `SaveChangesAsync` mediante un callback del fake y entonces confirmó que el repositorio debe copiar también `Driver.UserId` a la entidad persistida.
+- `DriverRepository.UpdateAsync` ahora guarda `UserId`; el test usa EF InMemory con el repositorio productivo y relee tras limpiar el change tracker. Suite focal actual **5/5**.
+- Una lectura buscó `AppDbContext.cs`, pero el archivo real es `FleetFlowDbContext.cs`; otra intentó leer `e2e/fleet-admin.spec.ts` desde el checkout Backend. Se localizaron los paths mediante `rg --files` y se repitió desde Front.
+- Prevención: cuando un fake de UoW valida persistencia, su `CommitAsync` debe guardar cambios; resolver nombre/ruta de archivos en el checkout propietario antes de leer.

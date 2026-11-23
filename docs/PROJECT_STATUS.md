@@ -1,5 +1,11 @@
 # Estado actual de estabilización — 2026-11-23
 
+## Desvincular cuenta del perfil Driver — implementación local en curso
+
+- Decisión de usuario: se conserva el rol Driver, la cuenta y el perfil. La acción se rechaza si hay una ruta Pending/InProgress.
+- Nuevo `PUT /api/Drivers/{id}/unlink-user`: bloquea Driver/Vehicle/cuenta en el orden de asignación, elimina sólo la relación, incrementa TokenVersion y revoca refresh tokens dentro de la transacción. Cinco xUnit focales pasan, incluido bloqueo de ambas clases de rutas, idempotencia, preservación de perfil y persistencia de `UserId=null` con el repositorio EF real.
+- Suite completa Release: **144/144**; build ejecutado por `dotnet test`, sin warnings/errors observados. Smoke HTTP/MySQL ampliado para comprobar relación retirada, registros/rol conservados, TokenVersion incrementada y rechazo de tokens anteriores. `bash -n`/diff-check pasan; Action integrada pendiente.
+
 ## Brechas smoke backend encontradas por auditoría independiente — en curso
 
 - La edición concurrente ya daba un 200 y un 409, pero no comprobaba por API/MySQL el destino final de cada ruta ni `Driver.VehicleId`. Se añadieron asserts de lectura API+SQL: una sola ruta toma la nueva pareja; la perdedora y asignaciones previas quedan intactas.

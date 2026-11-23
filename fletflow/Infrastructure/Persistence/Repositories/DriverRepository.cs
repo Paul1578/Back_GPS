@@ -69,6 +69,7 @@ namespace fletflow.Infrastructure.Persistence.Repositories
             entity.PhoneNumber = driver.PhoneNumber;
             entity.IsActive = driver.IsActive;
             entity.VehicleId = driver.VehicleId;
+            entity.UserId = driver.UserId;
         }
 
         public async Task<List<Driver>> GetAllAsync(bool? onlyActive = null)

@@ -1,5 +1,13 @@
 # Handoff vigente — 2026-11-23
 
+## Trabajo vigente — desvinculación Driver
+
+- Usuario confirmó conservar rol Driver al retirar el vínculo. Implementado localmente `PUT /api/Drivers/{id}/unlink-user`, conservando User y Driver; bloquea rutas Pending/InProgress, usa locks existentes de asignación y cuenta, incrementa TokenVersion y revoca refresh tokens.
+- Test focal `UnlinkDriverFromUserTests`: **5/5**, incluyendo persistencia `UserId=null` usando `DriverRepository` + EF; suite Release **144/144**. Smoke `scripts/smoke-tenant-http.sh` ampliado para probar API/MySQL, persistencia y reautenticación; `bash -n` y `git diff --check` pasan. Action integrada aún pendiente.
+- Error de compilación del test por namespace y fake `IRouteRepository` documentado en `docs/ERROR_LOG.md`, ya corregido.
+- El frontend ya añade botón con ConfirmDialog en Gestión de Equipo y amplía Playwright para cancelar/confirmar unlink, comprobar API y conservar rol/perfil; lint/build/discovery 51 pasan localmente. Front CI integrado aún pendiente.
+- Siguiente: publicar rama backend y corregir fallos de smoke/Action; después publicar Front y validar ambos contra API/MySQL descartables.
+
 ## Smokes backend de reasignación y baja lógica — Action pendiente
 
 - Auditoría read-only encontró dos faltas de evidencia: DeleteRoute no comprobaba que `IsActive=false` se guardara y UpdateRoute concurrente sólo asertaba HTTP 200/409.

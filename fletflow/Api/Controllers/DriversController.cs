@@ -21,6 +21,7 @@ namespace fletflow.Api.Controllers
         private readonly UnassignDriverFromVehicleCommand _unassignDriverFromVehicle;
         private readonly UpdateDriverCommand _updateDriver;
         private readonly ChangeDriverStatusCommand _changeStatus;
+        private readonly UnlinkDriverFromUserCommand _unlinkDriverFromUser;
 
         public DriversController(
             CreateDriverCommand createDriver,
@@ -29,7 +30,8 @@ namespace fletflow.Api.Controllers
             AssignDriverToVehicleCommand assignDriverToVehicle,
             UnassignDriverFromVehicleCommand unassignDriverFromVehicle,
             UpdateDriverCommand updateDriver,
-            ChangeDriverStatusCommand changeStatus)
+            ChangeDriverStatusCommand changeStatus,
+            UnlinkDriverFromUserCommand unlinkDriverFromUser)
         {
             _createDriver = createDriver;
             _getById = getById;
@@ -38,6 +40,7 @@ namespace fletflow.Api.Controllers
             _unassignDriverFromVehicle = unassignDriverFromVehicle;
             _updateDriver = updateDriver;
             _changeStatus = changeStatus;
+            _unlinkDriverFromUser = unlinkDriverFromUser;
         }
 
         /// <summary>
@@ -130,6 +133,16 @@ namespace fletflow.Api.Controllers
         public async Task<IActionResult> UnassignVehicle(Guid id)
         {
             await _unassignDriverFromVehicle.Execute(id);
+            return NoContent();
+        }
+
+        /// <summary>
+        /// Desvincula la cuenta de usuario del perfil de conductor, conservando ambos registros y el rol Driver.
+        /// </summary>
+        [HttpPut("{id:guid}/unlink-user")]
+        public async Task<IActionResult> UnlinkUser(Guid id)
+        {
+            await _unlinkDriverFromUser.Execute(id);
             return NoContent();
         }
     }

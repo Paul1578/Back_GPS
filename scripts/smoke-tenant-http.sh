@@ -100,6 +100,8 @@ driver_positive_vehicle_plate=""
 activation_user_email=""
 reset_user_email=""
 manual_link_user_email=""
+manual_link_user_password=""
+manual_link_user_token=""
 manual_link_user_id=""
 manual_link_driver_id=""
 manual_link_driver_document=""
@@ -1364,8 +1366,9 @@ request PUT "/Users/$restricted_user_id/role" '{"roleName":"User"}' "$token"
 expect_status 200 "La cuenta raíz puede revertir la promoción de prueba"
 
 manual_link_user_email="fletflow.e2e.manual-driver-link.$suffix@example.test"
+manual_link_user_password="Manual-link-$(openssl rand -hex 8)aA1!"
 manual_link_driver_document="MANUAL${suffix: -9}"
-request POST /Users "$(jq -nc --arg email "$manual_link_user_email" --arg password "Manual-link-$(openssl rand -hex 8)aA1!" --arg username "Manual Driver Link $suffix" '{username:$username,email:$email,password:$password,roleName:"User"}')" "$token"
+request POST /Users "$(jq -nc --arg email "$manual_link_user_email" --arg password "$manual_link_user_password" --arg username "Manual Driver Link $suffix" '{username:$username,email:$email,password:$password,roleName:"User"}')" "$token"
 expect_status 200 "Crear cuenta User antes de vincular perfil Driver"
 manual_link_user_id="$(jq -er '.id' "$work_dir/response.json")"
 request GET /Users/my-team "" "$token"
@@ -1419,6 +1422,46 @@ expected_manual_profile_sql="$manual_profile_username:Nombre actualizado:Apellid
 [[ "$manual_profile_sql" == "$expected_manual_profile_sql" ]] || {
   echo "La edición de perfil y sincronización User/Driver no quedó persistida en MySQL (esperado '$expected_manual_profile_sql', recibido '$manual_profile_sql')." >&2
   exit 1
+}
+
+request POST /Auth/login "$(jq -nc --arg email "$manual_link_user_email" --arg password "$manual_link_user_password" '{email:$email,password:$password}')" ""
+expect_status 200 "Iniciar sesión con cuenta Driver vinculada antes de desvincular"
+manual_link_user_token="$(jq -er '.token // .accessToken' "$work_dir/response.json")"
+manual_link_user_refresh="$(jq -er '.refreshToken' "$work_dir/response.json")"
+request GET /Auth/me "" "$manual_link_user_token"
+expect_status 200 "Confirmar que la cuenta Driver vinculada ve su perfil"
+jq -e --arg driverId "$manual_link_driver_id" '.driverId == $driverId' "$work_dir/response.json" >/dev/null || {
+  echo "La identidad de la cuenta Driver no contiene su perfil vinculado." >&2; cat "$work_dir/response.json" >&2; exit 1;
+}
+
+request PUT "/Drivers/$manual_link_driver_id/unlink-user" "" "$token"
+expect_status 204 "Desvincular la cuenta del perfil Driver"
+request GET "/Drivers/$manual_link_driver_id" "" "$token"
+expect_status 200 "Conservar el perfil Driver después de desvincular"
+jq -e --arg document "$manual_link_driver_document" '.documentNumber == $document and .userId == null' "$work_dir/response.json" >/dev/null || {
+  echo "El perfil Driver se eliminó o conservó UserId después del unlink." >&2; cat "$work_dir/response.json" >&2; exit 1;
+}
+request GET /Auth/me "" "$manual_link_user_token"
+expect_status 401 "Revocar el access token previo al unlink"
+request POST /Auth/refresh "$(jq -nc --arg refreshToken "$manual_link_user_refresh" '{refreshToken:$refreshToken}')" ""
+expect_status 401 "Revocar el refresh token previo al unlink"
+request POST /Auth/login "$(jq -nc --arg email "$manual_link_user_email" --arg password "$manual_link_user_password" '{email:$email,password:$password}')" ""
+expect_status 200 "Permitir reingreso de la cuenta Driver conservada"
+manual_link_user_token="$(jq -er '.token // .accessToken' "$work_dir/response.json")"
+request GET /Auth/me "" "$manual_link_user_token"
+expect_status 200 "Consultar cuenta Driver después de reingresar"
+jq -e '.driverId == null' "$work_dir/response.json" >/dev/null || {
+  echo "La cuenta desvinculada aún recibe el perfil Driver en Auth/me." >&2; cat "$work_dir/response.json" >&2; exit 1;
+}
+request GET /Users/my-team "" "$token"
+expect_status 200 "Conservar cuenta User en el equipo después del unlink"
+jq -e --arg userId "$manual_link_user_id" 'any(.[]; .id == $userId and .driverId == null and any(.roles[]; ascii_downcase == "driver"))' "$work_dir/response.json" >/dev/null || {
+  echo "La cuenta/rol Driver no se conservaron tras desvincular el perfil." >&2; cat "$work_dir/response.json" >&2; exit 1;
+}
+manual_unlink_sql="$(mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" "$db_name" \
+  --batch --skip-column-names -e "SELECT CONCAT((SELECT LOWER(r.Name) FROM UserRoles ur JOIN Roles r ON r.Id=ur.RoleId WHERE ur.UserId='$manual_link_user_id'),':',(SELECT COUNT(*) FROM Users WHERE Id='$manual_link_user_id'),':',(SELECT COUNT(*) FROM Drivers WHERE Id='$manual_link_driver_id'),':',(SELECT COALESCE(CAST(UserId AS CHAR),'NULL') FROM Drivers WHERE Id='$manual_link_driver_id'),':',(SELECT TokenVersion FROM Users WHERE Id='$manual_link_user_id'));" )"
+[[ "$manual_unlink_sql" == "driver:1:1:NULL:2" ]] || {
+  echo "El unlink no conservó cuenta/perfil/rol o no invalidó TokenVersion ($manual_unlink_sql)." >&2; exit 1;
 }
 
 other_tenant_member_email="fletflow.e2e.tenant-b.member.$suffix@example.test"
@@ -1923,6 +1966,13 @@ assert_foreign_assignment_state_unchanged "Asignar vehículo al Driver ajeno"
 request PUT "/Drivers/$foreign_driver_id/unassign-vehicle" "" "$other_token"
 expect_status 404 "Tenant B no puede desasignar un Driver ajeno"
 assert_foreign_assignment_state_unchanged "Desasignar Driver ajeno"
+request PUT "/Drivers/$foreign_driver_id/unlink-user" "" "$other_token"
+expect_status 404 "Tenant B no puede desvincular la cuenta de un Driver ajeno"
+foreign_driver_user_after_attack="$(mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" "$db_name" \
+  --batch --skip-column-names -e "SELECT COALESCE(CAST(UserId AS CHAR),'NULL') FROM Drivers WHERE Id='$foreign_driver_id';")"
+[[ "$foreign_driver_user_after_attack" == "NULL" ]] || {
+  echo "El intento cross-tenant modificó el UserId del Driver ajeno ($foreign_driver_user_after_attack)." >&2; exit 1;
+}
 request PUT "/Drivers/$other_tenant_driver_id/assign-vehicle" "$(jq -nc --arg vehicleId "$foreign_vehicle_id" '{vehicleId:$vehicleId}')" "$other_token"
 expect_status 404 "Tenant B no puede asignar a su Driver un vehículo ajeno"
 assert_foreign_assignment_state_unchanged "Asignar vehículo ajeno al Driver B"

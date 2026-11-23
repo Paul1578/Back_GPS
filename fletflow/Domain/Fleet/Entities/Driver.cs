@@ -69,5 +69,10 @@ namespace fletflow.Domain.Fleet.Entities
         {
             UserId = userId;
         }
+
+        public void UnlinkUser()
+        {
+            UserId = null;
+        }
     }
 }

@@ -118,6 +118,7 @@ Cambiar, restablecer o activar una contraseña incrementa `User.TokenVersion`, r
 
 - Desasignar o desactivar un Driver, o cambiar su rol a uno no operativo, no debe dejar rutas activas Pending/InProgress sin asignación válida. El backend rechaza estas operaciones hasta cancelar/completar las rutas.
 - Desactivar una cuenta User vinculada a un Driver también se rechaza mientras ese Driver tenga rutas activas Pending/InProgress; evita dejar operaciones pendientes bloqueadas por la cuenta inactiva.
+- La cuenta puede desvincularse explícitamente del perfil Driver mediante `PUT /api/Drivers/{id}/unlink-user`. Se conservan ambos registros y el rol Driver; la operación se bloquea con rutas `Pending`/`InProgress`, toma los mismos locks de asignación y usuario, incrementa `TokenVersion` y revoca refresh tokens existentes.
 # Otorgamiento del rol Admin — decisión 2026-11-23
 
 - Sólo la cuenta raíz de la empresa puede crear o promover usuarios al rol Admin. Un Admin delegado puede administrar los demás roles según permisos vigentes, pero no elevar a Admin.

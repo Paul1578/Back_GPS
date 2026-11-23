@@ -6,6 +6,12 @@
 - Action Backend [`45185698388`](https://github.com/Paul1578/Back_GPS/actions/runs/45185698388) y la duplicada [`45185687229`](https://github.com/Paul1578/Back_GPS/actions/runs/45185687229) terminaron success con API/MySQL y cleanup.
 - No se usó ni cambió la DB local del proyecto. El Front `45183402334` falló 51/53 por dos asserts obsoletos; corregidos en `8dc1a2a`. La Action [`45185761490`](https://github.com/Paul1578/Front_gpsR/actions/runs/45185761490) y una ejecución posterior con la limpieza de componentes siguen corriendo; comprobarlas y sincronizar su documentación.
 
+## Lote siguiente — límites totales de evidencia
+
+- Cambio local: `RouteE.AddPointEvidence` rechaza una evidencia que exceda **50 elementos/ruta** o **8,000,000 caracteres de contenido agregado**, antes de modificar paradas. Prueba imágenes repetidas de 3 MiB y valida persistencia sin agregar la segunda; caso de notas cubre el item 51.
+- Tests focales **20/20**, suite Release **157/157**, build **0 warnings/0 errores**. Pendiente documentar en detalle, commit/push y Action Backend (HTTP smoke y cleanup).
+- Front `dff947f` pasó [`45185961950`](https://github.com/Paul1578/Front_gpsR/actions/runs/45185961950): **53/53 E2E**, responsive 1/1, Backend Release/xUnit, audit/lint/build y cleanup. Actualizar docs Front al resultado y publicar esa documentación.
+
 ## Handoff vigente — paginación server-side
 
 - Front y Backend comparten worktrees de ramas `refactor/route-builder` / `chore/stabilize-fleet-platform`. La desvinculación Driver está cerrada en CI: Backend Action [`45174526072`](https://github.com/Paul1578/Back_GPS/actions/runs/45174526072) success en `08e14fa`; Front Action [`45174598922`](https://github.com/Paul1578/Front_gpsR/actions/runs/45174598922) success en `6c8c7a9`, **51/51 E2E**.

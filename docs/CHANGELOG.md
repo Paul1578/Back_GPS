@@ -1,3 +1,8 @@
+## 2026-11-23 — Límites de evidencia agregada por ruta
+
+- Una ruta acepta como máximo 50 evidencias y hasta 8 MB de contenido acumulado; los rechazos no modifican la ruta.
+- Unit tests **20/20**, suite Release **157/157**, build limpio. Action Backend pendiente.
+
 ## 2026-11-23 — Preservación de integridad en rutas y paradas heredadas
 
 - Las migraciones tenant frenan ownership discordante entre conductor y vehículo y detectan rutas ya ocultas con `OwnerUserId=NULL`.

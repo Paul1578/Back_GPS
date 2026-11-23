@@ -9,6 +9,7 @@
 - Los tokens de reset se generan con 32 bytes aleatorios (256 bits) y sólo se persiste su SHA-256. El TTL por defecto es 60 minutos; `Email:ResetTokenMinutes` sigue siendo configurable y se valida entre 1 y 1440 minutos.
 - `Email:ResetPasswordUrl` y `Email:ActivationUrl` deben ser URLs absolutas HTTPS fuera de Development. En Development se permite HTTP sólo para hosts loopback. `ValidateOnStart` y la resolución explícita de opciones antes de sembrar DB fallan con nombres de configuración y sin imprimir valores de URL.
 - SMTP conserva su comportamiento de error: el limitador no declara que el correo fue enviado. Outbox persistente y Data Protection siguen dependiendo de volúmenes, certificado y secretos de despliegue correctamente configurados.
+- Evidencia logística: cada imagen está limitada a 4 MB; el dominio ahora limita el total por ruta a 50 adjuntos y 8 MB de contenido para frenar payloads acumulados.
 - Action Backend `45127502896` en `63333bb`: Release, xUnit 136/136, aislamiento tenant, concurrencia y límite de login con proxies confiables por HTTP/MySQL/Staging. XFF falsificado desde origen no confiable se ignoró; dos proxies autorizados se agregaron a una IP cliente y otra IP autenticó. Esto no sustituye configuración de ingress real, réplicas, SMTP ni base de datos de producción.
 
 ## Guardas y precondiciones para migrar datos existentes

@@ -1,3 +1,10 @@
+## 2026-11-23 — La evidencia no tenía límite agregado por ruta — CORREGIDO LOCALMENTE
+
+- La validación anterior limitaba cada imagen a 4 MB y cada request a 6 MB, pero repetidas solicitudes podían añadir evidencia ilimitada a una misma ruta; GET/listados serializaban cada payload Base64.
+- Solución: el dominio rechaza antes de mutar si la ruta alcanzaría más de 50 evidencias o más de 8 MB agregados. `RoutePointTests` confirma los límites y que el estado permanece igual.
+- Validación: focales **20/20**, suite Release **157/157**, build Release 0 warnings/errores. Action pendiente.
+- Prevención: imponer límites agregados en la entidad de dominio, además de límites HTTP y por adjunto; comprobar estado persistido ante rechazo.
+
 ## 2026-11-23 — Datos de rutas heredadas podían ocultarse o degradarse — CORRECCIÓN EN VALIDACIÓN
 
 - **Causa:** `TenantFleetOwnership` guardaba `OwnerUserId=NULL` cuando Vehicle y Driver tenían propietarios diferentes; el filtro global tenant ocultaba la ruta. En paralelo, `FleetMapper.DeserializePoints` capturaba cualquier excepción y devolvía sólo origen/destino, haciendo pasar datos corruptos de paradas/evidencia por una ruta válida.

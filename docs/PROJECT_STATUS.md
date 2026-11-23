@@ -7,6 +7,11 @@
 - Action Backend [`45185698388`](https://github.com/Paul1578/Back_GPS/actions/runs/45185698388) para `492f8f9` terminó success: build/test Release, smoke tenant HTTP/MySQL, concurrencia, rate limit y cleanup. La ejecución automática duplicada [`45185687229`](https://github.com/Paul1578/Back_GPS/actions/runs/45185687229) también terminó success.
 - Front Action [`45185761490`](https://github.com/Paul1578/Front_gpsR/actions/runs/45185761490) está probando `8dc1a2a` contra la nueva rama Backend; otra ejecución para el commit Front posterior sigue en curso.
 
+## Tamaño total de evidencias — cobertura local aprobada
+
+- Cada foto ya tenía máximo de 4 MB, pero una ruta podía acumular fotos/notas ilimitadas. `RouteE.AddPointEvidence` ahora limita a **50 evidencias y 8 MB de contenido total**, rechazando sin mutación.
+- Pruebas `RoutePointTests`: **20/20**; suite Release **157/157**; build Release **0 warnings/0 errores**. Action backend integrada pendiente.
+
 ## Paginación de equipo y conductores — Action aprobada
 
 - Se añadieron `GET /api/Users/my-team/page` y `GET /api/Drivers/page`, con `{ items, page, pageSize, totalCount, totalPages }`; los endpoints anteriores conservan arrays. Página por defecto 25, límite 100, búsqueda/rol/estado, orden determinista y offsets seguros ante overflow. Se mantienen filtro explícito de OwnerUserId en usuarios y filtro global tenant en Drivers.

@@ -6,6 +6,12 @@
 - Suite Release **155/155**; build Release **0 warnings/0 errores**.
 - Action [`45185698388`](https://github.com/Paul1578/Back_GPS/actions/runs/45185698388) pasó build/test Release, smoke HTTP/MySQL tenant, concurrencia, rate limit y teardown descartable.
 
+## Límite agregado de evidencias por ruta
+
+- `RoutePointTests`: **20/20**, incluye rechazo en evidencia 51 y rechazo de segunda imagen de 3 MiB al superar 8 MB totales; la lista queda sin cambios tras cada rechazo.
+- Suite Release: **157/157**. Build Release: **0 warnings/0 errores**.
+- Pendiente: Action backend sobre el commit que contiene ambos límites.
+
 ## Paginación Usuarios/Drivers — validación local y smoke HTTP pendiente en CI
 
 - Backend `dotnet test BackEnd_Gps.sln --configuration Release --no-restore`: **151/151**; incluye 7 pruebas nuevas: orden estable entre páginas, búsqueda/rol/estado, páginas vacías y `int.MaxValue`, filtros tenant, ACL, compatibilidad y bounds.

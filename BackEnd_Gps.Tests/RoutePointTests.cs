@@ -152,6 +152,34 @@ public class RoutePointTests
         Assert.Equal(RouteStatus.Completed, route.Status);
     }
 
+    [Fact]
+    public void RouteRejectsEvidenceAfterFiftyItemsWithoutChangingTheRoute()
+    {
+        var route = CreateRoute();
+        route.ChangeStatus(RouteStatus.InProgress);
+        var evidence = RoutePointEvidence.Create("note", "Evidencia QA", null);
+
+        for (var index = 0; index < 50; index++)
+            route.AddPointEvidence(1, evidence);
+
+        Assert.Throws<InvalidOperationException>(() => route.AddPointEvidence(1, evidence));
+        Assert.Equal(50, route.Points[1].Evidence.Count);
+    }
+
+    [Fact]
+    public void RouteRejectsEvidenceThatExceedsEightMegabytesWithoutChangingTheRoute()
+    {
+        var route = CreateRoute();
+        route.ChangeStatus(RouteStatus.InProgress);
+        var imageBytes = new byte[3 * 1024 * 1024];
+        var imageContent = $"data:image/png;base64,{Convert.ToBase64String(imageBytes)}";
+        var evidence = RoutePointEvidence.Create("image", imageContent, null);
+        route.AddPointEvidence(1, evidence);
+
+        Assert.Throws<InvalidOperationException>(() => route.AddPointEvidence(1, evidence));
+        Assert.Single(route.Points[1].Evidence);
+    }
+
     [Theory]
     [InlineData("note", "", null)]
     [InlineData("video", "content", null)]

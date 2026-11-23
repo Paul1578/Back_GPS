@@ -5,6 +5,9 @@ namespace fletflow.Domain.Fleet.Entities
 {
     public class RouteE
     {
+        private const int MaxEvidenceItemsPerRoute = 50;
+        private const long MaxEvidenceContentCharactersPerRoute = 8_000_000;
+
         public Guid Id { get; private set; }
 
         public Guid VehicleId { get; private set; }
@@ -190,6 +193,14 @@ namespace fletflow.Domain.Fleet.Entities
                 throw new InvalidOperationException("Sólo se puede adjuntar evidencia a una parada operativa.");
             if (_points[pointIndex].Status is RoutePointStatus.Completed or RoutePointStatus.Skipped)
                 throw new InvalidOperationException("No se puede adjuntar evidencia a una parada cerrada.");
+
+            var currentEvidence = _points.SelectMany(point => point.Evidence).ToList();
+            if (currentEvidence.Count >= MaxEvidenceItemsPerRoute)
+                throw new InvalidOperationException("La ruta alcanzó el máximo de 50 evidencias.");
+
+            var nextContentSize = currentEvidence.Sum(item => (long)item.Content.Length) + evidence.Content.Length;
+            if (nextContentSize > MaxEvidenceContentCharactersPerRoute)
+                throw new InvalidOperationException("La ruta superaría el límite total de 8 MB de evidencias.");
 
             var updatedPoints = _points.ToList();
             updatedPoints[pointIndex] = updatedPoints[pointIndex].WithEvidence(evidence);

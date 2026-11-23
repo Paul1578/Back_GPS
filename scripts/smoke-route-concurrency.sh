@@ -248,7 +248,7 @@ if [[ "$started_routes" != "1:1:1" ]]; then
 fi
 
 maintenance_race_vehicle="$(create_vehicle "${prefix}MRV")"
-maintenance_race_driver="$(create_driver "${prefix}maintenance_race_driver")"
+maintenance_race_driver="$(create_driver "${prefix}MRD")"
 maintenance_race_route="$(create_route "${prefix}maintenance_race_route" "$maintenance_race_vehicle" "$maintenance_race_driver" "2035-05-05T10:00:00Z" "2035-05-05T11:00:00Z")"
 concurrent_request PUT "/Routes/$maintenance_race_route/status" '{"status":1}' start_vs_maintenance & start_maintenance_pid=$!
 concurrent_request PUT "/Vehicles/$maintenance_race_vehicle/status" '{"status":2}' maintenance_vs_start & maintenance_pid=$!

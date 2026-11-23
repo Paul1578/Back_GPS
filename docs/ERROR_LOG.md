@@ -22,6 +22,12 @@
 - Solución: usar el sufijo corto `MRV`, manteniendo el prefijo aleatorio que aísla y limpia los fixtures.
 - Prevención: respetar longitudes de campos de negocio en nombres de fixtures (placa ≤20); validar los payloads de humo con las restricciones DTO antes de agregar sufijos descriptivos largos.
 
+## 2026-11-23 — Fixture de conductor concurrente excedió longitud de documento — CORREGIDO
+
+- Backend Action `45142398227` volvió a pasar build, 138 xUnit y tenant HTTP/MySQL, pero el smoke falló al crear el Driver de la carrera: el documento con sufijo `maintenance_race_driver` excedió el límite de 20 caracteres y la API devolvió 400.
+- Solución: usar `MRD` en el campo documento; el prefijo aleatorio conserva aislamiento y cleanup.
+- Prevención: revisar límites de longitud de todos los campos identificadores del fixture, no sólo `Plate`.
+
 # 2026-11-22 — Fixture del E2E Manager mapa compartía rol y no se limpiaba tras timeout — CORREGIDO LOCALMENTE
 
 - Front Actions `45084368342`/`45084699175` pasaron 38/39; el único fallo fue el E2E de mapa que reutilizaba una cuenta Driver, cambiaba su rol y podía expirar antes de restaurarlo. El siguiente retry veía `Manager` y fallaba esperando `Driver`; también quedaban ruta y vehículo QA.

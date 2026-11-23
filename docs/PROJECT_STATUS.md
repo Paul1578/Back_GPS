@@ -6,6 +6,7 @@
 - El commit documental `7906ef2` pasó Actions [`45269381165`](https://github.com/Paul1578/Back_GPS/actions/runs/45269381165) y [`45269364838`](https://github.com/Paul1578/Back_GPS/actions/runs/45269364838): build/xUnit, upgrade tenant histórico, HTTP/MySQL tenant, concurrencia, rate limit y cleanup.
 - El HEAD documental posterior `9fa14a8` repitió ambos checks: Actions [`45270259692`](https://github.com/Paul1578/Back_GPS/actions/runs/45270259692) y [`45270276674`](https://github.com/Paul1578/Back_GPS/actions/runs/45270276674), todas las etapas build/xUnit/migración/HTTP-MySQL/concurrencia/rate limit verdes.
 - HEAD documental final `3227f99` pasó las Actions [`45272138028`](https://github.com/Paul1578/Back_GPS/actions/runs/45272138028) y [`45272147290`](https://github.com/Paul1578/Back_GPS/actions/runs/45272147290), incluidos build/xUnit 165/165 y smokes integrados.
+- HEAD documental `a3fb5de` pasó las Actions [`45273681084`](https://github.com/Paul1578/Back_GPS/actions/runs/45273681084) y [`45273688213`](https://github.com/Paul1578/Back_GPS/actions/runs/45273688213), con xUnit 165/165, migración, tenant HTTP/MySQL, concurrencia, rate limit y cleanup.
 - Pendientes externos de despliegue descritos en `SECURITY.md`: credenciales SMTP válidas, dominio/TLS e IPs confiables de ingress, persistencia/cifrado de Data Protection y almacenamiento distribuido del rate limit antes de operar varias réplicas.
 
 ## Estado vigente — runner E2E serializado — 2026-11-23

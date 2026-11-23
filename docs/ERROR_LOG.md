@@ -1,3 +1,10 @@
+## 2026-11-23 — Login E2E de cuenta invitada Logistics devolvió 401 — FIX EN VALIDACIÓN
+
+- Action Front [`45233814926`](https://github.com/Paul1578/Front_gpsR/actions/runs/45233814926) tuvo **66/67 E2E**. El test creaba Logistics mediante `/Users` y luego sólo marcaba `IsActive`; el alta deja `MustChangePassword=true`, por lo que autenticación correctamente devolvía 401. No es un defecto del login ni de permisos.
+- Corrección: `run-e2e-local.sh` ahora provisiona Logistics QA con los demás fixtures y cambia `IsActive/MustChangePassword` sólo en el MySQL efímero, exportando las credenciales al spec; cleanup por prefijo ya existía. El Front ya no crea ni intenta activar manualmente esa cuenta.
+- Prevención: tests autenticados deben activar invitaciones por el flujo real o habilitar fixtures dentro de la DB desechable. Cambiar sólo el estado activo no equivale a completar activación.
+- Shell syntax y diff-check locales pasan; Action integrada del SHA corregido pendiente.
+
 ## 2026-11-23 — GET de lista repetía fotos Base64 — CORREGIDO LOCALMENTE
 
 - El polling consultaba rutas con contenido completo de cada foto, multiplicando el payload por tenant.

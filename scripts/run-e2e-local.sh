@@ -107,6 +107,8 @@ export FLETFLOW_E2E_ROUTE_DRIVER_EMAIL="fletflow.e2e.driver.route.$user_suffix@e
 export FLETFLOW_E2E_ROUTE_DRIVER_PASSWORD="$(openssl rand -hex 24)"
 export FLETFLOW_E2E_MANAGER_MAP_EMAIL="fletflow.e2e.manager.map.$user_suffix@example.test"
 export FLETFLOW_E2E_MANAGER_MAP_PASSWORD="$(openssl rand -hex 24)"
+export FLETFLOW_E2E_LOGISTICS_EMAIL="fletflow.e2e.logistics.matrix.$user_suffix@example.test"
+export FLETFLOW_E2E_LOGISTICS_PASSWORD="$(openssl rand -hex 24)"
 export FLETFLOW_E2E_MAP_FIXTURE_SUFFIX="$user_suffix"
 export FLETFLOW_E2E_OTHER_TENANT_EMAIL="fletflow.e2e.admin.other.$user_suffix@example.test"
 export FLETFLOW_E2E_OTHER_TENANT_PASSWORD="$(openssl rand -hex 24)"
@@ -218,6 +220,12 @@ const mapManager = await createUser({
   firstName: "E2E QA Map",
   lastName: "Manager",
 });
+await createUser({
+  username: "E2E QA Logistics Matrix",
+  email: process.env.FLETFLOW_E2E_LOGISTICS_EMAIL,
+  password: process.env.FLETFLOW_E2E_LOGISTICS_PASSWORD,
+  roleName: "Logistics",
+});
 const mapDriverResponse = await fetch(`${api}/Drivers`, {
   method: "POST",
   headers: {
@@ -261,7 +269,7 @@ mysql --protocol=TCP --host="$MYSQL_HOST" --port="$MYSQL_PORT" --user="$MYSQL_US
   >/dev/null 2>&1
 
 mysql --protocol=TCP --host="$MYSQL_HOST" --port="$MYSQL_PORT" --user="$MYSQL_USER" "$DB_NAME" \
-  -e "UPDATE Users SET IsActive=1, MustChangePassword=0 WHERE Email IN ('$FLETFLOW_E2E_USER_EMAIL', '$FLETFLOW_E2E_DEACTIVATION_EMAIL', '$FLETFLOW_E2E_DRIVER_EMAIL', '$FLETFLOW_E2E_ROUTE_DRIVER_EMAIL', '$FLETFLOW_E2E_MANAGER_MAP_EMAIL', '$FLETFLOW_E2E_DELEGATED_ADMIN_EMAIL');" \
+  -e "UPDATE Users SET IsActive=1, MustChangePassword=0 WHERE Email IN ('$FLETFLOW_E2E_USER_EMAIL', '$FLETFLOW_E2E_DEACTIVATION_EMAIL', '$FLETFLOW_E2E_DRIVER_EMAIL', '$FLETFLOW_E2E_ROUTE_DRIVER_EMAIL', '$FLETFLOW_E2E_MANAGER_MAP_EMAIL', '$FLETFLOW_E2E_LOGISTICS_EMAIL', '$FLETFLOW_E2E_DELEGATED_ADMIN_EMAIL');" \
   >/dev/null 2>&1
 
 mysql --protocol=TCP --host="$MYSQL_HOST" --port="$MYSQL_PORT" --user="$MYSQL_USER" "$DB_NAME" \

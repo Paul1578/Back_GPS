@@ -1,3 +1,9 @@
+## 2026-11-23 — Fixture Logistics autenticable para matriz E2E — Action integrada pendiente
+
+- El runner E2E crea un Logistics aislado en la DB descartable junto al resto de identidades QA y lo habilita para login sólo en ese esquema temporal; exporta sus credenciales al frontend. `cleanup-e2e.sql` ya elimina el prefijo del fixture.
+- Causa documentada en Front `docs/ERROR_LOG.md`: el test anterior creaba por API una cuenta con `MustChangePassword=true`; cambiar sólo `IsActive` no la activa y login devolvía 401.
+- `bash -n scripts/run-e2e-local.sh` y `git diff --check` pasan. Action nueva requerida para verificar login, matriz de permisos y cleanup de extremo a extremo.
+
 ## 2026-11-23 — Evitar Base64 repetido en listados de rutas
 
 - DTO de lista omite Content de evidencias tipo imagen. Metadata y notas se conservan; endpoint de detalle devuelve imágenes.

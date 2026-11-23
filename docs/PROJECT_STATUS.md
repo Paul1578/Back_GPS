@@ -1,8 +1,8 @@
 ## Estado vigente — 2026-11-23
 
 - Rama `chore/stabilize-fleet-platform`; `main` no se modificó.
-- Código `b817f9f` y documentación `74d2f3c`. Las listas de rutas omiten Base64 de imágenes; el detalle mantiene contenido completo. Release/xUnit **158/158**, build **0 warnings/0 errors**, smokes API/MySQL y cleanup pasan en Actions [`45190701729`](https://github.com/Paul1578/Back_GPS/actions/runs/45190701729) y [`45192161720`](https://github.com/Paul1578/Back_GPS/actions/runs/45192161720).
-- Front actualiza el tipo para aceptar `content=null`; Action integrada [`45193357694`](https://github.com/Paul1578/Front_gpsR/actions/runs/45193357694) estaba activa al corte.
+- Código `b817f9f`; documentación sincronizada y validada por Actions Backend [`45194801300`](https://github.com/Paul1578/Back_GPS/actions/runs/45194801300) y [`45194814911`](https://github.com/Paul1578/Back_GPS/actions/runs/45194814911). Las listas de rutas omiten Base64 de imágenes y el detalle mantiene contenido completo. Release/xUnit **158/158**, build **0 warnings/0 errors**, smokes API/MySQL y cleanup pasan en Actions [`45190701729`](https://github.com/Paul1578/Back_GPS/actions/runs/45190701729) y [`45192161720`](https://github.com/Paul1578/Back_GPS/actions/runs/45192161720).
+- Front `13669f3` actualiza el tipo para aceptar `content=null`; Action integrada [`45193357694`](https://github.com/Paul1578/Front_gpsR/actions/runs/45193357694) pasó **53/53 E2E**, responsive 1/1, audit/lint/build, backend Release/xUnit 158/158, API/MySQL y cleanup.
 - Decisiones confirmadas: sólo raíz otorga Admin; se permiten traslados sin operaciones; las paradas aceptan recogida, entrega o ambas; unlink conserva cuenta, perfil y rol Driver y se bloquea ante rutas Pending/InProgress; app nativa pospuesta.
 - Pendientes externos: credenciales SMTP vigentes; configuración de producción para IPs confiables del ingress, key ring de Data Protection persistente/protegido y rate limit distribuido antes de escalar. Continúa la auditoría de cobertura verificable.
 

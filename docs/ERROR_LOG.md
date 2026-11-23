@@ -1333,3 +1333,11 @@ Cada cambio de API debe incluir validación de compilación, migraciones si apli
 - **Solución diagnóstica:** el runner guarda temporalmente la salida de `mysql`, la imprime sólo si la limpieza falla y elimina el archivo temporal. No se imprime la línea de conexión ni credenciales.
 - **Verificación pendiente:** `bash -n`, Backend CI y una nueva Front Action con 43 E2E + cleanup. Si el error persiste, corregir SQL/fixture con el mensaje real y volver a probar.
 - **Prevención:** no silenciar stderr en operaciones de limpieza; conservar el límite de la consulta a prefijos QA y no ejecutar el cleanup contra la DB local persistente.
+
+# 2026-11-23 — Cleanup MySQL 1451 por ruta ligada a Driver QA — CORREGIDO LOCALMENTE
+
+- **Hallazgo de Front Action `45103134467`:** los 43 tests pasaron, pero eliminar un Driver de prueba falló con MySQL 1451: quedaba una fila `Routes.DriverId` con restricción `ON DELETE RESTRICT`.
+- **Causa:** `cleanup-e2e.sql` eliminaba rutas sólo por nombre `E2E QA ruta %`; un test de ciclo dejó otra ruta vinculada al Driver QA con nombre distinto.
+- **Solución:** limpiar primero RoutePositions y Routes que coincidan con el prefijo de ruta QA o estén vinculadas a un Driver cuyo `DocumentNumber` empiece con `E2EQA`; luego eliminar Drivers/Vehicles/Users QA.
+- **Verificación:** sólo con base descartable de CI en siguiente Front Action; no ejecutar sobre la DB local persistente.
+- **Prevención:** cleanup debe contemplar FKs por ID además de los prefijos de nombre y quitar dependencias antes de eliminar entidades padre.

@@ -589,3 +589,8 @@ Nota de actualización: algunos resultados históricos de registro público más
 
 - Front Action `45102498423`: los **43/43 E2E pasaron**, incluidos traslado, conductor ocupado, ruta multi-parada y confirmaciones de rol/estado; falló el cleanup de MySQL.
 - Backend `scripts/run-e2e-local.sh` ocultaba el stderr del comando `mysql`. Se actualizó para mostrar el mensaje sólo ante fallo y borrar el archivo temporal. Causa SQL exacta aún pendiente de la siguiente Action.
+
+## Cleanup QA corregido — validar en CI
+
+- Front Action `45103134467`: **43/43 E2E** pasaron; cleanup falló con MySQL 1451 porque quedaba una ruta ligada al Driver QA bajo `ON DELETE RESTRICT`.
+- `cleanup-e2e.sql` ahora elimina posiciones y rutas por nombre QA o por `Driver.DocumentNumber LIKE 'E2EQA%'`, antes de borrar los Drivers. Repetir Front Action para comprobar cleanup en DB efímera.

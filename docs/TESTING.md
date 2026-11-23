@@ -637,3 +637,8 @@ La invitación envía sólo el enlace de activación; el usuario fija su contras
 
 - Front Action `45102498423`: responsive 1/1, Playwright **43/43** en 3.3 min; cleanup MySQL falló y ocultó stderr.
 - Backend runner actualizado para imprimir diagnóstico sólo si falla la limpieza. Repetición integrada pendiente para cerrar cleanup.
+
+## Cleanup de fixtures
+
+- Action `45103134467`: Playwright **43/43** pasó; cleanup falló con FK 1451 (`Routes.DriverId`).
+- SQL de cleanup amplió filtro a rutas por Driver QA antes de borrar Drivers. Validación integrada pendiente en DB descartable.

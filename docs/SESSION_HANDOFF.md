@@ -736,3 +736,8 @@ Errores de migración, herramientas, QA y soluciones están en `docs/ERROR_LOG.m
 - Front `45102498423`: 43/43 Playwright y responsive pasaron; el job acabó fallido al limpiar fixtures MySQL.
 - Diagnóstico: `scripts/run-e2e-local.sh` suprimía stderr de mysql. Backend tiene ahora un cambio que captura y muestra el error concreto al fallar, luego elimina el archivo temporal; siguiente Action deberá revelar/confirmar el cleanup.
 - No ejecutar `cleanup-e2e.sql` en la DB local persistente. La repetición debe usar el MySQL descartable del workflow.
+
+## Causa del cleanup hallada
+
+- Front `45103134467` ejecutó 43/43 tests; cleanup produjo MySQL 1451 en `Routes.DriverId` al borrar Driver QA. El nombre de una ruta ligada no coincidía con prefijo `E2E QA ruta`.
+- Backend `cleanup-e2e.sql` corregido para borrar RoutePositions/Routes asociados por Driver QA (`DocumentNumber E2EQA%`) antes de borrar Driver. El test siguiente debe verificar cleanup en MySQL efímero. No tocar la DB local persistente.

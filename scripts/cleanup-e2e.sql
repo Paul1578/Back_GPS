@@ -2,10 +2,15 @@
 DELETE rp
 FROM RoutePositions rp
 INNER JOIN Routes r ON r.Id = rp.RouteId
-WHERE r.Name LIKE 'E2E QA ruta %';
+LEFT JOIN Drivers d ON d.Id = r.DriverId
+WHERE r.Name LIKE 'E2E QA ruta %'
+   OR d.DocumentNumber LIKE 'E2EQA%';
 
-DELETE FROM Routes
-WHERE Name LIKE 'E2E QA ruta %';
+DELETE r
+FROM Routes r
+LEFT JOIN Drivers d ON d.Id = r.DriverId
+WHERE r.Name LIKE 'E2E QA ruta %'
+   OR d.DocumentNumber LIKE 'E2EQA%';
 
 DELETE FROM Drivers
 WHERE DocumentNumber LIKE 'E2EQA%';

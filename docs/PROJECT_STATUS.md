@@ -8,6 +8,7 @@
 - El E2E anterior Front `45085920993` completó **39/39** y responsive **1/1**, pero aún usó el sufijo UUID. Runner actualizado en `2619531` pasó Action Backend `45086298118`; Front `104723a` repetirá el caso con sufijo compartido.
 - Auditoría retiró `RoutesPRUEBAController`, que devolvía texto estático sin consumidores; Action `45086663424` validó HTTP 404 con token válido, build/xUnit, aislamiento tenant, concurrencia y cleanup.
 - Política producto ahora definida: sólo la cuenta raíz otorga rol Admin. Las rutas Users validan actor raíz y el smoke comprueba creación/promoción permitida y tres denegaciones de Admin delegado; xUnit/CI pendiente.
+- El smoke amplía el perfil User: actualización HTTP exitosa, respuesta GET y sincronización/persistencia MySQL del Driver enlazado; CI pendiente.
 - Front Actions `45082924174` (un worker) y `45083215716` detectaron la escritura perdida, y dos aserciones UI/E2E ya corregidas en rama Front. Ver `ERROR_LOG.md` en ambos repos.
 - Ramas: `chore/stabilize-fleet-platform` y Front `refactor/route-builder`; main intacta. Misión abierta por cobertura CRUD/roles/responsive, decisiones Admin delegado y User↔Driver, SMTP externo y móvil nativo aplazado.
 

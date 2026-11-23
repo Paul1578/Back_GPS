@@ -13,6 +13,7 @@
 - Action Backend `45086298118` para `2619531` pasó. La Front Action anterior `45085920993` terminó 39/39 antes de consumir esta variable; la nueva Front `104723a` valida el sufijo estable.
 - Auditoría retiró `RoutesPRUEBAController` (tres endpoints estáticos, sin consumidores); backend Action `45086663424` pasó el smoke tenant, incluida comprobación 404 autenticada, build/xUnit, aislamiento y concurrencia.
 - Usuario definió que sólo cuenta raíz puede crear/promover Admin. Controller restringe POST Users, PUT role y alias; smoke crea Admin delegado, verifica 403 y SQL intacto, luego prueba promoción permitida desde raíz. Validación local/Action pendiente.
+- Gap de auditoría de perfil cubierto en smoke: PUT exitoso sobre User con Driver asociado, respuesta y GET Driver, SQL verifica ambos nombres/owners y vínculo único. El smoke aún debe correr después del commit.
 - No marcar objetivo completo; continuar matriz CRUD/roles/responsive después del resultado Front.
 
 - `76c2cc8` pasó Action `45077658712`; `229076d` pasó Action `45078321298` (Release build, xUnit 111/111, HTTP/MySQL tenant, concurrencia y cleanup), incluidos los 403 y la ausencia de mutaciones User en Users/Roles.

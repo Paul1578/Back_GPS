@@ -1214,7 +1214,8 @@ expect_status 200 "Login del Admin delegado QA"
 delegated_admin_token="$(jq -er '.token // .accessToken' "$work_dir/response.json")"
 
 denied_admin_email="fletflow.e2e.admin.denied.$suffix@example.test"
-request POST /Users "$(jq -nc --arg email "$denied_admin_email" --arg username "E2E Admin denegado $suffix" '{username:$username,email:$email,roleName:"Admin"}')" "$delegated_admin_token"
+denied_admin_password="$(openssl rand -hex 24)"
+request POST /Users "$(jq -nc --arg email "$denied_admin_email" --arg username "E2E Admin denegado $suffix" --arg password "$denied_admin_password" '{username:$username,email:$email,password:$password,roleName:"Admin"}')" "$delegated_admin_token"
 expect_status 403 "Admin delegado no puede crear otro Admin"
 request PUT "/Users/$restricted_user_id/role" '{"roleName":"Admin"}' "$delegated_admin_token"
 expect_status 403 "Admin delegado no puede promover a otro usuario a Admin"
@@ -1270,6 +1271,28 @@ manual_link_sql="$(mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port
   --batch --skip-column-names -e "SELECT CONCAT(CAST(d.UserId AS CHAR),':',CAST(d.OwnerUserId AS CHAR),':',d.DocumentNumber,':',(SELECT COUNT(*) FROM Drivers WHERE UserId='$manual_link_user_id')) FROM Drivers d WHERE d.Id='$manual_link_driver_id';")"
 [[ "$manual_link_sql" == "$manual_link_user_id:$root_user_id:$manual_link_driver_document:1" ]] || {
   echo "La relación User/Driver no quedó consistente en MySQL ($manual_link_sql)." >&2; exit 1;
+}
+
+manual_profile_username="Manual Driver Link actualizado $suffix"
+request PUT "/Users/$manual_link_user_id/profile" "$(jq -nc --arg username "$manual_profile_username" \
+  '{username:$username,firstName:"Nombre actualizado",lastName:"Apellido actualizado"}')" "$token"
+expect_status 200 "Actualizar perfil User vinculado exitosamente"
+jq -e --arg userId "$manual_link_user_id" --arg username "$manual_profile_username" \
+  '.id == $userId and .username == $username and .firstName == "Nombre actualizado" and .lastName == "Apellido actualizado"' \
+  "$work_dir/response.json" >/dev/null || {
+    echo "La respuesta del perfil no refleja los campos actualizados." >&2; cat "$work_dir/response.json" >&2; exit 1;
+  }
+request GET "/Drivers/$manual_link_driver_id" "" "$token"
+expect_status 200 "Leer Driver después de editar perfil User"
+jq -e '.firstName == "Nombre actualizado" and .lastName == "Apellido actualizado"' "$work_dir/response.json" >/dev/null || {
+  echo "La edición del perfil User no sincronizó nombre/apellido del Driver." >&2; cat "$work_dir/response.json" >&2; exit 1;
+}
+manual_profile_sql="$(mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" "$db_name" \
+  --batch --skip-column-names -e "SELECT CONCAT(u.Username,':',u.FirstName,':',u.LastName,':',d.FirstName,':',d.LastName,':',CAST(u.OwnerUserId AS CHAR),':',CAST(d.OwnerUserId AS CHAR),':',(SELECT COUNT(*) FROM Drivers WHERE UserId=u.Id)) FROM Users u JOIN Drivers d ON d.UserId=u.Id WHERE u.Id='$manual_link_user_id';")"
+expected_manual_profile_sql="$manual_profile_username:Nombre actualizado:Apellido actualizado:Nombre actualizado:Apellido actualizado:$root_user_id:$root_user_id:1"
+[[ "$manual_profile_sql" == "$expected_manual_profile_sql" ]] || {
+  echo "La edición de perfil y sincronización User/Driver no quedó persistida en MySQL (esperado '$expected_manual_profile_sql', recibido '$manual_profile_sql')." >&2
+  exit 1
 }
 
 other_tenant_member_email="fletflow.e2e.tenant-b.member.$suffix@example.test"

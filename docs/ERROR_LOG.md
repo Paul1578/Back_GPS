@@ -23,7 +23,14 @@
 - El endpoint limitaba el miembro al mismo tenant, pero cualquier Admin del equipo podía otorgar el máximo rol mediante POST `/Users`, PUT `/{id}/role` o el alias POST `/{id}/roles/Admin`.
 - El usuario definió que sólo la cuenta raíz de la empresa puede hacerlo. Backend compara el ID autenticado con el `owner_id` firmado; Admin delegado recibe 403. El smoke verifica allow root, deny delegado y snapshots/persistencia MySQL.
 - La primera compilación del cambio reportó dos CS8604 porque los DTO/parámetros de rol podían ser null antes de llamar al comando. Se añadieron validaciones 400 para rol vacío y se pasa un nombre normalizado no nulo; repetir Release build para confirmar 0 warnings.
+- Action `45087881487` detectó que la prueba negativa POST omitía `Password`, requerido por el modelo de entrada, por eso recibía 400 antes de autorizar. El fixture ahora incluye contraseña aleatoria para alcanzar la regla y verificar 403; repetir smoke.
 - Prevención: las políticas de privilegios se comprueban en el backend para cada alias de endpoint; no asumir que validar sólo tenant basta para autorización por jerarquía.
+
+## 2026-11-23 — Perfil User exitoso no tenía smoke HTTP/MySQL — CORREGIDO LOCALMENTE; CI PENDIENTE
+
+- La auditoría observó cobertura de errores/cross-tenant y pruebas de comando, pero no éxito HTTP del perfil ni persistencia/sincronización del Driver asociado.
+- Smoke tenant ahora actualiza el perfil de un User vinculado, valida respuesta HTTP, GET del Driver y SQL para campos, propietario e integridad de vínculo único.
+- Prevención: probar caminos positivos de endpoints críticos además de validaciones negativas; afirmar tanto respuesta como persistencia relacional.
 
 # 2026-11-22 — Runner no exponía UserId requerido por E2E Manager de mapa — CORREGIDO LOCALMENTE
 

@@ -10,6 +10,7 @@
 - Action Backend `45086298118` para `2619531` pasó. Action Front `45085920993` probó 39/39 sin skips, pero precede a la variable de sufijo estable; repetir con `104723a`.
 - Action `45086663424` para `a144f08` validó `GET /RoutesPRUEBA/admin` con JWT válido en HTTP 404; Release build, xUnit, aislamiento MySQL y concurrencia también pasaron. Localmente: xUnit **113/113**, build **0 warnings/0 errors**, bash syntax y diff-check OK.
 - Regresión política Admin: raíz crea y promueve; delegado recibe 403 en POST Users/PUT role/POST alias; MySQL verifica rol original y ninguna cuenta parcial. xUnit local y Action integradas pendientes.
+- Perfil positivo: el smoke cambia nombres de User vinculado, comprueba respuesta/GET Driver y persiste nombres/OwnerUserId/cardinalidad en MySQL; Action pendiente.
 
 # Bloqueo de baja de cuenta enlazada a Driver con ruta activa — 2026-11-22
 

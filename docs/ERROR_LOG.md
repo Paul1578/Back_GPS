@@ -1458,6 +1458,12 @@ Cada cambio de API debe incluir validación de compilación, migraciones si apli
 - Solución: localizar el command con `rg --files` y consultar Actions desde el checkout propietario.
 - Prevención: resolver el path real del archivo y verificar propietario repo/ID de Action antes de leer resultados.
 
+## 2026-11-23 — Parche documental Backend usó contexto antiguo — RESUELTO
+
+- Una actualización agrupada esperaba un encabezado que no existía en la versión vigente de `PROJECT_STATUS.md`; `apply_patch` abortó el parche entero sin modificar los archivos. Un intento siguiente usó contexto de sección de otro archivo y también se rechazó.
+- Solución: releer cada sección y aplicar parches separados sobre el texto actual; después, revisar `git diff --check`.
+- Prevención: confirmar el nombre y contenido actual de cada archivo antes de preparar parches de varias secciones.
+
 ## 2026-11-23 — Informe QA omitió el ciclo HTTP/MySQL de traslado ya existente — ACLARADO
 
 - El informe independiente de QA indicó que el smoke Backend no completaba traslados sin operaciones. La inspección de `scripts/smoke-tenant-http.sh:1233-1257` mostró que sí crea el traslado, lo inicia y completa como Logistics, y verifica estado/timestamps/vehículo Available por HTTP y SQL.

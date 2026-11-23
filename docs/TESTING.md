@@ -12,7 +12,7 @@ Las notas posteriores con fechas o versiones anteriores son el historial de su m
 
 - `CreateAndUpdate_AllowAdjacentSchedulesAndRejectOverlapsWithoutChangingRoute` usa SQLite y el mismo vehículo/conductor para aislar la regla del horario: crear rutas contiguas y mover una ruta a un horario contiguo se permiten; un solapamiento al crear/editar y un horario incompleto frente a una ruta activa producen conflicto. Tras un rechazo, la ruta editada conserva nombre y fechas previos.
 - Test focalizado pasó **1/1** con `dotnet test BackEnd_Gps.Tests/BackEnd_Gps.Tests.csproj --configuration Release --filter 'FullyQualifiedName~CreateAndUpdate_AllowAdjacentSchedulesAndRejectOverlapsWithoutChangingRoute' --no-restore`.
-- Suite completa pasó **139/139**, build Release **0 warnings/0 errors**, `bash -n scripts/smoke-route-concurrency.sh` y `git diff --check` pasaron. Action CI con smoke HTTP/MySQL pendiente.
+- Suite completa pasó **139/139**, build Release **0 warnings/0 errors**, `bash -n scripts/smoke-route-concurrency.sh` y `git diff --check` pasaron. Action [`45145214415`](https://github.com/Paul1578/Back_GPS/actions/runs/45145214415) pasó con **139/139**, tenant HTTP/MySQL, agenda/concurrencia, rate limit de login/proxy y cleanup.
 
 ## xUnit multi-operación — CI integrado
 

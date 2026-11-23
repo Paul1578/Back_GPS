@@ -2,8 +2,8 @@
 
 ## Ramas y evidencia integrada
 
-- Backend `chore/stabilize-fleet-platform`: docs HEAD `d52165d`, código probado `7eab085`; Action [`45143585970`](https://github.com/Paul1578/Back_GPS/actions/runs/45143585970) pasó Release, xUnit **138/138**, tenant/concurrencia/mantenimiento/login y cleanup.
-- Front `refactor/route-builder`: docs HEAD `2b3b523`, código funcional `e37cfeb`; Action [`45143586336`](https://github.com/Paul1578/Front_gpsR/actions/runs/45143586336) pasó 51/51 E2E, responsive 1/1, audit/lint/build, Backend Release/xUnit y cleanup.
+- Backend `chore/stabilize-fleet-platform`: código `ca1a278`; Action [`45145214415`](https://github.com/Paul1578/Back_GPS/actions/runs/45145214415) pasó Release, xUnit **139/139**, tenant HTTP/MySQL, concurrencia, login rate limit/proxy y cleanup.
+- Front `refactor/route-builder`: docs `58306ab`, código `e37cfeb`; Action [`45145157559`](https://github.com/Paul1578/Front_gpsR/actions/runs/45145157559) pasó 51/51 E2E, responsive 1/1, audit/lint/build, Backend Release/xUnit y cleanup.
 - Ambas ramas permanecen separadas de `main`; pendientes externos: SMTP, rate limiter distribuido, IP de ingress, key ring persistente y despliegue.
 
 ## Carrera entre iniciar ruta y mantenimiento
@@ -12,6 +12,11 @@
 - Añadido test SQLite de conflicto sin mutaciones y ampliado `scripts/smoke-route-concurrency.sh` con las dos peticiones simultáneas y lectura SQL de los estados finales. Test enfocado **1/1**, suite Release **138/138**, build **0 advertencias/0 errores**, bash syntax y diff-check pasan. Action [`45142742926`](https://github.com/Paul1578/Back_GPS/actions/runs/45142742926) pasó el smoke real HTTP/MySQL y cleanup.
 - Un comando de lectura apuntó a `ChangeRouteStatusCommandTests.cs`, que no existe; los casos viven en `CreateRouteCommandTests.cs`. Quedó anotado en `ERROR_LOG.md`.
 - Las primeras Actions fallaron antes del escenario porque placa y documento del fixture excedían 20 caracteres (HTTP 400); sufijos ajustados a `MRV`/`MRD`, causas y prevención anotadas en `ERROR_LOG.md`. La Action final `45142742926` pasó el escenario; no queda pendiente repetirlo.
+
+## Fronteras de horario — CI validada
+
+- `CreateAndUpdate_AllowAdjacentSchedulesAndRejectOverlapsWithoutChangingRoute` cubre creación/edición contiguas, solapamiento en ambos comandos y horario incompleto frente a ruta activa. Rechazos preservan la ruta editada.
+- Suite Release **139/139**, build 0 warnings/errores; Action [`45145214415`](https://github.com/Paul1578/Back_GPS/actions/runs/45145214415) pasó tenant HTTP/MySQL, agenda/asignaciones/concurrencia, login rate limit/proxy y teardown.
 
 ## Cierre de ciclo multi-operación
 

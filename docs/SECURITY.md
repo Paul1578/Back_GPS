@@ -204,3 +204,10 @@ Este proceso invalida los emails/token de recuperación que estén pendientes o 
 - La raíz se identifica con la identidad autenticada comparada contra el `owner_id` firmado; no se acepta un identificador de propietario enviado por el cliente como autoridad.
 - Action `45088129188` validó los casos permitidos/denegados mediante HTTP real y verificó en MySQL que las denegaciones no creen cuentas ni roles parciales; cleanup confirma que no quedaron fixtures.
 - `GET /Auth/me` publica `isRootAccount` derivado de la entidad autenticada sólo para presentación; la autorización de operaciones sigue validada en backend.
+
+## Auditoría adicional — 2026-11-23
+
+- Revisión read-only de JWT, rotación/revocación refresh, reset token, aislamiento por propietario y permisos Admin raíz no encontró bypass nuevo en los flujos inspeccionados. La evidencia de CI actual incluye root-only, 113 xUnit y smoke tenant.
+- Riesgo P2: validadores de alta, cambio, reset y activación aceptan contraseñas nuevas de seis caracteres. Definir y aplicar un mínimo mayor de forma coherente entre API y formularios; añadir pruebas de límites.
+- Riesgo P2: middleware limita genéricamente a 60 solicitudes por minuto/IP/proceso, no aplica límite específico de login ni limita por cuenta. Diseñar protección contra fuerza bruta sin permitir bloqueo de cuenta explotable para denegación de servicio; el estado en memoria no coordina réplicas.
+- La aplicación de rate limit distribuido y almacenamiento persistente de Data Protection siguen siendo requisitos para múltiples réplicas/producción.

@@ -707,3 +707,8 @@ Errores de migración, herramientas, QA y soluciones están en `docs/ERROR_LOG.m
 - Build Release local pasó sin warnings/errores; smoke completo pasó en API y MySQL 8 efímeros, cleanup correcto. `bash -n` y diff-check limpios. xUnit Release **113/113** pasó localmente; registrar evidencia en la Action al publicar.
 - Primer intento no inició API porque `nohup` fue terminado junto con shell efímero; repetición en sesión persistente pasó. El `dotnet` del PATH también apunta a host incompleto; usar `/home/leonardo/.dotnet/dotnet`. Ambas incidencias están en ERROR_LOG.
 - Próximo: finalizar suite xUnit, publicar smoke + docs, inspeccionar Action backend. Política de ruta sin operaciones aún espera respuesta.
+
+- Action backend `45093565790` pasó para `e678e6c`: Release, 113/113, tenant HTTP/MySQL y concurrencia; cleanup exitoso. La cobertura multi-parada se ejecutó localmente, pero ese workflow no incluye el escenario nuevo de Logistics; integrar su verificación en CI específica al publicar si el smoke de Actions todavía no lo contiene.
+
+- Backend Action `45093565790` success (`e678e6c`): build Release, 113/113, smoke tenant HTTP/MySQL + concurrencia, cleanup. Documentación y registro de hallazgos P2 pendientes de commit. El smoke Logistics multi-operación pasó localmente en servicios efímeros; el job CI no ejecuta ese bloque específico del smoke actualizado.
+- La revisión independiente no detectó bypass nuevo en JWT/refresh/reset/owner scope; registra contraseña mínima 6 y rate limit general 60/min por IP/proceso como pendientes P2.

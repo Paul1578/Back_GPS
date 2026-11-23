@@ -612,3 +612,7 @@ La invitación envía sólo el enlace de activación; el usuario fija su contras
 - El smoke corre en Action al publicar el commit; no presentar validación local como CI.
 
 - xUnit Release local: **113/113** con `BackEnd_Gps.sln`; se usa `/home/leonardo/.dotnet/dotnet` porque el host global está incompleto.
+
+- Backend Action [45093565790](https://github.com/Paul1578/Back_GPS/actions/runs/45093565790): Release build, **113/113** xUnit y smoke HTTP/MySQL tenant/concurrencia, cleanup success para `e678e6c`.
+
+- Action [45093565790](https://github.com/Paul1578/Back_GPS/actions/runs/45093565790) en `e678e6c`: Release build, xUnit 113/113, aislamiento HTTP/MySQL tenant y concurrencia de rutas; cleanup completado. El smoke multi-parada de logística ampliado pasa localmente; Action no incluye esa ampliación específica.

@@ -1290,3 +1290,17 @@ Cada cambio de API debe incluir validación de compilación, migraciones si apli
 - **Causa:** se asumió el nombre de solución antes de inspeccionar los archivos del repositorio.
 - **Solución:** `rg --files -g '*.sln'` identificó `BackEnd_Gps.sln`; al ejecutar con el SDK local, Release pasó 113/113.
 - **Prevención:** confirmar el nombre de la solución/proyecto en el repo antes de correr la suite.
+
+# 2026-11-23 — Exploración usó rutas de capa incorrectas — CORREGIDO
+
+- **Síntoma:** `rg` no encontró `BackEnd_Gps/Api` ni `BackEnd_Gps/Application`.
+- **Causa:** el backend mantiene las capas debajo de `fletflow/Api` y `fletflow/Aplication` (con esa grafía histórica); el layout real difiere del esquema estimado.
+- **Solución:** listar carpetas y buscar en las rutas reales; la auditoría continuó sin alterar archivos.
+- **Prevención:** comprobar estructura (`rg --files`, `find`) antes de usar rutas supuestas.
+
+# 2026-11-23 — Auditoría inició búsqueda en rutas de capa supuestas — CORREGIDO
+
+- **Síntoma:** `rg` recibió rutas inexistentes `BackEnd_Gps/Api` y `BackEnd_Gps/Application`.
+- **Causa:** el repositorio organiza las capas bajo `fletflow/Api` y `fletflow/Aplication`.
+- **Solución:** enumerar carpetas, reubicar las búsquedas y completar revisión read-only; no hubo cambios de datos/código por este error.
+- **Prevención:** verificar estructura real antes de inferir rutas a partir del documento de misión.

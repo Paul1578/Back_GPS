@@ -563,3 +563,7 @@ Nota de actualización: algunos resultados históricos de registro público más
 - Se mantiene pendiente la política de rutas sin operaciones, consultada al usuario.
 
 - Suite xUnit local con `/home/leonardo/.dotnet/dotnet test BackEnd_Gps.sln -c Release --no-restore -m:1`: **113/113**, 0 fallidas/omitidas. El primer intento apuntó al nombre supuesto `fletflow.sln` y falló por archivo inexistente; corregido al usar la solución real `BackEnd_Gps.sln`.
+
+- Backend Action [45093565790](https://github.com/Paul1578/Back_GPS/actions/runs/45093565790) pasó en `e678e6c`: build Release, xUnit **113/113**, smoke HTTP/MySQL tenant y concurrencia; contenedor y fixtures limpiados.
+
+- Auditoría de seguridad independiente (solo lectura) confirma controles de JWT/refresh/IDOR root-only revisados y sin bypass nuevo; quedan dos riesgos P2: contraseña mínima seis caracteres y rate limit de login sólo global 60/min por IP/proceso. Política de contraseña y defensa contra fuerza bruta por definir/implementar; ver `SECURITY.md`.

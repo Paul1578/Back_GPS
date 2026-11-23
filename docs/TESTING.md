@@ -1,6 +1,8 @@
 # Estado vigente — 2026-11-23
 
-## Carrera inicio de ruta / mantenimiento — validación en progreso
+Las notas posteriores con fechas o versiones anteriores son el historial de su momento; para el resultado actual consultar esta sección y `docs/PROJECT_STATUS.md`.
+
+## Carrera inicio de ruta / mantenimiento — validada
 
 - xUnit SQLite `ChangeRouteStatus_RejectsStartingPendingRouteWhenVehicleIsInMaintenance_WithoutChangingState`: **1/1 pasó**; verifica ruta `Pending` y vehículo `Maintenance` después del conflicto.
 - `smoke-route-concurrency.sh` dispara ambas peticiones HTTP a la vez y acepta sólo los resultados coherentes `Pending/Maintenance` o `InProgress/OnRoute`. Action [`45142742926`](https://github.com/Paul1578/Back_GPS/actions/runs/45142742926) pasó la verificación contra MySQL desechable.
@@ -18,18 +20,18 @@
 - Build Release: **0 advertencias, 0 errores** con `dotnet build BackEnd_Gps.sln --configuration Release --no-restore`.
 - Action integrada HTTP/MySQL sobre la rama de trabajo pendiente.
 
-## Fixture de Admin delegado real para E2E Front
+## Fixture de Admin delegado real para E2E Front — validado
 
 - `scripts/run-e2e-local.sh` crea un Admin delegado aleatorio bajo el tenant QA, lo habilita y exporta su correo/clave/ID al spec. La limpieza ya incluye el prefijo `fletflow.e2e.admin.*`.
 - `e2e/company-admin.spec.ts` usa sesión real para confirmar `isRootAccount=false`, `403` en crear/promover Admin, rol de miembro sin cambios y opciones Admin ausentes en pantalla.
-- `bash -n scripts/run-e2e-local.sh`, lint/build Front, discovery Playwright **51 tests** y diff-check pasaron local; ejecución navegador/API/MySQL integrada pendiente de Actions.
+- `bash -n scripts/run-e2e-local.sh`, lint/build Front, discovery Playwright **51 tests** y diff-check pasaron local. Action Front [`45142003636`](https://github.com/Paul1578/Front_gpsR/actions/runs/45142003636) pasó 51/51, incluida sesión de Admin delegado/API real y cleanup.
 
 ## Límites de clave y ruta de traslado — verificación local
 
 - `LoginUserCommandTests.Execute_AllowsLegacyPasswordShorterThanCurrentMinimum` confirma que una cuenta existente puede autenticarse con su clave anterior de 6 caracteres; la política mínima se aplica al establecer contraseñas nuevas.
 - `smoke-tenant-http.sh` prueba por HTTP y SQL que contraseñas cortas se rechazan en registro, cambio, activación y restablecimiento; los intentos de cambiar/activar/restablecer no mutan hashes, estado de cuenta ni consumo del token, y el cambio rechazado mantiene la sesión.
 - El smoke crea una ruta de traslado con origen/destino y `operation=0` en ambos, la inicia y completa por HTTP, y verifica SQL: status Completed, StartedAt/EndedAt, vehículo Available y dos puntos persistidos.
-- Release xUnit **136/136**, `bash -n`, `git diff --check`, `smoke-tenant-http.sh` y `smoke-route-concurrency.sh` pasaron contra un contenedor MySQL 8 y API temporales. Limpieza confirmó cero fixtures; la DB local no se usó. Pendiente Action del nuevo commit.
+- Release xUnit **138/138**, `bash -n`, `git diff --check`, `smoke-tenant-http.sh` y `smoke-route-concurrency.sh` pasaron contra API/MySQL descartables. Action [`45142742926`](https://github.com/Paul1578/Back_GPS/actions/runs/45142742926) confirmó tenant, traslado, concurrencia/mantenimiento, login rate limit y cleanup; no se usó la DB local.
 
 ## Verificación de DB local y arranque API — 2026-11-23
 

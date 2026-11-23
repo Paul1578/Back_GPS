@@ -1,12 +1,17 @@
 # Handoff vigente — 2026-11-23
 
+## Ramas y evidencia integrada
+
+- Backend `chore/stabilize-fleet-platform`: código probado `7eab085` pasó Action [`45142742926`](https://github.com/Paul1578/Back_GPS/actions/runs/45142742926), Release, xUnit **138/138**, tenant/concurrencia/mantenimiento/login y cleanup. Docs `4b7bc13` pasó también Action [`45143054465`](https://github.com/Paul1578/Back_GPS/actions/runs/45143054465).
+- Front `refactor/route-builder`: código probado `e37cfeb` pasó Action [`45142003636`](https://github.com/Paul1578/Front_gpsR/actions/runs/45142003636), 51/51 E2E, responsive 1/1 y cleanup; docs actuales `73435a2`.
+- Ambas ramas permanecen separadas de `main`; pendientes externos: SMTP, rate limiter distribuido, IP de ingress, key ring persistente y despliegue.
+
 ## Carrera entre iniciar ruta y mantenimiento
 
 - QA read-only encontró que existe el lock compartido pero faltaba probar inicio concurrente de ruta vs. poner vehículo en Maintenance.
 - Añadido test SQLite de conflicto sin mutaciones y ampliado `scripts/smoke-route-concurrency.sh` con las dos peticiones simultáneas y lectura SQL de los estados finales. Test enfocado **1/1**, suite Release **138/138**, build **0 advertencias/0 errores**, bash syntax y diff-check pasan. Action [`45142742926`](https://github.com/Paul1578/Back_GPS/actions/runs/45142742926) pasó el smoke real HTTP/MySQL y cleanup.
 - Un comando de lectura apuntó a `ChangeRouteStatusCommandTests.cs`, que no existe; los casos viven en `CreateRouteCommandTests.cs`. Quedó anotado en `ERROR_LOG.md`.
-- Primera Action de la carrera falló antes del escenario porque la placa fixture combinada excedía 20 caracteres (HTTP 400); sufijo ajustado a `MRV`, causa y prevención anotadas. Repetir CI para comprobar el flujo.
-- Action `45142398227` también detectó documento Driver mayor de 20 caracteres antes de la carrera (HTTP 400); sufijo cambiado a `MRD` y documentado. Repetir tras este ajuste.
+- Las primeras Actions fallaron antes del escenario porque placa y documento del fixture excedían 20 caracteres (HTTP 400); sufijos ajustados a `MRV`/`MRD`, causas y prevención anotadas en `ERROR_LOG.md`. La Action final `45142742926` pasó el escenario; no queda pendiente repetirlo.
 
 ## Cierre de ciclo multi-operación
 
@@ -16,8 +21,8 @@
 ## Nuevo xUnit para cierre multi-parada
 
 - La cobertura real existente está en smoke HTTP/MySQL, pero los xUnit de dominio sólo ejecutaban ciclo con una parada. Añadido caso con pickup, delivery y operación combinada; bloquea cierre parcial sin cambiar estado y permite finalizar cuando cada punto tiene evidencia.
-- Verificado localmente: test enfocado **1/1**, suite Release **137/137**, build Release **0 advertencias/0 errores**. Falta ejecutar Action integrada en esta rama y anotar su resultado.
-- Front `e3e5e0e` incluye responsive de username largo validada en Action `45139564823`; Front acciones de roles/rutas listadas en el estado vigente.
+- Verificado localmente: test enfocado **1/1**, suite Release **137/137**, build Release **0 advertencias/0 errores**. Action [`45141029124`](https://github.com/Paul1578/Back_GPS/actions/runs/45141029124) pasó build, xUnit y smokes HTTP/MySQL con cleanup.
+- Front `e37cfeb` pasó Action [`45142003636`](https://github.com/Paul1578/Front_gpsR/actions/runs/45142003636): 51/51 E2E, responsive 1/1, audit/lint/build, Release/xUnit y cleanup.
 
 ## Auditoría: documentación de ciclo multi-parada corregida
 
@@ -37,7 +42,9 @@
 
 ---
 
-# Handoff vigente — 2026-11-23
+# Historial de handoff previo — 2026-11-23
+
+El bloque siguiente describe decisiones y pendientes al corte anterior; el estado vigente está al inicio de este archivo.
 
 - Fixture Backend `c32febe` prepara un Admin delegado temporal bajo el tenant raíz para el E2E Front real; activa sólo ese usuario y limpieza por prefijo existente. `bash -n` y diff-check pasan; validar con Action Front contra branch actualizado.
 - La prueba Front prevista usa credenciales de fixture, verifica `/Auth/me` (`isRootAccount=false`), UI sin rol Admin, 403 real en creación/promoción y persistencia del miembro como User. Front `a510021` pasó localmente lint/build y Playwright discovery **51 tests**; E2E integrado pendiente de Action.

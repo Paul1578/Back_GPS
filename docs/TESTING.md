@@ -616,3 +616,8 @@ La invitación envía sólo el enlace de activación; el usuario fija su contras
 - Backend Action [45093565790](https://github.com/Paul1578/Back_GPS/actions/runs/45093565790): Release build, **113/113** xUnit y smoke HTTP/MySQL tenant/concurrencia, cleanup success para `e678e6c`.
 
 - Action [45093565790](https://github.com/Paul1578/Back_GPS/actions/runs/45093565790) en `e678e6c`: Release build, xUnit 113/113, aislamiento HTTP/MySQL tenant y concurrencia de rutas; cleanup completado. El smoke multi-parada de logística ampliado pasó en Action; el log confirma que se ejecutó `bash scripts/smoke-tenant-http.sh` en `e678e6c`.
+
+## Contraseñas y fuerza bruta — 2026-11-23
+
+- Release xUnit **120/120**: mínimo 12 en validadores de alta/cambio/reset, comandos de cambio/reset/activación rechazan cortas antes de bloquear/consumir token; limitador acepta 10 logins y devuelve 429 + Retry-After en el 11.º por IP. Una ruta sólo de traslado completa sin evidencia de paradas.
+- Pendiente: Action backend y E2E integrado después del commit.

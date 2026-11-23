@@ -61,6 +61,50 @@ public class SimpleRateLimitMiddlewareTests
     }
 
     [Fact]
+    public async Task Login_IsLimitedPerIpWithoutBlockingOtherEndpoints()
+    {
+        var middleware = new SimpleRateLimitMiddleware(
+            NullLogger<SimpleRateLimitMiddleware>.Instance,
+            new TestWebHostEnvironment("Production"));
+        var remoteAddress = new IPAddress(Guid.NewGuid().ToByteArray());
+        var loginNextCalls = 0;
+        DefaultHttpContext? lastLoginContext = null;
+
+        for (var requestNumber = 0; requestNumber < 11; requestNumber++)
+        {
+            var context = new DefaultHttpContext();
+            context.Connection.RemoteIpAddress = remoteAddress;
+            context.Request.Method = HttpMethods.Post;
+            context.Request.Path = "/api/Auth/login";
+            await middleware.InvokeAsync(context, _ =>
+            {
+                loginNextCalls++;
+                return Task.CompletedTask;
+            });
+            lastLoginContext = context;
+        }
+
+        Assert.Equal(10, loginNextCalls);
+        Assert.NotNull(lastLoginContext);
+        Assert.Equal(StatusCodes.Status429TooManyRequests, lastLoginContext.Response.StatusCode);
+        Assert.True(int.TryParse(lastLoginContext.Response.Headers["Retry-After"], out var retryAfter));
+        Assert.InRange(retryAfter, 1, 60);
+
+        var fleetContext = new DefaultHttpContext();
+        fleetContext.Connection.RemoteIpAddress = remoteAddress;
+        fleetContext.Request.Method = HttpMethods.Get;
+        fleetContext.Request.Path = "/api/Routes";
+        await middleware.InvokeAsync(fleetContext, _ =>
+        {
+            loginNextCalls++;
+            return Task.CompletedTask;
+        });
+
+        Assert.Equal(StatusCodes.Status200OK, fleetContext.Response.StatusCode);
+        Assert.Equal(11, loginNextCalls);
+    }
+
+    [Fact]
     public async Task ConcurrentRequests_CannotExceedSixtyAcceptedRequestsPerWindow()
     {
         var middleware = new SimpleRateLimitMiddleware(

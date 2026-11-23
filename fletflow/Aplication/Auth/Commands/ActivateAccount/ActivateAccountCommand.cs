@@ -30,8 +30,8 @@ namespace fletflow.Application.Auth.Commands.ActivateAccount
                 throw new ArgumentException("Token requerido.", nameof(token));
             if (string.IsNullOrWhiteSpace(newPassword))
                 throw new ArgumentException("La nueva contrasena es obligatoria.", nameof(newPassword));
-            if (newPassword.Length < 6)
-                throw new ArgumentException("La nueva contrasena debe tener al menos 6 caracteres.", nameof(newPassword));
+            if (newPassword.Length < 12)
+                throw new ArgumentException("La nueva contraseña debe tener al menos 12 caracteres.", nameof(newPassword));
             if (newPassword != confirmNewPassword)
                 throw new ArgumentException("La confirmacion no coincide con la nueva contrasena.", nameof(confirmNewPassword));
 

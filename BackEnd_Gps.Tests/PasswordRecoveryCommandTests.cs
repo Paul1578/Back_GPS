@@ -19,9 +19,9 @@ public class PasswordRecoveryCommandTests
         scenario.User.PasswordHash = hasher.Hash("Current123");
         var command = new ChangePasswordCommand(scenario, scenario.Users);
 
-        await command.Execute(scenario.User.Id, "Current123", "NewPass123");
+        await command.Execute(scenario.User.Id, "Current123", "NewPassword123");
 
-        Assert.True(hasher.Verify("NewPass123", scenario.User.PasswordHash));
+        Assert.True(hasher.Verify("NewPassword123", scenario.User.PasswordHash));
         Assert.Equal(1, scenario.User.TokenVersion);
         Assert.Equal(1, scenario.RefreshTokens.RevokeAllCount);
         Assert.Equal(1, scenario.CommitCount);
@@ -38,11 +38,25 @@ public class PasswordRecoveryCommandTests
         var command = new ChangePasswordCommand(scenario, scenario.Users);
 
         await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
-            command.Execute(scenario.User.Id, "Wrong123", "NewPass123"));
+            command.Execute(scenario.User.Id, "Wrong123", "NewPassword123"));
 
         Assert.Equal(originalHash, scenario.User.PasswordHash);
         Assert.Equal(0, scenario.User.TokenVersion);
         Assert.Equal(0, scenario.RefreshTokens.RevokeAllCount);
+        Assert.Equal(0, scenario.CommitCount);
+    }
+
+    [Fact]
+    public async Task ChangePassword_RejectsShortPasswordBeforeLockingOrMutating()
+    {
+        var scenario = new RecoveryScenario();
+        var command = new ChangePasswordCommand(scenario, scenario.Users);
+
+        await Assert.ThrowsAsync<ArgumentException>(() =>
+            command.Execute(scenario.User.Id, "Current123", "Short123"));
+
+        Assert.Equal(0, scenario.LockUserSessionCount);
+        Assert.Equal("old-hash", scenario.User.PasswordHash);
         Assert.Equal(0, scenario.CommitCount);
     }
 
@@ -53,9 +67,9 @@ public class PasswordRecoveryCommandTests
         var command = new ResetPasswordCommand(
             scenario.Tokens, scenario.Users, scenario.RefreshTokens, scenario, new PasswordHasher());
 
-        await command.ExecuteAsync(scenario.RawToken, "NewPass123", "NewPass123");
+        await command.ExecuteAsync(scenario.RawToken, "NewPassword123", "NewPassword123");
 
-        Assert.True(new PasswordHasher().Verify("NewPass123", scenario.User.PasswordHash));
+        Assert.True(new PasswordHasher().Verify("NewPassword123", scenario.User.PasswordHash));
         Assert.NotEqual("old-hash", scenario.User.PasswordHash);
         Assert.Equal(1, scenario.User.TokenVersion);
         Assert.NotNull(scenario.Token.UsedAt);
@@ -72,7 +86,7 @@ public class PasswordRecoveryCommandTests
             scenario.Tokens, scenario.Users, scenario.RefreshTokens, scenario, new PasswordHasher());
 
         await Assert.ThrowsAsync<ArgumentException>(() =>
-            command.ExecuteAsync(scenario.RawToken, "NewPass123", "Different123"));
+            command.ExecuteAsync(scenario.RawToken, "NewPassword123", "Different123456"));
 
         Assert.Equal("old-hash", scenario.User.PasswordHash);
         Assert.Null(scenario.Token.UsedAt);
@@ -89,9 +103,24 @@ public class PasswordRecoveryCommandTests
             scenario.Tokens, scenario.Users, scenario.RefreshTokens, scenario, new PasswordHasher());
 
         await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
-            command.ExecuteAsync(scenario.RawToken, "NewPass123", "NewPass123"));
+            command.ExecuteAsync(scenario.RawToken, "NewPassword123", "NewPassword123"));
 
         Assert.Equal("old-hash", scenario.User.PasswordHash);
+        Assert.Equal(0, scenario.CommitCount);
+    }
+
+    [Fact]
+    public async Task ResetPassword_RejectsShortPasswordWithoutConsumingToken()
+    {
+        var scenario = new RecoveryScenario();
+        var command = new ResetPasswordCommand(
+            scenario.Tokens, scenario.Users, scenario.RefreshTokens, scenario, new PasswordHasher());
+
+        await Assert.ThrowsAsync<ArgumentException>(() =>
+            command.ExecuteAsync(scenario.RawToken, "Short123", "Short123"));
+
+        Assert.Equal("old-hash", scenario.User.PasswordHash);
+        Assert.Null(scenario.Token.UsedAt);
         Assert.Equal(0, scenario.CommitCount);
     }
 
@@ -102,14 +131,29 @@ public class PasswordRecoveryCommandTests
         scenario.User.MustChangePassword = true;
         var command = new ActivateAccountCommand(scenario.Tokens, scenario.Users, scenario, new PasswordHasher());
 
-        await command.ExecuteAsync(scenario.RawToken, "Welcome123", "Welcome123");
+        await command.ExecuteAsync(scenario.RawToken, "WelcomePassword123", "WelcomePassword123");
 
-        Assert.True(new PasswordHasher().Verify("Welcome123", scenario.User.PasswordHash));
+        Assert.True(new PasswordHasher().Verify("WelcomePassword123", scenario.User.PasswordHash));
         Assert.Equal(1, scenario.User.TokenVersion);
         Assert.False(scenario.User.MustChangePassword);
         Assert.NotNull(scenario.Token.UsedAt);
         Assert.Equal(1, scenario.RefreshTokens.RevokeAllCount);
         Assert.Equal(1, scenario.CommitCount);
+    }
+
+    [Fact]
+    public async Task ActivateAccount_RejectsShortPasswordWithoutConsumingToken()
+    {
+        var scenario = new RecoveryScenario();
+        var command = new ActivateAccountCommand(scenario.Tokens, scenario.Users, scenario, new PasswordHasher());
+
+        await Assert.ThrowsAsync<ArgumentException>(() =>
+            command.ExecuteAsync(scenario.RawToken, "Short123", "Short123"));
+
+        Assert.Equal("old-hash", scenario.User.PasswordHash);
+        Assert.Null(scenario.Token.UsedAt);
+        Assert.Equal(0, scenario.User.TokenVersion);
+        Assert.Equal(0, scenario.CommitCount);
     }
 
     private sealed class RecoveryScenario : IUnitOfWork

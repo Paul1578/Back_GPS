@@ -1311,3 +1311,10 @@ Cada cambio de API debe incluir validación de compilación, migraciones si apli
 - **Causa:** se infirió el alcance desde el nombre del step de GitHub Actions sin abrir el log del comando ejecutado.
 - **Solución:** inspeccionar `gh run view 45093565790 --log`; confirmó `bash scripts/smoke-tenant-http.sh` sobre `e678e6c` y el resultado de Logistics con recogida/entrega, evidencia/GPS y cleanup. Se corrigieron PROJECT_STATUS, TESTING y SESSION_HANDOFF.
 - **Prevención:** confirmar el comando/trace del job antes de declarar que un escenario quedó fuera de CI.
+
+# 2026-11-23 — Auditoría confirmó claves nuevas débiles y protección general insuficiente — CORREGIDO LOCALMENTE
+
+- **Hallazgo:** alta/cambio/reset/activación permitían 6 caracteres; login sólo tenía el límite general de 60 requests/min/IP.
+- **Solución:** mínimo 12 para claves nuevas (sin invalidar claves existentes); 10 POST login/min/IP, respuesta 429 + `Retry-After`, sin bloqueo por cuenta.
+- **Verificación local:** Release xUnit 120/120 con límites de validators/comandos/middleware. Action HTTP/MySQL pendiente.
+- **Prevención:** mantener un solo mínimo en API y formularios; probar límites en backend y conservar respuesta pública uniforme ante credenciales inválidas. Rate limiting en memoria requiere almacenamiento distribuido al escalar.

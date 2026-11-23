@@ -211,3 +211,10 @@ Este proceso invalida los emails/token de recuperación que estén pendientes o 
 - Riesgo P2: validadores de alta, cambio, reset y activación aceptan contraseñas nuevas de seis caracteres. Definir y aplicar un mínimo mayor de forma coherente entre API y formularios; añadir pruebas de límites.
 - Riesgo P2: middleware limita genéricamente a 60 solicitudes por minuto/IP/proceso, no aplica límite específico de login ni limita por cuenta. Diseñar protección contra fuerza bruta sin permitir bloqueo de cuenta explotable para denegación de servicio; el estado en memoria no coordina réplicas.
 - La aplicación de rate limit distribuido y almacenamiento persistente de Data Protection siguen siendo requisitos para múltiples réplicas/producción.
+
+## Endurecimiento de credenciales y login — 2026-11-23
+
+- Decisión confirmada por el usuario: toda contraseña nueva debe tener al menos 12 caracteres en registro, cambio, activación y recuperación. Las claves ya existentes continúan funcionando hasta que el titular decida cambiarlas; no se fuerza restablecimiento masivo.
+- `POST /api/Auth/login` aplica 10 intentos/minuto por IP además del límite general de 60 solicitudes/minuto. Devuelve 429 con `Retry-After`; no bloquea cuentas ni revela si un email existe.
+- El contador es en memoria por proceso. Para varias réplicas debe migrarse a un limitador distribuido y configurar correctamente la IP cliente detrás de proxies confiables; no confiar en `X-Forwarded-For` sin una lista de proxies permitidos.
+- xUnit local: 120/120 tras límites, rechazo sin consumo de tokens y validadores. Action backend pendiente.

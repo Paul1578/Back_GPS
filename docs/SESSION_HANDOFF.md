@@ -8,8 +8,9 @@
 - Front `9d84562` pasó Action `45091340306`: backend, audit/lint/build, responsive 1/1 y E2E API/MySQL 40/40. Se revisó la traza de la Action anterior `45090273209`: el botón Gerente estaba visible, pero `exact: true` no contemplaba la descripción accesible.
 - Front commit `992053d` mejora revisión de paradas y cancela búsquedas obsoletas; Action `45092540906` está en curso para validar búsqueda Nominatim, búsqueda vacía/error/tardía y reintento de guardado tras 503.
 - Auditoría backend read-only no encontró defecto en root-only ni aislamiento tenant. Quedan pendientes prueba de ciclo logístico de varias paradas y configuración/prueba de Data Protection persistente.
-- Caso consultado al usuario: permitir traslado sin recogida/entrega. No cambiar validación backend hasta recibir su decisión.
-- Siguiente paso: finalizar Action Front `45092540906`; después completar criterios funcionales restantes, actualizar ambas ramas/documentación y seguir auditando CRUD, seguridad y responsive.
+- Decisión confirmada: se permiten traslados sin recogida/entrega; la prueba de ciclo domain valida inicio y finalización.
+- Decisión confirmada: claves nuevas de mínimo 12 caracteres y 10 intentos de login por minuto/IP, sin bloquear cuentas. Código y pruebas locales agregados; publicar ambos branches y verificar Actions.
+- Siguiente paso: terminar CI de los cambios de esta fase; después completar criterios funcionales restantes y seguir auditando CRUD, seguridad y responsive.
 - Misión sigue abierta. SMTP requiere credenciales externas; Data Protection PFX/key ring requiere infraestructura persistente; app móvil nativa aplazada.
 - E2E Front Action `45088879212` detectó que root autenticado no veía opción Admin aunque la API aceptaba la política. Se agregó `isRootAccount` backend-derived a `/Auth/me`, consumido por Front. Backend Action `45090274537` pasó: 113/113, build limpio, smoke HTTP/MySQL, concurrencia y cleanup. Front Action `45090273209` aún valida navegador integrado.
 
@@ -712,3 +713,10 @@ Errores de migración, herramientas, QA y soluciones están en `docs/ERROR_LOG.m
 
 - Backend Action `45093565790` success (`e678e6c`): build Release, 113/113, smoke tenant HTTP/MySQL + concurrencia, cleanup. Documentación y registro de hallazgos P2 pendientes de commit. El job CI sí ejecutó el smoke actualizado: el log de Action confirma `bash scripts/smoke-tenant-http.sh` y resultado exitoso con ciclo Logistics de recogida/entrega, evidencia/GPS y cleanup.
 - La revisión independiente no detectó bypass nuevo en JWT/refresh/reset/owner scope; registra contraseña mínima 6 y rate limit general 60/min por IP/proceso como pendientes P2.
+
+## 2026-11-23 — Política de traslado y seguridad de login implementadas localmente
+
+- Usuario confirmó: permitir rutas sólo de traslado. Test `TransportRouteWithoutOperationalStops_CanStartAndComplete` verifica viaje sin operaciones/evidencias.
+- Decisión de claves confirmada: 12 caracteres para toda clave nueva; claves actuales no se invalidan. Endpoint de cambio/reset/activación y validadores actualizados; Front registro/perfil/activate/reset muestra mismo requisito.
+- Rate limit de login: 10 POST/min/IP y 429 + Retry-After encima del límite general; sin bloqueo de cuenta. En-memory por proceso, proxy forwarding requiere configuración segura para despliegue.
+- Backend Release local **120/120**. Front lint/build pasan; targeted Historial 2/2 tras arreglar su fixture. Nuevo commit y Action integrados pendientes.

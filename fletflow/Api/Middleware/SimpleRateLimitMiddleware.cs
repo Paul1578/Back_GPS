@@ -14,11 +14,14 @@ namespace fletflow.Api.Middleware
     public class SimpleRateLimitMiddleware : IMiddleware
     {
         private static readonly ConcurrentDictionary<string, (int Count, DateTime WindowStart)> Requests = new();
+        private static readonly ConcurrentDictionary<string, (int Count, DateTime WindowStart)> LoginRequests = new();
         private static int _cleanupCounter;
         private readonly ILogger<SimpleRateLimitMiddleware> _logger;
         private readonly IWebHostEnvironment _environment;
         private const int LIMIT = 60; // Máximo de requests
         private static readonly TimeSpan WINDOW = TimeSpan.FromMinutes(1); // Por minuto
+        private const int LOGIN_LIMIT = 10;
+        private static readonly TimeSpan LOGIN_WINDOW = TimeSpan.FromMinutes(1);
 
         public SimpleRateLimitMiddleware(
             ILogger<SimpleRateLimitMiddleware> logger,
@@ -48,6 +51,13 @@ namespace fletflow.Api.Middleware
                 var entries = (ICollection<KeyValuePair<string, (int Count, DateTime WindowStart)>>)Requests;
                 foreach (var stale in staleEntries)
                     entries.Remove(stale);
+
+                var staleLoginEntries = LoginRequests
+                    .Where(entry => now - entry.Value.WindowStart > LOGIN_WINDOW * 2)
+                    .ToArray();
+                var loginEntries = (ICollection<KeyValuePair<string, (int Count, DateTime WindowStart)>>)LoginRequests;
+                foreach (var stale in staleLoginEntries)
+                    loginEntries.Remove(stale);
             }
             var requestState = Requests.AddOrUpdate(
                 key,
@@ -63,7 +73,33 @@ namespace fletflow.Api.Middleware
                 await context.Response.WriteAsync($"Rate limit exceeded: {LIMIT} requests per minute");
                 return;
             }
+
+            if (IsLoginRequest(context))
+            {
+                var loginState = LoginRequests.AddOrUpdate(
+                    key,
+                    _ => (Count: 1, WindowStart: now),
+                    (_, current) => now - current.WindowStart >= LOGIN_WINDOW
+                        ? (Count: 1, WindowStart: now)
+                        : (Count: Math.Min(current.Count + 1, LOGIN_LIMIT + 1), WindowStart: current.WindowStart));
+
+                if (loginState.Count > LOGIN_LIMIT)
+                {
+                    var retryAfterSeconds = Math.Max(1,
+                        (int)Math.Ceiling((LOGIN_WINDOW - (now - loginState.WindowStart)).TotalSeconds));
+                    _logger.LogWarning("[RateLimit] Login IP {IP} superó el límite de {Limit} intentos por minuto", key, LOGIN_LIMIT);
+                    context.Response.StatusCode = StatusCodes.Status429TooManyRequests;
+                    context.Response.Headers["Retry-After"] = retryAfterSeconds.ToString();
+                    await context.Response.WriteAsync("Demasiados intentos de inicio de sesión. Inténtalo más tarde.");
+                    return;
+                }
+            }
+
             await next(context);
         }
+
+        private static bool IsLoginRequest(HttpContext context)
+            => HttpMethods.IsPost(context.Request.Method) &&
+               string.Equals(context.Request.Path.Value?.TrimEnd('/'), "/api/Auth/login", StringComparison.OrdinalIgnoreCase);
     }
 }

@@ -9,7 +9,8 @@
 
 - No hay evidencia de defecto en aislamiento de tenant ni en la política root-only; el backend aprobó Action `45090274537` (build Release, xUnit 113/113, smoke HTTP/MySQL, concurrencia y cleanup).
 - La misión de rutas aún requiere probar el ciclo de una ruta con varias paradas operativas hasta completar evidencias y cerrar ruta. La evidencia actual cubre creación de varios tipos y cierre con una operación.
-- Caso de negocio consultado: si se permiten rutas de traslado entre origen/destino sin recogida/entrega. No endurecer comandos/reglas antes de la respuesta del usuario.
+- Decisión confirmada: se permiten rutas de traslado entre origen/destino sin recogida/entrega; el ciclo está cubierto por prueba de dominio.
+- Seguridad confirmada: claves nuevas con mínimo 12 caracteres y login limitado a 10 intentos/minuto por IP, sin bloqueo de cuenta. Pruebas xUnit locales 120/120; CI del nuevo commit pendiente.
 - Data Protection persistente/compartido para reinicios y réplicas sigue pendiente de configuración y prueba de despliegue. Móvil nativo aplazado; SMTP real depende de credenciales.
 
 - Corregida posible actualización perdida entre edición del perfil Driver y asignación Vehicle: el comando de edición bloquea/relee la fila antes de guardar. Release xUnit **113/113** local y Action `45084368819` success, incluida regresión interleaving y smoke HTTP/MySQL.
@@ -567,3 +568,9 @@ Nota de actualización: algunos resultados históricos de registro público más
 - Backend Action [45093565790](https://github.com/Paul1578/Back_GPS/actions/runs/45093565790) pasó en `e678e6c`: build Release, xUnit **113/113**, smoke HTTP/MySQL tenant y concurrencia; contenedor y fixtures limpiados.
 
 - Auditoría de seguridad independiente (solo lectura) confirma controles de JWT/refresh/IDOR root-only revisados y sin bypass nuevo; quedan dos riesgos P2: contraseña mínima seis caracteres y rate limit de login sólo global 60/min por IP/proceso. Política de contraseña y defensa contra fuerza bruta por definir/implementar; ver `SECURITY.md`.
+
+## Decisiones de producto y endurecimiento — 2026-11-23
+
+- Usuario confirmó que se permiten rutas de traslado sin operaciones; backend domain test verifica Pending→InProgress→Completed sin paradas de operación.
+- Contraseñas nuevas ahora requieren 12 caracteres (registro/cambio/reset/activación); las claves actuales no se invalidan. Login limita a 10 POST/min/IP sobre el límite general de 60/min y no bloquea cuentas.
+- Release xUnit local **120/120**. HTTP smoke completo y Action sobre estos cambios pendientes de commit.

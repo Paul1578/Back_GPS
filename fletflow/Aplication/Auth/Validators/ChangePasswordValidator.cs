@@ -12,7 +12,7 @@ namespace fletflow.Application.Auth.Validators
 
             RuleFor(x => x.NewPassword)
                 .NotEmpty().WithMessage("La nueva contraseña es obligatoria.")
-                .MinimumLength(6).WithMessage("La nueva contraseña debe tener al menos 6 caracteres.");
+                .MinimumLength(12).WithMessage("La nueva contraseña debe tener al menos 12 caracteres.");
 
             RuleFor(x => x.ConfirmNewPassword)
                 .Equal(x => x.NewPassword).WithMessage("La confirmación no coincide con la nueva contraseña.");

@@ -121,3 +121,8 @@ Cambiar, restablecer o activar una contraseña incrementa `User.TokenVersion`, r
 - Sólo la cuenta raíz de la empresa puede crear o promover usuarios al rol Admin. Un Admin delegado puede administrar los demás roles según permisos vigentes, pero no elevar a Admin.
 - Aplicación backend: `POST /Users`, `PUT /Users/{id}/role` y alias `POST /Users/{id}/roles/{name}` responden 403 si el actor no es la cuenta raíz y el rol destino es Admin.
 - Verificado en Action `45088129188` con llamadas HTTP y comprobaciones MySQL de no mutación; la raíz sí pudo crear y promover.
+
+## Política confirmada — rutas de traslado
+
+- Se permiten rutas que sólo enlazan origen y destino, sin recogidas ni entregas intermedias. Sus puntos usan operación `None`; la ruta puede completarse sin evidencia de paradas.
+- Si hay operaciones logísticas, cada una debe completarse u omitirse con evidencia antes de cerrar la ruta.

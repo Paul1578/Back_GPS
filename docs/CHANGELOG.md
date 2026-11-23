@@ -495,3 +495,10 @@
 ## 2026-11-23 — Cobertura HTTP de rutas con varias operaciones
 
 - El smoke tenant verifica recogida, entrega y recogida+entrega en paradas distintas; registra evidencia por parada, recorre inicio/cierre y confirma persistencia y estado final del vehículo.
+
+## 2026-11-23 — Política de traslado y controles de login
+
+- Permitidas las rutas sin operaciones logísticas; una prueba cubre inicio y finalización sin paradas.
+- Contraseñas nuevas requieren 12 caracteres en registro, cambio, recuperación y activación.
+- Login tiene límite adicional de 10 solicitudes/minuto/IP, responde 429 + Retry-After y no bloquea cuentas.
+- Suite xUnit Release local: 120/120; Action pendiente.

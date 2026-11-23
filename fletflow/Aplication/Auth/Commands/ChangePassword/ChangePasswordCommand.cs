@@ -16,6 +16,9 @@ namespace fletflow.Application.Auth.Commands
 
         public async Task Execute(Guid userId, string currentPassword, string newPassword)
         {
+            if (string.IsNullOrWhiteSpace(newPassword) || newPassword.Length < 12)
+                throw new ArgumentException("La nueva contraseña debe tener al menos 12 caracteres.", nameof(newPassword));
+
             await _uow.LockUserSessionAsync(userId);
             try
             {

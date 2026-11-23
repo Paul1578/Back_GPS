@@ -1452,6 +1452,12 @@ Cada cambio de API debe incluir validación de compilación, migraciones si apli
 - Solución: localizar los comandos con `rg --files fletflow/Aplication/Fleet/Commands` y buscar dentro de `CreateRouteCommand.cs` / `UpdateRouteCommand.cs`.
 - Prevención: confirmar el árbol de archivos antes de componer rutas profundas; mantener separadas las rutas tipo archivo de los nombres de comando.
 
+## 2026-11-23 — Lectura de ChangeVehicleStatus y Action Front desde contexto incorrecto — RESUELTO
+
+- Una lectura intentó abrir `ChangeVehicleStatusCommand.cs` directamente bajo `Commands/`, pero vive en `Commands/CreateVehicle/`. La consulta a `gh run view` también usó el repo Backend para un Action del repo Front y devolvió 404. No hubo cambios ni ejecución fallida del producto.
+- Solución: localizar el command con `rg --files` y consultar Actions desde el checkout propietario.
+- Prevención: resolver el path real del archivo y verificar propietario repo/ID de Action antes de leer resultados.
+
 ## 2026-11-23 — Informe QA omitió el ciclo HTTP/MySQL de traslado ya existente — ACLARADO
 
 - El informe independiente de QA indicó que el smoke Backend no completaba traslados sin operaciones. La inspección de `scripts/smoke-tenant-http.sh:1233-1257` mostró que sí crea el traslado, lo inicia y completa como Logistics, y verifica estado/timestamps/vehículo Available por HTTP y SQL.

@@ -6,6 +6,7 @@
 - Código Backend `b817f9f`; la sincronización documental pasó Actions [`45194801300`](https://github.com/Paul1578/Back_GPS/actions/runs/45194801300) y [`45194814911`](https://github.com/Paul1578/Back_GPS/actions/runs/45194814911). Front `13669f3` tipa `content` nullable; Action integrada [`45193357694`](https://github.com/Paul1578/Front_gpsR/actions/runs/45193357694) pasó 53/53 E2E, responsive 1/1, audit/lint/build, backend 158/158 y cleanup API/MySQL.
 - Decisiones vigentes: sólo raíz crea/promueve Admin; traslados permitidos; parada puede ser recogida, entrega o ambas; unlink conserva Driver y bloquea rutas pendientes/en curso; app móvil nativa pospuesta.
 - Próximo: consultar Action Front, sincronizar su evidencia y continuar los criterios CRUD/roles/responsive que aún puedan probarse. SMTP y despliegue requieren configuración externa.
+- Front HEAD funcional `48e654b` corrige el default de API local y añade `.env.example`; Action [`45195812271`](https://github.com/Paul1578/Front_gpsR/actions/runs/45195812271) pasó E2E autenticado, responsive, audit/lint/build, Backend 158/158, API/MySQL y cleanup.
 
 ## Handoff vigente — integridad de rutas heredadas
 

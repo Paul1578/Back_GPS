@@ -5,6 +5,7 @@
 - Backend branch `chore/stabilize-fleet-platform`, código `b817f9f`; `main` intacta. La actualización documental pasó Actions [`45194801300`](https://github.com/Paul1578/Back_GPS/actions/runs/45194801300) y [`45194814911`](https://github.com/Paul1578/Back_GPS/actions/runs/45194814911).
 - Lista de rutas sin bytes de imagen y detalle con evidencia completa; mapper cubierto por xUnit. Release **158/158**, build limpio y Actions de código/documentación [`45190701729`](https://github.com/Paul1578/Back_GPS/actions/runs/45190701729), [`45192161720`](https://github.com/Paul1578/Back_GPS/actions/runs/45192161720) exitosas.
 - Front Action [`45193357694`](https://github.com/Paul1578/Front_gpsR/actions/runs/45193357694) pasó 53/53 E2E, responsive 1/1, audit/lint/build, backend Release/xUnit 158/158, smokes API/MySQL y cleanup.
+- Front `48e654b` alinea el fallback del proxy y agrega `.env.example`; Action [`45195812271`](https://github.com/Paul1578/Front_gpsR/actions/runs/45195812271) pasó 53/53 E2E, responsive, lint/build/audit, backend/API/MySQL y cleanup.
 - Reglas confirmadas: Admin sólo por la cuenta raíz; traslados permitidos; parada recogida/entrega/ambas; unlink conserva Driver y bloquea rutas Pending/InProgress; app nativa queda fuera de esta fase.
 - Pendiente continuar auditoría funcional verificable. SMTP y preparación productiva (ingress confiable, Data Protection persistente y rate limit distribuido) dependen de configuración externa.
 

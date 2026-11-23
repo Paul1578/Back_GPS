@@ -5,6 +5,7 @@
 - Verificación: Release 158/158, build sin warnings/errores. Action [45190701729](https://github.com/Paul1578/Back_GPS/actions/runs/45190701729) pasó Release/xUnit, tenant, concurrencia y login rate limit HTTP/MySQL, cleanup.
 - Error de entorno: dotnet del PATH usa /usr/lib64/dotnet sin runtime, aunque .NET 8 reside en /home/leonardo/.dotnet. Solución: DOTNET_ROOT=/home/leonardo/.dotnet e invocar ese binario.
 - Prevención: revisar resolución de host y runtime antes de declarar que falta el SDK.
+- Un parche documental combinado no encontró la frase exacta de continuidad en `SESSION_HANDOFF.md` y fue rechazado sin cambios. Se leyó el encabezado vigente y se volvió a aplicar con anclas existentes.
 
 ## 2026-11-23 — La evidencia no tenía límite agregado por ruta — CORREGIDO LOCALMENTE
 

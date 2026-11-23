@@ -617,3 +617,8 @@
 
 - Action Backend [45153378636](https://github.com/Paul1578/Back_GPS/actions/runs/45153378636) pasó con 139/139 xUnit, Release, smokes tenant/concurrencia HTTP/MySQL, rate limit y cleanup.
 - La cobertura ahora comprueba persistencia de la edición concurrente ganadora/perdedora y de la baja lógica vía API, listado y MySQL.
+## 2026-11-23 — Corte documental vigente
+
+- `PROJECT_STATUS.md`, `SESSION_HANDOFF.md`, `TESTING.md` y `AUDIT_PLAN.md` sincronizados con Backend `b817f9f` y docs `74d2f3c`.
+- Se aclaró en cabecera que notas históricas pueden contener estados anteriores y se asentaron las decisiones de negocio confirmadas.
+- Actions Backend [`45190701729`](https://github.com/Paul1578/Back_GPS/actions/runs/45190701729) y [`45192161720`](https://github.com/Paul1578/Back_GPS/actions/runs/45192161720) exitosas; Action Front `45193357694` activa al corte.

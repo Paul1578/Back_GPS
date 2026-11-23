@@ -1,8 +1,11 @@
-## Handoff vigente — payload de evidencia bajo demanda
+## Handoff vigente — payload de evidencia bajo demanda — 2026-11-23
 
 - Backend chore/stabilize-fleet-platform: RouteApplicationMapper.ToDtoList omite contenido de imágenes Base64; ToDto de detalle conserva bytes. DTO hace Content nullable.
 - RouteApplicationMapperTests valida omisión en lista, metadata y nota presentes, detalle completo. Release 158/158, build 0 warnings/0 errors usando DOTNET_ROOT=/home/leonardo/.dotnet.
 - Action [45190701729](https://github.com/Paul1578/Back_GPS/actions/runs/45190701729) pasó Release, xUnit 158/158, smokes HTTP/MySQL de tenant, concurrencia y rate limit, cleanup. La lista entrega resumen; endpoint individual conserva detalle.
+- Código Backend `b817f9f`, documentación `74d2f3c`; Action documental [`45192161720`](https://github.com/Paul1578/Back_GPS/actions/runs/45192161720) pasó. Front `13669f3` tipa `content` nullable; su Action integrada [`45193357694`](https://github.com/Paul1578/Front_gpsR/actions/runs/45193357694) seguía activa al corte.
+- Decisiones vigentes: sólo raíz crea/promueve Admin; traslados permitidos; parada puede ser recogida, entrega o ambas; unlink conserva Driver y bloquea rutas pendientes/en curso; app móvil nativa pospuesta.
+- Próximo: consultar Action Front, sincronizar su evidencia y continuar los criterios CRUD/roles/responsive que aún puedan probarse. SMTP y despliegue requieren configuración externa.
 
 ## Handoff vigente — integridad de rutas heredadas
 

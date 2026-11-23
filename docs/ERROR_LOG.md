@@ -1551,3 +1551,7 @@ Cada cambio de API debe incluir validación de compilación, migraciones si apli
 - Solución: en la DB MySQL descartable, activar el fixture y limpiar `MustChangePassword` antes del login. La clave enviada por el request ya está guardada; el smoke no depende de SMTP.
 - Una lectura buscó `RegisterUserCommand.cs` bajo una ruta parcial. `rg --files` localizó el path completo `Aplication/Auth/Commands/RegisterUser/RegisterUserCommand.cs`.
 - Prevención: inspeccionar y preparar el estado de activación en fixtures de login; resolver rutas completas con `rg --files` antes de abrirlos.
+## 2026-11-23 — Edición documental
+
+- Un parche combinado falló porque asumía que `SESSION_HANDOFF.md` iniciaba con un encabezado distinto al real. `apply_patch` no aplicó el lote. Se inspeccionaron las primeras líneas y se reintentó con anclas verificadas; prevención: comprobar encabezados reales antes de construir parches multiarchivo.
+- El primer `git diff --check` señaló líneas vacías extra al final de `CHANGELOG.md` y `ERROR_LOG.md` tras insertar el registro documental. Se recortaron los finales a un único salto de línea y el chequeo pasó.

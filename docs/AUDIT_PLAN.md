@@ -1,5 +1,13 @@
 # Auditoría integral de FletFlow
 
+## Corte vigente — 2026-11-23
+
+- Backend branch `chore/stabilize-fleet-platform`, código `b817f9f`, documentación `74d2f3c`; `main` intacta.
+- Lista de rutas sin bytes de imagen y detalle con evidencia completa; mapper cubierto por xUnit. Release **158/158**, build limpio y Actions de código/documentación [`45190701729`](https://github.com/Paul1578/Back_GPS/actions/runs/45190701729), [`45192161720`](https://github.com/Paul1578/Back_GPS/actions/runs/45192161720) exitosas.
+- Front Action [`45193357694`](https://github.com/Paul1578/Front_gpsR/actions/runs/45193357694) integra los tipos nullable y estaba activa al corte.
+- Reglas confirmadas: Admin sólo por la cuenta raíz; traslados permitidos; parada recogida/entrega/ambas; unlink conserva Driver y bloquea rutas Pending/InProgress; app nativa queda fuera de esta fase.
+- Pendiente continuar auditoría funcional verificable. SMTP y preparación productiva (ingress confiable, Data Protection persistente y rate limit distribuido) dependen de configuración externa.
+
 Estado: en curso; principales flujos locales implementados y verificados, con criterios explícitamente pendientes al final.
 
 La auditoría se coordina con el frontend hermano `/home/leonardo/Front_gpsR`. El backend se trabaja en la rama `chore/stabilize-fleet-platform`; no se modifica `main`.

@@ -4,6 +4,7 @@
 - No hubo mutaciones ni exposición de nombres/secretos; no se puede extrapolar a bases de otros ambientes. Ver `SECURITY.md`.
 - Backend `7906ef2` pasó Actions [`45269381165`](https://github.com/Paul1578/Back_GPS/actions/runs/45269381165) y [`45269364838`](https://github.com/Paul1578/Back_GPS/actions/runs/45269364838): Release/xUnit y smokes MySQL/HTTP de migración, tenant, concurrencia y rate limit.
 - HEAD documental `9fa14a8` pasó también Actions [`45270259692`](https://github.com/Paul1578/Back_GPS/actions/runs/45270259692) y [`45270276674`](https://github.com/Paul1578/Back_GPS/actions/runs/45270276674), sin cambios de código.
+- HEAD documental final `3227f99` pasó Actions [`45272138028`](https://github.com/Paul1578/Back_GPS/actions/runs/45272138028) y [`45272147290`](https://github.com/Paul1578/Back_GPS/actions/runs/45272147290): build/xUnit y smokes migración/tenant/concurrencia/rate limit.
 
 ## 2026-11-23 — Pruebas de upgrade histórico y filtros seguros
 

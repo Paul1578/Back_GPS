@@ -534,3 +534,8 @@
 - Añadida prueba de compatibilidad de login con contraseñas heredadas cortas y checks HTTP/MySQL de rechazo seguro para claves nuevas menores a 12 caracteres.
 - El smoke crea/inicia/completa una ruta de traslado sin operaciones, con `Completed`, timestamps y vehículo `Available` persistidos.
 - Release xUnit **136/136** y ambos smokes en API/MySQL descartables pasaron; CI del commit `32c435b` pendiente de publicación.
+
+## 2026-11-23 — Fixture de Admin delegado real
+
+- El runner E2E crea un Admin delegado aislado para que Front valide sus permisos desde sesión UI y API real, además del smoke backend que ya verifica persistencia.
+- `bash -n` del runner pasa; falta ejecutar la integración Front con el branch actualizado.

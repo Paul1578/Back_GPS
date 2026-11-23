@@ -2,6 +2,7 @@
 
 ## Estado vigente
 
+- Backend `c32febe` añade el fixture real de Admin delegado para la matriz Front. El spec `company-admin` ejecuta API real root/delegado y prueba la denegación HTTP más ausencia visual. `bash -n` y diff-check pasan; Action Front pendiente.
 - Nuevo lote backend `32c435b` amplía evidencia HTTP/MySQL: claves cortas rechazadas en registro, cambio, activación y reset sin mutar hash/token; login permite cuenta heredada con clave corta; ciclo completo de ruta de traslado sin operaciones logísticas. Validación local Release **136/136**, smoke tenant y concurrencia pasaron en MySQL 8 descartable con cleanup cero; Action al publicar pendiente.
 - Ramas activas separadas de `main`: Backend `chore/stabilize-fleet-platform` HEAD `ec15ea6`; Front `refactor/route-builder` HEAD `d0a9342`. `main` intacta; ambas ramas están limpias.
 - Backend Action [`45115773126`](https://github.com/Paul1578/Back_GPS/actions/runs/45115773126) pasó para HEAD documental `ec15ea6`; validación funcional backend en [`45113924558`](https://github.com/Paul1578/Back_GPS/actions/runs/45113924558) confirmó Release build, xUnit **135/135**, smoke tenant HTTP/MySQL, concurrencia y cleanup. Front Action [`45115772569`](https://github.com/Paul1578/Front_gpsR/actions/runs/45115772569) pasó para HEAD documental `d0a9342`: audit/lint/build, responsive **1/1**, backend Release/xUnit, API/MySQL **50/50** y cleanup, con reset/activación, tema y horario de ruta conservado al editar.

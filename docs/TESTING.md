@@ -1,5 +1,11 @@
 # Estado vigente — 2026-11-23
 
+## Fixture de Admin delegado real para E2E Front
+
+- `scripts/run-e2e-local.sh` crea un Admin delegado aleatorio bajo el tenant QA, lo habilita y exporta su correo/clave/ID al spec. La limpieza ya incluye el prefijo `fletflow.e2e.admin.*`.
+- `e2e/company-admin.spec.ts` usa sesión real para confirmar `isRootAccount=false`, `403` en crear/promover Admin, rol de miembro sin cambios y opciones Admin ausentes en pantalla.
+- `bash -n scripts/run-e2e-local.sh`, lint/build Front, discovery Playwright **51 tests** y diff-check pasaron local; ejecución navegador/API/MySQL integrada pendiente de Actions.
+
 ## Límites de clave y ruta de traslado — verificación local
 
 - `LoginUserCommandTests.Execute_AllowsLegacyPasswordShorterThanCurrentMinimum` confirma que una cuenta existente puede autenticarse con su clave anterior de 6 caracteres; la política mínima se aplica al establecer contraseñas nuevas.

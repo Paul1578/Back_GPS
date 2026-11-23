@@ -1,5 +1,7 @@
 # Handoff vigente — 2026-11-23
 
+- Fixture Backend `c32febe` prepara un Admin delegado temporal bajo el tenant raíz para el E2E Front real; activa sólo ese usuario y limpieza por prefijo existente. `bash -n` y diff-check pasan; validar con Action Front contra branch actualizado.
+- La prueba Front prevista usa credenciales de fixture, verifica `/Auth/me` (`isRootAccount=false`), UI sin rol Admin, 403 real en creación/promoción y persistencia del miembro como User. Front `a510021` pasó localmente lint/build y Playwright discovery **51 tests**; E2E integrado pendiente de Action.
 - Nuevo lote Backend `32c435b` agrega una prueba de login con clave heredada corta y amplía `smoke-tenant-http.sh`: rechaza claves menores a 12 en registro/cambio/activación/recuperación sin mutar usuario/token y ejecuta un traslado HTTP completo sin paradas operativas, verificando estado SQL y vehículo disponible.
 - Verificación local de este lote: Release xUnit **136/136**, `bash -n`, `git diff --check`, `smoke-tenant-http.sh` y `smoke-route-concurrency.sh` pasaron contra API + MySQL 8 descartables. Cleanup confirmó cero fixtures. El contenedor se detuvo y eliminó; la DB local no se utilizó. Acción de CI para `32c435b` se ejecutará al publicar.
 - Error de preparación resuelto: el primer runner usó el host global `dotnet` sin runtime; el proceso terminó antes de iniciar API. Repetición con `DOTNET_ROOT=/home/leonardo/.dotnet` y `/home/leonardo/.dotnet/dotnet` completó ambos smokes; detalle en `ERROR_LOG.md`.

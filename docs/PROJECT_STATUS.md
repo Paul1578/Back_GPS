@@ -1,5 +1,14 @@
 # Estado actual de estabilización — 2026-11-23
 
+## Seguridad de recuperación — implementación local pendiente de commit
+
+- `forgot-password`: 5 solicitudes/10 minutos/IP; sin límite por correo/cuenta ni bloqueo. El contador es local al proceso y la IP usa `RemoteIpAddress`; el forwarding de proxy no está configurado ni debe confiarse sin lista de proxies confiables.
+- Token de recuperación actualizado a 32 bytes aleatorios (256 bits); TTL por defecto 60 minutos, override validado entre 1 y 1440 minutos.
+- En Production, `Email:ResetPasswordUrl` y `Email:ActivationUrl` deben ser absolutas HTTPS. En Development sólo se admite HTTP para loopback. La validación corre antes de sembrar/conectar la DB y el mensaje no expone URLs configuradas; Production debe sobrescribir los localhost de `appsettings.json`.
+- SMTP sigue siendo una limitación externa: no se informa éxito de envío cuando el proveedor no está configurado o falla.
+- Verificación local: tests focalizados Release **17/17** y suite Release `BackEnd_Gps.sln` **133/133**, sin fallos ni omisiones; build Release 0 warnings/0 errores.
+- El rate limit es por proceso y no incorpora headers reenviados; la topología de proxy/replicas productiva y el key ring persistente siguen requiriendo configuración externa y validación de despliegue.
+
 - HEAD backend `df88238` en `chore/stabilize-fleet-platform`; Front relacionado `9d84562` (la rama avanzó luego a `992053d`) en `refactor/route-builder`; ambas ramas separadas de `main`.
 - Política confirmada por el usuario: sólo la cuenta raíz puede crear/promover Admin. Action backend `45088129188` pasó la política y edición/sincronización de perfil vía HTTP/MySQL, xUnit 113/113, Release build limpio, concurrencia y cleanup. Action `45088881490` también pasó para el commit documental.
 - Front oculta “Gerente” (rol Admin API) a Admin delegado; Action `45091340306` aprobó la integración con **40/40 E2E**, responsive 1/1, audit, lint/build y backend xUnit.

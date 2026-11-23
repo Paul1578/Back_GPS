@@ -15,6 +15,7 @@ namespace fletflow.Api.Middleware
     {
         private static readonly ConcurrentDictionary<string, (int Count, DateTime WindowStart)> Requests = new();
         private static readonly ConcurrentDictionary<string, (int Count, DateTime WindowStart)> LoginRequests = new();
+        private static readonly ConcurrentDictionary<string, (int Count, DateTime WindowStart)> RecoveryRequests = new();
         private static int _cleanupCounter;
         private readonly ILogger<SimpleRateLimitMiddleware> _logger;
         private readonly IWebHostEnvironment _environment;
@@ -22,6 +23,8 @@ namespace fletflow.Api.Middleware
         private static readonly TimeSpan WINDOW = TimeSpan.FromMinutes(1); // Por minuto
         private const int LOGIN_LIMIT = 10;
         private static readonly TimeSpan LOGIN_WINDOW = TimeSpan.FromMinutes(1);
+        private const int RECOVERY_LIMIT = 5;
+        private static readonly TimeSpan RECOVERY_WINDOW = TimeSpan.FromMinutes(10);
 
         public SimpleRateLimitMiddleware(
             ILogger<SimpleRateLimitMiddleware> logger,
@@ -35,7 +38,8 @@ namespace fletflow.Api.Middleware
         {
             if (_environment.IsDevelopment() &&
                 context.Connection.RemoteIpAddress is { } remoteIp &&
-                IPAddress.IsLoopback(remoteIp))
+                IPAddress.IsLoopback(remoteIp) &&
+                !IsForgotPasswordRequest(context))
             {
                 await next(context);
                 return;
@@ -58,6 +62,13 @@ namespace fletflow.Api.Middleware
                 var loginEntries = (ICollection<KeyValuePair<string, (int Count, DateTime WindowStart)>>)LoginRequests;
                 foreach (var stale in staleLoginEntries)
                     loginEntries.Remove(stale);
+
+                var staleRecoveryEntries = RecoveryRequests
+                    .Where(entry => now - entry.Value.WindowStart > RECOVERY_WINDOW * 2)
+                    .ToArray();
+                var recoveryEntries = (ICollection<KeyValuePair<string, (int Count, DateTime WindowStart)>>)RecoveryRequests;
+                foreach (var stale in staleRecoveryEntries)
+                    recoveryEntries.Remove(stale);
             }
             var requestState = Requests.AddOrUpdate(
                 key,
@@ -95,11 +106,36 @@ namespace fletflow.Api.Middleware
                 }
             }
 
+            if (IsForgotPasswordRequest(context))
+            {
+                var recoveryState = RecoveryRequests.AddOrUpdate(
+                    key,
+                    _ => (Count: 1, WindowStart: now),
+                    (_, current) => now - current.WindowStart >= RECOVERY_WINDOW
+                        ? (Count: 1, WindowStart: now)
+                        : (Count: Math.Min(current.Count + 1, RECOVERY_LIMIT + 1), WindowStart: current.WindowStart));
+
+                if (recoveryState.Count > RECOVERY_LIMIT)
+                {
+                    var retryAfterSeconds = Math.Max(1,
+                        (int)Math.Ceiling((RECOVERY_WINDOW - (now - recoveryState.WindowStart)).TotalSeconds));
+                    _logger.LogWarning("[RateLimit] Recovery IP {IP} superó el límite de {Limit} solicitudes por ventana", key, RECOVERY_LIMIT);
+                    context.Response.StatusCode = StatusCodes.Status429TooManyRequests;
+                    context.Response.Headers["Retry-After"] = retryAfterSeconds.ToString();
+                    await context.Response.WriteAsync("Demasiadas solicitudes de recuperación. Inténtalo más tarde.");
+                    return;
+                }
+            }
+
             await next(context);
         }
 
         private static bool IsLoginRequest(HttpContext context)
             => HttpMethods.IsPost(context.Request.Method) &&
                string.Equals(context.Request.Path.Value?.TrimEnd('/'), "/api/Auth/login", StringComparison.OrdinalIgnoreCase);
+
+        private static bool IsForgotPasswordRequest(HttpContext context)
+            => HttpMethods.IsPost(context.Request.Method) &&
+               string.Equals(context.Request.Path.Value?.TrimEnd('/'), "/api/Auth/forgot-password", StringComparison.OrdinalIgnoreCase);
     }
 }

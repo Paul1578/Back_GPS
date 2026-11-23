@@ -22,4 +22,5 @@ public sealed class RouteDriverOptionDto
     public string FirstName { get; init; } = string.Empty;
     public string LastName { get; init; } = string.Empty;
     public Guid? UserId { get; init; }
+    public bool IsAvailable { get; init; } = true;
 }

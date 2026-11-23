@@ -1,5 +1,13 @@
 # Seguridad
 
+## Endurecimiento de recuperación — cambios locales pendientes de publicar
+
+- `POST /api/Auth/forgot-password` permite cinco solicitudes por diez minutos y por IP, incluso desde loopback en Development. El contador no usa correo/ID de cuenta, no bloquea cuentas y devuelve 429 con `Retry-After` al exceder el límite.
+- El limitador y sus ventanas residen en memoria del proceso: reiniciar el backend reinicia los contadores; varias réplicas no comparten el límite. `RemoteIpAddress` se utiliza directamente. No se configura `ForwardedHeaders`; no confiar en `X-Forwarded-For` enviado por el cliente. El despliegue debe establecer proxies confiables antes de usar la IP reenviada y considerar un backend distribuido para escalar.
+- Los tokens de reset se generan con 32 bytes aleatorios (256 bits) y sólo se persiste su SHA-256. El TTL por defecto es 60 minutos; `Email:ResetTokenMinutes` sigue siendo configurable y se valida entre 1 y 1440 minutos.
+- `Email:ResetPasswordUrl` y `Email:ActivationUrl` deben ser URLs absolutas HTTPS fuera de Development. En Development se permite HTTP sólo para hosts loopback. `ValidateOnStart` y la resolución explícita de opciones antes de sembrar DB fallan con nombres de configuración y sin imprimir valores de URL.
+- SMTP conserva su comportamiento de error: el limitador no declara que el correo fue enviado. Outbox persistente y Data Protection siguen dependiendo de volúmenes, certificado y secretos de despliegue correctamente configurados.
+
 ## Hallazgo corregido — revocación de refresh por cuenta — 2026-11-22
 
 - `POST /api/Auth/logout` ahora vincula el refresh token solicitado con el ID autenticado (`NameIdentifier`). Un usuario que posea el refresh de otra cuenta no puede revocarlo; la respuesta continúa siendo idempotente y no revela la existencia del token.
@@ -205,11 +213,11 @@ Este proceso invalida los emails/token de recuperación que estén pendientes o 
 - Action `45088129188` validó los casos permitidos/denegados mediante HTTP real y verificó en MySQL que las denegaciones no creen cuentas ni roles parciales; cleanup confirma que no quedaron fixtures.
 - `GET /Auth/me` publica `isRootAccount` derivado de la entidad autenticada sólo para presentación; la autorización de operaciones sigue validada en backend.
 
-## Auditoría adicional — 2026-11-23
+## Auditoría adicional — 2026-11-23 (registro histórico; decisiones posteriores aplicadas)
 
 - Revisión read-only de JWT, rotación/revocación refresh, reset token, aislamiento por propietario y permisos Admin raíz no encontró bypass nuevo en los flujos inspeccionados. La evidencia de CI actual incluye root-only, 113 xUnit y smoke tenant.
-- Riesgo P2: validadores de alta, cambio, reset y activación aceptan contraseñas nuevas de seis caracteres. Definir y aplicar un mínimo mayor de forma coherente entre API y formularios; añadir pruebas de límites.
-- Riesgo P2: middleware limita genéricamente a 60 solicitudes por minuto/IP/proceso, no aplica límite específico de login ni limita por cuenta. Diseñar protección contra fuerza bruta sin permitir bloqueo de cuenta explotable para denegación de servicio; el estado en memoria no coordina réplicas.
+- Hallazgo histórico de mínimo de seis caracteres: resuelto posteriormente; las contraseñas nuevas requieren 12 caracteres, con pruebas y Action indicada en PROJECT_STATUS.
+- Hallazgo histórico de ausencia de límite específico de login: resuelto posteriormente con 10 logins/minuto/IP. El límite para login y recuperación sigue siendo en memoria y no coordina réplicas; recuperación ahora tiene 5 solicitudes/10 minutos/IP, según la sección vigente al inicio de este documento.
 - La aplicación de rate limit distribuido y almacenamiento persistente de Data Protection siguen siendo requisitos para múltiples réplicas/producción.
 
 ## Endurecimiento de credenciales y login — 2026-11-23
@@ -217,4 +225,4 @@ Este proceso invalida los emails/token de recuperación que estén pendientes o 
 - Decisión confirmada por el usuario: toda contraseña nueva debe tener al menos 12 caracteres en registro, cambio, activación y recuperación. Las claves ya existentes continúan funcionando hasta que el titular decida cambiarlas; no se fuerza restablecimiento masivo.
 - `POST /api/Auth/login` aplica 10 intentos/minuto por IP además del límite general de 60 solicitudes/minuto. Devuelve 429 con `Retry-After`; no bloquea cuentas ni revela si un email existe.
 - El contador es en memoria por proceso. Para varias réplicas debe migrarse a un limitador distribuido y configurar correctamente la IP cliente detrás de proxies confiables; no confiar en `X-Forwarded-For` sin una lista de proxies permitidos.
-- xUnit local: 120/120 tras límites, rechazo sin consumo de tokens y validadores. Action backend pendiente.
+- xUnit local y Action `45096399172`: 120/120 para el endurecimiento de contraseñas/login. Cambios posteriores de recuperación/token/URLs tienen validación local Release 133/133; no se han publicado en esta rama.

@@ -17,9 +17,9 @@ namespace fletflow.Infrastructure.Services
         public bool EnableSsl { get; set; } = true;
         public string User { get; set; } = default!;
         public string Password { get; set; } = default!;
-        public string ResetPasswordUrl { get; set; } = "http://192.168.56.1:3000/reset-password";
-        public string ActivationUrl { get; set; } = "http://192.168.56.1:3000/activate-account";
-        public int ResetTokenMinutes { get; set; } = 1440; // 24 horas
+        public string ResetPasswordUrl { get; set; } = "http://localhost:3000/reset-password";
+        public string ActivationUrl { get; set; } = "http://localhost:3000/activate-account";
+        public int ResetTokenMinutes { get; set; } = 60;
         public string FrontendBaseUrl { get; set; } = "http://192.168.56.1:3000";
     }
     public class EmailService : IEmailSender

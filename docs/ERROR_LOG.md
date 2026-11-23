@@ -1318,3 +1318,10 @@ Cada cambio de API debe incluir validación de compilación, migraciones si apli
 - **Solución:** mínimo 12 para claves nuevas (sin invalidar claves existentes); 10 POST login/min/IP, respuesta 429 + `Retry-After`, sin bloqueo por cuenta.
 - **Verificación local:** Release xUnit 120/120 con límites de validators/comandos/middleware. Action HTTP/MySQL pendiente.
 - **Prevención:** mantener un solo mínimo en API y formularios; probar límites en backend y conservar respuesta pública uniforme ante credenciales inválidas. Rate limiting en memoria requiere almacenamiento distribuido al escalar.
+# Recuperación de contraseña — límite por IP, token fuerte y URL segura
+
+- **Hallazgo:** `forgot-password` sólo heredaba el límite general por IP, creando margen para invalidar repetidamente el enlace de una persona y añadir filas al outbox. El token tenía 72 bits aleatorios, vencía por defecto en 24 horas y las URLs de email no se validaban por ambiente.
+- **Solución:** límite dedicado de cinco solicitudes por diez minutos/IP sin claves por email/cuenta ni bloqueo; tokens de 32 bytes aleatorios; TTL por defecto de 60 minutos y override validado entre 1 y 1440; en Production URLs absolutas HTTPS para reset/activación, Development admite HTTP sólo en loopback. La configuración se valida antes de tocar la base de datos y no imprime valores de URLs.
+- **Límites:** rate limit en memoria por proceso; reinicios borran ventanas y réplicas no coordinan contadores. IP cliente usa `RemoteIpAddress`; `X-Forwarded-For` no se configura ni se considera confiable. No se simula el éxito SMTP.
+- **Error durante validación:** el primer test Release no compiló porque un fixture de asignación concurrente llamó `RouteE.Create` con un GUID adicional (10 argumentos frente a la firma vigente de 9). Se quitó el argumento sobrante; el test focal volvió a compilar y pasó. Prevención: contrastar fixtures con la firma actual al añadir escenarios.
+- **Verificación:** tests focalizados Release 17/17, suite `BackEnd_Gps.sln` Release 133/133 (0 fallidos/omitidos), build Release 0 warnings/0 errores. Se corrigió una advertencia nullable del test antes de la suite completa.

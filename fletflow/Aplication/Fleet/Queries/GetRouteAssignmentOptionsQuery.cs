@@ -8,11 +8,16 @@ public sealed class GetRouteAssignmentOptionsQuery
 {
     private readonly IVehicleRepository _vehicles;
     private readonly IDriverRepository _drivers;
+    private readonly IRouteRepository _routes;
 
-    public GetRouteAssignmentOptionsQuery(IVehicleRepository vehicles, IDriverRepository drivers)
+    public GetRouteAssignmentOptionsQuery(
+        IVehicleRepository vehicles,
+        IDriverRepository drivers,
+        IRouteRepository routes)
     {
         _vehicles = vehicles;
         _drivers = drivers;
+        _routes = routes;
     }
 
     public async Task<RouteAssignmentOptionsDto> Execute()
@@ -21,6 +26,9 @@ public sealed class GetRouteAssignmentOptionsQuery
             .Where(vehicle => vehicle.Status == VehicleStatus.Available)
             .ToList();
         var drivers = await _drivers.GetAssignableAsync();
+        var busyDriverIds = (await _routes.GetAllAsync(status: RouteStatus.InProgress, onlyActive: true))
+            .Select(route => route.DriverId)
+            .ToHashSet();
 
         return new RouteAssignmentOptionsDto
         {
@@ -39,6 +47,7 @@ public sealed class GetRouteAssignmentOptionsQuery
                 FirstName = driver.FirstName,
                 LastName = driver.LastName,
                 UserId = driver.UserId,
+                IsAvailable = !busyDriverIds.Contains(driver.Id),
             }).ToList(),
         };
     }

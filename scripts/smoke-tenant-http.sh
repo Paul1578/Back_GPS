@@ -1049,6 +1049,12 @@ jq -e --arg id "$logistics_route_id" --arg name "$logistics_route_updated_name" 
 
 request PUT "/Routes/$logistics_route_id/status" '{"status":1}' "$logistics_token"
 expect_status 204 "Iniciar ruta como Logistics"
+request GET /Routes/assignment-options "" "$logistics_token"
+expect_status 200 "Consultar opciones mientras el conductor está en ruta"
+jq -e --arg driverId "$manager_driver_id" \
+  '.drivers | any(.[]; .id == $driverId and .isAvailable == false)' \
+  "$work_dir/response.json" >/dev/null \
+  || { echo "El conductor de una ruta en curso sigue apareciendo disponible para asignación." >&2; cat "$work_dir/response.json" >&2; exit 1; }
 request GET "/Routes/$logistics_route_id" "" "$logistics_token"
 expect_status 200 "Leer ruta iniciada como Logistics"
 jq -e '.status == 1 and .startedAt != null and ([.points[1:4][] | .status] | all(. == 0))' "$work_dir/response.json" >/dev/null \
@@ -1144,6 +1150,12 @@ expect_status 200 "Confirmar ruta completada como Logistics"
 jq -e '.status == 2 and .isActive == true and .startedAt != null and .endedAt != null and ([.points[1:4][] | .status] | all(. == 2)) and ([.points[1:4][] | (.evidence | length)] | all(. == 1))' \
   "$work_dir/response.json" >/dev/null \
   || { echo "La ruta completada no conserva estado, timestamps, parada y evidencia." >&2; cat "$work_dir/response.json" >&2; exit 1; }
+request GET /Routes/assignment-options "" "$logistics_token"
+expect_status 200 "Confirmar disponibilidad tras completar la ruta"
+jq -e --arg driverId "$manager_driver_id" \
+  '.drivers | any(.[]; .id == $driverId and .isAvailable == true)' \
+  "$work_dir/response.json" >/dev/null \
+  || { echo "El conductor no volvió a aparecer disponible tras completar la ruta." >&2; cat "$work_dir/response.json" >&2; exit 1; }
 request GET "/Vehicles/$manager_vehicle_id" "" "$token"
 expect_status 200 "Leer vehículo tras completar ruta como Admin QA"
 jq -e '.status == 0 and .isActive == true' "$work_dir/response.json" >/dev/null \

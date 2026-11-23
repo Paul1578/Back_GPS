@@ -105,6 +105,81 @@ public class SimpleRateLimitMiddlewareTests
     }
 
     [Fact]
+    public async Task ForgotPassword_AllowsFiveRequestsPerIpThenReturns429WithoutBlockingOtherEndpoints()
+    {
+        var middleware = new SimpleRateLimitMiddleware(
+            NullLogger<SimpleRateLimitMiddleware>.Instance,
+            new TestWebHostEnvironment("Production"));
+        var remoteAddress = new IPAddress(Guid.NewGuid().ToByteArray());
+        var acceptedRecoveryRequests = 0;
+        DefaultHttpContext? sixthRecoveryContext = null;
+
+        for (var requestNumber = 0; requestNumber < 6; requestNumber++)
+        {
+            var context = new DefaultHttpContext();
+            context.Connection.RemoteIpAddress = remoteAddress;
+            context.Request.Method = HttpMethods.Post;
+            context.Request.Path = "/api/Auth/forgot-password";
+            await middleware.InvokeAsync(context, _ =>
+            {
+                acceptedRecoveryRequests++;
+                return Task.CompletedTask;
+            });
+
+            if (requestNumber == 5)
+                sixthRecoveryContext = context;
+            else
+                Assert.Equal(StatusCodes.Status200OK, context.Response.StatusCode);
+        }
+
+        Assert.Equal(5, acceptedRecoveryRequests);
+        Assert.NotNull(sixthRecoveryContext);
+        Assert.Equal(StatusCodes.Status429TooManyRequests, sixthRecoveryContext.Response.StatusCode);
+        Assert.True(int.TryParse(sixthRecoveryContext.Response.Headers["Retry-After"], out var retryAfter));
+        Assert.InRange(retryAfter, 1, 600);
+
+        var fleetContext = new DefaultHttpContext();
+        fleetContext.Connection.RemoteIpAddress = remoteAddress;
+        fleetContext.Request.Method = HttpMethods.Get;
+        fleetContext.Request.Path = "/api/Routes";
+        var fleetEndpointReached = false;
+        await middleware.InvokeAsync(fleetContext, _ =>
+        {
+            fleetEndpointReached = true;
+            return Task.CompletedTask;
+        });
+
+        Assert.Equal(StatusCodes.Status200OK, fleetContext.Response.StatusCode);
+        Assert.True(fleetEndpointReached);
+    }
+
+    [Fact]
+    public async Task DevelopmentLoopback_ForgotPasswordLimitStillApplies()
+    {
+        var middleware = new SimpleRateLimitMiddleware(
+            NullLogger<SimpleRateLimitMiddleware>.Instance,
+            new TestWebHostEnvironment("Development"));
+        DefaultHttpContext? sixthContext = null;
+
+        for (var requestNumber = 0; requestNumber < 6; requestNumber++)
+        {
+            var context = new DefaultHttpContext();
+            context.Connection.RemoteIpAddress = IPAddress.Loopback;
+            context.Request.Method = HttpMethods.Post;
+            context.Request.Path = "/api/Auth/forgot-password";
+            await middleware.InvokeAsync(context, _ => Task.CompletedTask);
+            Assert.Equal(
+                requestNumber < 5 ? StatusCodes.Status200OK : StatusCodes.Status429TooManyRequests,
+                context.Response.StatusCode);
+            if (requestNumber == 5)
+                sixthContext = context;
+        }
+
+        Assert.NotNull(sixthContext);
+        Assert.Equal(StatusCodes.Status429TooManyRequests, sixthContext.Response.StatusCode);
+    }
+
+    [Fact]
     public async Task ConcurrentRequests_CannotExceedSixtyAcceptedRequestsPerWindow()
     {
         var middleware = new SimpleRateLimitMiddleware(

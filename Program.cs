@@ -143,7 +143,10 @@ builder.Services.AddTransient<RoleValidationMiddleware>();
 builder.Services.AddTransient<SimpleRateLimitMiddleware>();
 builder.Services.AddTransient<HeaderValidationMiddleware>();
 
-builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("Email"));
+builder.Services.AddSingleton<Microsoft.Extensions.Options.IValidateOptions<EmailSettings>, EmailSettingsValidator>();
+builder.Services.AddOptions<EmailSettings>()
+    .Bind(builder.Configuration.GetSection("Email"))
+    .ValidateOnStart();
 
 // =====================
 // JWT
@@ -283,6 +286,9 @@ builder.Services.AddSwaggerGen(options =>
 // Build
 // =====================
 var app = builder.Build();
+
+// Validate email security settings before touching the database or starting the outbox worker.
+_ = app.Services.GetRequiredService<Microsoft.Extensions.Options.IOptions<EmailSettings>>().Value;
 
 if (app.Environment.IsDevelopment())
 {

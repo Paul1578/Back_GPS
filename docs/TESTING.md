@@ -1,5 +1,15 @@
 # Estado vigente — 2026-11-23
 
+## Recuperación y política de URL — cambios locales
+
+- Cobertura xUnit añadida para cinco solicitudes `forgot-password` admitidas y sexta 429 por IP, incluso desde loopback Development, con `Retry-After` y acceso posterior no bloqueado a `GET /api/Routes`.
+- Cobertura xUnit para 32 bytes de entropía, hash persistido, expiración usando los minutos configurados y límites de `Email:ResetTokenMinutes` (1–1440).
+- Cobertura xUnit de URL: Production acepta sólo URL absolutas HTTPS para reset y activación; Development permite HTTP en loopback y HTTPS. También rechaza HTTP de host externo en Development.
+- Tests focalizados Release: **17/17**, 0 fallidos y 0 omitidos.
+- Suite `BackEnd_Gps.sln` Release: **133/133**, 0 fallidos y 0 omitidos.
+- `dotnet build BackEnd_Gps.sln -c Release --no-restore -m:1`: correcto, 0 warnings y 0 errores.
+- No se simuló entrega SMTP exitosa; la validación cubre middleware/configuración/token, no credenciales SMTP ni proxy de producción.
+
 - Root-only Admin: Action Backend `45090274537` pasó Release build, xUnit **113/113**, smoke HTTP/MySQL tenant/roles, concurrencia y cleanup. `/Auth/me` afirma root true/delegado false; creación/promoción root permitida y delegado recibe 403 sin mutación SQL.
 - Front integrado contra este backend: Action `45091340306` pasó **40/40 E2E**, responsive **1/1**, backend Release/xUnit, audit, lint/build y cleanup.
 - Cobertura pendiente: ejecutar ciclo de una ruta con varias paradas logísticas (recogidas/entregas) y cierre/evidencia; la prueba actual de cierre cubre una operación. También falta validar key ring persistente en restart/replicas para despliegue.

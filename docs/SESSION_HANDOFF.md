@@ -1,5 +1,14 @@
 # Handoff — 2026-11-23
 
+## Estado vigente — seguridad de recuperación en trabajo local
+
+- Rama backend: `chore/stabilize-fleet-platform`, base `729d56a`; cambios locales integrados y listos para commit/publicación de la rama de trabajo.
+- Cambio local: límite de `POST /api/Auth/forgot-password` de 5/10 min/IP, token de 32 bytes, TTL default 60 min (override 1–1440) y validación Production HTTPS para enlaces reset/activación; Development admite HTTP loopback. Se valida explícitamente antes de sembrar DB; Production debe sustituir enlaces localhost de appsettings.
+- `SimpleRateLimitMiddleware` usa memoria por proceso y `RemoteIpAddress`; no hay middleware `ForwardedHeaders`. Para varias réplicas hace falta rate limit distribuido; sólo aceptar IP reenviada tras configurar proxies confiables.
+- Primera compilación de tests falló por una llamada fixture con 10 argumentos a `RouteE.Create`, que acepta 9; se quitó el argumento extra y quedó registrado en `ERROR_LOG.md`.
+- Tests focalizados Release pasaron 17/17; suite completa Release `BackEnd_Gps.sln` pasó 133/133, 0 fallidos y 0 omitidos; build Release 0 warnings/0 errores. SMTP no se simula ni se informa como enviado.
+- Continúa abierto el trabajo general del proyecto; este lote no verifica credenciales SMTP, proxy real ni persistencia del key ring en un despliegue productivo.
+
 ## Estado vigente — 2026-11-23
 
 - HEAD Backend `df88238` (`chore/stabilize-fleet-platform`) y Front al actualizar este registro `992053d` (`refactor/route-builder`), ramas separadas de `main`.

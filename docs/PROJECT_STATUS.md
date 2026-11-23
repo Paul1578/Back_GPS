@@ -1,3 +1,9 @@
+## Estado vigente — runner E2E serializado — 2026-11-23
+
+- `scripts/run-e2e-local.sh` adquiere lock MySQL por target antes de permitir limpieza; runner concurrente debe fallar en preflight sin borrar fixtures. El smoke read-only local probó titular `GET_LOCK=1` y segundo intento `0`, sin modificar tablas.
+- Validaciones locales: `bash -n`, `git diff --check`, lock/concurrencia read-only y suite Release xUnit **165/165** pasan. Actions que incluyan el lock aún pendientes; consultar `SESSION_HANDOFF.md`.
+- Estado previamente validado bajo esta fase: rama Backend `chore/stabilize-fleet-platform`, Front `refactor/route-builder`, `main` intacta; Front integrada 67/67 y backend Release/xUnit 165/165 en Actions anteriores.
+
 ## Estado vigente — Backend `cd2a512` — 2026-11-23
 
 - Rama `chore/stabilize-fleet-platform`; `main` intacta y DB local persistente preservada. Código `cd2a512`; el runner provisiona Logistics en el esquema QA, comprueba `IsActive:MustChangePassword=1:0` y falla con diagnóstico si el fixture no quedó autenticable.

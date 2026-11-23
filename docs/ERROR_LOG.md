@@ -1,3 +1,11 @@
+## 2026-11-23 — El runner E2E podía limpiar fixtures de otra ejecución — CORREGIDO
+
+- Revisión independiente: dos runners locales contra el mismo esquema podían solaparse; la limpieza usa prefijos compartidos y podía borrar fixtures del otro proceso.
+- Solución: `run-e2e-local.sh` toma un advisory lock MySQL (`GET_LOCK`) cuya clave deriva de host, puerto y esquema. Un segundo runner sale antes de activar el cleanup. El lock vive en una conexión MySQL dedicada y se libera al salir; el cleanup sólo se habilita una vez confirmado el lock.
+- Error durante la prueba: el cliente MariaDB local imprime avisos antes del resultado y almacena la salida del batch mientras ejecuta `SLEEP`. Leer la primera línea o no pedir salida no bufferizada producía espera/lectura incorrecta aunque el lock estuviera adquirido. Solución: `--unbuffered` y parseo exclusivo de líneas `0`/`1`.
+- Validación de concurrencia contra MySQL con credenciales DB de aplicación, sin mutar filas: primer `GET_LOCK=1`, segundo intento `GET_LOCK=0`; se liberó la conexión. `bash -n` y `git diff --check` pasan. El primer intento read-only como root recibió 1045 porque la contraseña root persistida del contenedor no coincide con `.env`; repetir con `DB_USER`/`DB_PASSWORD` pasó.
+- Prevención: serializar runners que limpian por prefijo y usar siempre el usuario de base configurado para la aplicación; no inferir éxito leyendo la primera línea de salida del cliente mysql.
+
 ## 2026-11-23 — Login E2E de cuenta invitada Logistics devolvió 401 — FIX EN VALIDACIÓN
 
 - Action Front [`45233814926`](https://github.com/Paul1578/Front_gpsR/actions/runs/45233814926) tuvo **66/67 E2E**. El test creaba Logistics mediante `/Users` y luego sólo marcaba `IsActive`; el alta deja `MustChangePassword=true`, por lo que autenticación correctamente devolvía 401. No es un defecto del login ni de permisos.

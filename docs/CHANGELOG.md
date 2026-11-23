@@ -1,3 +1,9 @@
+## 2026-11-23 — Serialización del runner E2E local
+
+- Añadido advisory lock MySQL por host/puerto/esquema para impedir limpiezas cruzadas entre ejecuciones concurrentes.
+- El segundo runner falla sin ejecutar cleanup; el propietario libera el lock al terminar. Parser compatible con avisos del cliente MariaDB y resultado no bufferizado.
+- Prueba read-only real: adquisición concurrente `1`/`0`; no se modificaron datos.
+
 ## 2026-11-23 — Fixture Logistics autenticable para matriz E2E — CI aprobado
 
 - El runner E2E crea un Logistics aislado en la DB descartable junto al resto de identidades QA y lo habilita para login sólo en ese esquema temporal; exporta sus credenciales al frontend. `cleanup-e2e.sql` ya elimina el prefijo del fixture.

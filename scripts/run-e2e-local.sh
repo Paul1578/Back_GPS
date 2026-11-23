@@ -74,21 +74,77 @@ if [[ "${CI:-}" != "true" ]] && ! curl -fsS "$playwright_base_url/login" >/dev/n
   exit 2
 fi
 
+lock_identity="${MYSQL_HOST}:${MYSQL_PORT}:${DB_NAME}"
+lock_hash="$(printf '%s' "$lock_identity" | sha256sum | cut -c1-32)"
+runner_lock_name="fletflow_e2e_${lock_hash}"
+runner_lock_output="$(mktemp)"
+runner_lock_pid=""
+cleanup_enabled=false
+
+release_runner_lock() {
+  if [[ -n "$runner_lock_pid" ]]; then
+    kill "$runner_lock_pid" 2>/dev/null || true
+    wait "$runner_lock_pid" 2>/dev/null || true
+    runner_lock_pid=""
+  fi
+  rm -f "$runner_lock_output"
+}
+trap release_runner_lock EXIT
+
+mysql --protocol=TCP --host="$MYSQL_HOST" --port="$MYSQL_PORT" --user="$MYSQL_USER" \
+  --database="$DB_NAME" --batch --skip-column-names --raw --unbuffered \
+  --execute="SELECT GET_LOCK('${runner_lock_name}', 0); DO SLEEP(86400);" \
+  >"$runner_lock_output" 2>&1 &
+runner_lock_pid=$!
+
+lock_acquired=false
+for _ in $(seq 1 50); do
+  if [[ -s "$runner_lock_output" ]]; then
+    lock_result="$(awk '$0 == "1" || $0 == "0" { print; exit }' "$runner_lock_output")"
+    if [[ "$lock_result" == "1" ]]; then
+      lock_acquired=true
+      break
+    fi
+    if [[ "$lock_result" == "0" ]]; then
+      echo "Otra ejecución E2E ya usa este esquema MySQL; no se modificaron datos." >&2
+      release_runner_lock
+      exit 2
+    fi
+  fi
+  if ! kill -0 "$runner_lock_pid" 2>/dev/null; then
+    echo "No se pudo adquirir el bloqueo E2E de MySQL:" >&2
+    cat "$runner_lock_output" >&2
+    release_runner_lock
+    exit 2
+  fi
+  sleep 0.1
+done
+
+if [[ "$lock_acquired" != "true" ]]; then
+  echo "Timeout esperando confirmación del bloqueo E2E de MySQL; no se modificaron datos." >&2
+  release_runner_lock
+  exit 2
+fi
+
 cleanup() {
   local status=$?
   local cleanup_output
   cleanup_output="$(mktemp)"
   trap - EXIT
-  if ! mysql --protocol=TCP --host="$MYSQL_HOST" --port="$MYSQL_PORT" --user="$MYSQL_USER" "$DB_NAME" \
-    < "$backend_dir/scripts/cleanup-e2e.sql" >"$cleanup_output" 2>&1; then
-    echo "No se pudieron limpiar los fixtures E2E de MySQL." >&2
-    cat "$cleanup_output" >&2
-    status=1
+  if [[ "$cleanup_enabled" == "true" ]]; then
+    if ! mysql --protocol=TCP --host="$MYSQL_HOST" --port="$MYSQL_PORT" --user="$MYSQL_USER" "$DB_NAME" \
+      < "$backend_dir/scripts/cleanup-e2e.sql" >"$cleanup_output" 2>&1; then
+      echo "No se pudieron limpiar los fixtures E2E de MySQL." >&2
+      cat "$cleanup_output" >&2
+      status=1
+    fi
   fi
   rm -f "$cleanup_output"
+  release_runner_lock
   exit "$status"
 }
 trap cleanup EXIT
+cleanup_enabled=true
 
 user_suffix="$(date +%s%N | tail -c 10)"
 export FLETFLOW_E2E_USER_EMAIL="fletflow.e2e.user.$user_suffix@example.test"

@@ -1,3 +1,9 @@
+## Bloqueo concurrente del runner E2E — 2026-11-23
+
+- `bash -n scripts/run-e2e-local.sh`, `git diff --check` y `DOTNET_ROOT=/home/leonardo/.dotnet /home/leonardo/.dotnet/dotnet test BackEnd_Gps.sln --configuration Release --no-restore -m:1`: correctos; xUnit **165/165**.
+- Prueba read-only contra MySQL local usando `DB_USER`/`DB_PASSWORD`: conexión titular obtuvo `GET_LOCK=1`; segundo cliente sobre el mismo host/puerto/esquema obtuvo `0`. La conexión titular se cerró y el lock se liberó. No se insertaron, actualizaron ni eliminaron filas.
+- El runner no instala cleanup hasta confirmar lock; cualquier conexión fallida, rechazo o timeout termina antes de tocar fixtures. La invocación completa con otro lock titular terminó en exit 2, con el mensaje de conflicto y antes de limpieza. CI integrada pendiente para el nuevo código.
+
 ## Estado vigente — 2026-11-23 — código `cd2a512`
 
 - Local: `DOTNET_ROOT=/home/leonardo/.dotnet /home/leonardo/.dotnet/dotnet test BackEnd_Gps.sln -c Release --no-restore -m:1`: **165/165**; Release build **0 warnings / 0 errors**; Docker build y ejecución como UID 10001 correctos.

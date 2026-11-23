@@ -1,3 +1,10 @@
+## Handoff vigente — lock del runner E2E local — 2026-11-23
+
+- Rama Backend `chore/stabilize-fleet-platform`; se está trabajando encima de `cd2a512`. Se añadió `GET_LOCK` con clave derivada de host/puerto/esquema a `scripts/run-e2e-local.sh`; no activar cleanup antes de adquirirlo y mantener viva su conexión hasta terminar.
+- Prueba real read-only con el DB user de aplicación: primera conexión `1`, segundo intento `0`; conexión cerrada y lock liberado. `bash -n`/`git diff --check` pasan. El cliente MariaDB exigió `--unbuffered`, y su salida se parsea por línea exacta `0`/`1`; causa y prevención documentadas en `docs/ERROR_LOG.md`.
+- El rechazo se probó invocando el runner completo mientras otro cliente tenía el lock: exit 2, mensaje esperado, sin cleanup. `dotnet test -c Release --no-restore -m:1` pasó 165/165; `bash -n` y diff-check pasan. Falta publicar y esperar Backend Actions, luego ejecutar/esperar Front integrada y registrar resultados. Mantener ramas separadas de main.
+- Credencial root local persistida no coincide con `.env`; lock test funcionó con `DB_USER`/`DB_PASSWORD`. No se tocaron filas durante esa prueba.
+
 # Handoff vigente — `cd2a512` confirmación CRUD de Driver en E2E — 2026-11-23
 
 - Rama Backend `chore/stabilize-fleet-platform`; código funcional `cd2a512`, docs HEAD `0547e1c`; `main` intacta. Release build 0 warnings/0 errors y xUnit **165/165**. Actions Backend [`45240751113`](https://github.com/Paul1578/Back_GPS/actions/runs/45240751113) y [`45240738019`](https://github.com/Paul1578/Back_GPS/actions/runs/45240738019) pasaron tenant HTTP/MySQL, concurrencia, rate limit y teardown.

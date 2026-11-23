@@ -1831,9 +1831,9 @@ expect_status 200 "Consultar Drivers inactivos"
 jq -e --arg id "$driver_id" 'any(.[]; .id == $id and .isActive == false)' "$work_dir/response.json" >/dev/null \
   || { echo "El filtro onlyActive=false no incluyó el Driver desactivado." >&2; cat "$work_dir/response.json" >&2; exit 1; }
 driver_total="$(jq 'length' "$work_dir/response.json")"
-request GET "/Drivers/page?page=1&pageSize=1&search=$document_number&onlyActive=false"
+request GET "/Drivers/page?page=1&pageSize=1&search=$updated_document&onlyActive=false"
 expect_status 200 "Buscar Driver inactivo con paginación HTTP"
-jq -e --arg document "$document_number" '.totalCount == 1 and .page == 1 and .pageSize == 1 and .items[0].documentNumber == $document and .items[0].isActive == false' "$work_dir/response.json" >/dev/null \
+jq -e --arg document "$updated_document" '.totalCount == 1 and .page == 1 and .pageSize == 1 and .items[0].documentNumber == $document and .items[0].isActive == false' "$work_dir/response.json" >/dev/null \
   || { echo "La página de Drivers no respetó búsqueda o filtro onlyActive=false." >&2; cat "$work_dir/response.json" >&2; exit 1; }
 request GET "/Drivers/page?page=1&pageSize=1&onlyActive=false"
 expect_status 200 "Paginar lista de Drivers con bajas"

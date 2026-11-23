@@ -1,8 +1,8 @@
 # 2026-11-23 — Smoke paginado de Driver comparó el ID de otro fixture — CORREGIDO
 
-- Backend Actions `45177400984`/`45177409890` pasaron build, **151/151 xUnit** y llegaron al smoke HTTP/MySQL; el unlink y sus cuatro cleanups también pasaron. El nuevo GET de Driver devolvió HTTP 200 con `totalCount=1`, la fila inactiva correcta y el documento buscado, pero la aserción comparaba `id` contra `$driver_id`, que en ese punto del script no correspondía a la fila devuelta.
-- Solución: verificar `documentNumber` único de la búsqueda junto con `isActive=false` y metadatos de paginación, en vez del ID global reusado por otros escenarios.
-- Prevención: en smokes largos, afirmar el identificador natural único del fixture local al escenario; no reutilizar IDs mutables entre bloques independientes. Repetición HTTP/MySQL pendiente.
+- Backend Actions `45177400984`/`45177409890` y `45177819577`/`45177834102` pasaron build, **151/151 xUnit** y llegaron al smoke HTTP/MySQL; el unlink y los cleanups pasaron. El GET paginado devolvió HTTP 200 y un Driver inactivo; primero falló la comparación contra un ID global de otro bloque. Tras cambiar a `documentNumber`, la segunda corrida reveló que el smoke buscaba `$document_number`, valor anterior al PUT que lo cambió por `$updated_document`; la búsqueda parcial coincidió con otro documento que compartía el prefijo.
+- Solución aplicada: buscar y comparar el documento vigente `$updated_document`, único después de la edición, además de estado y metadatos. La repetición Action en `a686e61` queda pendiente.
+- Prevención: al cambiar un identificador del fixture, actualizar las variables usadas en pruebas posteriores; búsquedas `Contains` requieren un término único completo y vigente, no un prefijo reutilizado.
 
 # 2026-11-23 — Errores corregidos al implementar paginación
 

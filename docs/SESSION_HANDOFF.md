@@ -1,5 +1,11 @@
 # Handoff vigente — 2026-11-23
 
+## Auditoría: documentación de ciclo multi-parada corregida
+
+- Revisión read-only del Backend confirmó que el pendiente descrito más abajo estaba desactualizado: `scripts/smoke-tenant-http.sh:1140-1229` ya recorre tres paradas (pickup, delivery y ambas), guarda evidencia en cada una, completa/cierra y verifica el `PointsJson` persistido.
+- Action [`45132350399`](https://github.com/Paul1578/Back_GPS/actions/runs/45132350399) en `c42a306` pasó xUnit **136/136**, build Release, smoke tenant HTTP/MySQL y cleanup. No se hizo un cambio de lógica; se corrigió documentación únicamente.
+- El xUnit sólo usa una parada en esos ciclos; el smoke integrado es la evidencia multi-parada. Diferencia anotada en `PROJECT_STATUS.md` y `TESTING.md`.
+
 ## Login rate limit HTTP — CI verificada
 
 - Backend branch `chore/stabilize-fleet-platform`, commit de código `88f669d`; `main` intacta y el árbol quedó limpio tras registrar el resultado.

@@ -1,3 +1,9 @@
+# 2026-11-23 — `git diff --check` encontró línea vacía extra al final de CHANGELOG — CORREGIDO
+
+- Al registrar la corrección del estado multi-parada, una inserción sin contexto agregó el bloque de changelog al final del archivo y dejó una línea en blanco extra. `git diff --check` detectó el espacio en blanco al EOF antes del commit.
+- Solución: mover la entrada al inicio de `CHANGELOG.md` y normalizar el archivo a una sola nueva línea final; confirmar con `git diff --check`.
+- Prevención: aplicar cambios de documentación con contexto de encabezado explícito y ejecutar `git diff --check` inmediatamente después de cada parche.
+
 # 2026-11-22 — Fixture del E2E Manager mapa compartía rol y no se limpiaba tras timeout — CORREGIDO LOCALMENTE
 
 - Front Actions `45084368342`/`45084699175` pasaron 38/39; el único fallo fue el E2E de mapa que reutilizaba una cuenta Driver, cambiaba su rol y podía expirar antes de restaurarlo. El siguiente retry veía `Manager` y fallaba esperando `Driver`; también quedaban ruta y vehículo QA.

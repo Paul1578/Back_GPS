@@ -1,3 +1,8 @@
+# 2026-11-23 — Corrección del estado de cobertura multi-parada
+
+- La auditoría confirmó que el ciclo con tres paradas operativas y evidencia ya estaba cubierto por `smoke-tenant-http.sh` y Action `45132350399`; se retiró el pendiente obsoleto del estado vigente y se distinguió de la cobertura xUnit de dominio con una sola parada.
+- Sin cambios de código ni base de datos.
+
 # 2026-11-22 — Serializar edición Driver y asignación Vehicle
 
 - `UpdateDriverCommand` comparte lock de asignación, vuelve a leer Driver bajo transacción y revierte si falla una validación/escritura.

@@ -33,8 +33,9 @@
 
 - Root-only Admin: Action Backend `45090274537` pasó Release build, xUnit **113/113**, smoke HTTP/MySQL tenant/roles, concurrencia y cleanup. `/Auth/me` afirma root true/delegado false; creación/promoción root permitida y delegado recibe 403 sin mutación SQL.
 - Front integrado contra este backend: Action `45091340306` pasó **40/40 E2E**, responsive **1/1**, backend Release/xUnit, audit, lint/build y cleanup.
-- Cobertura pendiente: ejecutar ciclo de una ruta con varias paradas logísticas (recogidas/entregas) y cierre/evidencia; la prueba actual de cierre cubre una operación. También falta validar key ring persistente en restart/replicas para despliegue.
-- Decisión consultada: permitir o exigir operación logística en cada ruta; no modificar validación hasta respuesta.
+- Ciclo multi-parada ya integrado: `scripts/smoke-tenant-http.sh:1140-1229` ejecuta tres paradas pickup/delivery/ambas con evidencia, completa y cierra la ruta, y verifica persistencia MySQL. Action [`45132350399`](https://github.com/Paul1578/Back_GPS/actions/runs/45132350399) pasó build Release, xUnit 136/136, smoke HTTP/MySQL y cleanup.
+- El xUnit de dominio cubre reglas de evidencia/cierre con una parada y el traslado sin paradas por separado; no reemplaza el smoke multi-parada. Falta sólo la prueba externa del key ring persistente en restart/réplicas.
+- Decisión confirmada por producto: se permiten rutas de traslado sin operación logística.
 
 # Corrección de escritura concurrente Driver — validación local
 

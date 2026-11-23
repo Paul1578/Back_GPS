@@ -10,7 +10,7 @@
 ## Tamaño total de evidencias — cobertura local aprobada
 
 - Cada foto ya tenía máximo de 4 MB, pero una ruta podía acumular fotos/notas ilimitadas. `RouteE.AddPointEvidence` ahora limita a **50 evidencias y 8 MB de contenido total**, rechazando sin mutación.
-- Pruebas `RoutePointTests`: **20/20**; suite Release **157/157**; build Release **0 warnings/0 errores**. Actions Backend [`45187302298`](https://github.com/Paul1578/Back_GPS/actions/runs/45187302298) / [`45187289527`](https://github.com/Paul1578/Back_GPS/actions/runs/45187289527) para `a07838d` están en curso.
+- Pruebas `RoutePointTests`: **20/20**; suite Release **157/157**; build Release **0 warnings/0 errores**. Actions Backend [`45187302298`](https://github.com/Paul1578/Back_GPS/actions/runs/45187302298) y [`45187289527`](https://github.com/Paul1578/Back_GPS/actions/runs/45187289527) para `a07838d` terminaron success con Release, HTTP/MySQL, rate limit y cleanup. La verificación del HEAD documental `658858b` también pasó en [`45187657647`](https://github.com/Paul1578/Back_GPS/actions/runs/45187657647).
 
 ## Paginación de equipo y conductores — Action aprobada
 
@@ -25,7 +25,7 @@
 - El smoke local en curso añade la regresión que faltaba: un `PUT /Drivers/{id}/unlink-user` responde HTTP 409 cuando hay ruta Pending; SQL confirma vínculo, TokenVersion, ruta y vehículo intactos. Después cancela ruta, libera vehículo y valida el unlink exitoso, revocación de sesiones, rol Driver y limpieza de cuatro fixtures.
 - Pendiente ejecutar `bash -n`, diff-check, publicar el cambio y obtener Action verde que incluya la nueva cobertura. No se declara cubierto el HTTP 409 hasta esa ejecución.
 
-# Estado actual de estabilización — 2026-11-23
+# Historial de estabilización — 2026-11-23
 
 ## Desvincular cuenta del perfil Driver — implementación local en curso
 
@@ -41,7 +41,7 @@
 - Contrato observado en la edición: se asigna el Vehicle nuevo al Driver elegido; la relación explícita del Driver anterior se conserva. Está documentado y el smoke lo verifica.
 - `bash -n` y `git diff --check` pasan. Falta la Action de Backend con los nuevos smokes para confirmar persistencia y cleanup.
 
-## Estado vigente
+## Snapshot histórico previo a la auditoría de rutas heredadas
 
 - Front más reciente: Actions [`45138088658`](https://github.com/Paul1578/Front_gpsR/actions/runs/45138088658) (cambio de rol persistido por UI) y [`45139564823`](https://github.com/Paul1578/Front_gpsR/actions/runs/45139564823) (username largo responsive) pasaron **51/51 E2E**; API/MySQL, responsive, Release/xUnit y cleanup correctos.
 - xUnit agrega ciclo de dominio con pickup, delivery y PickupAndDelivery: cierre rechazado mientras quede una parada pendiente y exitoso cuando las tres tienen evidencia. Action [`45141029124`](https://github.com/Paul1578/Back_GPS/actions/runs/45141029124) pasó build, **137/137 xUnit**, tenant HTTP/MySQL, concurrencia y login rate limit; cleanup correcto.

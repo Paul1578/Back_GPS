@@ -10,7 +10,7 @@
 
 - `RoutePointTests`: **20/20**, incluye rechazo en evidencia 51 y rechazo de segunda imagen de 3 MiB al superar 8 MB totales; la lista queda sin cambios tras cada rechazo.
 - Suite Release: **157/157**. Build Release: **0 warnings/0 errores**.
-- Actions Backend [`45187302298`](https://github.com/Paul1578/Back_GPS/actions/runs/45187302298) y [`45187289527`](https://github.com/Paul1578/Back_GPS/actions/runs/45187289527) ejecutan validación sobre el commit `a07838d`.
+- Actions Backend [`45187302298`](https://github.com/Paul1578/Back_GPS/actions/runs/45187302298), [`45187289527`](https://github.com/Paul1578/Back_GPS/actions/runs/45187289527) y [`45187657647`](https://github.com/Paul1578/Back_GPS/actions/runs/45187657647) pasaron Release, HTTP/MySQL, rate limit y cleanup.
 
 ## Paginación Usuarios/Drivers — validación local y smoke HTTP pendiente en CI
 

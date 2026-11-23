@@ -9,8 +9,8 @@
 ## Lote siguiente — límites totales de evidencia
 
 - Cambio local: `RouteE.AddPointEvidence` rechaza una evidencia que exceda **50 elementos/ruta** o **8,000,000 caracteres de contenido agregado**, antes de modificar paradas. Prueba imágenes repetidas de 3 MiB y valida persistencia sin agregar la segunda; caso de notas cubre el item 51.
-- Tests focales **20/20**, suite Release **157/157**, build **0 warnings/0 errores**. Commit `a07838d` publicado; Actions Backend `45187302298` y `45187289527` en curso.
-- Front `dff947f` pasó [`45185961950`](https://github.com/Paul1578/Front_gpsR/actions/runs/45185961950): **53/53 E2E**, responsive 1/1, Backend Release/xUnit, audit/lint/build y cleanup. Actualizar docs Front al resultado y publicar esa documentación.
+- Tests focales **20/20**, suite Release **157/157**, build **0 warnings/0 errores**. Commit `a07838d` y documentación `658858b` pasaron Actions Backend [`45187302298`](https://github.com/Paul1578/Back_GPS/actions/runs/45187302298), [`45187289527`](https://github.com/Paul1578/Back_GPS/actions/runs/45187289527) y [`45187657647`](https://github.com/Paul1578/Back_GPS/actions/runs/45187657647), con Release, HTTP/MySQL, rate limit y cleanup.
+- Front `dff947f` pasó [`45185961950`](https://github.com/Paul1578/Front_gpsR/actions/runs/45185961950): **53/53 E2E**, responsive 1/1, Backend Release/xUnit, audit/lint/build y cleanup. Documentación Front ya publicada en `b878b17`; Action integrada [`45187653165`](https://github.com/Paul1578/Front_gpsR/actions/runs/45187653165) en curso sobre las ramas actuales.
 
 ## Handoff vigente — paginación server-side
 

@@ -502,3 +502,8 @@
 - Contraseñas nuevas requieren 12 caracteres en registro, cambio, recuperación y activación.
 - Login tiene límite adicional de 10 solicitudes/minuto/IP, responde 429 + Retry-After y no bloquea cuentas.
 - Suite xUnit Release local: 120/120; Action pendiente.
+## 2026-11-23 — Ciclo HTTP/MySQL de ruta con múltiples operaciones — Action pendiente
+
+- Smoke Logistics recorre en una misma ruta una recogida, entrega y parada combinada; guarda evidencia y completa cada una en secuencia.
+- Verifica `PointsJson` en MySQL, estados/timestamps de ruta completada y vehículo disponible, además de cleanup QA.
+- Smoke local API/MySQL 8 descartable y Release build pasaron; cambio en `scripts/smoke-tenant-http.sh`, aún sin publicar ni Action.

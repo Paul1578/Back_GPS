@@ -648,3 +648,8 @@ La invitación envía sólo el enlace de activación; el usuario fija su contras
 
 - Front Action `45103761122`: 43/43 E2E, responsive 1/1 y cleanup MySQL success.
 - Backend Action `45103732510`: Release/xUnit y smoke tenant HTTP/MySQL/concurrencia success.
+# Smoke local — ciclo de ruta multi-parada — 2026-11-23, CI pendiente
+
+- `scripts/smoke-tenant-http.sh`: API real contra MySQL 8 descartable; una ruta incluye pickup, delivery y pickup+delivery. Añade evidencia por cada parada, completa la ruta y comprueba persistencia en `Routes.PointsJson`, `Routes.Status/EndedAt`, `Vehicles.Status=Available`.
+- Restore/build Release: 0 warnings/errores; bash syntax y diff-check correctos. Smoke completo exit 0 y cleanup cero fixtures QA.
+- Esta evidencia es local previa a commit; el Action backend debe repetirla antes de considerar la cobertura integrada.

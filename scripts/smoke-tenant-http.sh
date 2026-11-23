@@ -1160,6 +1160,28 @@ request GET "/Vehicles/$manager_vehicle_id" "" "$token"
 expect_status 200 "Leer vehículo tras completar ruta como Admin QA"
 jq -e '.status == 0 and .isActive == true' "$work_dir/response.json" >/dev/null \
   || { echo "El vehículo no volvió a Available al completar la ruta." >&2; cat "$work_dir/response.json" >&2; exit 1; }
+logistics_route_sql_state="$(mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" \
+  --batch --skip-column-names "$db_name" \
+  -e "SELECT CONCAT(r.Status, ':', IF(r.EndedAt IS NULL, 0, 1), ':', v.Status, ':', CAST(r.IsActive AS UNSIGNED)) FROM Routes r INNER JOIN Vehicles v ON v.Id=r.VehicleId WHERE r.Id='$logistics_route_id';")"
+[[ "$logistics_route_sql_state" == "2:1:0:1" ]] || {
+  echo "Estado final SQL incorrecto para ruta/vehículo (status:ended:vehicle:active=$logistics_route_sql_state)." >&2; exit 1;
+}
+mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" "$db_name" \
+  --batch --skip-column-names -e "SELECT PointsJson FROM Routes WHERE Id='$logistics_route_id';" \
+  >"$work_dir/logistics_points_db.json"
+jq -e --arg suffix "$suffix" '
+  length == 5 and
+  .[1].Operation == 1 and .[2].Operation == 2 and .[3].Operation == 3 and
+  ([.[1:4][] | .Status] | all(. == 2)) and
+  ([.[1:4][] | .Evidence] | all(length == 1)) and
+  ([.[1:4][] | .Evidence[0].Type] | all(. == "note")) and
+  ([.[1:4][] | .Evidence[0].Content | contains($suffix)] | all)
+' "$work_dir/logistics_points_db.json" >/dev/null || {
+  echo "MySQL no conserva las tres operaciones completadas con evidencia QA en PointsJson." >&2
+  cat "$work_dir/logistics_points_db.json" >&2
+  exit 1
+}
+echo "Verificado en MySQL: tres paradas operativas con evidencia, ruta Completed y vehículo Available."
 request DELETE "/Routes/$logistics_route_id" "" "$logistics_token"
 expect_status 204 "Dar de baja ruta completada como Logistics"
 # Forzar una carrera real: refresh y cambio de rol esperan por el mismo lock de Users.

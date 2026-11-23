@@ -1,7 +1,9 @@
 # Handoff vigente — 2026-11-23
 
-- Backend `chore/stabilize-fleet-platform` HEAD `3db7f03`; Front `refactor/route-builder` HEAD `dd11ce4`; ambas ramas limpias, `main` intacta.
-- Backend Action `45104450114`: success. Release build/xUnit 133/133 y smoke HTTP/MySQL tenant/concurrencia. Front Action `45104448741`: success, audit/lint/build, responsive 1/1, E2E API/MySQL 43/43 y cleanup.
+- Backend `chore/stabilize-fleet-platform` HEAD `2763b85`; Front `refactor/route-builder` HEAD `ba35304` + local pendiente. Ambas separadas de `main`; main intacta.
+- Backend docs Action `45105170489` success; Release/xUnit **133/133**. Front Action [`45107818564`](https://github.com/Paul1578/Front_gpsR/actions/runs/45107818564) success con **45/45**, responsive 1/1, audit/lint/build y cleanup.
+- Backend smoke local sin publicar añade ciclo API/MySQL con tres operaciones (pickup, delivery, ambas), evidencia en cada parada, SQL `PointsJson`, route Completed/EndedAt y vehículo Available. MySQL 8 descartable, smoke completo exit 0, cleanup cero; falta publicar y correr Action backend. Errores de validación MySQL byte/rate-limit/outbox quedan en `ERROR_LOG.md`.
+- Front local pendiente: E2E de carga inicial Dashboard y `playwright.config.ts` ahora usan puerto derivado de `PLAYWRIGHT_BASE_URL`; server limpio :3010, focal 4/4. Commit y Action integradas pendientes.
 - Cleanup FK 1451 resuelto en Backend `7ea14a6`: borrar puntos/rutas ligadas al Driver QA antes del Driver. Confirmado por Front Action `45103761122` y repetición documental `45104448741`.
 - Seguridad implementada: 12 caracteres claves nuevas, login 10/min/IP, reset 5/10 min/IP sin bloqueo por cuenta, token 256 bits, TTL 60 min por defecto (1–1440), URLs HTTPS en Production.
 - Riesgos productivos restantes: SMTP credenciales; rate limiter distribuido e IP confiable con proxy; Data Protection persistente; despliegue productivo no validado. Misión amplia sigue abierta.

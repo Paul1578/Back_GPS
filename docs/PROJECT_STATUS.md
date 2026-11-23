@@ -11,6 +11,7 @@
 - La misión de rutas aún requiere probar el ciclo de una ruta con varias paradas operativas hasta completar evidencias y cerrar ruta. La evidencia actual cubre creación de varios tipos y cierre con una operación.
 - Decisión confirmada: se permiten rutas de traslado entre origen/destino sin recogida/entrega; el ciclo está cubierto por prueba de dominio.
 - Seguridad confirmada: claves nuevas con mínimo 12 caracteres y login limitado a 10 intentos/minuto por IP, sin bloqueo de cuenta. Pruebas xUnit locales 120/120; CI del nuevo commit pendiente.
+- Backend commit `33e2499` Action [`45096399172`](https://github.com/Paul1578/Back_GPS/actions/runs/45096399172) pasó Release, xUnit **120/120**, smoke HTTP/MySQL de aislamiento tenant y concurrencia, cleanup correcto.
 - Data Protection persistente/compartido para reinicios y réplicas sigue pendiente de configuración y prueba de despliegue. Móvil nativo aplazado; SMTP real depende de credenciales.
 
 - Corregida posible actualización perdida entre edición del perfil Driver y asignación Vehicle: el comando de edición bloquea/relee la fila antes de guardar. Release xUnit **113/113** local y Action `45084368819` success, incluida regresión interleaving y smoke HTTP/MySQL.

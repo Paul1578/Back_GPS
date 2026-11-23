@@ -10,6 +10,7 @@
 - Auditoría backend read-only no encontró defecto en root-only ni aislamiento tenant. Quedan pendientes prueba de ciclo logístico de varias paradas y configuración/prueba de Data Protection persistente.
 - Decisión confirmada: se permiten traslados sin recogida/entrega; la prueba de ciclo domain valida inicio y finalización.
 - Decisión confirmada: claves nuevas de mínimo 12 caracteres y 10 intentos de login por minuto/IP, sin bloquear cuentas. Código y pruebas locales agregados; publicar ambos branches y verificar Actions.
+- Commit Backend `33e2499` pasó Action `45096399172`: build Release, xUnit 120/120, aislamiento tenant y concurrencia Vehicle/Driver por HTTP/MySQL, limpieza correcta.
 - Siguiente paso: terminar CI de los cambios de esta fase; después completar criterios funcionales restantes y seguir auditando CRUD, seguridad y responsive.
 - Misión sigue abierta. SMTP requiere credenciales externas; Data Protection PFX/key ring requiere infraestructura persistente; app móvil nativa aplazada.
 - E2E Front Action `45088879212` detectó que root autenticado no veía opción Admin aunque la API aceptaba la política. Se agregó `isRootAccount` backend-derived a `/Auth/me`, consumido por Front. Backend Action `45090274537` pasó: 113/113, build limpio, smoke HTTP/MySQL, concurrencia y cleanup. Front Action `45090273209` aún valida navegador integrado.

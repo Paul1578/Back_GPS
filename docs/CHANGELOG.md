@@ -485,3 +485,8 @@
 
 - El smoke crea una ruta asignada y valida como Driver listado/detalle, inicio, escritura/lectura GPS y cancelación. MySQL confirma ruta `Cancelled`, vehículo `Available`, posición y asignación intactos.
 - Se conservan las denegaciones sobre flota, asignación ajena y ruta ajena. La primera corrida tuvo una expectativa antigua de lista vacía; corregida a aislamiento por conductor. Repetición efímera completa exit 0; Action posterior pendiente.
+# 2026-11-23 — Política Admin raíz y perfil sincronizado
+
+- Restringido crear/promover Admin a la cuenta raíz del tenant; smoke HTTP/MySQL prueba los 403 de Admin delegado y el camino permitido de raíz.
+- Ampliado smoke positivo de edición de perfil: HTTP/GET y persistencia sincronizan User y Driver enlazados.
+- Backend Action `45088129188`: build Release limpio, 113/113 xUnit, aislamiento HTTP/MySQL, concurrencia y cleanup exitosos.

@@ -1254,3 +1254,10 @@ Cada cambio de API debe incluir validación de compilación, migraciones si apli
 - La prueba positiva nueva del comando `AssignDriverToVehicle` falló con `NullReferenceException` en la consulta de rutas activas. `FakeUnitOfWork.Routes` era null; los tests negativos existentes rechazaban el vehículo antes de llegar a esa dependencia y ocultaban la omisión.
 - Se agregó `FakeRoutes` vacío al fake de UoW para cubrir el camino exitoso y permitir verificar `VehicleId` y Commit. Repetir la suite Release completa.
 - Prevención: al probar caminos positivos, proporcionar todas las dependencias alcanzadas por el flujo completo; no inferirlo desde tests negativos que retornan temprano.
+# 2026-11-23 — Smoke de creación Admin no alcanzaba autorización
+
+- **Síntoma:** Action `45087881487` falló en el smoke de `POST /Users` al esperar autorización, pero HTTP respondió 400.
+- **Causa:** el nuevo fixture intentaba crear Admin sin el campo obligatorio `Password`; validación del request ocurría antes de comprobar el permiso, por lo que el caso no probaba la política 403.
+- **Solución:** el smoke ahora envía una contraseña aleatoria exclusiva de prueba y verifica 403, ausencia de cuenta/rol en MySQL y posterior promoción permitida desde raíz.
+- **Verificación:** Action `45088129188` pasó: Release build (0 warnings/errors), 113/113 xUnit, smoke HTTP/MySQL, concurrencia y cleanup.
+- **Prevención:** los casos negativos de autorización deben usar cuerpos válidos y comprobar estado persistido/no mutación; una respuesta 4xx cualquiera no demuestra que se haya ejercido el control esperado.

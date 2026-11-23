@@ -533,3 +533,11 @@ Nota de actualización: algunos resultados históricos de registro público más
 
 - Login ahora responde uniformemente ante email inexistente, password incorrecto, cuenta inactiva o pendiente; BCrypt usa hash señuelo para el usuario inexistente. Registro público responde igual con email nuevo/duplicado, sin emitir sesión; Front lleva a Login.
 - Backend Action `45066082294` pasó tras añadir hash antes del pre-check y piso 500 ms: build, xUnit **107/107**, HTTP/MySQL para email nuevo/duplicado, tiempos mínimos y cleanup.
+# Actualización 2026-11-23 — Política Admin y perfil
+
+- Confirmada la regla de negocio: sólo la cuenta raíz puede crear o promover usuarios a Admin. Backend aplica 403 a Admin delegado en `POST /Users`, `PUT /Users/{id}/role` y alias `POST /Users/{id}/roles/{name}`. La raíz conserva la operación.
+- Prueba HTTP/MySQL desechable verifica denegaciones sin filas/roles parciales y promoción permitida por raíz. También cubre `PUT /Users/{id}/profile` y sincronización persistida del Driver vinculado.
+- Backend Action `45088129188`: Release build sin warnings/errores; 113/113 xUnit; smoke tenant HTTP/MySQL, concurrencia de asignaciones y cleanup correcto.
+- Hallazgo de prueba corregido: primer Action `45087881487` recibió 400 porque el POST de fixture Admin omitía Password; la prueba ahora proporciona Password y verifica el 403 de autorización. Ver `ERROR_LOG.md`.
+- Front Action `45086827516`: 39/39 E2E y 1/1 responsive, audit/lint/build y cleanup. Revisar UX de selección de rol para que refleje la política de cuenta raíz.
+- Misión no terminada; continuar CRUD, permisos y responsive. App nativa móvil pospuesta. Envío SMTP real y provisión productiva de PFX/key ring son limitaciones externas.

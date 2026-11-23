@@ -589,3 +589,10 @@ La invitación envía sólo el enlace de activación; el usuario fija su contras
 - La primera ejecución reveló una aserción demasiado amplia que incluía una ruta previamente modificada por Manager; quedó acotada al Vehicle/Driver bajo prueba (ver `ERROR_LOG.md`). Smoke local completo API + MySQL 8 descartables pasó y limpió sus fixtures.
 - Action `45080063668` para `fa16d05`: build Release, xUnit **111/111**, smoke HTTP/MySQL tenant, concurrencia y cleanup, todo success.
 - xUnit añadido: `AssignDriverToVehicleTests.Execute_AssignsVehicleToActiveUnlinkedDriverAndCommits` cubre comando positivo sin UserId, asignación de VehicleId y Commit. Release completo **112/112** pasa localmente; Action de esta ampliación pendiente.
+# Validación 2026-11-23 — Admin raíz y perfil de miembro
+
+- Action [45088129188](https://github.com/Paul1578/Back_GPS/actions/runs/45088129188): Release build, 0 warnings/0 errors; xUnit 113/113, 0 fallidas/omitidas.
+- Smoke ejecutado contra API y MySQL efímeros: Admin raíz crea Admin delegado y promueve User; Admin delegado recibe 403 al crear Admin, promover por PUT y promover por alias POST. La consulta SQL confirma ausencia de cuentas/roles parciales y el cleanup confirma cero Admin delegado de prueba.
+- Smoke de perfil: PUT HTTP exitoso, respuesta/GET de Driver reflejan nombre actualizado y MySQL conserva nombres sincronizados, propietario y vínculo único User-Driver.
+- La misma Action pasó aislamiento por tenant, permisos de roles, ciclos operativos, prueba de concurrencia MySQL y cleanup.
+- Error previo: Action 45087881487 no llegó a comprobar autorización en creación porque el fixture omitía Password y recibió 400 de validación; corregido en `9e43bcd`, repetición satisfactoria. Detalle en `ERROR_LOG.md`.

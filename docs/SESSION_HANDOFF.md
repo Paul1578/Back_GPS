@@ -32,6 +32,15 @@
 
 # El estado vigente se mantiene al inicio de este handoff; las notas posteriores son registro histórico.
 
+## Estado vigente — política de Admin y edición de perfil validadas — 2026-11-23
+
+- Ramas activas: Backend `chore/stabilize-fleet-platform` en `9e43bcd`; Front `refactor/route-builder` en `99ec46b`. Ambas limpias y sincronizadas con origin; `main` intacta.
+- Usuario definió que sólo la cuenta raíz de la empresa puede crear/promover a Admin. La API ya deniega con 403 la creación y las dos rutas de promoción cuando la petición viene de Admin delegado.
+- Action Backend [`45088129188`](https://github.com/Paul1578/Back_GPS/actions/runs/45088129188) pasó: Release build 0 warnings/0 errors, xUnit 113/113, smoke real HTTP/MySQL de aislamiento/roles/flota, concurrencia de asignaciones y cleanup. El smoke valida Admin delegado sin cambios SQL, promoción desde raíz y edición de perfil con User/Driver enlazados y persistencia sincronizada.
+- Action anterior `45087881487` falló por el fixture de smoke de creación Admin que omitía el campo requerido Password y obtenía 400 antes de autorización. Se añadió contraseña de prueba; la repetición `45088129188` pasó. Causa y prevención registradas en `ERROR_LOG.md`.
+- Siguientes pasos: revisar y alinear UX Front para no ofrecer creación/promoción Admin a Admin delegado; continuar la matriz de flujos CRUD, permisos y responsive de criterios alcanzables; actualizar estado con cada Action.
+- Misión global continúa abierta. App nativa móvil quedó aplazada por el usuario; SMTP real y configuración productiva PFX/key ring requieren credenciales/infraestructura externas.
+
 ## Hallazgo y corrección — cerrar parada sin evidencia — 2026-11-22
 
 - Defecto confirmado: HTTP permitía `Pending→Skipped` y `InProgress→Completed` sin evidencia; luego la ruta no podía cerrarse y tampoco se podía añadir evidencia.

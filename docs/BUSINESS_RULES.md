@@ -116,3 +116,8 @@ Cambiar, restablecer o activar una contraseña incrementa `User.TokenVersion`, r
 
 - Desasignar o desactivar un Driver, o cambiar su rol a uno no operativo, no debe dejar rutas activas Pending/InProgress sin asignación válida. El backend rechaza estas operaciones hasta cancelar/completar las rutas.
 - Desactivar una cuenta User vinculada a un Driver también se rechaza mientras ese Driver tenga rutas activas Pending/InProgress; evita dejar operaciones pendientes bloqueadas por la cuenta inactiva.
+# Otorgamiento del rol Admin — decisión 2026-11-23
+
+- Sólo la cuenta raíz de la empresa puede crear o promover usuarios al rol Admin. Un Admin delegado puede administrar los demás roles según permisos vigentes, pero no elevar a Admin.
+- Aplicación backend: `POST /Users`, `PUT /Users/{id}/role` y alias `POST /Users/{id}/roles/{name}` responden 403 si el actor no es la cuenta raíz y el rol destino es Admin.
+- Verificado en Action `45088129188` con llamadas HTTP y comprobaciones MySQL de no mutación; la raíz sí pudo crear y promover.

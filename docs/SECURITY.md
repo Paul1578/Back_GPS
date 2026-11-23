@@ -198,3 +198,8 @@ Este proceso invalida los emails/token de recuperación que estén pendientes o 
 - xUnit y smoke HTTP/MySQL se añadieron; CI pendiente. La mitigación reduce diferencias observables pero no reemplaza una medición temporal bajo carga.
 - Registro público también fue ajustado: email nuevo y duplicado devuelven el mismo 200/payload neutral. BCrypt corre antes de la consulta duplicada y el controlador aplica un piso de 500 ms a la respuesta. El frontend ya no auto-inicia sesión; solicita que el usuario ingrese sus credenciales en Login. Backend Action `45066082294` verificó respuestas iguales, piso >=450 ms en smoke y cleanup.
 - La espera reduce enumeración temporal, pero la carga/latencia externa del almacenamiento y red no puede igualarse exactamente; no afirmar garantía de tiempo constante.
+# Política para asignar Admin — 2026-11-23
+
+- Sólo la cuenta raíz del tenant puede crear o promover otro usuario a Admin. Admin delegado recibe 403 al crear usuarios con rol Admin, actualizar rol mediante PUT o usar el alias POST de roles.
+- La raíz se identifica con la identidad autenticada comparada contra el `owner_id` firmado; no se acepta un identificador de propietario enviado por el cliente como autoridad.
+- Action `45088129188` validó los casos permitidos/denegados mediante HTTP real y verificó en MySQL que las denegaciones no creen cuentas ni roles parciales; cleanup confirma que no quedaron fixtures.

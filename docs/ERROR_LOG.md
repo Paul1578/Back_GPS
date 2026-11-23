@@ -1268,4 +1268,4 @@ Cada cambio de API debe incluir validación de compilación, migraciones si apli
 - **Causa:** el Front infería la condición raíz desde claims JWT, mientras el contrato de `/Auth/me` no exponía ese dato para mapear la identidad de forma estable.
 - **Solución:** `MeResponseDto` incluye `isRootAccount`, calculado por backend como `OwnerUserId` nulo o igual al propio ID; el Front prioriza el booleano explícito de `/Auth/me`. Smoke HTTP verifica true para root y false para Admin delegado.
 - **Prevención:** los atributos de cuenta que gobiernan opciones sensibles deben venir en el contrato autenticado desde el backend, no depender sólo de decodificar token en UI.
-- **Verificación:** Action fallida preservó traza; backend xUnit/build y smoke tras el cambio, y Front E2E integrado del SHA siguiente pendientes.
+- **Verificación:** Action [45090274537](https://github.com/Paul1578/Back_GPS/actions/runs/45090274537) pasó: build limpio, 113/113 xUnit, smoke HTTP/MySQL (incluye los dos valores root/delegado), concurrencia y cleanup. Front integrado está en Action `45090273209`.

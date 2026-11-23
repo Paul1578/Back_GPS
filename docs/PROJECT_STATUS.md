@@ -546,5 +546,5 @@ Nota de actualización: algunos resultados históricos de registro público más
 - Hallazgo de prueba corregido: primer Action `45087881487` recibió 400 porque el POST de fixture Admin omitía Password; la prueba ahora proporciona Password y verifica el 403 de autorización. Ver `ERROR_LOG.md`.
 - Front Action `45086827516`: 39/39 E2E y 1/1 responsive, audit/lint/build y cleanup. Revisar UX de selección de rol para que refleje la política de cuenta raíz.
 - Misión no terminada; continuar CRUD, permisos y responsive. App nativa móvil pospuesta. Envío SMTP real y provisión productiva de PFX/key ring son limitaciones externas.
-- Corrección en curso tras integración Front: `/Auth/me` ahora devuelve `isRootAccount` calculado por backend; smoke exige true para raíz y false para Admin delegado. Release build/tests y Actions posteriores a este cambio pendientes.
-- Validación local del contrato: Release xUnit **113/113**, build **0 warnings/0 errors**, bash syntax y diff-check pasan; smoke HTTP/MySQL aún pendiente de Action.
+- `/Auth/me` devuelve `isRootAccount` calculado por backend; smoke exige true para raíz y false para Admin delegado. Action `45090274537` pasó Release build sin warnings, xUnit 113/113, HTTP/MySQL, concurrencia y cleanup.
+- La Action Front `45090273209` sigue ejecutando E2E integrado contra este backend; esperar para confirmar la opción de rol de raíz en navegador real.

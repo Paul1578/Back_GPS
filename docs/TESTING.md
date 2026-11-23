@@ -596,5 +596,5 @@ La invitación envía sólo el enlace de activación; el usuario fija su contras
 - Smoke de perfil: PUT HTTP exitoso, respuesta/GET de Driver reflejan nombre actualizado y MySQL conserva nombres sincronizados, propietario y vínculo único User-Driver.
 - La misma Action pasó aislamiento por tenant, permisos de roles, ciclos operativos, prueba de concurrencia MySQL y cleanup.
 - Error previo: Action 45087881487 no llegó a comprobar autorización en creación porque el fixture omitía Password y recibió 400 de validación; corregido en `9e43bcd`, repetición satisfactoria. Detalle en `ERROR_LOG.md`.
-- Contrato `GET /Auth/me` ampliado con `isRootAccount`; smoke espera true para la cuenta propietaria y false para Admin delegado. Repetición backend posterior a esta ampliación pendiente.
-- Release xUnit **113/113**, build **0 warnings/0 errors**, `bash -n scripts/smoke-tenant-http.sh` y `git diff --check` pasan localmente. El test del contrato y la persistencia deben confirmarse en MySQL HTTP por Action.
+- Contrato `GET /Auth/me` ampliado con `isRootAccount`; smoke exige true para la cuenta propietaria y false para Admin delegado.
+- Action [45090274537](https://github.com/Paul1578/Back_GPS/actions/runs/45090274537) pasó: Release build 0 warnings/0 errors, xUnit 113/113, smoke tenant HTTP/MySQL, concurrencia y cleanup. Local también pasan `bash -n` y diff-check.

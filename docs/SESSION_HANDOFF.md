@@ -5,6 +5,7 @@
 - QA read-only encontró que existe el lock compartido pero faltaba probar inicio concurrente de ruta vs. poner vehículo en Maintenance.
 - Añadido test SQLite de conflicto sin mutaciones y ampliado `scripts/smoke-route-concurrency.sh` con las dos peticiones simultáneas y lectura SQL de los estados finales. Test enfocado **1/1**, suite Release **138/138**, build **0 advertencias/0 errores**, bash syntax y diff-check pasan; smoke integrado y Action pendientes.
 - Un comando de lectura apuntó a `ChangeRouteStatusCommandTests.cs`, que no existe; los casos viven en `CreateRouteCommandTests.cs`. Quedó anotado en `ERROR_LOG.md`.
+- Primera Action de la carrera falló antes del escenario porque la placa fixture combinada excedía 20 caracteres (HTTP 400); sufijo ajustado a `MRV`, causa y prevención anotadas. Repetir CI para comprobar el flujo.
 
 ## Cierre de ciclo multi-operación
 

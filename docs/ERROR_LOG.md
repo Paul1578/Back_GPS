@@ -16,6 +16,12 @@
 - Solución: localizar pruebas con `rg -n` y leer el archivo real `BackEnd_Gps.Tests/CreateRouteCommandTests.cs`.
 - Prevención: buscar primero el nombre del método o símbolo cuando el archivo de tests no coincide con el nombre del command.
 
+## 2026-11-23 — Smoke concurrente excedió longitud máxima de placa — CORREGIDO
+
+- Backend Action `45142003159` pasó build, xUnit y aislamiento HTTP/MySQL, pero el fixture nuevo falló al crear su vehículo: el nombre `maintenance_race_vehicle` concatenado al prefijo QA excedió el máximo de 20 caracteres de `Plate`; la API respondió 400 antes del caso de concurrencia.
+- Solución: usar el sufijo corto `MRV`, manteniendo el prefijo aleatorio que aísla y limpia los fixtures.
+- Prevención: respetar longitudes de campos de negocio en nombres de fixtures (placa ≤20); validar los payloads de humo con las restricciones DTO antes de agregar sufijos descriptivos largos.
+
 # 2026-11-22 — Fixture del E2E Manager mapa compartía rol y no se limpiaba tras timeout — CORREGIDO LOCALMENTE
 
 - Front Actions `45084368342`/`45084699175` pasaron 38/39; el único fallo fue el E2E de mapa que reutilizaba una cuenta Driver, cambiaba su rol y podía expirar antes de restaurarlo. El siguiente retry veía `Manager` y fallaba esperando `Driver`; también quedaban ruta y vehículo QA.

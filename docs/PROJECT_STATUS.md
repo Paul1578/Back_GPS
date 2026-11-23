@@ -2,8 +2,8 @@
 
 ## Estado vigente
 
-- Ramas activas separadas de `main`: Backend `chore/stabilize-fleet-platform` HEAD `585fcb0`; Front `refactor/route-builder` HEAD `cd7925a` (tests de ciclo auth locales sin publicar). `main` intacta.
-- Backend Action [`45110342238`](https://github.com/Paul1578/Back_GPS/actions/runs/45110342238) pasó Release build, xUnit **135/135**, smoke tenant HTTP/MySQL, concurrencia y cleanup. Front Action [`45109985362`](https://github.com/Paul1578/Front_gpsR/actions/runs/45109985362) pasó audit/lint/build, responsive **1/1**, API/MySQL **46/46** y cleanup.
+- Ramas activas separadas de `main`: Backend `chore/stabilize-fleet-platform` HEAD `96b50cc`; Front `refactor/route-builder` HEAD `f859b19` (Action en curso). `main` intacta.
+- Backend Action [`45112158616`](https://github.com/Paul1578/Back_GPS/actions/runs/45112158616) pasó Release build, xUnit **135/135**, smoke tenant HTTP/MySQL, concurrencia y cleanup. Front Action [`45112755472`](https://github.com/Paul1578/Front_gpsR/actions/runs/45112755472) pasó audit/lint/build, responsive **1/1**, API/MySQL **49/49** y cleanup; confirmó reset/activación desde la UI con tokens efímeros.
 - Rutas: múltiples paradas; operación pickup, delivery o ambas; se permiten traslados sin operación. Front E2E integrado `45107030228` recorre ruta completa con dos paradas; Backend Action `45108549336` verifica ciclo HTTP/MySQL con pickup, delivery y ambas, evidencia persistida en cada parada, ruta Completed/EndedAt, vehículo Available y cleanup limpio.
 - Front `f71ae7d` añade un E2E que comprueba que el Dashboard no muestra ceros/actividad vacía durante carga, y deriva el puerto del servidor Playwright desde `PLAYWRIGHT_BASE_URL`; prueba focal local 4/4, discovery 46, lint/build correctos.
 - Sólo la cuenta raíz puede crear/promover Admin. Password nuevo mínimo 12; login 10/minuto/IP; recuperación 5/10 minutos/IP, sin bloqueo de cuenta. Token reset usa 256 bits; TTL predeterminado 60 minutos y rango 1–1440. Production requiere URLs absolutas HTTPS para reset/activación.
@@ -11,9 +11,9 @@
 - Pendientes externos de producción: SMTP actualizado; rate limiting distribuido y configuración segura de IP detrás de proxies; persistencia/rotación del key ring Data Protection. No se probó despliegue productivo.
 - La misión global permanece abierta para continuar la auditoría de funcionalidad y cobertura UI/roles/responsive. La app móvil nativa se pospuso por decisión del usuario.
 - Auditoría estática independiente: verificar en la DB local/copia de migración que no haya Admins sin `OwnerUserId`, filas de `UserRoles` múltiples por usuario, ni rutas sin propietario antes de migrar; código solo no permite clasificar con seguridad cuentas antiguas. La consulta local no pudo autenticarse con la contraseña de `.env`; no se modificaron datos. Detalle y SQL de verificación en `SECURITY.md`/`ERROR_LOG.md`.
-- Brechas de evidencia Front aún por cubrir: UI real de recuperación/restablecimiento/activación, descarga de exportación, persistencia del tema y responsive de autenticación secundaria. Backend smoke ya verifica la política root-only por HTTP/MySQL; el test Front de opciones delegado es simulado. Revisar handoff Front y no confundir falta de E2E con bug confirmado.
-- Backend `585fcb0`: registro público limitado a cinco solicitudes/10 min/IP, también en Development loopback. Release **135/135**, middleware focal **8/8**, build **0 warnings/0 errors** y Action/smoke integrado exitosos.
-- Lote local: el runner prepara usuarios QA de reset/activación y tokens aleatorios con sólo SHA-256 en PasswordResetTokens de MySQL descartable; verifica exactamente 2 hashes. E2E Front recorre formularios reales, password nuevo/login, clave previa rechazada y token consumido. `bash -n`, Front lint/build/discovery pasan; necesita CI integrada.
+- Brechas de evidencia Front: la persistencia del tema se agregó en `f859b19` y su Action está en curso; exportación, responsive secundario y reset/activación ya pasaron E2E. Backend smoke verifica root-only por HTTP/MySQL; la prueba Front de opciones Admin delegado es simulada. Revisar handoff Front, no confundir falta de E2E con bug confirmado.
+- Backend `96b50cc`: registro público limitado a cinco solicitudes/10 min/IP, también en Development loopback. Release **135/135**, middleware focal **8/8**, build **0 warnings/0 errors** y Action/smoke integrado exitosos.
+- Runner prepara usuarios QA de reset/activación y tokens aleatorios; sólo persiste hashes SHA-256 en MySQL descartable y valida exactamente dos fixtures. `bash -n` correcto. Front Action `45112755472` ejecutó ambos recorridos contra esa API/DB real, completó **49/49** y limpió fixtures.
 
 ## Historial de auditoría y fases anteriores
 

@@ -584,11 +584,11 @@ La invitación envía sólo el enlace de activación; el usuario fija su contras
 - La primera invocación de `/usr/bin/dotnet` terminó exit 131 por falta de versiones en `/usr/lib64/dotnet/host/fxr`; usar el SDK 8 de `~/.dotnet` resolvió el problema sin cambiar la instalación global.
 - Backend commit `585fcb0`, Action [`45110342238`](https://github.com/Paul1578/Back_GPS/actions/runs/45110342238): build Release, suite xUnit **135/135**, smoke tenant HTTP/MySQL, concurrencia y cleanup success.
 
-## Fixtures E2E UI de reset y activación — CI pendiente
+## Fixtures E2E UI de reset y activación — VALIDADO EN CI
 
 - El runner crea cuentas QA dedicadas y tokens aleatorios de 32 bytes; persiste sólo SHA-256 en `PasswordResetTokens` de la DB permitida (`fletflow_ci*` en CI). Comprueba la existencia exacta de dos tokens.
 - Front E2E ejecuta los forms reales de Reset/Activate, valida 200, login con password nueva, rechazo de la anterior y 401 al reutilizar el token. SMTP no se simula como entregado.
-- `bash -n scripts/run-e2e-local.sh`, Front lint/build/discovery pasan. Publicar runner Backend antes del Front y validar la CI integrada.
+- Front Action [`45112755472`](https://github.com/Paul1578/Front_gpsR/actions/runs/45112755472) ejecutó los formularios reales contra API/MySQL efímeros: clave nueva válida, anterior rechazada y token de un solo uso responde 401 al replay. Suite **49/49**, cleanup exitoso y SMTP no simulado.
 - Smoke de registro mide ambas respuestas >=450 ms (controlador fija piso de 500 ms); no certifica igualdad temporal bajo carga externa.
 - Backend Action `45065747053` pasó build/xUnit **107/107**, alta nueva/duplicada y cleanup, antes de la adición del piso temporal. Validar esa medición en la siguiente Action.
 - Backend Action `45066082294` pasó build/xUnit **107/107**, smoke HTTP/MySQL de alta nueva/duplicada, cuerpo neutral, tiempo >=450 ms y cleanup.

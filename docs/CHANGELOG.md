@@ -511,7 +511,7 @@
 ## 2026-11-23 — Fixtures de E2E para reset y activación
 
 - El runner crea dos usuarios de prueba aislados, tokens impredecibles y sus SHA-256 dentro de la base desechable; verifica que ambos estén presentes antes de correr Playwright.
-- Front E2E usa reset/activación reales, confirma nueva clave, rechazo de clave anterior y consumo de token. `bash -n` pasa; Actions integradas pendientes.
+- Front Action [`45112755472`](https://github.com/Paul1578/Front_gpsR/actions/runs/45112755472) pasó **49/49**: reset/activación reales, nueva clave válida, anterior rechazada y token de un solo uso; API/MySQL descartables y cleanup correcto. No se envió correo.
 ## 2026-11-23 — Ciclo HTTP/MySQL de ruta con múltiples operaciones — VERIFICADO
 
 - Smoke Logistics recorre en una misma ruta una recogida, entrega y parada combinada; guarda evidencia y completa cada una en secuencia.

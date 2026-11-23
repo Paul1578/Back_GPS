@@ -146,6 +146,7 @@ namespace fletflow.Infrastructure.Services
                 Username = user.Username,
                 Email = user.Email,
                 IsActive = user.IsActive,
+                IsRootAccount = user.OwnerUserId is null || user.OwnerUserId == user.Id,
                 Roles = user.UserRoles.Select(ur => ur.Role.Name.Trim()).ToList(),
                 DriverId = driver?.Id
             };

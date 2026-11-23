@@ -8,6 +8,7 @@
 - Front corrigió UX de rol root-only. Acción Front `45088879212` comprueba SHA `5784b36`, previo al test E2E delegado agregado después; suite local actual 40 tests descubiertos, spec `team-management-load-errors` 10/10.
 - Siguiente paso: publicar el E2E delegado de alta/promoción, esperar CI integrada, registrar resultados; luego seguir matriz CRUD/responsive alcanzable.
 - Misión sigue abierta. SMTP requiere credenciales externas; Data Protection PFX/key ring requiere infraestructura persistente; app móvil nativa aplazada.
+- E2E Front Action `45088879212` detectó que root autenticado no veía opción Admin aunque la API aceptaba la política. Se agregó `isRootAccount` backend-derived a `/Auth/me`, consumido por Front; smoke root/delegado agregado. Pruebas integradas de ambos repos pendientes para este fix.
 
 ## Estado vigente — actualización concurrente Driver
 

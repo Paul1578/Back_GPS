@@ -1261,3 +1261,11 @@ Cada cambio de API debe incluir validación de compilación, migraciones si apli
 - **Solución:** el smoke ahora envía una contraseña aleatoria exclusiva de prueba y verifica 403, ausencia de cuenta/rol en MySQL y posterior promoción permitida desde raíz.
 - **Verificación:** Action `45088129188` pasó: Release build (0 warnings/errors), 113/113 xUnit, smoke HTTP/MySQL, concurrencia y cleanup.
 - **Prevención:** los casos negativos de autorización deben usar cuerpos válidos y comprobar estado persistido/no mutación; una respuesta 4xx cualquiera no demuestra que se haya ejercido el control esperado.
+
+# 2026-11-23 — `/Auth/me` no declaraba si la cuenta era raíz
+
+- **Síntoma:** Front Action `45088879212` falló en E2E autenticado: login y `/Auth/me` daban 200, pero Gestión de Equipo ocultaba “Gerente” al Admin raíz.
+- **Causa:** el Front infería la condición raíz desde claims JWT, mientras el contrato de `/Auth/me` no exponía ese dato para mapear la identidad de forma estable.
+- **Solución:** `MeResponseDto` incluye `isRootAccount`, calculado por backend como `OwnerUserId` nulo o igual al propio ID; el Front prioriza el booleano explícito de `/Auth/me`. Smoke HTTP verifica true para root y false para Admin delegado.
+- **Prevención:** los atributos de cuenta que gobiernan opciones sensibles deben venir en el contrato autenticado desde el backend, no depender sólo de decodificar token en UI.
+- **Verificación:** Action fallida preservó traza; backend xUnit/build y smoke tras el cambio, y Front E2E integrado del SHA siguiente pendientes.

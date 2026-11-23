@@ -490,3 +490,4 @@
 - Restringido crear/promover Admin a la cuenta raíz del tenant; smoke HTTP/MySQL prueba los 403 de Admin delegado y el camino permitido de raíz.
 - Ampliado smoke positivo de edición de perfil: HTTP/GET y persistencia sincronizan User y Driver enlazados.
 - Backend Action `45088129188`: build Release limpio, 113/113 xUnit, aislamiento HTTP/MySQL, concurrencia y cleanup exitosos.
+- `/Auth/me` expone `isRootAccount` derivado de la relación de propiedad para coherencia con las opciones root-only de Gestión de Equipo.

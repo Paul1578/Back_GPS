@@ -442,6 +442,11 @@ assert_manager_crud_fixture_state() {
 request POST /Auth/login "$(jq -nc --arg email "$admin_email" --arg password "$admin_password" '{email:$email,password:$password}')" ""
 expect_status 200 "Login tenant A"
 token="$(jq -er '.token // .accessToken' "$work_dir/response.json")"
+request GET /Auth/me "" "$token"
+expect_status 200 "Consultar identidad raíz tenant A"
+jq -e '.isRootAccount == true' "$work_dir/response.json" >/dev/null || {
+  echo "La API no identificó como raíz a la cuenta propietaria." >&2; cat "$work_dir/response.json" >&2; exit 1;
+}
 
 request GET /RoutesPRUEBA/admin "" "$token"
 expect_status 404 "No publicar endpoints de rutas de prueba fuera del producto"
@@ -1212,6 +1217,11 @@ mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_us
 request POST /Auth/login "$(jq -nc --arg email "$delegated_admin_email" --arg password "$delegated_admin_password" '{email:$email,password:$password}')" ""
 expect_status 200 "Login del Admin delegado QA"
 delegated_admin_token="$(jq -er '.token // .accessToken' "$work_dir/response.json")"
+request GET /Auth/me "" "$delegated_admin_token"
+expect_status 200 "Consultar identidad Admin delegado"
+jq -e '.isRootAccount == false' "$work_dir/response.json" >/dev/null || {
+  echo "La API identificó incorrectamente como raíz al Admin delegado." >&2; cat "$work_dir/response.json" >&2; exit 1;
+}
 
 denied_admin_email="fletflow.e2e.admin.denied.$suffix@example.test"
 denied_admin_password="$(openssl rand -hex 24)"

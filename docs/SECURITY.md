@@ -203,3 +203,4 @@ Este proceso invalida los emails/token de recuperación que estén pendientes o 
 - Sólo la cuenta raíz del tenant puede crear o promover otro usuario a Admin. Admin delegado recibe 403 al crear usuarios con rol Admin, actualizar rol mediante PUT o usar el alias POST de roles.
 - La raíz se identifica con la identidad autenticada comparada contra el `owner_id` firmado; no se acepta un identificador de propietario enviado por el cliente como autoridad.
 - Action `45088129188` validó los casos permitidos/denegados mediante HTTP real y verificó en MySQL que las denegaciones no creen cuentas ni roles parciales; cleanup confirma que no quedaron fixtures.
+- `GET /Auth/me` publica `isRootAccount` derivado de la entidad autenticada sólo para presentación; la autorización de operaciones sigue validada en backend.

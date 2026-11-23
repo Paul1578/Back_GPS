@@ -17,6 +17,64 @@ namespace BackEnd_Gps.Tests;
 public class CreateRouteCommandTests
 {
     [Fact]
+    public async Task CreateAndUpdate_AllowAdjacentSchedulesAndRejectOverlapsWithoutChangingRoute()
+    {
+        var ownerId = Guid.NewGuid();
+        using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        var options = new DbContextOptionsBuilder<AppDbContext>().UseSqlite(connection).Options;
+        var http = new DefaultHttpContext
+        {
+            User = new ClaimsPrincipal(new ClaimsIdentity([new Claim("owner_id", ownerId.ToString())], "test"))
+        };
+        await using var context = new AppDbContext(options, new HttpContextAccessor { HttpContext = http });
+        await context.Database.EnsureCreatedAsync();
+
+        var vehicles = new VehicleRepository(context);
+        var drivers = new DriverRepository(context);
+        var routes = new RouteRepository(context);
+        var vehicle = Vehicle.Create("QA-SCHEDULE", "Test", "Van", 2025, null);
+        var driver = Driver.Create("Schedule", "Driver", "QA-SCHEDULE-DRIVER", "0990000005");
+        await vehicles.AddAsync(vehicle);
+        await drivers.AddAsync(driver);
+        await context.SaveChangesAsync();
+
+        var uow = new UnitOfWork(context, null!, null!, null!, null!, vehicles, drivers, routes, null!);
+        var create = new CreateRouteCommand(uow, routes, vehicles, drivers);
+        var update = new UpdateRouteCommand(uow, routes, vehicles, drivers);
+        var points = new[]
+        {
+            RoutePoint.Create(-0.2, -78.5, "Origen"),
+            RoutePoint.Create(-0.21, -78.51, "Destino")
+        };
+        var firstStart = new DateTime(2026, 11, 23, 9, 0, 0, DateTimeKind.Utc);
+        var firstEnd = firstStart.AddHours(1);
+        var secondEnd = firstEnd.AddHours(1);
+
+        await create.Execute(vehicle.Id, driver.Id, "Primera ruta", points, null, firstStart, firstEnd);
+        var adjacent = await create.Execute(vehicle.Id, driver.Id, "Ruta contigua", points, null, firstEnd, secondEnd);
+
+        await Assert.ThrowsAsync<BusinessConflictException>(() => create.Execute(
+            vehicle.Id, driver.Id, "Ruta solapada", points, null, firstEnd.AddMinutes(-1), secondEnd));
+        await Assert.ThrowsAsync<BusinessConflictException>(() => create.Execute(
+            vehicle.Id, driver.Id, "Horario incompleto", points, null, null, null));
+        Assert.Equal(2, (await routes.GetAllAsync()).Count);
+
+        var shiftedStart = secondEnd;
+        var shiftedEnd = shiftedStart.AddHours(1);
+        await update.Execute(
+            adjacent.Id, vehicle.Id, driver.Id, "Ruta contigua editada", points, null, shiftedStart, shiftedEnd);
+
+        await Assert.ThrowsAsync<BusinessConflictException>(() => update.Execute(
+            adjacent.Id, vehicle.Id, driver.Id, "Edición solapada", points, null, firstEnd.AddMinutes(-1), shiftedEnd));
+
+        var persisted = await routes.GetByIdAsync(adjacent.Id);
+        Assert.Equal("Ruta contigua editada", persisted!.Name);
+        Assert.Equal(shiftedStart, persisted.PlannedStart);
+        Assert.Equal(shiftedEnd, persisted.PlannedEnd);
+    }
+
+    [Fact]
     public async Task Update_RejectsDriverWithInactiveLinkedUser_WithoutChangingRouteOrVehicle()
     {
         var ownerId = Guid.NewGuid();

@@ -2,8 +2,8 @@
 
 ## Ramas y evidencia integrada
 
-- Backend `chore/stabilize-fleet-platform`: código probado `7eab085` pasó Action [`45142742926`](https://github.com/Paul1578/Back_GPS/actions/runs/45142742926), Release, xUnit **138/138**, tenant/concurrencia/mantenimiento/login y cleanup. Docs `4b7bc13` pasó también Action [`45143054465`](https://github.com/Paul1578/Back_GPS/actions/runs/45143054465).
-- Front `refactor/route-builder`: código probado `e37cfeb` pasó Action [`45142003636`](https://github.com/Paul1578/Front_gpsR/actions/runs/45142003636), 51/51 E2E, responsive 1/1 y cleanup; docs actuales `73435a2`.
+- Backend `chore/stabilize-fleet-platform`: docs HEAD `d52165d`, código probado `7eab085`; Action [`45143585970`](https://github.com/Paul1578/Back_GPS/actions/runs/45143585970) pasó Release, xUnit **138/138**, tenant/concurrencia/mantenimiento/login y cleanup.
+- Front `refactor/route-builder`: docs HEAD `2b3b523`, código funcional `e37cfeb`; Action [`45143586336`](https://github.com/Paul1578/Front_gpsR/actions/runs/45143586336) pasó 51/51 E2E, responsive 1/1, audit/lint/build, Backend Release/xUnit y cleanup.
 - Ambas ramas permanecen separadas de `main`; pendientes externos: SMTP, rate limiter distribuido, IP de ingress, key ring persistente y despliegue.
 
 ## Carrera entre iniciar ruta y mantenimiento

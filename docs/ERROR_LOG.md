@@ -1446,6 +1446,12 @@ Cada cambio de API debe incluir validación de compilación, migraciones si apli
 - Una lectura agrupada intentó abrir `e2e/fleet-admin.spec.ts` mientras `workdir` era `/home/leonardo/Back_GPS`; el archivo pertenece a Front y `sed` devolvió path ausente. No hubo edición ni efecto en pruebas.
 - Solución: leer cada archivo con el checkout propietario o establecer un path absoluto. Prevención: agrupar comandos sólo cuando compartan `workdir`; dividir lecturas entre repositorios.
 
+## 2026-11-23 — Búsqueda de casos de horario con directorios inexistentes — RESUELTO
+
+- Una inspección inicial apuntó a `fletflow/Aplication/Fleet/Commands/CreateRoute/` y `UpdateRoute/`, pero Create/Update son archivos directamente bajo `Commands/`; `rg` reportó paths ausentes. No se modificó ningún archivo ni se ejecutó una prueba.
+- Solución: localizar los comandos con `rg --files fletflow/Aplication/Fleet/Commands` y buscar dentro de `CreateRouteCommand.cs` / `UpdateRouteCommand.cs`.
+- Prevención: confirmar el árbol de archivos antes de componer rutas profundas; mantener separadas las rutas tipo archivo de los nombres de comando.
+
 ## 2026-11-23 — Informe QA omitió el ciclo HTTP/MySQL de traslado ya existente — ACLARADO
 
 - El informe independiente de QA indicó que el smoke Backend no completaba traslados sin operaciones. La inspección de `scripts/smoke-tenant-http.sh:1233-1257` mostró que sí crea el traslado, lo inicia y completa como Logistics, y verifica estado/timestamps/vehículo Available por HTTP y SQL.

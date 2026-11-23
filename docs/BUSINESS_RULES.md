@@ -35,6 +35,7 @@
 - El inicio exige Driver activo. La baja del Driver, la asignación manual y el cambio de estado del vehículo se serializan con inicio/edición para evitar estados incompatibles.
 - Si el Driver está vinculado a una cuenta User, esa cuenta también debe estar activa para iniciar la ruta. La baja de la cuenta se serializa con el inicio usando los locks de vehículo/Driver/cuenta; no se puede desactivar mientras tenga ruta en progreso. Si la cuenta ya está inactiva, el inicio devuelve 409 y no cambia la ruta ni el vehículo.
 - `CreatedAtUtc` registra en UTC cuándo se crea la ruta y la API lo serializa con zona UTC. Es nullable sólo para rutas anteriores a la migración; la edición no altera la fecha original. Las consultas recientes ordenan por creación y usan cierre/inicio planificado para ordenar los registros históricos sin fecha.
+- Las rutas activas `Pending` o `InProgress` del mismo vehículo o conductor no pueden solaparse. Los intervalos son semiabiertos: una ruta puede empezar exactamente cuando termina la anterior. Si falta un extremo horario en cualquiera de las rutas activas, se considera conflicto conservador.
 # Aislamiento por empresa
 
 - La claim JWT `owner_id` representa al usuario raíz de la empresa; para cuentas miembro se deriva de `OwnerUserId`, para cuentas raíz de su propio `Id`.

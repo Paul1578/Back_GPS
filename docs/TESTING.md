@@ -8,6 +8,12 @@ Las notas posteriores con fechas o versiones anteriores son el historial de su m
 - `smoke-route-concurrency.sh` dispara ambas peticiones HTTP a la vez y acepta sólo los resultados coherentes `Pending/Maintenance` o `InProgress/OnRoute`. Action [`45142742926`](https://github.com/Paul1578/Back_GPS/actions/runs/45142742926) pasó la verificación contra MySQL desechable.
 - Suite Release **138/138**, build Release **0 advertencias/0 errores**, test focalizado **1/1**, `bash -n scripts/smoke-route-concurrency.sh` y `git diff --check` pasan. Action integrada pasó con cleanup.
 
+## Límites de horario entre rutas — cobertura local añadida
+
+- `CreateAndUpdate_AllowAdjacentSchedulesAndRejectOverlapsWithoutChangingRoute` usa SQLite y el mismo vehículo/conductor para aislar la regla del horario: crear rutas contiguas y mover una ruta a un horario contiguo se permiten; un solapamiento al crear/editar y un horario incompleto frente a una ruta activa producen conflicto. Tras un rechazo, la ruta editada conserva nombre y fechas previos.
+- Test focalizado pasó **1/1** con `dotnet test BackEnd_Gps.Tests/BackEnd_Gps.Tests.csproj --configuration Release --filter 'FullyQualifiedName~CreateAndUpdate_AllowAdjacentSchedulesAndRejectOverlapsWithoutChangingRoute' --no-restore`.
+- Suite completa pasó **139/139**, build Release **0 warnings/0 errors**, `bash -n scripts/smoke-route-concurrency.sh` y `git diff --check` pasaron. Action CI con smoke HTTP/MySQL pendiente.
+
 ## xUnit multi-operación — CI integrado
 
 - Action [`45141029124`](https://github.com/Paul1578/Back_GPS/actions/runs/45141029124) pasó Release build, **137/137 xUnit**, aislamiento tenant HTTP/MySQL, concurrencia previa, login rate limit y cleanup. Incluye ciclo de dominio pickup/delivery/both.

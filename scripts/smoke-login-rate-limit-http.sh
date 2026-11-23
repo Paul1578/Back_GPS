@@ -66,6 +66,8 @@ ASPNETCORE_ENVIRONMENT=Staging \
 ASPNETCORE_URLS="http://127.0.0.1:$api_port" \
 Email__ResetPasswordUrl="https://localhost/reset-password" \
 Email__ActivationUrl="https://localhost/activate-account" \
+ForwardedHeaders__KnownProxies__0=127.0.0.2 \
+ForwardedHeaders__KnownProxies__1=127.0.0.4 \
 FLETFLOW_DATA_PROTECTION_KEYS_PATH="$secrets_dir/key-ring" \
 FLETFLOW_DATA_PROTECTION_CERT_PATH="$secrets_dir/data-protection.pfx" \
 FLETFLOW_DATA_PROTECTION_CERT_PASSWORD="$certificate_password" \
@@ -96,24 +98,40 @@ wrong_password="rate-limit-invalid-$(date +%s)"
 login_payload="$(jq -cn --arg email "$admin_email" --arg password "$wrong_password" \
   '{email:$email,password:$password}')"
 
-for attempt in $(seq 1 10); do
-  status="$(curl --silent --show-error --output "$response_file" --write-out '%{http_code}' \
-    --interface 127.0.0.2 --max-time 10 \
-    --header 'Content-Type: application/json' \
-    --data "$login_payload" "$api_origin/api/Auth/login")"
-  if [[ "$status" != "401" ]]; then
-    echo "Intento HTTP $attempt desde la primera IP devolvió $status; se esperaba 401." >&2
-    cat "$response_file" >&2
-    exit 1
-  fi
+client_ip="198.51.100.25"
+untrusted_status="$(curl --silent --show-error --output "$response_file" --write-out '%{http_code}' \
+  --interface 127.0.0.3 --max-time 10 \
+  --header 'Content-Type: application/json' \
+  --header "X-Forwarded-For: $client_ip" --header 'X-Forwarded-Proto: http' \
+  --data "$login_payload" "$api_origin/api/Auth/login")"
+if [[ "$untrusted_status" != "401" ]]; then
+  echo "Origen no confiable con X-Forwarded-For falsificado devolvió $untrusted_status; se esperaba 401." >&2
+  cat "$response_file" >&2
+  exit 1
+fi
+
+for proxy_ip in 127.0.0.2 127.0.0.4; do
+  for attempt in $(seq 1 5); do
+    status="$(curl --silent --show-error --output "$response_file" --write-out '%{http_code}' \
+      --interface "$proxy_ip" --max-time 10 \
+      --header 'Content-Type: application/json' \
+      --header "X-Forwarded-For: $client_ip" --header 'X-Forwarded-Proto: http' \
+      --data "$login_payload" "$api_origin/api/Auth/login")"
+    if [[ "$status" != "401" ]]; then
+      echo "Login desde proxy confiable $proxy_ip devolvió $status antes del intento 11." >&2
+      cat "$response_file" >&2
+      exit 1
+    fi
+  done
 done
 
 status="$(curl --silent --show-error --output "$response_file" --dump-header "$headers_file" \
   --write-out '%{http_code}' --interface 127.0.0.2 --max-time 10 \
-  --header 'Content-Type: application/json' --data "$login_payload" \
-  "$api_origin/api/Auth/login")"
+  --header 'Content-Type: application/json' \
+  --header "X-Forwarded-For: $client_ip" --header 'X-Forwarded-Proto: http' \
+  --data "$login_payload" "$api_origin/api/Auth/login")"
 if [[ "$status" != "429" ]]; then
-  echo "El intento 11 de login desde una IP devolvió $status; se esperaba 429." >&2
+  echo "El intento 11 de login del cliente reenviado devolvió $status; se esperaba 429." >&2
   cat "$response_file" >&2
   exit 1
 fi
@@ -123,18 +141,19 @@ if [[ ! "$retry_after" =~ ^[0-9]+$ ]] || (( retry_after < 1 || retry_after > 60 
   exit 1
 fi
 
-# Una IP distinta puede autenticar la misma cuenta: el límite no bloquea usuarios.
+# Una IP cliente distinta, reenviada por un proxy confiable, no queda bloqueada.
 valid_payload="$(jq -cn --arg email "$admin_email" --arg password "$admin_password" \
   '{email:$email,password:$password}')"
 status="$(curl --silent --show-error --output "$response_file" --write-out '%{http_code}' \
-  --interface 127.0.0.3 --max-time 15 \
-  --header 'Content-Type: application/json' --data "$valid_payload" \
-  "$api_origin/api/Auth/login")"
+  --interface 127.0.0.2 --max-time 15 \
+  --header 'Content-Type: application/json' \
+  --header 'X-Forwarded-For: 198.51.100.26' --header 'X-Forwarded-Proto: http' \
+  --data "$valid_payload" "$api_origin/api/Auth/login")"
 if [[ "$status" != "200" ]] || ! jq -e '(.token // .accessToken) | type == "string" and length > 0' \
   "$response_file" >/dev/null; then
-  echo "La misma cuenta no pudo autenticarse desde otra IP (HTTP $status)." >&2
+  echo "La misma cuenta no pudo autenticarse desde otra IP de cliente detrás del proxy (HTTP $status)." >&2
   cat "$response_file" >&2
   exit 1
 fi
 
-echo "Login rate limit HTTP verificado: 10 respuestas 401, intento 11 = 429 con Retry-After, la misma cuenta funciona desde otra IP."
+echo "Proxy confiable verificado: X-Forwarded-For no confiable ignorado; 10 intentos 401 agregados entre proxies, 11.º 429 con Retry-After, misma cuenta desde otra IP 200."

@@ -3,11 +3,11 @@
 ## Estado vigente de endurecimiento y riesgos de despliegue — 2026-11-23
 
 - `POST /api/Auth/forgot-password` permite cinco solicitudes por diez minutos y por IP, incluso desde loopback en Development. El contador no usa correo/ID de cuenta, no bloquea cuentas y devuelve 429 con `Retry-After` al exceder el límite.
-- El limitador y sus ventanas residen en memoria del proceso: reiniciar el backend reinicia los contadores; varias réplicas no comparten el límite. `RemoteIpAddress` se utiliza directamente. No se configura `ForwardedHeaders`; no confiar en `X-Forwarded-For` enviado por el cliente. El despliegue debe establecer proxies confiables antes de usar la IP reenviada y considerar un backend distribuido para escalar.
+- El limitador y sus ventanas residen en memoria del proceso: reiniciar el backend reinicia los contadores; varias réplicas no comparten el límite. `UseForwardedHeaders` procesa como máximo un salto de `X-Forwarded-For`/`X-Forwarded-Proto`, con simetría obligatoria y sólo desde IPs explícitas en `ForwardedHeaders:KnownProxies`. La lista versionada está vacía por defecto. El despliegue debe configurar las IP reales de su ingress y considerar un backend distribuido para escalar.
 - Los tokens de reset se generan con 32 bytes aleatorios (256 bits) y sólo se persiste su SHA-256. El TTL por defecto es 60 minutos; `Email:ResetTokenMinutes` sigue siendo configurable y se valida entre 1 y 1440 minutos.
 - `Email:ResetPasswordUrl` y `Email:ActivationUrl` deben ser URLs absolutas HTTPS fuera de Development. En Development se permite HTTP sólo para hosts loopback. `ValidateOnStart` y la resolución explícita de opciones antes de sembrar DB fallan con nombres de configuración y sin imprimir valores de URL.
 - SMTP conserva su comportamiento de error: el limitador no declara que el correo fue enviado. Outbox persistente y Data Protection siguen dependiendo de volúmenes, certificado y secretos de despliegue correctamente configurados.
-- Validación CI Backend Action `45109126972`: Release, xUnit 133/133, aislamiento tenant y concurrencia por HTTP/MySQL con DB descartable. Esto no sustituye validación de proxies, réplicas, SMTP ni base de datos de producción.
+- Action Backend `45126308692`: Release, xUnit 136/136, aislamiento tenant, concurrencia y límite de login por HTTP/MySQL/Staging. La ampliación local del smoke con proxies confiables comprobó XFF falsificado ignorado, dos proxies autorizados agregados a una misma IP cliente y otra IP no bloqueada; la Action de esa ampliación está pendiente. Esto no sustituye configuración de ingress real, réplicas, SMTP ni base de datos de producción.
 
 ## Precondiciones pendientes para migrar datos existentes — no inferir desde el código
 
@@ -20,7 +20,7 @@
 
 ## Otros riesgos por validar en despliegue
 
-- `SimpleRateLimitMiddleware` usa `RemoteIpAddress` y memoria estática. Tras proxy, varios usuarios pueden compartir límite; varias réplicas no comparten contadores. Configurar proxies de confianza y almacenamiento distribuido antes de escalar.
+- `SimpleRateLimitMiddleware` usa `RemoteIpAddress` y memoria estática. Los encabezados reenviados sólo se aceptan desde `ForwardedHeaders:KnownProxies`; configurar las IP explícitas del proxy en el entorno antes del despliegue. Varias réplicas no comparten contadores; usar almacenamiento distribuido antes de escalar.
 - Registro público permite crear nuevos tenants; ahora también está limitado a cinco solicitudes por diez minutos/IP, además del límite general. La ventana vive en memoria y comparte las limitaciones de proxy/réplicas descritas arriba.
 - Recuperación devuelve cuerpo uniforme y tiene un piso temporal, pero la rama de cuenta existente hace más escrituras que la inexistente. La diferencia temporal potencial no se midió bajo carga.
 
@@ -32,6 +32,8 @@
 - La política quedó definida: sólo la cuenta raíz puede crear/promover Admin. Action `45088129188` confirmó la denegación de Admin delegado en HTTP y la ausencia de cambios en MySQL.
 
 ## Controles implementados
+
+- Forwarded Headers se ejecuta antes del rate limiter, con un único salto, simetría de XFF/XFP y allowlist explícita. `ForwardedHeaders:KnownProxies` está vacía por defecto. Ejemplo: `ForwardedHeaders__KnownProxies__0=10.0.0.10`; añadir únicamente las IP de origen de proxies administrados.
 
 - El registro público crea una cuenta raíz `Admin` de un tenant nuevo. El backend fija ese rol e ignora `roleName` enviado por el cliente; el tenant queda limitado al `owner_id` del usuario recién creado. No otorga acceso a organizaciones existentes.
 - JWT, base de datos, CORS y SMTP se configuran fuera de los valores versionados; CORS acepta una lista explícita de orígenes. El inicio exige conexión DB completa y JWT con clave de 32 bytes, emisor y audiencia.

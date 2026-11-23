@@ -688,12 +688,13 @@ La invitación envía sólo el enlace de activación; el usuario fija su contras
 - Restore/build Release: 0 warnings/errores; bash syntax y diff-check correctos. Smoke completo exit 0 y cleanup cero fixtures QA.
 - Backend commit `a29a2fa`, Action [`45108549336`](https://github.com/Paul1578/Back_GPS/actions/runs/45108549336): smoke repetido en MySQL 8 descartable; evidencia HTTP y SQL confirmada para las tres paradas, ruta completada y vehículo disponible; cleanup cero. Restore/build Release y suite xUnit **133/133** pasaron.
 
-## Login rate limit en pipeline HTTP de Staging — VALIDADO LOCAL Y EN CI
+## Login rate limit HTTP y forwarded headers — ampliación local, CI pendiente
 
 - `scripts/smoke-login-rate-limit-http.sh` ejecuta el mismo Release API binario dentro del host real en `Staging`, delante de middleware, MVC, AuthController y servicio de autenticación. La base requerida se limita a `fletflow_ci*`; en local, `CI=true` y MySQL descartable son obligatorios.
-- El script envía diez credenciales erróneas desde `127.0.0.2` y exige diez HTTP 401; el intento 11 debe ser HTTP 429 con `Retry-After` 1–60 s; después, login correcto de la misma cuenta desde `127.0.0.3` debe ser HTTP 200 y contener token. No imprime contraseñas/token. Prueba que el throttling es por IP, no por cuenta.
+- La versión base pasó CI en Action `45126308692`: diez credenciales erróneas y HTTP 401; intento 11 HTTP 429 + `Retry-After`; la misma cuenta inicia sesión desde otra IP. No imprime contraseñas/token.
+- La ampliación local configura proxies `127.0.0.2` y `.4`. XFF falsificado desde origen no confiable `.3` da 401; cinco intentos por cada proxy confiable con cliente reenviado `198.51.100.25` dan 10 respuestas 401; el 11.º da 429 + `Retry-After`; la misma cuenta inicia sesión desde `198.51.100.26` con HTTP 200. Prueba que XFF no confiable se ignora, los proxies permitidos comparten bucket y la cuenta no se bloquea. CI de esta ampliación pendiente.
 - Se ejecuta después de tenant/concurrency smokes. Para el run, reinicia API Development como Staging con key ring/certificado temporales y los elimina al terminar; el workflow sigue cerrando el proceso por el PID compartido.
-- Validación local: MySQL 8 y API efímeros; resultado “10 respuestas 401, intento 11 = 429 con Retry-After, la misma cuenta funciona desde otra IP.” Build Release 0 warnings/errores, xUnit 136/136, shell syntax/diff-check correctos.
+- Validación local: MySQL 8 y API efímeros; smoke ampliado pasó. Build Release 0 warnings/errores, xUnit 136/136, `bash -n` y `git diff --check` correctos.
 
 ### Resultado CI del smoke de login
 

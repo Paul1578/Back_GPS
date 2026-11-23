@@ -2,8 +2,10 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.DataProtection;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using System.Net;
 using System.Text;
 using System.Security.Claims;
 using System.Security.Cryptography.X509Certificates;
@@ -35,6 +37,25 @@ Env.NoClobber().Load();
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddHttpContextAccessor();
+var trustedProxyValues = builder.Configuration
+    .GetSection("ForwardedHeaders:KnownProxies")
+    .Get<string[]>() ?? Array.Empty<string>();
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    options.ForwardLimit = 1;
+    options.RequireHeaderSymmetry = true;
+    options.KnownProxies.Clear();
+    options.KnownNetworks.Clear();
+
+    foreach (var value in trustedProxyValues)
+    {
+        if (!IPAddress.TryParse(value, out var address))
+            throw new InvalidOperationException(
+                "ForwardedHeaders:KnownProxies sólo acepta direcciones IP explícitas.");
+        options.KnownProxies.Add(address);
+    }
+});
 var keyRingPath = Environment.GetEnvironmentVariable("FLETFLOW_DATA_PROTECTION_KEYS_PATH");
 var keyEncryptionCertificatePath = Environment.GetEnvironmentVariable("FLETFLOW_DATA_PROTECTION_CERT_PATH");
 var keyEncryptionCertificatePassword = Environment.GetEnvironmentVariable("FLETFLOW_DATA_PROTECTION_CERT_PASSWORD");
@@ -286,6 +307,7 @@ builder.Services.AddSwaggerGen(options =>
 // Build
 // =====================
 var app = builder.Build();
+app.UseForwardedHeaders();
 
 // Validate email security settings before touching the database or starting the outbox worker.
 _ = app.Services.GetRequiredService<Microsoft.Extensions.Options.IOptions<EmailSettings>>().Value;

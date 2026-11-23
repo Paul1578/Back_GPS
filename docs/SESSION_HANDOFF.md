@@ -49,6 +49,13 @@
 
 # Handoff — 2026-11-23
 
+## Forwarded Headers bajo allowlist — CI pendiente
+
+- Backend `chore/stabilize-fleet-platform`; HEAD anterior `3887201`, cambios locales en `Program.cs`, `appsettings.json`, `scripts/smoke-login-rate-limit-http.sh` y documentación. No tocar `main`.
+- `UseForwardedHeaders` procesa XFF/XFP antes del rate limiter, un salto, simetría obligatoria y sólo IPs explícitas configuradas en `ForwardedHeaders:KnownProxies`; default vacío. En despliegue, definir `ForwardedHeaders__KnownProxies__0=<IP ingress>` con las IP reales y confiables.
+- Validación local real con API Staging y MySQL descartable: XFF falsificado desde origen no confiable ignorado; 5 intentos desde cada uno de dos proxies confiables sobre la misma IP cliente producen 10 HTTP 401; el 11.º responde 429 + Retry-After; otra IP cliente autentica con HTTP 200. Release build y xUnit 136/136 pasaron antes del smoke; `bash -n` y `git diff --check` deben repetirse tras cerrar cambios.
+- Action `45126308692` valida la versión previa del smoke; CI para forwarded headers aún pendiente. Rate limiter continúa en memoria. SMTP, key ring persistente y despliegue productivo siguen pendientes.
+
 ## Estado vigente — seguridad de recuperación en trabajo local
 
 - Rama backend: `chore/stabilize-fleet-platform`, base `729d56a`; cambios locales integrados y listos para commit/publicación de la rama de trabajo.

@@ -6,6 +6,7 @@
 - Front `48e654b` alinea el fallback del proxy con el perfil ASP.NET en `:5046`, añade `.env.example` sin secretos y corrige instrucciones obsoletas. Action [`45195812271`](https://github.com/Paul1578/Front_gpsR/actions/runs/45195812271) pasó 53/53 E2E, responsive, lint/build/audit, Backend 158/158 y cleanup.
 - Decisiones confirmadas: sólo raíz otorga Admin; se permiten traslados sin operaciones; las paradas aceptan recogida, entrega o ambas; unlink conserva cuenta, perfil y rol Driver y se bloquea ante rutas Pending/InProgress; app nativa pospuesta.
 - Pendientes externos: credenciales SMTP vigentes; configuración de producción para IPs confiables del ingress, key ring de Data Protection persistente/protegido y rate limit distribuido antes de escalar. Continúa la auditoría de cobertura verificable.
+- Lectura agregada de la DB local confirmó 5 usuarios, 2 cuentas raíz (OwnerUserId nulo), 0 rutas sin OwnerUserId y 0 cuentas con roles duplicados; no se leyeron ni modificaron filas de datos personales.
 
 ## Payload de evidencias de rutas — CI aprobado
 

@@ -8,6 +8,7 @@
 - Front `48e654b` alinea el fallback del proxy y agrega `.env.example`; Action [`45195812271`](https://github.com/Paul1578/Front_gpsR/actions/runs/45195812271) pasó 53/53 E2E, responsive, lint/build/audit, backend/API/MySQL y cleanup.
 - Reglas confirmadas: Admin sólo por la cuenta raíz; traslados permitidos; parada recogida/entrega/ambas; unlink conserva Driver y bloquea rutas Pending/InProgress; app nativa queda fuera de esta fase.
 - Pendiente continuar auditoría funcional verificable. SMTP y preparación productiva (ingress confiable, Data Protection persistente y rate limit distribuido) dependen de configuración externa.
+- Preflight read-only local encontró 2 cuentas raíz y no encontró rutas sin propietario ni cuentas con roles duplicados (5 usuarios totales).
 
 Estado: en curso; principales flujos locales implementados y verificados, con criterios explícitamente pendientes al final.
 

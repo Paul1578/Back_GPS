@@ -7,6 +7,7 @@
 - Decisiones vigentes: sólo raíz crea/promueve Admin; traslados permitidos; parada puede ser recogida, entrega o ambas; unlink conserva Driver y bloquea rutas pendientes/en curso; app móvil nativa pospuesta.
 - Próximo: consultar Action Front, sincronizar su evidencia y continuar los criterios CRUD/roles/responsive que aún puedan probarse. SMTP y despliegue requieren configuración externa.
 - Front HEAD funcional `48e654b` corrige el default de API local y añade `.env.example`; Action [`45195812271`](https://github.com/Paul1578/Front_gpsR/actions/runs/45195812271) pasó E2E autenticado, responsive, audit/lint/build, Backend 158/158, API/MySQL y cleanup.
+- Preflight read-only de DB local: 5 usuarios, 2 raíces, 0 rutas con propietario nulo y 0 usuarios con roles múltiples. El primer acceso root a MySQL falló; el usuario DB de la app desde `.env` funcionó, sin imprimir secretos.
 
 ## Handoff vigente — integridad de rutas heredadas
 

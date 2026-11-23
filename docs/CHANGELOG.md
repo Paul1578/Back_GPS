@@ -624,3 +624,4 @@
 - Actions Backend [`45190701729`](https://github.com/Paul1578/Back_GPS/actions/runs/45190701729) y [`45192161720`](https://github.com/Paul1578/Back_GPS/actions/runs/45192161720) exitosas; Action Front `45193357694` activa al corte.
 - Actualización del 23-11: Backend docs pasó [`45194801300`](https://github.com/Paul1578/Back_GPS/actions/runs/45194801300) y [`45194814911`](https://github.com/Paul1578/Back_GPS/actions/runs/45194814911); Front `45193357694` completó 53/53 E2E y todos sus checks integrados.
 - Front corrigió el destino local del proxy en `48e654b`; Action [`45195812271`](https://github.com/Paul1578/Front_gpsR/actions/runs/45195812271) pasó 53/53 E2E, responsive, lint/build/audit, Backend 158/158 y cleanup.
+- Preflight de propiedad/roles en la DB local ejecutado read-only: 5 usuarios, 2 raíces, 0 rutas con propietario nulo y 0 cuentas con múltiples roles.

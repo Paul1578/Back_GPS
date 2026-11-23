@@ -5,6 +5,7 @@
 - Front Action integrada [`45193357694`](https://github.com/Paul1578/Front_gpsR/actions/runs/45193357694) pasó 53/53 E2E autenticados, responsive 1/1, audit/lint/build, Backend Release/xUnit 158/158, smokes API/MySQL y cleanup.
 - Front Action [`45195812271`](https://github.com/Paul1578/Front_gpsR/actions/runs/45195812271) validó el cambio de origen local con 53/53 E2E, responsive, audit/lint/build, backend 158/158, API/MySQL y cleanup.
 - El host global `/usr/bin/dotnet` no tiene runtime usable; las pruebas usan la instalación funcional `/home/leonardo/.dotnet`. Ver `ERROR_LOG.md`.
+- Preflight de consistencia de la DB local (solo agregados, read-only): **5 usuarios**, **2 OwnerUserId nulos** correspondientes a las dos raíces existentes, **0 rutas OwnerUserId nulo**, **0 usuarios con más de un rol**.
 
 ## 2026-11-23 — Contrato de evidencia en lista y detalle
 

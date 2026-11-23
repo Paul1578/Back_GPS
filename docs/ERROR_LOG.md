@@ -6,6 +6,7 @@
 - Error de entorno: dotnet del PATH usa /usr/lib64/dotnet sin runtime, aunque .NET 8 reside en /home/leonardo/.dotnet. Solución: DOTNET_ROOT=/home/leonardo/.dotnet e invocar ese binario.
 - Prevención: revisar resolución de host y runtime antes de declarar que falta el SDK.
 - Un parche documental combinado no encontró la frase exacta de continuidad en `SESSION_HANDOFF.md` y fue rechazado sin cambios. Se leyó el encabezado vigente y se volvió a aplicar con anclas existentes.
+- Consulta inicial a MySQL dentro del contenedor con `MYSQL_ROOT_PASSWORD` terminó en 1045; la app usa credenciales distintas a las del root persistido. Se repitió con `DB_USER`/`DB_PASSWORD` locales, sin mostrar valores; la consulta read-only de agregados pasó. Prevención: usar el usuario/esquema efectivo de la app para preflight y no asumir que la contraseña root del Compose corresponde a un volumen ya inicializado.
 
 ## 2026-11-23 — La evidencia no tenía límite agregado por ruta — CORREGIDO LOCALMENTE
 

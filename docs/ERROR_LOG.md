@@ -1388,3 +1388,9 @@ Cada cambio de API debe incluir validación de compilación, migraciones si apli
 - La cabecera vigente de status/handoff enlazaba Action `45113700212`, cuyo `headSha` era `62726c8`, como evidencia del código `6f48f06`. El workflow correcto para `6f48f06` es `45113924558`; se comprobó cada vínculo con `gh run view` y se corrigió el status para distinguir validación funcional y documental.
 - También se actualizó el estado local de migraciones: el preflight no estaba bloqueado; DB_PASSWORD local se sincronizó y cuatro migraciones se aplicaron tras revisión.
 - Prevención: validar el `headSha`, conclusión y estado de cada Action enlazado antes de copiar IDs a documentación vigente. Action `45115773126` pasó para HEAD documental `ec15ea6`.
+
+## 2026-11-23 — API de smoke local no arrancó por el host .NET global — RESUELTO
+
+- Causa: el comando de prueba usó `dotnet` de PATH, cuyo host `/usr/lib64/dotnet/host/fxr` no contiene runtimes, aunque el SDK .NET 8 de usuario sí está instalado.
+- Solución: ejecutar con `DOTNET_ROOT=/home/leonardo/.dotnet` y `/home/leonardo/.dotnet/dotnet`. La repetición levantó la API disposable y pasaron ambos smokes contra MySQL 8 efímero; el contenedor se eliminó automáticamente.
+- Prevención: fijar DOTNET_ROOT/SDK explícito en comandos locales; no interpretar un host incorrecto como fallo de aplicación.

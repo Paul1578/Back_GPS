@@ -1,5 +1,12 @@
 # Estado vigente — 2026-11-23
 
+## Límites de clave y ruta de traslado — verificación local
+
+- `LoginUserCommandTests.Execute_AllowsLegacyPasswordShorterThanCurrentMinimum` confirma que una cuenta existente puede autenticarse con su clave anterior de 6 caracteres; la política mínima se aplica al establecer contraseñas nuevas.
+- `smoke-tenant-http.sh` prueba por HTTP y SQL que contraseñas cortas se rechazan en registro, cambio, activación y restablecimiento; los intentos de cambiar/activar/restablecer no mutan hashes, estado de cuenta ni consumo del token, y el cambio rechazado mantiene la sesión.
+- El smoke crea una ruta de traslado con origen/destino y `operation=0` en ambos, la inicia y completa por HTTP, y verifica SQL: status Completed, StartedAt/EndedAt, vehículo Available y dos puntos persistidos.
+- Release xUnit **136/136**, `bash -n`, `git diff --check`, `smoke-tenant-http.sh` y `smoke-route-concurrency.sh` pasaron contra un contenedor MySQL 8 y API temporales. Limpieza confirmó cero fixtures; la DB local no se usó. Pendiente Action del nuevo commit.
+
 ## Verificación de DB local y arranque API — 2026-11-23
 
 - `DB_PASSWORD` local se sincronizó con `MYSQL_ROOT_PASSWORD` (archivo `.env` ignorado; ningún valor secreto salió en consola). API inició en Development y `/swagger/index.html` respondió HTTP 200.

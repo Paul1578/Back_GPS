@@ -528,3 +528,9 @@
 
 - Se corrigieron SHA/Actions citados en el inicio de status y handoff y se registró la solución en `ERROR_LOG.md`.
 - Backend HEAD documental `ec15ea6` pasó Action `45115773126`; Front HEAD documental `d0a9342` pasó Action `45115772569` (**50/50 E2E**, responsive, audit/lint/build y cleanup). La validación funcional backend `6f48f06` pasó `45113924558` (**135/135 xUnit** y smoke HTTP/MySQL).
+
+## 2026-11-23 — Auth HTTP y ciclo de ruta de traslado — VALIDACIÓN LOCAL
+
+- Añadida prueba de compatibilidad de login con contraseñas heredadas cortas y checks HTTP/MySQL de rechazo seguro para claves nuevas menores a 12 caracteres.
+- El smoke crea/inicia/completa una ruta de traslado sin operaciones, con `Completed`, timestamps y vehículo `Available` persistidos.
+- Release xUnit **136/136** y ambos smokes en API/MySQL descartables pasaron; CI del commit `32c435b` pendiente de publicación.

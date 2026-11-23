@@ -11,9 +11,12 @@ namespace fletflow.Infrastructure.Persistence.Configurations
             builder.ToTable("Users");
             builder.HasKey(u => u.Id);
             builder.Property(u => u.Username).IsRequired().HasMaxLength(100);
+            builder.Property(u => u.FirstName).HasMaxLength(100);
+            builder.Property(u => u.LastName).HasMaxLength(100);
             builder.Property(u => u.Email).IsRequired().HasMaxLength(200);
             builder.HasIndex(u => u.Email).IsUnique();
             builder.Property(u => u.PasswordHash).IsRequired().HasMaxLength(500);
+            builder.Property(u => u.TokenVersion).HasDefaultValue(0);
             builder.Property(u => u.IsActive).HasDefaultValue(true);
             builder.Property(u => u.MustChangePassword).HasDefaultValue(false);
             builder.Property(u => u.CreatedAt).IsRequired();

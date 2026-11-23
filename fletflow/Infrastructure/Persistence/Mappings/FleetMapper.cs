@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text.Json;
 using fletflow.Domain.Fleet.Entities;
@@ -81,7 +82,10 @@ namespace fletflow.Infrastructure.Persistence.Mappings
                 entity.PlannedStart,
                 entity.PlannedEnd,
                 (RouteStatus)entity.Status,
-                entity.IsActive
+                entity.IsActive,
+                entity.StartedAt,
+                entity.EndedAt,
+                entity.CreatedAtUtc
             );
         }
 
@@ -106,6 +110,9 @@ namespace fletflow.Infrastructure.Persistence.Mappings
                 CargoDescription = domain.CargoDescription,
                 PlannedStart = domain.PlannedStart,
                 PlannedEnd = domain.PlannedEnd,
+                StartedAt = domain.StartedAt,
+                EndedAt = domain.EndedAt,
+                CreatedAtUtc = domain.CreatedAtUtc,
                 Status = (int)domain.Status,
                 IsActive = domain.IsActive,
                 PointsJson = pointsJson
@@ -141,21 +148,29 @@ namespace fletflow.Infrastructure.Persistence.Mappings
 
         private static List<RoutePoint> DeserializePoints(RouteEntity entity)
         {
+            if (string.IsNullOrWhiteSpace(entity.PointsJson) || entity.PointsJson.Trim() == "[]")
+                return CreateLegacyOriginAndDestination(entity);
+
             try
             {
                 var deserialized = JsonSerializer.Deserialize<List<SerializableRoutePoint>>(entity.PointsJson);
-                if (deserialized is { Count: > 0 })
-                {
-                    return deserialized
-                        .Select(p => RoutePoint.Create(p.Latitude, p.Longitude, p.Name))
-                        .ToList();
-                }
-            }
-            catch
-            {
-                // ignored -> fallback below
-            }
+                if (deserialized is not { Count: > 0 } || deserialized.Any(point => point is null))
+                    throw new JsonException("Route points must be a non-empty array of objects.");
 
+                return deserialized
+                    .Select(p => RoutePoint.Create(p.Latitude, p.Longitude, p.Name, p.Operation, p.Status, p.Evidence))
+                    .ToList();
+            }
+            catch (Exception exception) when (exception is JsonException or ArgumentException or NullReferenceException)
+            {
+                throw new InvalidDataException(
+                    $"Route {entity.Id} contains invalid persisted points. Repair PointsJson before using this route.",
+                    exception);
+            }
+        }
+
+        private static List<RoutePoint> CreateLegacyOriginAndDestination(RouteEntity entity)
+        {
             // Fallback a origen/destino básicos
             var points = new List<RoutePoint>();
 
@@ -165,6 +180,12 @@ namespace fletflow.Infrastructure.Persistence.Mappings
             return points;
         }
 
-        private record SerializableRoutePoint(double Latitude, double Longitude, string? Name);
+        private record SerializableRoutePoint(
+            double Latitude,
+            double Longitude,
+            string? Name,
+            RoutePointOperation Operation = RoutePointOperation.None,
+            RoutePointStatus Status = RoutePointStatus.Pending,
+            List<RoutePointEvidence>? Evidence = null);
     }
 }

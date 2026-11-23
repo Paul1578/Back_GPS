@@ -16,21 +16,29 @@ namespace fletflow.Application.Auth.Commands
 
         public async Task Execute(Guid userId, string currentPassword, string newPassword)
         {
-            var user = await _users.GetByIdAsync(userId)
-                ?? throw new KeyNotFoundException("User not found.");
+            if (string.IsNullOrWhiteSpace(newPassword) || newPassword.Length < 12)
+                throw new ArgumentException("La nueva contraseña debe tener al menos 12 caracteres.", nameof(newPassword));
 
-            if (!BCrypt.Net.BCrypt.Verify(currentPassword, user.PasswordHash))
-                throw new UnauthorizedAccessException("Current password is incorrect.");
+            await _uow.LockUserSessionAsync(userId);
+            try
+            {
+                var user = await _users.GetByIdAsync(userId)
+                    ?? throw new KeyNotFoundException("User not found.");
 
-            var newHash = BCrypt.Net.BCrypt.HashPassword(newPassword);
+                if (!BCrypt.Net.BCrypt.Verify(currentPassword, user.PasswordHash))
+                    throw new UnauthorizedAccessException("Current password is incorrect.");
 
-            // actualización sobre la entidad EF
-            await _users.UpdatePasswordHashAsync(userId, newHash);
+                var newHash = BCrypt.Net.BCrypt.HashPassword(newPassword);
 
-            await _uow.RefreshTokens.RevokeAllForUserAsync(user.Id);
-
-            // commit con UnitOfWork
-            await _uow.CommitAsync();
+                await _users.UpdatePasswordHashAsync(userId, newHash);
+                await _uow.RefreshTokens.RevokeAllForUserAsync(user.Id);
+                await _uow.CommitAsync();
+            }
+            catch
+            {
+                _uow.Rollback();
+                throw;
+            }
         }
     }
 }

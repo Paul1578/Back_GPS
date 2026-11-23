@@ -35,8 +35,8 @@ namespace fletflow.Application.Auth.Commands.ResetPassword
             if (string.IsNullOrWhiteSpace(newPassword))
                 throw new ArgumentException("La nueva contrasena es obligatoria.", nameof(newPassword));
 
-            if (newPassword.Length < 6)
-                throw new ArgumentException("La nueva contrasena debe tener al menos 6 caracteres.", nameof(newPassword));
+            if (newPassword.Length < 12)
+                throw new ArgumentException("La nueva contraseña debe tener al menos 12 caracteres.", nameof(newPassword));
 
             if (confirmNewPassword != null && newPassword != confirmNewPassword)
                 throw new ArgumentException("La confirmacion no coincide con la nueva contrasena.", nameof(confirmNewPassword));
@@ -45,26 +45,33 @@ namespace fletflow.Application.Auth.Commands.ResetPassword
             var rawToken = (requestToken ?? string.Empty).Trim().Replace(" ", "+");
             var tokenHash = TokenHashing.Sha256(rawToken);
 
-            var resetToken = await _passwordResetTokenRepository.GetByTokenHashAsync(tokenHash)
+            var initialToken = await _passwordResetTokenRepository.GetByTokenHashAsync(tokenHash)
                 ?? throw new UnauthorizedAccessException("Token invalido.");
 
-            if (!resetToken.IsActive)
+            if (!initialToken.IsActive)
                 throw new UnauthorizedAccessException("Token expirado o usado.");
 
-            var user = await _userRepository.GetByIdAsync(resetToken.UserId)
-                ?? throw new KeyNotFoundException("Usuario no encontrado.");
+            await _unitOfWork.LockUserSessionAsync(initialToken.UserId);
+            try
+            {
+                var resetToken = await _passwordResetTokenRepository.GetByTokenHashAsync(tokenHash)
+                    ?? throw new UnauthorizedAccessException("Token invalido.");
+                if (!resetToken.IsActive || !await _passwordResetTokenRepository.MarkUsedAsync(resetToken.Id))
+                    throw new UnauthorizedAccessException("Token expirado o usado.");
 
-            // Validaciones superadas: generar hash y persistirlo
-            var newPasswordHash = _passwordHasher.Hash(newPassword);
-            await _userRepository.UpdatePasswordHashAsync(user.Id, newPasswordHash);
+                var user = await _userRepository.GetByIdAsync(resetToken.UserId)
+                    ?? throw new KeyNotFoundException("Usuario no encontrado.");
 
-            // Marcar token como usado solo despues de actualizar la contrasena
-            await _passwordResetTokenRepository.MarkUsedAsync(resetToken.Id);
-
-            // Opcional: revocar refresh tokens si quieres expulsar sesiones activas
-            // await _refreshTokenRepository.RevokeAllForUserAsync(user.Id);
-
-            await _unitOfWork.CommitAsync();
+                var newPasswordHash = _passwordHasher.Hash(newPassword);
+                await _userRepository.UpdatePasswordHashAsync(user.Id, newPasswordHash);
+                await _refreshTokenRepository.RevokeAllForUserAsync(user.Id);
+                await _unitOfWork.CommitAsync();
+            }
+            catch
+            {
+                _unitOfWork.Rollback();
+                throw;
+            }
         }
     }
 }

@@ -24,10 +24,6 @@ namespace fletflow.Infrastructure.Persistence.Repositories
             var entity = await _context.PasswordResetTokens
                 .AsNoTracking()
                 .FirstOrDefaultAsync(x => x.TokenHash == hash);
-            if (entity is null)
-            {
-                Console.WriteLine($"[ResetPasswordRepo] Token no encontrado. normalized={normalized} hash={hash}");
-            }
             return entity is null ? null : PasswordResetTokenMapper.ToDomain(entity);
         }
 
@@ -36,18 +32,15 @@ namespace fletflow.Infrastructure.Persistence.Repositories
             var entity = await _context.PasswordResetTokens
                 .AsNoTracking()
                 .FirstOrDefaultAsync(x => x.TokenHash == tokenHash);
-            if (entity is null)
-            {
-                Console.WriteLine($"[ResetPasswordRepo] Token no encontrado por hash={tokenHash}");
-            }
             return entity is null ? null : PasswordResetTokenMapper.ToDomain(entity);
         }
 
-        public async Task MarkUsedAsync(Guid id)
+        public async Task<bool> MarkUsedAsync(Guid id)
         {
-            var entity = await _context.PasswordResetTokens.FirstOrDefaultAsync(x => x.Id == id);
-            if (entity is null) return;
-            entity.UsedAt = DateTime.UtcNow;
+            var now = DateTime.UtcNow;
+            return await _context.PasswordResetTokens
+                .Where(token => token.Id == id && token.UsedAt == null && token.ExpiresAt > now)
+                .ExecuteUpdateAsync(update => update.SetProperty(token => token.UsedAt, now)) == 1;
         }
 
         public async Task InvalidateAllForUserAsync(Guid userId)

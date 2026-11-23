@@ -1,30 +1,11 @@
-using fletflow.Domain.Auth.Repositories;
-using fletflow.Infrastructure.Persistence.Contracts;
-
 namespace fletflow.Application.Auth.Commands
 {
     public class AssignRoleToUserCommand
     {
-        private readonly IUnitOfWork _uow;
-        private readonly IUserRepository _users;
-        private readonly IRoleRepository _roles;
+        private readonly ChangeUserRoleCommand _changeRole;
 
-        public AssignRoleToUserCommand(IUnitOfWork uow, IUserRepository users, IRoleRepository roles)
-        {
-            _uow = uow;
-            _users = users;
-            _roles = roles;
-        }
+        public AssignRoleToUserCommand(ChangeUserRoleCommand changeRole) => _changeRole = changeRole;
 
-        public async Task Execute(Guid userId, string roleName)
-        {
-            var user = await _users.GetByIdAsync(userId) ?? throw new KeyNotFoundException("Usuario no encontrado.");
-            var role = await _roles.GetByNameAsync(roleName.Trim()) ?? throw new KeyNotFoundException($"Rol '{roleName}' no existe.");
-
-            if (await _users.HasRoleAsync(user.Id, role.Id)) return;
-
-            await _users.AssignRoleAsync(user.Id, role.Id);
-            await _uow.CommitAsync();
-        }
+        public Task Execute(Guid userId, string roleName) => _changeRole.Execute(userId, roleName);
     }
 }

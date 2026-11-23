@@ -47,6 +47,15 @@ namespace fletflow.Domain.Fleet.Entities
             if (longitude is < -180 or > 180)
                 throw new ArgumentOutOfRangeException(nameof(longitude), "Longitud debe estar entre -180 y 180.");
 
+            if (!double.IsFinite(latitude) || !double.IsFinite(longitude))
+                throw new ArgumentOutOfRangeException(nameof(latitude), "Las coordenadas deben ser valores finitos.");
+
+            if (speedKmh is < 0 or > 300 || (speedKmh.HasValue && !double.IsFinite(speedKmh.Value)))
+                throw new ArgumentOutOfRangeException(nameof(speedKmh), "La velocidad debe estar entre 0 y 300 km/h.");
+
+            if (heading is < 0 or >= 360 || (heading.HasValue && !double.IsFinite(heading.Value)))
+                throw new ArgumentOutOfRangeException(nameof(heading), "El rumbo debe estar entre 0 y 360 grados.");
+
             // si no envían fecha, la ponemos ahora en UTC
             var ts = recordedAt?.ToUniversalTime() ?? DateTime.UtcNow;
 

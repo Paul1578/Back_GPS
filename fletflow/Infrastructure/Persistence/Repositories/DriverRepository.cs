@@ -3,11 +3,12 @@ using fletflow.Domain.Fleet.Repositories;
 using fletflow.Infrastructure.Persistence.Context;
 using fletflow.Infrastructure.Persistence.Entities;
 using fletflow.Infrastructure.Persistence.Mappings;
+using fletflow.Application.Shared;
 using Microsoft.EntityFrameworkCore;
 
 namespace fletflow.Infrastructure.Persistence.Repositories
 {
-    public class DriverRepository : IDriverRepository
+    public class DriverRepository : IDriverRepository, IDriverPageRepository
     {
         private readonly AppDbContext _context;
 
@@ -42,6 +43,14 @@ namespace fletflow.Infrastructure.Persistence.Repositories
             return entity is null ? null : FleetMapper.ToDomain(entity);
         }
 
+        public async Task<Driver?> GetOtherAssignedToVehicleAsync(Guid vehicleId, Guid excludedDriverId)
+        {
+            var entity = await _context.Drivers.AsNoTracking()
+                .FirstOrDefaultAsync(driver => driver.VehicleId == vehicleId && driver.Id != excludedDriverId);
+
+            return entity is null ? null : FleetMapper.ToDomain(entity);
+        }
+
         public async Task AddAsync(Driver driver)
         {
             var entity = FleetMapper.ToEntity(driver);
@@ -61,6 +70,7 @@ namespace fletflow.Infrastructure.Persistence.Repositories
             entity.PhoneNumber = driver.PhoneNumber;
             entity.IsActive = driver.IsActive;
             entity.VehicleId = driver.VehicleId;
+            entity.UserId = driver.UserId;
         }
 
         public async Task<List<Driver>> GetAllAsync(bool? onlyActive = null)
@@ -71,6 +81,52 @@ namespace fletflow.Infrastructure.Persistence.Repositories
                 query = query.Where(d => d.IsActive == onlyActive.Value);
 
             var entities = await query.ToListAsync();
+            return entities.Select(FleetMapper.ToDomain).ToList();
+        }
+
+        public async Task<(List<Driver> Items, int TotalCount)> GetPageAsync(
+            int page, int pageSize, string? search = null, bool? onlyActive = null)
+        {
+            IQueryable<DriverEntity> query = _context.Drivers.AsNoTracking();
+
+            if (onlyActive.HasValue)
+                query = query.Where(driver => driver.IsActive == onlyActive.Value);
+
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                var term = search.Trim();
+                query = query.Where(driver =>
+                    driver.FirstName.Contains(term) ||
+                    driver.LastName.Contains(term) ||
+                    driver.DocumentNumber.Contains(term) ||
+                    driver.PhoneNumber.Contains(term));
+            }
+
+            var totalCount = await query.CountAsync();
+            var entities = await query
+                .OrderBy(driver => driver.LastName)
+                .ThenBy(driver => driver.FirstName)
+                .ThenBy(driver => driver.DocumentNumber)
+                .ThenBy(driver => driver.Id)
+                .Skip(PaginationLimits.GetOffset(page, pageSize))
+                .Take(pageSize)
+                .ToListAsync();
+
+            return (entities.Select(FleetMapper.ToDomain).ToList(), totalCount);
+        }
+
+        public async Task<List<Driver>> GetAssignableAsync()
+        {
+            var ownerUserId = _context.CurrentOwnerUserId;
+            var entities = await _context.Drivers
+                .AsNoTracking()
+                .Where(driver => driver.IsActive &&
+                    (!driver.UserId.HasValue || _context.Users.AsNoTracking().Any(user =>
+                        user.Id == driver.UserId.Value &&
+                        user.IsActive &&
+                        (user.OwnerUserId == ownerUserId || user.Id == ownerUserId))))
+                .ToListAsync();
+
             return entities.Select(FleetMapper.ToDomain).ToList();
         }
         

@@ -40,6 +40,7 @@ namespace fletflow.Infrastructure.Persistence.Repositories
 
             entity.VehicleId = route.VehicleId;
             entity.DriverId = route.DriverId;
+            entity.Name = route.Name;
             entity.Origin = route.Origin.Name ?? route.Name;
             entity.OriginLat = route.Origin.Latitude;
             entity.OriginLng = route.Origin.Longitude;
@@ -49,6 +50,8 @@ namespace fletflow.Infrastructure.Persistence.Repositories
             entity.CargoDescription = route.CargoDescription;
             entity.PlannedStart = route.PlannedStart;
             entity.PlannedEnd = route.PlannedEnd;
+            entity.StartedAt = route.StartedAt;
+            entity.EndedAt = route.EndedAt;
             entity.Status = (int)route.Status;
             entity.IsActive = route.IsActive;
             entity.PointsJson = JsonSerializer.Serialize(route.Points);
@@ -79,7 +82,10 @@ namespace fletflow.Infrastructure.Persistence.Repositories
                 query = query.Where(r => r.IsActive);
             }
 
-            var entities = await query.ToListAsync();
+            var entities = await query
+                .OrderByDescending(route => route.CreatedAtUtc ?? route.EndedAt ?? route.StartedAt ?? route.PlannedStart)
+                .ThenBy(route => route.Id)
+                .ToListAsync();
             return entities.Select(FleetMapper.ToDomain).ToList();
         }
     }

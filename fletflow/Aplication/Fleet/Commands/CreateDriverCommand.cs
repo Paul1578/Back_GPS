@@ -3,8 +3,10 @@ using System.Linq;
 using fletflow.Application.Fleet.Dtos;
 using fletflow.Application.Fleet.Mappings;
 using fletflow.Domain.Fleet.Entities;
+using fletflow.Domain.Fleet.Exceptions;
 using fletflow.Domain.Fleet.Repositories;
 using fletflow.Infrastructure.Persistence.Contracts;
+using Microsoft.EntityFrameworkCore;
 
 namespace fletflow.Application.Fleet.Commands
 {
@@ -24,18 +26,34 @@ namespace fletflow.Application.Fleet.Commands
             string lastName,
             string documentNumber,
             string phoneNumber,
-            Guid? userId = null)
+            Guid? userId = null,
+            Guid? ownerUserId = null)
         {
-            documentNumber = documentNumber.Trim();
+            firstName = firstName?.Trim() ?? string.Empty;
+            lastName = lastName?.Trim() ?? string.Empty;
+            documentNumber = documentNumber?.Trim() ?? string.Empty;
+            phoneNumber = phoneNumber?.Trim() ?? string.Empty;
+
+            if (string.IsNullOrWhiteSpace(firstName) || string.IsNullOrWhiteSpace(lastName) ||
+                string.IsNullOrWhiteSpace(documentNumber) || string.IsNullOrWhiteSpace(phoneNumber))
+                throw new ArgumentException("Nombres, apellidos, documento y teléfono son obligatorios.");
+            if (documentNumber.Length > 20 || phoneNumber.Length > 20)
+                throw new ArgumentException("Documento y teléfono no pueden exceder 20 caracteres.");
 
             var existing = await _drivers.GetByDocumentAsync(documentNumber);
             if (existing is not null)
-                throw new InvalidOperationException($"A driver with document {documentNumber} already exists.");
+                throw new BusinessConflictException($"Ya existe un conductor con el documento {documentNumber} en esta empresa.");
 
             if (userId.HasValue)
             {
                 var user = await _uow.Users.GetByIdAsync(userId.Value)
                     ?? throw new KeyNotFoundException("User not found to link as driver.");
+
+                if (!user.IsActive)
+                    throw new InvalidOperationException("No se puede vincular un usuario inactivo como conductor.");
+
+                if (!ownerUserId.HasValue || (user.OwnerUserId ?? user.Id) != ownerUserId.Value)
+                    throw new KeyNotFoundException("User not found to link as driver.");
 
                 var driverForUser = await _drivers.GetByUserIdAsync(userId.Value);
                 if (driverForUser is not null)
@@ -49,7 +67,17 @@ namespace fletflow.Application.Fleet.Commands
             var driver = Driver.Create(firstName, lastName, documentNumber, phoneNumber, userId);
 
             await _drivers.AddAsync(driver);
-            await _uow.CommitAsync();
+            try
+            {
+                await _uow.CommitAsync();
+            }
+            catch (DbUpdateException)
+            {
+                if (await _drivers.GetByDocumentAsync(documentNumber) is not null)
+                    throw new BusinessConflictException($"Ya existe un conductor con el documento {documentNumber} en esta empresa.");
+
+                throw;
+            }
 
             return DriverApplicationMapper.ToDto(driver);
         }

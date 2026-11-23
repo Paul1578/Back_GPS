@@ -1,0 +1,316 @@
+using fletflow.Api.Middleware;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.FileProviders;
+using Microsoft.Extensions.Logging.Abstractions;
+using System.Net;
+using System.Threading;
+
+namespace BackEnd_Gps.Tests;
+
+public class SimpleRateLimitMiddlewareTests
+{
+    [Fact]
+    public async Task DevelopmentLoopback_AllowsMoreThanProductionLimit()
+    {
+        var middleware = new SimpleRateLimitMiddleware(
+            NullLogger<SimpleRateLimitMiddleware>.Instance,
+            new TestWebHostEnvironment("Development"));
+        var nextCalls = 0;
+
+        for (var requestNumber = 0; requestNumber < 65; requestNumber++)
+        {
+            var context = new DefaultHttpContext();
+            context.Connection.RemoteIpAddress = IPAddress.Loopback;
+            await middleware.InvokeAsync(context, _ =>
+            {
+                nextCalls++;
+                return Task.CompletedTask;
+            });
+            Assert.Equal(StatusCodes.Status200OK, context.Response.StatusCode);
+        }
+
+        Assert.Equal(65, nextCalls);
+    }
+
+    [Fact]
+    public async Task NonDevelopmentClient_IsLimitedAfterSixtyRequestsPerWindow()
+    {
+        var middleware = new SimpleRateLimitMiddleware(
+            NullLogger<SimpleRateLimitMiddleware>.Instance,
+            new TestWebHostEnvironment("Production"));
+        var remoteAddress = new IPAddress(Guid.NewGuid().ToByteArray());
+        var nextCalls = 0;
+        DefaultHttpContext? lastContext = null;
+
+        for (var requestNumber = 0; requestNumber < 61; requestNumber++)
+        {
+            var context = new DefaultHttpContext();
+            context.Connection.RemoteIpAddress = remoteAddress;
+            await middleware.InvokeAsync(context, _ =>
+            {
+                nextCalls++;
+                return Task.CompletedTask;
+            });
+            lastContext = context;
+        }
+
+        Assert.Equal(60, nextCalls);
+        Assert.NotNull(lastContext);
+        Assert.Equal(StatusCodes.Status429TooManyRequests, lastContext.Response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Login_IsLimitedPerIpWithoutBlockingOtherEndpoints()
+    {
+        var middleware = new SimpleRateLimitMiddleware(
+            NullLogger<SimpleRateLimitMiddleware>.Instance,
+            new TestWebHostEnvironment("Production"));
+        var remoteAddress = new IPAddress(Guid.NewGuid().ToByteArray());
+        var loginNextCalls = 0;
+        DefaultHttpContext? lastLoginContext = null;
+
+        for (var requestNumber = 0; requestNumber < 11; requestNumber++)
+        {
+            var context = new DefaultHttpContext();
+            context.Connection.RemoteIpAddress = remoteAddress;
+            context.Request.Method = HttpMethods.Post;
+            context.Request.Path = "/api/Auth/login";
+            await middleware.InvokeAsync(context, _ =>
+            {
+                loginNextCalls++;
+                return Task.CompletedTask;
+            });
+            lastLoginContext = context;
+        }
+
+        Assert.Equal(10, loginNextCalls);
+        Assert.NotNull(lastLoginContext);
+        Assert.Equal(StatusCodes.Status429TooManyRequests, lastLoginContext.Response.StatusCode);
+        Assert.True(int.TryParse(lastLoginContext.Response.Headers["Retry-After"], out var retryAfter));
+        Assert.InRange(retryAfter, 1, 60);
+
+        var fleetContext = new DefaultHttpContext();
+        fleetContext.Connection.RemoteIpAddress = remoteAddress;
+        fleetContext.Request.Method = HttpMethods.Get;
+        fleetContext.Request.Path = "/api/Routes";
+        await middleware.InvokeAsync(fleetContext, _ =>
+        {
+            loginNextCalls++;
+            return Task.CompletedTask;
+        });
+
+        Assert.Equal(StatusCodes.Status200OK, fleetContext.Response.StatusCode);
+        Assert.Equal(11, loginNextCalls);
+    }
+
+    [Fact]
+    public async Task ForgotPassword_AllowsFiveRequestsPerIpThenReturns429WithoutBlockingOtherEndpoints()
+    {
+        var middleware = new SimpleRateLimitMiddleware(
+            NullLogger<SimpleRateLimitMiddleware>.Instance,
+            new TestWebHostEnvironment("Production"));
+        var remoteAddress = new IPAddress(Guid.NewGuid().ToByteArray());
+        var acceptedRecoveryRequests = 0;
+        DefaultHttpContext? sixthRecoveryContext = null;
+
+        for (var requestNumber = 0; requestNumber < 6; requestNumber++)
+        {
+            var context = new DefaultHttpContext();
+            context.Connection.RemoteIpAddress = remoteAddress;
+            context.Request.Method = HttpMethods.Post;
+            context.Request.Path = "/api/Auth/forgot-password";
+            await middleware.InvokeAsync(context, _ =>
+            {
+                acceptedRecoveryRequests++;
+                return Task.CompletedTask;
+            });
+
+            if (requestNumber == 5)
+                sixthRecoveryContext = context;
+            else
+                Assert.Equal(StatusCodes.Status200OK, context.Response.StatusCode);
+        }
+
+        Assert.Equal(5, acceptedRecoveryRequests);
+        Assert.NotNull(sixthRecoveryContext);
+        Assert.Equal(StatusCodes.Status429TooManyRequests, sixthRecoveryContext.Response.StatusCode);
+        Assert.True(int.TryParse(sixthRecoveryContext.Response.Headers["Retry-After"], out var retryAfter));
+        Assert.InRange(retryAfter, 1, 600);
+
+        var fleetContext = new DefaultHttpContext();
+        fleetContext.Connection.RemoteIpAddress = remoteAddress;
+        fleetContext.Request.Method = HttpMethods.Get;
+        fleetContext.Request.Path = "/api/Routes";
+        var fleetEndpointReached = false;
+        await middleware.InvokeAsync(fleetContext, _ =>
+        {
+            fleetEndpointReached = true;
+            return Task.CompletedTask;
+        });
+
+        Assert.Equal(StatusCodes.Status200OK, fleetContext.Response.StatusCode);
+        Assert.True(fleetEndpointReached);
+    }
+
+    [Fact]
+    public async Task DevelopmentLoopback_ForgotPasswordLimitStillApplies()
+    {
+        var middleware = new SimpleRateLimitMiddleware(
+            NullLogger<SimpleRateLimitMiddleware>.Instance,
+            new TestWebHostEnvironment("Development"));
+        DefaultHttpContext? sixthContext = null;
+
+        for (var requestNumber = 0; requestNumber < 6; requestNumber++)
+        {
+            var context = new DefaultHttpContext();
+            context.Connection.RemoteIpAddress = IPAddress.Loopback;
+            context.Request.Method = HttpMethods.Post;
+            context.Request.Path = "/api/Auth/forgot-password";
+            await middleware.InvokeAsync(context, _ => Task.CompletedTask);
+            Assert.Equal(
+                requestNumber < 5 ? StatusCodes.Status200OK : StatusCodes.Status429TooManyRequests,
+                context.Response.StatusCode);
+            if (requestNumber == 5)
+                sixthContext = context;
+        }
+
+        Assert.NotNull(sixthContext);
+        Assert.Equal(StatusCodes.Status429TooManyRequests, sixthContext.Response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Registration_AllowsFiveRequestsPerIpThenReturns429WithoutBlockingOtherEndpoints()
+    {
+        var middleware = new SimpleRateLimitMiddleware(
+            NullLogger<SimpleRateLimitMiddleware>.Instance,
+            new TestWebHostEnvironment("Production"));
+        var remoteAddress = new IPAddress(Guid.NewGuid().ToByteArray());
+        var acceptedRegistrations = 0;
+        DefaultHttpContext? sixthContext = null;
+
+        for (var requestNumber = 0; requestNumber < 6; requestNumber++)
+        {
+            var context = new DefaultHttpContext();
+            context.Connection.RemoteIpAddress = remoteAddress;
+            context.Request.Method = HttpMethods.Post;
+            context.Request.Path = "/api/Auth/register";
+            await middleware.InvokeAsync(context, _ =>
+            {
+                acceptedRegistrations++;
+                return Task.CompletedTask;
+            });
+
+            if (requestNumber == 5)
+                sixthContext = context;
+            else
+                Assert.Equal(StatusCodes.Status200OK, context.Response.StatusCode);
+        }
+
+        Assert.Equal(5, acceptedRegistrations);
+        Assert.NotNull(sixthContext);
+        Assert.Equal(StatusCodes.Status429TooManyRequests, sixthContext.Response.StatusCode);
+        Assert.True(int.TryParse(sixthContext.Response.Headers["Retry-After"], out var retryAfter));
+        Assert.InRange(retryAfter, 1, 600);
+
+        var loginContext = new DefaultHttpContext();
+        loginContext.Connection.RemoteIpAddress = remoteAddress;
+        loginContext.Request.Method = HttpMethods.Post;
+        loginContext.Request.Path = "/api/Auth/login";
+        await middleware.InvokeAsync(loginContext, _ => Task.CompletedTask);
+        Assert.Equal(StatusCodes.Status200OK, loginContext.Response.StatusCode);
+    }
+
+    [Fact]
+    public async Task DevelopmentLoopback_RegistrationLimitStillApplies()
+    {
+        var middleware = new SimpleRateLimitMiddleware(
+            NullLogger<SimpleRateLimitMiddleware>.Instance,
+            new TestWebHostEnvironment("Development"));
+
+        for (var requestNumber = 0; requestNumber < 6; requestNumber++)
+        {
+            var context = new DefaultHttpContext();
+            context.Connection.RemoteIpAddress = IPAddress.Loopback;
+            context.Request.Method = HttpMethods.Post;
+            context.Request.Path = "/api/Auth/register";
+            await middleware.InvokeAsync(context, _ => Task.CompletedTask);
+            Assert.Equal(
+                requestNumber < 5 ? StatusCodes.Status200OK : StatusCodes.Status429TooManyRequests,
+                context.Response.StatusCode);
+        }
+    }
+
+    [Fact]
+    public async Task ConcurrentRequests_CannotExceedSixtyAcceptedRequestsPerWindow()
+    {
+        var middleware = new SimpleRateLimitMiddleware(
+            NullLogger<SimpleRateLimitMiddleware>.Instance,
+            new TestWebHostEnvironment("Production"));
+        var remoteAddress = new IPAddress(Guid.NewGuid().ToByteArray());
+        var accepted = 0;
+        var rejected = 0;
+        var activeRequests = 0;
+        var peakActiveRequests = 0;
+        var readyRequests = 0;
+        var allRequestsReady = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var releaseRequests = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        var requests = Enumerable.Range(0, 200).Select(async _ =>
+        {
+            if (Interlocked.Increment(ref readyRequests) == 200)
+                allRequestsReady.TrySetResult();
+            await releaseRequests.Task;
+
+            var context = new DefaultHttpContext();
+            context.Connection.RemoteIpAddress = remoteAddress;
+            await middleware.InvokeAsync(context, async _ =>
+            {
+                Interlocked.Increment(ref accepted);
+                var currentActive = Interlocked.Increment(ref activeRequests);
+                UpdateMaximum(ref peakActiveRequests, currentActive);
+                try
+                {
+                    await Task.Yield();
+                }
+                finally
+                {
+                    Interlocked.Decrement(ref activeRequests);
+                }
+            });
+
+            if (context.Response.StatusCode == StatusCodes.Status429TooManyRequests)
+                Interlocked.Increment(ref rejected);
+        }).ToArray();
+
+        await allRequestsReady.Task.WaitAsync(TimeSpan.FromSeconds(10));
+        releaseRequests.SetResult();
+        await Task.WhenAll(requests);
+
+        Assert.Equal(60, accepted);
+        Assert.Equal(140, rejected);
+        Assert.True(peakActiveRequests > 1, "Las solicitudes aceptadas deben solaparse para probar concurrencia real.");
+    }
+
+    private static void UpdateMaximum(ref int maximum, int candidate)
+    {
+        var observed = Volatile.Read(ref maximum);
+        while (candidate > observed)
+        {
+            var prior = Interlocked.CompareExchange(ref maximum, candidate, observed);
+            if (prior == observed)
+                return;
+            observed = prior;
+        }
+    }
+
+    private sealed class TestWebHostEnvironment(string environmentName) : IWebHostEnvironment
+    {
+        public string ApplicationName { get; set; } = "BackEnd_Gps.Tests";
+        public IFileProvider WebRootFileProvider { get; set; } = new NullFileProvider();
+        public string WebRootPath { get; set; } = string.Empty;
+        public string EnvironmentName { get; set; } = environmentName;
+        public string ContentRootPath { get; set; } = string.Empty;
+        public IFileProvider ContentRootFileProvider { get; set; } = new NullFileProvider();
+    }
+}

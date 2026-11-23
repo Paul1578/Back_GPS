@@ -1,6 +1,7 @@
 // fletflow/Api/Middleware/ExceptionMiddleware.cs
 using System.Net;
 using System.Text.Json;
+using fletflow.Domain.Fleet.Exceptions;
 
 namespace fletflow.Api.Middleware
 {
@@ -23,6 +24,7 @@ namespace fletflow.Api.Middleware
             {
                 var status = ex switch
                 {
+                    BusinessConflictException => HttpStatusCode.Conflict,
                     ArgumentException or InvalidOperationException => HttpStatusCode.BadRequest,
                     UnauthorizedAccessException => HttpStatusCode.Unauthorized,
                     KeyNotFoundException => HttpStatusCode.NotFound,
@@ -37,7 +39,9 @@ namespace fletflow.Api.Middleware
                     traceId = context.TraceIdentifier,
                     status = (int)status,
                     error = status.ToString(),
-                    message = ex.Message
+                    message = status == HttpStatusCode.InternalServerError
+                        ? "Ocurrió un error interno. Comparte el identificador de seguimiento con soporte."
+                        : ex.Message
                 };
 
                 context.Response.ContentType = "application/json";

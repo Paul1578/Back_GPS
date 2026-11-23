@@ -2,7 +2,6 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 using fletflow.Application.Auth.Queries;
-using fletflow.Application.Auth.Commands;
 
 
 namespace fletflow.Api.Controllers
@@ -13,14 +12,10 @@ namespace fletflow.Api.Controllers
     public class RolesController : ControllerBase
     {
         private readonly GetAllRolesQuery _getAll;
-        private readonly CreateRoleCommand _create;
-        private readonly DeleteRoleCommand _delete;
 
-        public RolesController(GetAllRolesQuery getAll, CreateRoleCommand create, DeleteRoleCommand delete)
+        public RolesController(GetAllRolesQuery getAll)
         {
             _getAll = getAll;
-            _create = create;
-            _delete = delete;
         }
 
         /// <summary>
@@ -34,32 +29,27 @@ namespace fletflow.Api.Controllers
             return Ok(roles);
         }
 
-        public class CreateRoleDto { public string Name { get; set; } = default!; }
-
         /// <summary>
-        /// Crea un nuevo rol.
+        /// La creación está reservada a una futura administración de plataforma.
         /// </summary>
-        /// <param name="dto">Datos del rol.</param>
-        /// <response code="201">Rol creado correctamente.</response>
-        /// <response code="400">Datos inválidos o rol ya existe.</response>
+        /// <response code="403">Un Admin de empresa no puede modificar el catálogo global.</response>
         [HttpPost]
-        public async Task<IActionResult> Create([FromBody] CreateRoleDto dto)
+        public IActionResult Create()
         {
-            await _create.Execute(dto.Name);
-            return Created("", new { message = "Rol creado", name = dto.Name });
+            // Roles are a shared global catalog. Tenant Admins must not mutate it.
+            return Forbid();
         }
 
         /// <summary>
-        /// Elimina un rol por nombre.
+        /// La eliminación está reservada a una futura administración de plataforma.
         /// </summary>
         /// <param name="name">Nombre del rol.</param>
-        /// <response code="200">Rol eliminado correctamente.</response>
-        /// <response code="404">Rol no encontrado.</response>
+        /// <response code="403">Un Admin de empresa no puede modificar el catálogo global.</response>
         [HttpDelete("{name}")]
-        public async Task<IActionResult> Delete(string name)
+        public IActionResult Delete(string name)
         {
-            await _delete.Execute(name);
-            return Ok(new { message = "Rol eliminado", name });
+            // Roles are a shared global catalog. Tenant Admins must not mutate it.
+            return Forbid();
         }
     }
 }

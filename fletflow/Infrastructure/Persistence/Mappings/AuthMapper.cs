@@ -18,8 +18,11 @@ namespace fletflow.Infrastructure.Persistence.Mappings
             {
                 Id = entity.Id,
                 Username = entity.Username,
+                FirstName = entity.FirstName,
+                LastName = entity.LastName,
                 Email = entity.Email,
                 PasswordHash = entity.PasswordHash,
+                TokenVersion = entity.TokenVersion,
                 IsActive = entity.IsActive,
                 MustChangePassword = entity.MustChangePassword,
                 OwnerUserId = entity.OwnerUserId,
@@ -55,7 +58,9 @@ namespace fletflow.Infrastructure.Persistence.Mappings
             {
                 UserId = entity.UserId,
                 RoleId = entity.RoleId,
-                Role = entity.Role?.ToDomain(),
+                Role = entity.Role is null
+                    ? throw new InvalidOperationException("No se cargó el rol asociado al usuario.")
+                    : entity.Role.ToDomain(),
                 User = null! // Se debe asignar luego si es necesario
             };
         }
@@ -71,8 +76,11 @@ namespace fletflow.Infrastructure.Persistence.Mappings
             {
                 Id = domain.Id,
                 Username = domain.Username,
+                FirstName = domain.FirstName,
+                LastName = domain.LastName,
                 Email = domain.Email,
                 PasswordHash = domain.PasswordHash,
+                TokenVersion = domain.TokenVersion,
                 IsActive = domain.IsActive,
                 MustChangePassword = domain.MustChangePassword,
                 OwnerUserId = domain.OwnerUserId,

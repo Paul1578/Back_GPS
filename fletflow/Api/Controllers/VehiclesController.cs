@@ -18,6 +18,7 @@ namespace fletflow.Api.Controllers
         private readonly GetVehicleByIdQuery _getById;
         private readonly GetVehiclesQuery _getAll;
         private readonly DeleteVehicleCommand _deleteVehicle;
+        private readonly ReactivateVehicleCommand _reactivateVehicle;
 
         public VehiclesController(
             CreateVehicleCommand createVehicle,
@@ -25,7 +26,8 @@ namespace fletflow.Api.Controllers
             ChangeVehicleStatusCommand changeStatus,
             GetVehicleByIdQuery getById,
             GetVehiclesQuery getAll,
-            DeleteVehicleCommand deleteVehicle)
+            DeleteVehicleCommand deleteVehicle,
+            ReactivateVehicleCommand reactivateVehicle)
         {
             _createVehicle = createVehicle;
             _updateVehicle = updateVehicle;
@@ -33,6 +35,7 @@ namespace fletflow.Api.Controllers
             _getById = getById;
             _getAll = getAll;
             _deleteVehicle = deleteVehicle;
+            _reactivateVehicle = reactivateVehicle;
         }
 
         /// <summary>
@@ -45,6 +48,13 @@ namespace fletflow.Api.Controllers
         public async Task<IActionResult> Delete(Guid id)
         {
             await _deleteVehicle.Execute(id);
+            return NoContent();
+        }
+
+        [HttpPost("{id:guid}/reactivate")]
+        public async Task<IActionResult> Reactivate(Guid id)
+        {
+            await _reactivateVehicle.Execute(id);
             return NoContent();
         }
         

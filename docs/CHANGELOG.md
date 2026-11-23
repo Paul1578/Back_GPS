@@ -1,0 +1,674 @@
+## 2026-11-23 — Revalidación read-only de cuentas raíz
+
+- Consulta MySQL local encontró 5 usuarios: los 2 con `OwnerUserId IS NULL` tienen rol Admin y hay 0 Admins con propietario asignado. No se encontraron delegados con owner nulo en esta base.
+- No hubo mutaciones ni exposición de nombres/secretos; no se puede extrapolar a bases de otros ambientes. Ver `SECURITY.md`.
+- Backend `7906ef2` pasó Actions [`45269381165`](https://github.com/Paul1578/Back_GPS/actions/runs/45269381165) y [`45269364838`](https://github.com/Paul1578/Back_GPS/actions/runs/45269364838): Release/xUnit y smokes MySQL/HTTP de migración, tenant, concurrencia y rate limit.
+- HEAD documental `9fa14a8` pasó también Actions [`45270259692`](https://github.com/Paul1578/Back_GPS/actions/runs/45270259692) y [`45270276674`](https://github.com/Paul1578/Back_GPS/actions/runs/45270276674), sin cambios de código.
+- HEAD documental final `3227f99` pasó Actions [`45272138028`](https://github.com/Paul1578/Back_GPS/actions/runs/45272138028) y [`45272147290`](https://github.com/Paul1578/Back_GPS/actions/runs/45272147290): build/xUnit y smokes migración/tenant/concurrencia/rate limit.
+- HEAD documental `a3fb5de` pasó Actions [`45273681084`](https://github.com/Paul1578/Back_GPS/actions/runs/45273681084) y [`45273688213`](https://github.com/Paul1578/Back_GPS/actions/runs/45273688213), con 165/165 xUnit y smokes integrados.
+
+## 2026-11-23 — Pruebas de upgrade histórico y filtros seguros
+
+- Se incorpora `scripts/smoke-tenant-migration.sh`: arranca MySQL efímero, actualiza un esquema legacy hasta `TenantFleetOwnership`, verifica owners/datos y prueba rechazo de rutas discordantes antes de DDL.
+- El script aísla `dotnet ef` en una copia temporal sin `.env` para evitar que configuración local redirija migraciones a una base persistente.
+- Smoke HTTP cubre payloads SQL-like en las búsquedas paginadas de Users y Drivers, validando aislamiento tenant.
+- La base local afectada durante el primer ensayo fue restaurada y verificada en modo lectura; incidencia y evidencia están en `ERROR_LOG.md`.
+- La Action inicial encontró `rg` ausente en GitHub Ubuntu; el chequeo usa ahora `grep -Fq` y se instala MySQL client antes del test. Actions [`45253546602`](https://github.com/Paul1578/Back_GPS/actions/runs/45253546602) y [`45253557375`](https://github.com/Paul1578/Back_GPS/actions/runs/45253557375) pasaron.
+
+## 2026-11-23 — Serialización E2E validada en integración
+
+- Backend `4079ae2` añade lock MySQL por target para evitar que dos runners locales se limpien mutuamente. Suite Release local **165/165** y rechazo concurrente del runner real comprobado sin alterar datos.
+- Backend Actions [`45243805957`](https://github.com/Paul1578/Back_GPS/actions/runs/45243805957) y [`45243813554`](https://github.com/Paul1578/Back_GPS/actions/runs/45243813554) pasaron; Front integrada [`45244177166`](https://github.com/Paul1578/Front_gpsR/actions/runs/45244177166) pasó **67/67 E2E**, responsive **1/1**, audit/lint/build, backend 165/165, API/MySQL y teardown.
+
+## 2026-11-23 — Serialización del runner E2E local
+
+- Añadido advisory lock MySQL por host/puerto/esquema para impedir limpiezas cruzadas entre ejecuciones concurrentes.
+- El segundo runner falla sin ejecutar cleanup; el propietario libera el lock al terminar. Parser compatible con avisos del cliente MariaDB y resultado no bufferizado.
+- Prueba read-only real: adquisición concurrente `1`/`0`; no se modificaron datos.
+
+## 2026-11-23 — Fixture Logistics autenticable para matriz E2E — CI aprobado
+
+- El runner E2E crea un Logistics aislado en la DB descartable junto al resto de identidades QA y lo habilita para login sólo en ese esquema temporal; exporta sus credenciales al frontend. `cleanup-e2e.sql` ya elimina el prefijo del fixture.
+- Causa documentada en Front `docs/ERROR_LOG.md`: el test anterior creaba por API una cuenta con `MustChangePassword=true`; cambiar sólo `IsActive` no la activa y login devolvía 401.
+- `bash -n scripts/run-e2e-local.sh` y `git diff --check` pasan. Actions Backend [`45240751113`](https://github.com/Paul1578/Back_GPS/actions/runs/45240751113) y [`45240738019`](https://github.com/Paul1578/Back_GPS/actions/runs/45240738019) validaron Release/xUnit 165/165, smokes tenant/concurrencia/rate limit y cleanup. Front integrada [`45240745193`](https://github.com/Paul1578/Front_gpsR/actions/runs/45240745193) pasó **67/67 E2E**, responsive, audit/lint/build, Backend 165/165 y teardown. La corrida previa `45236210209` encontró la falta de confirmación Manager, que quedó corregida.
+- El runner consulta el estado de la fila Logistics después del UPDATE (`IsActive:MustChangePassword=1:0`) para diagnosticar si no quedó autenticable. Actions Backend [`45240751113`](https://github.com/Paul1578/Back_GPS/actions/runs/45240751113) y [`45240738019`](https://github.com/Paul1578/Back_GPS/actions/runs/45240738019) y Front [`45240745193`](https://github.com/Paul1578/Front_gpsR/actions/runs/45240745193) validaron este check, **67/67 E2E** y cleanup.
+
+## 2026-11-23 — Evitar Base64 repetido en listados de rutas
+
+- DTO de lista omite Content de evidencias tipo imagen. Metadata y notas se conservan; endpoint de detalle devuelve imágenes.
+- Agregada prueba de contrato. Release 158/158 y build limpio local. Action [45190701729](https://github.com/Paul1578/Back_GPS/actions/runs/45190701729) pasó build, xUnit, smokes HTTP/MySQL y cleanup.
+
+## 2026-11-23 — Límites de evidencia agregada por ruta
+
+- Una ruta acepta como máximo 50 evidencias y hasta 8 MB de contenido acumulado; los rechazos no modifican la ruta.
+- Unit tests **20/20**, suite Release **157/157**, build limpio. Actions Backend [`45187302298`](https://github.com/Paul1578/Back_GPS/actions/runs/45187302298) y [`45187289527`](https://github.com/Paul1578/Back_GPS/actions/runs/45187289527) pasaron sobre `a07838d`; [`45187657647`](https://github.com/Paul1578/Back_GPS/actions/runs/45187657647) pasó también sobre `658858b`.
+
+## 2026-11-23 — Preservación de integridad en rutas y paradas heredadas
+
+- Las migraciones tenant frenan ownership discordante entre conductor y vehículo y detectan rutas ya ocultas con `OwnerUserId=NULL`.
+- JSON de paradas corrupto ahora produce error explícito con el ID de la ruta; el fallback queda reservado a `PointsJson=[]` legado.
+- Prueba focal **4/4**, suite Release **155/155**, build sin warnings/errores. API aplicó migraciones desde DB vacía en MySQL 8 efímero; guard rechazó datos discordantes y preservó relaciones.
+- Action [`45185698388`](https://github.com/Paul1578/Back_GPS/actions/runs/45185698388) validó Release, HTTP/MySQL, concurrencia, rate limit y cleanup.
+
+# 2026-11-23 — Paginación server-side de Equipo y Conductores
+
+- Añadidos endpoints y contrato paginado compatibles con las rutas-array actuales; filtros server-side, orden estable, límite máximo de página y protección de tenant.
+- Front añade búsqueda debounced, filtro de rol/estado y controles responsive en Equipo y Conductores, más E2E con 26 elementos controlados.
+- Backend Release **151/151** y Front lint/build/discovery **52 tests** pasan local. Backend Action [`45178172092`](https://github.com/Paul1578/Back_GPS/actions/runs/45178172092) pasó smoke API/MySQL, concurrencia, rate limit y cleanup; Front Action integrada continúa en ejecución.
+
+# 2026-11-23 — Desvinculación Driver validada extremo a extremo
+
+- Backend Action [`45174526072`](https://github.com/Paul1578/Back_GPS/actions/runs/45174526072) pasó HTTP 409 con ruta pendiente, invariancia MySQL, unlink exitoso, token revocado, rol/cuenta/perfil conservados y cleanup.
+- Front Action [`45174598922`](https://github.com/Paul1578/Front_gpsR/actions/runs/45174598922) pasó **51/51 E2E**, incluida confirmación y persistencia del unlink.
+
+# 2026-11-23 — Smoke de desvinculación con ruta activa
+
+- El fixture manual ahora activa la cuenta usando el endpoint de activación y token efímero.
+- Se amplía el escenario HTTP/MySQL para confirmar HTTP 409 e invariancia de datos ante ruta Pending, luego cancelar/liberar recursos y comprobar limpieza completa.
+- La base validada `fd6ad1e` pasó Action `45173035947` (144/144 xUnit y smokes existentes); la nueva cobertura está pendiente de su propio Action.
+
+# 2026-11-23 — Desvincular User del perfil Driver
+
+- Añadido endpoint de desvinculación User–Driver que conserva cuenta, perfil y rol Driver, bloquea rutas activas y revoca sesiones existentes; tests focales 5/5 y suite 144/144. La Action inicial encontró precondición de activación omitida en el fixture; runner corregido y validación integrada pendiente.
+
+# 2026-11-23 — Carrera de inicio de ruta y mantenimiento
+
+- Agregado test SQLite que impide iniciar ruta con vehículo en Maintenance y verifica que ambos estados permanezcan intactos.
+- Ampliado smoke de concurrencia con inicio HTTP y cambio a Maintenance simultáneos; SQL acepta únicamente `Pending/Maintenance` o `InProgress/OnRoute`. Suite Release **138/138**, build limpio y bash syntax pasan. Tras acortar fixtures (`MRV`/`MRD`), Action [`45142742926`](https://github.com/Paul1578/Back_GPS/actions/runs/45142742926) pasó HTTP/MySQL, concurrencia, rate limit y cleanup.
+
+# 2026-11-23 — Corrección del estado de cobertura multi-parada
+
+- La auditoría confirmó que el ciclo con tres paradas operativas y evidencia ya estaba cubierto por `smoke-tenant-http.sh` y Action `45132350399`; se retiró el pendiente obsoleto del estado vigente y se distinguió de la cobertura xUnit de dominio con una sola parada.
+- Se confirmó también el flujo Driver de dos paradas con nota/foto, evidencia obligatoria, cierre e Historial en Front Action `45131410815` (51/51).
+- Sin cambios de código ni base de datos.
+
+# 2026-11-23 — xUnit de dominio para múltiples operaciones en una ruta
+
+- Añadido ciclo con pickup, delivery y PickupAndDelivery, evidencia individual, rechazo de cierre incompleto y cierre válido. Test focalizado **1/1**, suite Release **137/137**, build limpio y Action [`45141029124`](https://github.com/Paul1578/Back_GPS/actions/runs/45141029124) integrada exitosa.
+
+# 2026-11-22 — Serializar edición Driver y asignación Vehicle
+
+- `UpdateDriverCommand` comparte lock de asignación, vuelve a leer Driver bajo transacción y revierte si falla una validación/escritura.
+- Nueva regresión reproduce actualización perdida cuando otra operación asigna Vehicle después de la primera lectura.
+- Verificación local: Release xUnit **113/113**; smoke/CI integrados pendientes.
+- Runner E2E exporta también el UserId de la cuenta Driver QA que necesita la prueba de Manager mapa.
+- Tras fallos del mapa, runner ahora provisiona Manager y Driver de ruta exclusivos para aislar rol/asignación; cleanup cubre la cuenta Manager temporal.
+- Action `45085910280` confirmó build, pruebas unitarias, aislamiento multiempresa HTTP/MySQL y concurrencia de asignación; cleanup completo.
+- El runner entrega sufijo estable al spec Manager para que un retry tras restart de worker limpie la ruta y vehículo previos.
+- Action `45086298118` para `2619531` pasó build, xUnit, isolation/concurrency smoke y cleanup.
+- Se retiró el API controller de prueba con respuestas estáticas sin consumidores y se añadió aserción de endpoint ausente al smoke HTTP.
+- Action `45086663424` pasó y confirmó HTTP 404 autenticado para `/RoutesPRUEBA/admin`, además de build, xUnit, tenant HTTP/MySQL y concurrencia.
+- Se aplica regla acordada: sólo la cuenta raíz crea o promueve Admin; smoke añade pruebas negativas por los tres endpoints de rol y positivas desde raíz.
+- Smoke tenant ahora valida actualización exitosa del perfil User y sincronización real del Driver enlazado mediante API y SQL.
+
+# 2026-11-22 — Bloquear baja de cuenta Driver con ruta activa — VALIDADO EN CI
+
+- Desactivar una cuenta vinculada a un Driver ahora rechaza con conflicto si tiene rutas `Pending` o `InProgress`, igual que el cambio de rol y la desasignación.
+- La prueba de dominio conserva cuenta, Driver, vehículo, ruta y refresh tokens; el smoke API/MySQL comprueba HTTP 409 y snapshot de estado intacto para una ruta pendiente.
+- Validación local: Release xUnit **111/111**, build **0 warnings/0 errors**, smoke MySQL 8/API descartables exit 0, `bash -n` y diff-check correctos.
+- Action `45071475764` sobre `87b208e` pasó build, xUnit **111/111**, smoke tenant HTTP/MySQL, concurrencia y cleanup.
+
+# 2026-11-22 — Paradas terminales requieren evidencia — VALIDADO EN CI
+
+- API permitía cerrar una parada como Completed/Skipped sin evidencia; después no permitía adjuntarla y la ruta quedaba imposible de finalizar.
+- Dominio ahora rechaza ambas transiciones terminales sin evidencia; interfaz deshabilita Omitir hasta adjuntar evidencia.
+- Release xUnit **110/110** y smoke HTTP/MySQL 8 efímero exit 0; rechazo por HTTP 400 y snapshot MySQL sin cambios para Skip/Complete/ruta. Cleanup explícito cero fixtures.
+- Backend Action `45070491409` terminó `success` sobre `f564aa3`: build, xUnit, tenant HTTP/MySQL, concurrencia y cleanup.
+
+# 2026-11-22 — Vínculo manual User/Driver verificado por HTTP y SQL
+
+- El smoke crea un User normal, confirma que no tenga `driverId`, cambia su rol a Driver y crea después el perfil enlazándolo con `userId`.
+- `GET /Drivers/{id}`, `GET /Users/my-team` y SQL confirman relación única y propietario del tenant; cleanup explícito verifica **0 Driver/0 User**.
+- MySQL 8/API efímeros: smoke completo exit 0. Action `45069402482` pasó build Release, xUnit 107/107, aislamiento HTTP/MySQL, concurrencia y cleanup explícito 0:0. No hay endpoint HTTP para desvincular conservando ambos registros; se pidió definición de producto.
+
+# 2026-11-22 — Pruebas HTTP negativas de CRUD Vehicle/Driver
+
+- `smoke-tenant-http.sh` ahora envía datos inválidos a edición Vehicle, alta Driver y edición Driver.
+- Verifica HTTP 400 para campos requeridos vacíos, año inválido y límites de 20 caracteres de placa/documento/teléfono; consulta MySQL antes/después y exige cero mutaciones o filas nuevas.
+- Smoke completo pasó en MySQL 8 efímero con cleanup en cero; `bash -n` y `git diff --check` correctos. Sin cambios de código de producto. Action `45069402482` validó pruebas negativas y vínculo manual; build Release y xUnit 107/107.
+
+## 2026-11-22 — Logout limitado al dueño del refresh token
+
+- `POST /api/Auth/logout` obtiene el ID del JWT y sólo revoca refresh tokens de esa cuenta.
+- Regresiones xUnit para refresh ajeno/propio; smoke HTTP/MySQL verifica persistencia real.
+- Release build limpio, xUnit **99/99**, tenant/concurrency smokes exit 0 y cleanup sin fixtures.
+- Action `45058536309` sobre `22c2fb6` pasó build/xUnit, tenant HTTP/MySQL, concurrencia y cleanup.
+- Hallazgo y prevención en `docs/ERROR_LOG.md`; auditoría en `docs/SECURITY.md`.
+
+## 2026-11-22 — Edición de perfil de miembros del equipo
+
+- Users.FirstName/LastName se guardan y exponen en equipo; migración aditiva con backfill desde Drivers existentes.
+- PUT /api/Users/{id}/profile permite al Admin del tenant editar nombre, apellido y username de un miembro; no acepta cambio de correo ni edición de la cuenta raíz. Nombres se sincronizan con el Driver enlazado en la misma unidad de trabajo.
+- Las ediciones de Driver sincronizan nombres a User, con comprobación explícita de OwnerUserId.
+- Build Release 0 warnings/0 errores, xUnit 62/62. Smoke HTTP/MySQL de tenant y concurrencia pasan en esquema MySQL 8 descartable.
+- Playwright final pasó 18/18 en Chrome contra frontend, API y MySQL efímero; runner devolvió código 0 y el esquema temporal se destruyó. Actions 45005400763 pasó build, xUnit, smoke HTTP/MySQL tenant y smoke concurrente en el commit e54d3c8.
+
+## 2026-11-22 — E2E cross-repo de ownership Driver
+
+- Actions Front `45002920723` + Back `41c01e7` pasó 18/18, incluyendo aislamiento por Driver y perfil inactivo, junto con Release/xUnit 61/61.
+
+## 2026-11-22 — Cierre de fix GPS para Driver inactivo (backend)
+
+- Cambio centralizado en `IsCurrentDriverAssigned`, backend Release 61/61; Actions `45002238853` pasó. El E2E Front que comprueba denegación por otro Driver y perfil inactivo/reactivado queda pendiente de Actions.
+
+## 2026-11-22 — Autorizar GPS sólo a Driver activo asignado
+
+- `GET /Routes/{id}` y `GET/POST /Routes/{id}/positions` reutilizan `IsCurrentDriverAssigned`; se deniega GPS cuando el perfil operativo Driver está inactivo o la ruta pertenece a otro conductor. Integración HTTP/UI pendiente.
+
+## 2026-11-22 — Atomicidad alta Driver bajo concurrencia
+
+- El smoke HTTP/MySQL corre dos altas con documento idéntico y correos distintos; valida un ganador y un conflicto, y una única cuenta, perfil Driver y token de activación. Actions `45001599626` pasó con xUnit 61/61 y concurrencia de asignación.
+
+# Changelog
+
+## 2026-11-22 — Matriz HTTP por rol ampliada
+
+- El smoke agrega la frontera Manager→Users/Roles (403, sin alta ni cambio de estado) y Logistics→Vehicles/Drivers (403 para modificación/reactivación/baja y asignaciones, con integridad SQL antes/después).
+- Se documentó y corrigió una aserción de smoke que comparaba una ruta legítimamente editada antes de comprobar la ausencia de mutaciones en Vehicle/Driver. Ejecución completa API + MySQL 8 efímero y cleanup pasaron localmente; Action `45080063668` también pasó (build, xUnit 111/111, HTTP/MySQL y concurrencia).
+- Se añadió prueba unitaria positiva del comando de asignación para Driver activo sin UserId, comprobando VehicleId y Commit. Release xUnit **112/112** pasa localmente; Action actualizada pendiente.
+
+## 2026-11-22 — Respetar asignación exclusiva Vehicle/Driver en rutas — VALIDADO
+
+- CreateRoute/UpdateRoute validan después de adquirir locks y releer entidades. El conflicto devuelve HTTP 409 antes de persistir.
+- Añadidas regresiones SQLite para estado intacto y comprobaciones SQL al smoke de concurrencia. Actions `45032172895`: Release build, xUnit 82/82, HTTP/MySQL y cleanup correctos.
+
+## 2026-11-22 — Defensa de tenant en comando de edición de perfil
+
+- El comando ahora requiere `CurrentOwnerUserId` y filtra explícitamente User y Driver por propietario además del query filter global.
+- Pruebas xUnit cubren sincronización de User/Driver, normalización y rechazo de User de otro tenant; Release **64/64** local.
+- Smoke HTTP amplía el máximo de 100 caracteres para FirstName y LastName; Actions `45007491905` pasó build, xUnit **64/64**, smoke tenant HTTP/MySQL y concurrencia; cleanup exitoso.
+- La revisión estática no encontró IDOR directo en endpoint actual. La asignación de Admin por Admin delegado queda pendiente de política de negocio.
+
+## 2026-11-21 — Rate limit Development y prueba E2E extendida
+
+- Loopback en Development se exime del rate limit para que QA local no bloquee flujos válidos; fuera de Development se conserva 60/min por IP.
+- xUnit añadió pruebas para el bypass de Development y el límite de Production; suite Release queda 47/47.
+- Chrome E2E frontend/API/MySQL pasó 5/5, incluyendo creación/edición/baja/reactivación de Driver, transición Driver→Logistics→Driver, cancelación y consulta de Historial de ruta en 390×844.
+- Cleanup confirmó 22 migraciones, cero datos de fixture y cero sesiones refresh activas. SMTP sigue sin credenciales.
+
+## 2026-11-21 — Consistencia de rutas y endurecimiento de configuración
+
+- CreateRoute/UpdateRoute guardan asignación de vehículo del conductor y ruta en una sola unidad de trabajo; test de integración EF InMemory añadido.
+- Se eliminó la contraseña `admin` de Docker Compose y `.env.example`; el backend exige variables de conexión y JWT válidos.
+- Se rotaron MySQL root y clave JWT locales; Compose requiere valor desde `.env`, excluido de Git y con modo 0600.
+- El contenedor MySQL se recreó preservando su volumen; 21 migraciones continúan aplicadas.
+- Verificación actual: 43/43 tests, Release sin warnings, cero paquetes NuGet vulnerables; Swagger y endpoints locales respondieron correctamente.
+
+## 2026-11-21 — Revisión independiente de seguridad y consistencia
+
+- Se dejaron de registrar tokens de activación/restablecimiento; activar cuenta también revoca sesiones.
+- Cada cuenta conserva un rol único, con índice MySQL y actualización atómica; asignación a vehículo en mantenimiento bloqueada.
+- Se quitó el acceso legacy a rutas usando el ID de usuario; CORS aplica en todos los entornos y producción activa HTTPS/HSTS.
+- Rutas conservan `StartedAt` y `EndedAt`; migración aditiva `RouteLifecycleAndSingleRole` aplicada (22 migraciones).
+- Se añadió limpieza periódica al rate limiter local y prueba para ciclo de vida/vehículos en mantenimiento.
+- Resultado: Release 45/45; NuGet y npm sin vulnerabilidades; frontend lint/build correctos.
+- MySQL y phpMyAdmin ahora exponen sus puertos sólo en `127.0.0.1`; Compose recreó ambos servicios y preservó el volumen.
+- Chrome E2E completó flujos representativos de Vehicle, Driver, User y Logistics; fixtures eliminados y resultado registrado en `docs/TESTING.md`.
+
+## 2026-11-20
+
+- Se instaló .NET SDK 8.0.428 localmente.
+- Se verificó compilación del backend y Swagger.
+- Se documentaron hallazgos de seguridad y arquitectura.
+- Se confirmó que las paradas pueden ser recogida, entrega o ambas.
+- Se bloqueó la elección de rol desde el registro público. La cuenta nueva es Admin raíz de su propio tenant (rol fijo de servidor, `owner_id` propio), sin acceso a empresas existentes; el smoke integrado comprueba aislamiento.
+- Se protegió el endpoint de prueba de correo.
+- Se eliminaron tokens de recuperación de los logs.
+- Se revocan refresh tokens después de resetear contraseña.
+- Se restringió CORS a orígenes configurados.
+- Se eliminó la contraseña fija del seeder admin.
+- Se añadió operación y estado a cada punto de ruta, manteniendo compatibilidad con rutas existentes.
+- Se persistió correctamente el nombre en la actualización de rutas.
+- Se verificó la API corregida en `5047`: Swagger HTTP 200, rutas sin token HTTP 401 y prueba de correo sin token HTTP 401.
+# Cambios 2026-11-20 — Estabilización de backend
+
+- Registro público no puede elegir roles: el servidor crea Admin raíz aislado para cada empresa nueva; endpoint de prueba SMTP requiere Admin.
+- Se quitaron tokens de recuperación de logs, reset revoca refresh tokens y el seeder no incluye contraseña fija.
+- CORS toma orígenes de configuración; secretos locales pasan por `.env`; errores 500 ocultan detalles internos.
+- Rutas validan fechas, vehículo disponible, solapamiento y transiciones de estado; el nombre de actualización persiste.
+- Paradas admiten operación y estado entrega/recogida/ambas; ubicaciones GPS validan rangos y limitan lecturas.
+- Añadida suite xUnit con 25 pruebas; compilación/tests limpios después de alinear EF Relational.
+- Se implementó aislamiento de recursos por `owner_id`, stamping del propietario, restricciones únicas por empresa y migración aditiva `TenantFleetOwnership`; tests de aislamiento y claim JWT incluidos (25/25). Migración aplicada tras asignar el vehículo legado al Admin raíz más antiguo con aprobación del usuario.
+- E2E local sobre MySQL pasó: vehículo, conductor, ruta de recogida/entrega, GPS, estados, limpieza de datos y verificación IDOR cross-tenant.
+- Pendientes de producto/seguridad están listados en `PROJECT_STATUS.md` y `SECURITY.md`.
+
+## 2026-11-22 — Onboarding de empresa con tenant raíz
+
+- El registro público ahora crea una cuenta raíz Admin fija; `roleName` del cliente se ignora y el owner del tenant deriva del ID del usuario nuevo.
+- Se amplía el smoke para verificar claims, empresa recién creada, flota vacía y acceso cruzado denegado, y se elimina la elevación SQL manual del tenant secundario.
+- xUnit Release local y Actions **61/61**; smokes HTTP/MySQL tenant/concurrencia success en `44999697740` (`3620cc2`).
+
+## 2026-11-20 — Operación y evidencia por parada
+
+- Se añadieron endpoints para actualizar el estado de una parada y guardar evidencia asociada a ella.
+- Las rutas sólo se completan cuando todas sus operaciones están completadas u omitidas y cada una tiene evidencia; el cliente no puede crear paradas ya completadas.
+- La vista Driver ahora muestra el tipo y estado de cada parada, permite iniciarla, omitirla, reintentarla, adjuntar notas/fotos y completar la ruta sólo cuando corresponde.
+- El estado operativo de ruta usa el endpoint de cambio de estado, no el endpoint de edición; pausar libera el vehículo cuando no hay otra ruta activa.
+- Se corrigió el mapeo de operaciones al editar una ruta y se conservan evidencias incluso en origen/destino operativos.
+- Verificación: frontend lint/build correctos; backend 30/30; E2E HTTP/MySQL de recogida, entrega, evidencia, posición y cierre aprobado; registros QA eliminados.
+- E2E adicional verificó pausa, disponibilidad de vehículo y reanudación; todos los recursos temporales se eliminaron.
+- Gestión de equipo ahora crea el conductor una sola vez con sus datos reales; SMTP fallido deja cuenta/driver persistidos y responde `invitationSent=false`.
+- Logs SMTP se redujeron para no incluir emails destinatarios, host SMTP ni cuerpos de correo.
+
+
+## 2026-11-21 — Regresiones de aislamiento y policies
+
+- EF InMemory prueba aislamiento de Vehicles, Drivers, Routes y RoutePositions entre dos tenants.
+- Se añadieron asserts de roles para controllers Vehicles, Drivers y Users.
+- Suite Release: 48/48; siguen pendientes las pruebas de matriz HTTP/MySQL cross-tenant automatizadas en CI.
+
+## 2026-11-21 — IDOR validado con dos tenants reales
+
+- E2E sobre API/MySQL confirma aislamiento y 404 en operaciones individuales de Vehicles, Drivers y Routes; bloquea asociar IDs ajenos en una nueva ruta.
+- La ruta propietaria persiste GPS; el tenant cruzado sólo recibe colección vacía y no puede escribir posiciones.
+- Chrome/API/MySQL: 8/8; limpieza QA verificada en cero.
+
+## 2026-11-21 — E2E API/MySQL integrado al workflow backend
+
+- CI crea servicio MySQL 8, inicia API con credenciales efímeras y ejecuta smoke HTTP cross-tenant de Vehicles, Drivers, Routes y GPS.
+- El smoke limita destino/DB, prueba operaciones cruzadas y limpia sus fixtures exactos.
+- DotNetEnv ahora preserva variables de CI sobre `.env` mediante `NoClobber`; test local equivalente pasó en DB aislada con 22 migraciones.
+- El smoke valida HTTP 403 para el rol User en lectura/escritura de flota; comprobado en la DB descartable `fletflow_ci_validation_03`.
+- Frontend CI ahora provisiona MySQL y checkout del backend feature, ejecuta la API y los ocho flujos Playwright autenticados. Runner generalizado a MySQL host y variables CI; repetición local 8/8.
+- Primera ejecución remota backend pasó. Frontend encontró precheck prematuro de Next; se corrigió el runner para que Playwright inicie frontend en CI. Actions subieron a runtimes Node 24.
+# 2026-11-21 — Estabilización de concurrencia de rutas
+
+- Se serializan creación, edición, inicio y cambios relacionados de rutas por tenant usando transacciones MySQL y locks ordenados de ruta, vehículo y conductor. Conflictos operativos responden 409.
+- Iniciar ruta valida Driver activo y que el vehículo no tenga ya otra ruta en progreso.
+- Desactivación de Driver, asignación manual y cambios de estado de Vehicle comparten locks para evitar estados contradictorios con una ruta en progreso.
+- Smoke MySQL real para create/update/start y start/deactivate simultáneos; los asserts revisan estados persistidos, no sólo códigos HTTP.
+- Se fijó SQLitePCLRaw.lib.e_sqlite3 2.1.14 tras detectar CVE-2025-6965 en el artefacto de pruebas 2.1.10.
+
+## 2026-11-21 — Protección de sesiones y ciclo de vida de flota
+
+- Baja de usuario revoca refresh tokens; JWT y refresh rechazan cuentas inactivas.
+- Inicio con vehículo inactivo rechazado; se protege la ruta en curso de bajas y la desasignación de conductor.
+- Baja de vehículo valida relaciones operativas y se agrega endpoint de reactivación.
+- Escrituras concurrentes de estado/evidencia de paradas se serializan por Route.
+- Smokes HTTP/MySQL ampliados para sesión revocada, conflictos operativos, reactivación y pérdida de actualizaciones concurrentes.
+
+## 2026-11-21 — Roles y locks de ruta
+
+- Cambio de rol serializado con inicio de ruta y revocación de refresh tokens.
+- JWT rechaza roles obsoletos; smokes MySQL validan access/refresh revocados y consistencia concurrente.
+- Runner E2E normaliza URL local con/sin `/api`; suite frontend Chrome/API/MySQL: 14/14.
+- Smoke HTTP amplía permisos de escritura para Manager, Logistics, User y Driver; se verificó persistencia/denegación en MySQL temporal y se eliminó la base.
+
+## 2026-11-21 — Pruebas de recovery y CI
+
+- Se agregaron pruebas de reset/activación y revocación de sesiones.
+- Suite backend Release 54/54; Actions backend y frontend de los commits publicados finalizaron correctamente.
+
+## 2026-11-21 — Invalidación inmediata de JWT de password anterior
+
+- Se agregó versión de credenciales por usuario y validación del claim en cada request; cualquier cambio de password invalida inmediatamente access y refresh previos.
+- Migración EF Core aditiva `TokenVersion` default 0; smoke HTTP verifica cambio de contraseña, tokens revocados y login con password nueva.
+
+- Backend Actions `44983337062` aprobó migración y smoke HTTP/MySQL del cambio de contraseña; access/refresh anteriores rechazados inmediatamente.
+
+- Pruebas unitarias cubren cambio de contraseña exitoso y rechazo sin efectos cuando falla la contraseña actual; suite local ampliada a 56/56.
+
+- Backend Actions `44983763612` pasó 56/56 pruebas y los smokes HTTP/MySQL tenant, sesiones y concurrencia.
+
+## 2026-11-21 — Invalidación de access JWT al cambiar roles
+
+- Un cambio efectivo de rol incrementa `TokenVersion` junto al reemplazo de rol y revoca todos los refresh tokens; un JWT anterior no puede volver a ser válido aunque se restaure su rol.
+- xUnit cubre cambio efectivo y no-op. El smoke tenant prueba Logistics→User→Logistics y verifica 401 persistente para access/refresh originales.
+- El smoke HTTP acepta `MYSQL_PORT` para usar una instancia MySQL desechable sin tocar la DB local.
+
+## Validación CI — 2026-11-22
+
+- `3f3b004` pasó Actions `44986173700`: 57 pruebas Release y smokes HTTP/MySQL tenant, roles, sesiones y concurrencia.
+
+## 2026-11-22 — Creación de rutas por Logistics en smoke HTTP
+
+- El smoke valida el ciclo crear/leer/editar/leer/dar de baja de una ruta como Logistics con los fixtures de vehículo y conductor creados por Manager; el ciclo Manager se da de baja antes para evitar solapamiento de agenda.
+- Cleanup conserva y elimina por separado las rutas lógicamente dadas de baja de ambos roles. Smoke API/MySQL efímero completo aprobado.
+- Actions `44988756481` para `43ca30c` pasó: build, xUnit y smokes HTTP/MySQL de tenant, Logistics y concurrencia.
+
+## 2026-11-22 — Logistics opera una ruta de inicio a cierre
+
+- El smoke HTTP comprueba PickupAndDelivery, transición InProgress, evidencia, coordenadas GPS, estado Completed y vehículo devuelto a Available.
+- MySQL 8/DB descartable confirmó persistencia y cleanup en cero rutas, posiciones y vehículos. El primer conteo mezcló un warning MySQL; se separó stderr y la repetición pasó.
+- Actions `44990525889` para `d58c5ab`: build, xUnit 57/57 y smoke completo success. Después se añadió fallback de cleanup por nombre, probado localmente; queda pendiente Actions para ese ajuste.
+- Actions `44991032520` para `da53081` pasó build, xUnit 57/57 y smoke HTTP/MySQL; cleanup `0:0:0`. El fallback excepcional de ID ausente no se indujo.
+
+## 2026-11-22 — Placa duplicada produce conflicto claro
+
+- Crear y editar un vehículo con placa ya usada ahora lanzan conflicto de negocio HTTP 409 con un mensaje en español; antes se convertía en 400 con detalle técnico en inglés.
+- Se añadieron pruebas unitarias para ambos comandos; suite Release local 59/59. CI integrado pendiente.
+- Actions `44995681296` confirmó `6ec5315`: build, pruebas unitarias y smokes HTTP/MySQL de tenant y concurrencia en success.
+
+## 2026-11-22 — Documento de conductor duplicado es conflicto
+
+- CreateDriver y UpdateDriver ahora usan BusinessConflict/HTTP 409; el endpoint Admin al crear cuenta Driver devuelve el mismo contrato en español en vez de HTTP 400.
+- Añadidas dos pruebas unitarias y E2E móvil de rechazo sin cuenta parcial. Release local 61/61; integración pendiente.
+- Actions `44997043103` confirmó build, xUnit 61/61 y smokes HTTP/MySQL completos para `a7f7c4e`.
+- Cross-branch confirmado por Actions `44997054375`: backend `a7f7c4e` integrado con Front `1bb7d71`, xUnit 61/61, E2E 16/16, responsive 1/1, cleanup success.
+
+
+## 2026-11-22 — Aislamiento de equipo y protección de propietario
+
+- El smoke ahora prueba HTTP 404 al modificar estado/rol de un usuario de otra empresa, incluidos alias legado; Admin no puede desactivar ni degradar su cuenta raíz (400). MySQL verifica que rol/estado siguen intactos.
+- Actions `45000893415` pasó: xUnit 61/61, smokes tenant/roles/usuarios/concurrencia y cleanup.
+
+## 2026-11-22 — Alta de Driver atómica ante concurrencia
+
+- El comando de registro permite diferir el guardado para persistir Users, Drivers y PasswordResetTokens juntos; una colisión concurrente de documento se devuelve como 409 y no deja cuenta huérfana.
+- Smoke HTTP/MySQL simultáneo y conteos de consistencia añadidos; Actions pendiente.
+
+## 2026-11-22 — Restringir el perfil a roles autorizados y validar campos
+
+- Backend smoke ahora prueba username vacío, valores mayores de 100 caracteres y conservación de datos ante 400; validación HTTP/MySQL pendiente para este incremento.
+
+
+## 2026-11-22 — Ampliar smoke tenant y CRUD de Driver
+
+- `smoke-tenant-http.sh` verifica las mutaciones cross-tenant de estado/evidencia de parada y comprueba persistencia intacta tras 404.
+- Añade ciclo positivo HTTP Driver: alta/consulta/edición, baja/reactivación con filtro `onlyActive=false` y asignación/desasignación de vehículo con lecturas de persistencia.
+- MySQL 8 aislado smoke aprobado; Release xUnit 64/64 y `bash -n` pasan. Actions pendiente.
+
+
+- Actions backend `45009348293` para `c6f74f8` terminó success: build Release, xUnit **64/64**, smokes HTTP/MySQL tenant+Logistics y concurrencia; contenedores/DB de prueba limpiados.
+
+
+## 2026-11-22 — Cobertura de límites temporales GPS
+
+- El smoke de tenant verifica límites inclusivos `from`/`to`, filtros de un solo límite, intervalo sin coincidencias e intervalo invertido para GET positions. Contrato actual: el rango invertido devuelve HTTP 200 y lista vacía.
+- Validación local: Release 64/64, smoke HTTP/MySQL efímero completo, `bash -n` y diff-check; Actions pendiente.
+
+
+- Actions `45009987648` para `729f326` terminó success: xUnit 64/64, Release build, smoke HTTP/MySQL tenant/Logistics/GPS y concurrencia; cleanup correcto.
+# 2026-11-22 — Endpoint mínimo de asignación de rutas
+
+- Se agregó `GET /Routes/assignment-options` para Admin, Manager y Logistics; el DTO expone vehículos/Drivers activos y excluye datos personales innecesarios.
+- Smokes agregados para denegar User, limitar tenant y comprobar que Logistics recibe sólo opciones de su empresa.
+- Build/xUnit local: 0 warnings/0 errors y 64/64. Actions `45011796536` pasó build, xUnit y smoke HTTP/MySQL de tenant/Logistics/concurrencia con cleanup correcto.
+# 2026-11-22 — Filtrar recursos no asignables del constructor
+
+- Opciones de rutas excluyen vehículos en ruta/mantenimiento y Drivers cuya cuenta vinculada esté inactiva; Drivers activos sin cuenta siguen disponibles.
+- Añadidos xUnit y smoke HTTP/MySQL para condiciones de elegibilidad. Local: Release 65/65, build 0 warnings/0 errors, script válido.
+- Actions `45014146500` pasó Release build, xUnit 65/65, smoke HTTP/MySQL de asignabilidad/tenant/concurrencia y cleanup sin residuos.
+
+# 2026-11-22 — Validación de alta Driver
+
+- Documento/teléfono se recortan y validan como requeridos, con máximo de 20 caracteres igual a las columnas MySQL y al comando de edición.
+- Añadidos tests para rechazar cada campo en 21 caracteres y permitir ambos en 20. Local: Release 0 warnings/0 errors, xUnit 68/68; Actions pendiente.
+- Actions `45016257332` validó el commit `24a9703`: Release, xUnit 68/68, smoke HTTP/MySQL tenant y concurrencia. Los casos de campos obligatorios añadidos después todavía esperan CI.
+- Suite local: Release 0 warnings/0 errores, xUnit 72/72. Actions `45016639356` pasó build/xUnit y smokes HTTP/MySQL tenant/roles/Logistics/concurrencia, cleanup correcto.
+# 2026-11-22 — Una asignación actual por vehículo
+
+- Se impide que un segundo perfil Driver conserve el mismo VehicleId; para reasignar se desasigna primero al actual. Consulta bajo el lock tenant-scoped del vehículo.
+- xUnit prueba rechazo; smoke MySQL prueba dos asignaciones concurrentes, un éxito/un conflicto y unicidad persistida. Validación pendiente.
+- Verificación local: Release build 0 warnings/0 errors, xUnit 73/73, bash syntax y diff-check; Actions MySQL pendiente.
+- Actions `45017642439` para `8d19118` pasó: Release, xUnit **73/73**, smoke HTTP/MySQL tenant/roles/operación y smoke concurrente de asignación; concurrencia dejó exactamente un Driver por vehículo y cleanup sin residuos.
+
+# 2026-11-22 — Fecha real de creación de rutas
+
+- `Routes` almacena `CreatedAtUtc` nullable mediante migración aditiva; rutas nuevas fijan hora UTC al crear, editar conserva el valor, DTO lo expone y consultas ordenan por fecha real con fallback de operación para históricos.
+- Smoke HTTP/MySQL verifica persistencia y que editar no cambie `CreatedAtUtc`. Release/xUnit local **73/73**, shell syntax y diff-check pasan. Actions backend `45020146775` terminó success: migración aplicada en MySQL efímero, smoke HTTP/DB y concurrencia correctos, cleanup completo.
+
+# 2026-11-22 — Invalidación de access JWT y catálogo global de roles
+
+- Estado de usuario ahora incrementa `TokenVersion` en cada transición, incluida reactivación; una sesión anterior no puede revivir. Repetir el mismo estado no cambia la versión. Refresh tokens se revocan al desactivar.
+- Los Admin de tenant mantienen lectura de `/Roles`; POST/DELETE responden 403 porque `Roles` es catálogo global sin propietario ni rol de plataforma definido.
+- xUnit Release **74/74**. Smoke HTTP/MySQL 8 efímero pasó incluyendo token viejo 401 tras reactivación, sesión nueva 200, catálogo protegido, multi-tenant y cleanup cero residuos. Actions `45021088919` confirmó este cambio.
+- Actions `45021088919` para `eaeb495` pasó: Release/xUnit **74/74**, smoke HTTP/MySQL y concurrencia con cleanup exitoso.
+
+## 2026-11-22 — Endurecimiento de sesiones
+
+- Refresh concurrente ahora se rota con una operación condicional transaccional para permitir un único ganador.
+- Logout-all incrementa `TokenVersion` e invalida access JWT y refresh anteriores.
+- Recuperación no revela expiración ni existencia de cuenta; errores SMTP se registran y no se reporta entrega exitosa.
+- Añadidas pruebas unitarias y smoke HTTP/MySQL para carreras y revocación.
+
+- Logout-all y refresh ahora se serializan por lock transaccional de la fila User; smoke MySQL fuerza la contención y confirma que el cierre revoca cualquier sucesor.
+
+## 2026-11-22 — Recuperación con respuesta uniforme
+
+- SMTP ya no bloquea la petición de recuperación; un worker bounded intenta entregar fuera del request.
+- Respuestas de cuenta conocida/desconocida tienen el mismo payload y mínimo de 250 ms. Cola llena/SMTP no configurado queda en logs y nunca se afirma éxito.
+- La cola en memoria requiere sustituirse por un outbox durable antes de tratar entrega como operación garantizada en producción.
+
+## 2026-11-22 — Altas de miembros y matriz de asignaciones
+
+- Backend valida Username/FirstName/LastName hasta 100 y Email hasta 200, y traduce duplicados de email concurrentes a HTTP 409 con atomicidad.
+- Formulario TeamManagement refleja límites de API y trimea entradas antes del envío.
+- Smoke añade validación max/max+1, carrera HTTP/MySQL de email, Driver sin acceso a options y cleanup explícito de cuentas QA.
+
+## 2026-11-22 — Outbox durable para recuperación
+
+- Sustituida la cola de proceso por EmailOutbox cifrado con Data Protection y migración EF aditiva; token de reset y correo se guardan en el mismo commit.
+- Añadido worker con claim atómico, lease, token de fencing, reintentos con backoff, dead-letter y purga por retención.
+- Recuperaciones concurrentes se serializan por fila de usuario para invalidar cualquier token previo antes del commit.
+- Validación local: Release xUnit 77/77, API/MySQL 8 smoke aprobado, payload opaco, 1 token activo tras dos requests simultáneos y cleanup completo.
+# 2026-11-22 — Revalidación de ownership Driver al cambiar estado
+
+- `ChangeRouteStatusCommand` vuelve a validar el Driver solicitante después de adquirir locks y recargar la ruta, cerrando TOCTOU por reasignación concurrente.
+- Agregada regresión unitaria que reasigna durante lock; el Driver anterior no puede cancelar ni actualizar la ruta.
+- Suite Release local: 78/78. Actions `45029374847` pasó build, xUnit, smoke HTTP/MySQL, concurrencia y cleanup.
+- Actions `45029798323` confirma HTTP/MySQL same-tenant: Driver ajeno no lee ni muta ruta/GPS, y cleanup success.
+
+# 2026-11-22 — Tests del worker de EmailOutbox
+
+- Agregados casos SQLite que ejecutan EmailOutboxWorker para entrega/descifrado exitosos y dead-letter al intento 12.
+- Suite Release 80/80; build 0 warnings/0 errors. Actions `45030208849` pasó también con smoke API/MySQL y cleanup.
+
+## 2026-11-22 — Correcciones de auditoría de seguridad
+
+- Rate limit por IP ahora contabiliza en forma atómica bajo concurrencia.
+- Email diagnóstico restringido a Development y al email autenticado.
+- Producción requiere key ring Data Protection persistente y certificado para cifrarlo.
+- xUnit Release 85/85 y build 0 warnings/0 errors; Actions pendiente.
+
+## 2026-11-22 — Cierre integrado backend de seguridad
+
+- Actions `45037399332` validó commit de código `94c3e90`: xUnit 85/85, build sin warnings/errores, smokes HTTP/MySQL y concurrencia de rutas con cleanup.
+
+## 2026-11-22 — Test del cifrado/persistencia de Data Protection
+
+- Se prueba con certificado temporal que el key ring queda cifrado y sigue usable después de reiniciar el provider.
+- Release xUnit **86/86**; build 0 warnings/0 errores; Actions pendiente.
+- Front Actions `45038687601` pasó contra Backend `b625c28`: xUnit 86/86, E2E 23/23 y cleanup.
+
+## 2026-11-22 — Regresión concurrente y rotación Data Protection
+
+- La prueba de 200 requests sincroniza el inicio con barrera, demuestra solapamiento real y conserva el límite 60 aceptadas / 140 rechazadas.
+- Production acepta certificado actual y certificado anterior para descifrar key rings existentes; `.env.example` y SECURITY documentan las variables nuevas y la retención del PFX anterior.
+- Prueba de rotación verifica descifrado de payload previo y round-trip nuevo con provider configurado con ambos certificados.
+
+## 2026-11-22 — Estabilización del rate limit y rotación Data Protection
+
+- El test del rate limit fuerza solapamiento real de 200 solicitudes; verifica 60 aceptadas y 140 rechazadas por la misma IP.
+- Se permite mantener el certificado anterior como fallback de descifrado durante rotación; el actual protege las claves nuevas. Se añadieron pruebas de payload previo y nuevo.
+- Tests Release 86/86, build Release 0 warnings/0 errors. Actions backend del commit resultante pendiente.
+- Backend `b664b2c` pasó Actions `45040550853`: xUnit 86/86, Release build, smoke HTTP/MySQL de tenant y concurrencia, cleanup success.
+# 2026-11-22 — Bloquear inicio de ruta con cuenta Driver inactiva
+
+- El inicio vuelve a validar que la cuenta User vinculada siga activa después de adquirir locks de asignación. Desactivar cuenta de un Driver usa el mismo orden de locks y devuelve 409 si su ruta está en progreso.
+- Nuevos tests xUnit verifican inicio denegado sin mutar ruta/vehículo y baja denegada sin revocar la cuenta durante operación activa. El smoke HTTP/MySQL cubre ambos estados y confirma persistencia SQL y cleanup.
+- Local: xUnit Release **88/88**, build 0 warnings/errors, shell syntax y diff-check pasan. Backend `190f284` pasó Actions `45045070288`: HTTP/MySQL tenant+flota, concurrencia, xUnit **88/88** y cleanup.
+
+
+## 2026-11-22 — Cancelación pendiente preserva Maintenance
+
+- `ChangeRouteStatusCommand` sólo cambia Vehicle a Available cuando la ruta estaba InProgress; cancelar una ruta Pending no altera el estado operacional del vehículo.
+- Regresión SQLite confirma route Cancelled y vehicle Maintenance. `smoke-tenant-http.sh` añade una segunda ruta Pending, pone el vehículo en Maintenance, cancela esa ruta y consulta SQL antes de reanudar la ruta principal.
+- Test focal 1/1; Release xUnit 89/89; bash syntax/diff-check pasan. Nueva Actions con smoke MySQL pendiente.
+
+- Actions Front `45046312974` pasó Front `d05dcf8`: responsive 1/1, E2E API/MySQL 26/26, backend Release, audit/lint/build y cleanup.
+
+
+## 2026-11-22 — Serializar revocación de sesiones, reset y acceso GPS
+
+- Cambio contraseña, reset, activación y cambio de estado de usuario ahora toman el lock de fila de sesión compartido con refresh rotation antes de mutar o revocar refresh tokens. UpdateUser relee estado después del lock para cuentas no Driver.
+- Consumo de PasswordResetToken se vuelve condicional a `UsedAt IS NULL` y no expirado; los flujos ResetPassword/ActivateAccount vuelven a cargar el token tras obtener el lock y sólo guardan password/revocan refresh si lo consumen.
+- Registro GPS vuelve a cargar la ruta tras tomar lock de ruta/asignación y verifica Driver activo y dueño actual; lectura GPS de Driver mantiene lock durante la consulta. Añadida regresión de reasignación durante lock con cero posiciones escritas.
+- Tests Release **91/91**, build **0 warnings/0 errors** y test SQLite de consumo único. El smoke MySQL de mantenimiento se corrigió luego del 409 de fixture por agenda; requiere Actions nueva.
+
+
+## 2026-11-22 — Evitar enviar emails de recuperación caducados
+
+- `EmailOutboxWorker` valida que el token asociado al payload cifrado siga activo, no usado y sin expirar antes de enviar. Si quedó invalidado por una nueva solicitud/consumo/expiración, lo marca terminal como `ResetTokenInactive` y no envía un enlace muerto.
+- Test SQLite del worker verifica que no se llama al remitente, se registra supresión terminal, y no se incrementa el contador de fallos SMTP.
+- Worker enfocado **3/3**; suite Release **92/92**, build **0 warnings/0 errors**. CI backend/Front integrada pendiente.
+
+## 2026-11-22 — Integridad de Driver y vehículo en rutas activas
+
+- Reasignar un Driver con una ruta activa Pending/InProgress ahora responde conflicto. La transición a InProgress también rechaza una ruta cuyo vehículo no coincide con la asignación vigente del Driver.
+- Se añadieron pruebas SQLite y smoke HTTP/MySQL para verificar que el conflicto no cambie ruta, conductor ni estados de vehículos.
+- Action [45048795456](https://github.com/Paul1578/Back_GPS/actions/runs/45048795456) confirmó 94/94 pruebas, build y smoke HTTP/MySQL/concurrencia, con cleanup de fixtures exitoso.
+
+## 2026-11-22 — Revocación de sesiones y asignaciones pendientes
+
+- El cambio de rol ahora serializa token-version/revocación con la rotación de refresh.
+- No se permite desasignar, dar de baja o sacar del rol Driver a un conductor con rutas activas pendientes o en progreso.
+- Pruebas y smoke ampliados para persistencia, conflicto y refresh concurrente.
+- Action backend [45050058627](https://github.com/Paul1578/Back_GPS/actions/runs/45050058627) validó build, 97/97 tests, smokes HTTP/MySQL/concurrencia y cleanup completo.
+
+## 2026-11-22 — Validación de cuenta Driver y flujos HTTP de password
+
+- Crear/editar rutas vuelve a validar y bloquear la cuenta User enlazada después de locks de asignación.
+- Regresión SQLite para edición de ruta pendiente con cuenta inactiva sin cambios parciales.
+- Smoke HTTP/MySQL para denegar edición/inicio con cuenta inactiva y probar activation/reset token único, cambio de contraseña y revocación de refresh.
+- Test focal 10/10 y sintaxis shell correctos; integración completa pendiente.
+
+## 2026-11-22 — Validación de Vehicle y colisión de placa concurrente
+
+- Contratos y comandos CREATE/UPDATE rechazan campos fuera de rango con 400. Colisión confirmada del índice único por placa devuelve 409 también si dos peticiones compiten.
+- Cobertura Release xUnit 103/103 y smoke HTTP para límites/duplicados. Backend Action `45063488394` pasó build, 103 tests y smoke HTTP/MySQL en SHA `84e7c66`.
+
+## 2026-11-22 — Cambio de rol no reactiva Driver con cuenta inactiva
+
+- Se corrigió `ChangeUserRoleCommand`: asignar el rol Driver sólo reactiva el perfil vinculado si User está activo. Test focal y suite Release 104/104; smoke HTTP/MySQL agregado para este ciclo real.
+- La primera prueba colocó el cambio de rol mientras había una ruta pendiente y recibió el 409 esperado; se movió tras cancelar/eliminar la ruta. El cleanup ahora elimina primero el perfil Driver para respetar la FK del vehículo.
+
+## 2026-11-22 — Login genérico contra enumeración de cuentas
+
+- Login ahora devuelve el mismo 401 y mensaje para correo inexistente, contraseña incorrecta, cuenta inactiva y cuenta pendiente de activación. Se ejecuta BCrypt contra hash señuelo cuando no existe usuario para reducir la diferencia temporal.
+- Release build **0 warnings/0 errors**, xUnit **106/106**; backend Action `45064942603` pasó build/tests y smoke HTTP/MySQL de login uniforme en `30bcb2f`.
+
+## 2026-11-22 — Registro neutral para no enumerar emails
+
+- Registro público responde igual si el email es nuevo o ya existe; ya no auto-emite tokens. Front muestra mensaje neutral y envía a login. Hash BCrypt antes del pre-check + espera de 500 ms; Action `45066082294` pasó Release build, 107/107, smoke MySQL de tiempos/respuesta y cleanup.
+
+## 2026-11-22 — Smoke de ciclo Vehicle en tenant
+
+- `smoke-tenant-http.sh` ahora comprueba editar vehículo con lectura persistida en HTTP/MySQL, cambio de estado a mantenimiento sin modificar `IsActive`, baja lógica y reactivación conservando estado.
+- `bash -n`, `git diff --check` y smoke completo sobre MySQL efímero aislado pasaron; cleanup sin fixtures. Action para este commit documental/código pendiente.
+- Primer arranque falló porque `/usr/bin/dotnet` apunta a instalación incompleta; se resolvió con el SDK local `/home/leonardo/.dotnet/dotnet`. No se usó la base local persistente.
+
+## 2026-11-22 — Ampliar denegaciones HTTP del rol Driver
+
+- El smoke tenant comprueba 403 para lecturas administrativas y POST Vehicle/Driver/Route de Driver autenticado.
+- Consulta MySQL exige que los intentos rechazados no creen ninguna fila. xUnit 111/111 y smoke API/MySQL 8 descartable pasan localmente; Action posterior al push pendiente.
+
+## 2026-11-22 — Completar denegaciones de administración para User
+
+- El smoke añade 403 para lecturas `/Users` y `/Roles`, alta User y cambio de estado. MySQL verifica que la solicitud no haya creado una cuenta ni cambiado el estado del fixture.
+- API + MySQL 8 descartables y cleanup completo pasan localmente; Action posterior al push pendiente.
+- Action `45078321298` sobre `229076d` pasó Release build, xUnit 111/111, smoke HTTP/MySQL tenant, concurrencia y cleanup.
+
+## 2026-11-22 — Probar camino permitido del rol Driver
+
+- El smoke crea una ruta asignada y valida como Driver listado/detalle, inicio, escritura/lectura GPS y cancelación. MySQL confirma ruta `Cancelled`, vehículo `Available`, posición y asignación intactos.
+- Se conservan las denegaciones sobre flota, asignación ajena y ruta ajena. La primera corrida tuvo una expectativa antigua de lista vacía; corregida a aislamiento por conductor. Repetición efímera completa exit 0; Action posterior pendiente.
+# 2026-11-23 — Política Admin raíz y perfil sincronizado
+
+- Restringido crear/promover Admin a la cuenta raíz del tenant; smoke HTTP/MySQL prueba los 403 de Admin delegado y el camino permitido de raíz.
+- Ampliado smoke positivo de edición de perfil: HTTP/GET y persistencia sincronizan User y Driver enlazados.
+- Backend Action `45088129188`: build Release limpio, 113/113 xUnit, aislamiento HTTP/MySQL, concurrencia y cleanup exitosos.
+- `/Auth/me` expone `isRootAccount` derivado de la relación de propiedad para coherencia con las opciones root-only de Gestión de Equipo.
+
+## 2026-11-23 — Cobertura HTTP de rutas con varias operaciones
+
+- El smoke tenant verifica recogida, entrega y recogida+entrega en paradas distintas; registra evidencia por parada, recorre inicio/cierre y confirma persistencia y estado final del vehículo.
+
+## 2026-11-23 — Política de traslado y controles de login
+
+- Permitidas las rutas sin operaciones logísticas; una prueba cubre inicio y finalización sin paradas.
+- Contraseñas nuevas requieren 12 caracteres en registro, cambio, recuperación y activación.
+- Login tiene límite adicional de 10 solicitudes/minuto/IP, responde 429 + Retry-After y no bloquea cuentas.
+- Suite xUnit Release local: 120/120; Action pendiente.
+
+## 2026-11-23 — Límite específico del registro público
+
+- Registro restringido a cinco solicitudes por IP cada diez minutos; también aplica en loopback Development. El límite no bloquea Login ni cuentas.
+- Pruebas nuevas cubren 429, `Retry-After`, continuidad de Login y enforcement en Development; middleware **8/8** y suite Release **135/135** local. Commit `585fcb0` pasó Action [`45110342238`](https://github.com/Paul1578/Back_GPS/actions/runs/45110342238), incluidos smoke HTTP/MySQL, concurrencia y cleanup.
+
+## 2026-11-23 — Fixtures de E2E para reset y activación
+
+- El runner crea dos usuarios de prueba aislados, tokens impredecibles y sus SHA-256 dentro de la base desechable; verifica que ambos estén presentes antes de correr Playwright.
+- Front Action [`45112755472`](https://github.com/Paul1578/Front_gpsR/actions/runs/45112755472) pasó **49/49**: reset/activación reales, nueva clave válida, anterior rechazada y token de un solo uso; API/MySQL descartables y cleanup correcto. No se envió correo.
+## 2026-11-23 — Ciclo HTTP/MySQL de ruta con múltiples operaciones — VERIFICADO
+
+- Smoke Logistics recorre en una misma ruta una recogida, entrega y parada combinada; guarda evidencia y completa cada una en secuencia.
+- Verifica `PointsJson` en MySQL, estados/timestamps de ruta completada y vehículo disponible, además de cleanup QA.
+- Backend `a29a2fa`; Action [`45108549336`](https://github.com/Paul1578/Back_GPS/actions/runs/45108549336) pasó con Release/xUnit **133/133**, smoke HTTP/MySQL y cleanup limpio.
+
+## 2026-11-23 — Credenciales locales y migraciones — PREFLIGHT COMPLETADO
+
+- Se corrigió `DB_PASSWORD` desincronizada en `.env` local usando `MYSQL_ROOT_PASSWORD` actual, sin imprimir ni versionar secretos.
+- Preflight read-only confirmó 0 usuarios con roles múltiples, 0 rutas sin owner y 0 discrepancias entre owners de rutas; dos Admin sin Owner coinciden con las dos cuentas raíz que producto confirmó. El vehículo sin Driver está asignado al root más antiguo elegido.
+- El arranque API aplicó cuatro migraciones aditivas pendientes; historia EF 26/26, Users=5, EmailOutbox=0. Swagger HTTP 200; build y xUnit **135/135** locales.
+
+## 2026-11-23 — Sincronización de evidencia de CI
+
+- Se corrigieron SHA/Actions citados en el inicio de status y handoff y se registró la solución en `ERROR_LOG.md`.
+- Backend HEAD documental `ec15ea6` pasó Action `45115773126`; Front HEAD documental `d0a9342` pasó Action `45115772569` (**50/50 E2E**, responsive, audit/lint/build y cleanup). La validación funcional backend `6f48f06` pasó `45113924558` (**135/135 xUnit** y smoke HTTP/MySQL).
+
+## 2026-11-23 — Auth HTTP y ciclo de ruta de traslado — VALIDACIÓN LOCAL
+
+- Añadida prueba de compatibilidad de login con contraseñas heredadas cortas y checks HTTP/MySQL de rechazo seguro para claves nuevas menores a 12 caracteres.
+- El smoke crea/inicia/completa una ruta de traslado sin operaciones, con `Completed`, timestamps y vehículo `Available` persistidos.
+- Release xUnit **136/136** y ambos smokes en API/MySQL descartables pasaron; CI del commit `32c435b` pendiente de publicación.
+
+## 2026-11-23 — Fixture de Admin delegado real
+
+- El runner E2E crea un Admin delegado aislado para que Front valide sus permisos desde sesión UI y API real, además del smoke backend que ya verifica persistencia.
+- `bash -n` del runner pasa; falta ejecutar la integración Front con el branch actualizado.
+
+## 2026-11-23 — Smoke HTTP de login rate limit añadido
+
+- CI reinicia API Release en Staging y verifica 10 intentos, HTTP 429 + Retry-After por IP y login válido desde otra IP; no simula respuestas ni bloquea cuentas. Certificado/key ring y DB de prueba son efímeros. Local MySQL/API descartables pasó; Action pendiente.
+
+- Action Backend [`45126308692`](https://github.com/Paul1578/Back_GPS/actions/runs/45126308692) pasó el nuevo smoke HTTP Staging: build Release, xUnit 136/136, tenant/concurrencia HTTP/MySQL, rate limit por IP y cleanup.
+
+## 2026-11-23 — IP de cliente detrás de proxy confiable — VALIDADO
+
+- Se habilitó `UseForwardedHeaders` con máximo un salto, XFF/XFP simétricos y `ForwardedHeaders:KnownProxies` como allowlist vacía por defecto. Sólo direcciones IP explícitas son válidas; se documentó la configuración de ingress.
+- El smoke HTTP local y Action Backend [`45127502896`](https://github.com/Paul1578/Back_GPS/actions/runs/45127502896) comprobaron que un origen no confiable no puede falsificar XFF, que dos proxies permitidos comparten el rate limit del cliente reenviado y que otra IP puede iniciar sesión. Release build, xUnit 136/136, smokes HTTP/MySQL y cleanup pasaron.
+
+## 2026-11-23 — Revisión independiente de seguridad
+
+- Auditoría read-only de Front y Backend no encontró un bypass nuevo de tenant/roles, fallo JWT explotable o vector XSS concreto en el alcance revisado. Confirmó filtros globales, root-only y validación `TokenVersion`; la revisión estática no reemplaza la evidencia dinámica de Actions HTTP/MySQL.
+# 2026-11-23 — Cobertura persistida de edición y baja lógica de rutas
+
+- Smoke concurrente de UpdateRoute valida la pareja ganadora/perdedora y asignación de Driver por HTTP+SQL.
+- Smoke de DeleteRoute valida baja cancelada por GET, listado activo y MySQL.
+- CI Backend ahora ejecuta smokes tenant y concurrencia con API/MySQL descartables en pushes a la rama de estabilización.
+
+## 2026-11-23 — Validación de edición y baja lógica de rutas
+
+- Action Backend [45153378636](https://github.com/Paul1578/Back_GPS/actions/runs/45153378636) pasó con 139/139 xUnit, Release, smokes tenant/concurrencia HTTP/MySQL, rate limit y cleanup.
+- La cobertura ahora comprueba persistencia de la edición concurrente ganadora/perdedora y de la baja lógica vía API, listado y MySQL.
+## 2026-11-23 — Corte documental vigente
+
+- `PROJECT_STATUS.md`, `SESSION_HANDOFF.md`, `TESTING.md` y `AUDIT_PLAN.md` sincronizados con Backend `b817f9f` y docs `74d2f3c`.
+- Se aclaró en cabecera que notas históricas pueden contener estados anteriores y se asentaron las decisiones de negocio confirmadas.
+- Actions Backend [`45190701729`](https://github.com/Paul1578/Back_GPS/actions/runs/45190701729) y [`45192161720`](https://github.com/Paul1578/Back_GPS/actions/runs/45192161720) exitosas; Action Front `45193357694` activa al corte.
+- Actualización del 23-11: Backend docs pasó [`45194801300`](https://github.com/Paul1578/Back_GPS/actions/runs/45194801300) y [`45194814911`](https://github.com/Paul1578/Back_GPS/actions/runs/45194814911); Front `45193357694` completó 53/53 E2E y todos sus checks integrados.
+- Front corrigió el destino local del proxy en `48e654b`; Action [`45195812271`](https://github.com/Paul1578/Front_gpsR/actions/runs/45195812271) pasó 53/53 E2E, responsive, lint/build/audit, Backend 158/158 y cleanup.
+- Preflight de propiedad/roles en la DB local ejecutado read-only: 5 usuarios, 2 raíces, 0 rutas con propietario nulo y 0 cuentas con múltiples roles.
+
+## 2026-11-23 — Refuerzo de transporte y ejecución segura
+
+- Front BFF rechaza HTTP para API remota en producción (loopback HTTP queda permitido para despliegues locales/co-localizados), valida el Origin contra `FLETFLOW_AUTH_ALLOWED_ORIGINS` y ya no confía en `X-Forwarded-Host/Proto` para CSRF.
+- Backend limita access JWT a 15 minutos con validación al iniciar y ejecuta la imagen Docker como UID 10001.
+- Los tokens nuevos incluyen `nbf`; el middleware rechaza access JWT antiguos sin vigencia verificable o superiores a 15 minutos, incluidos los tokens de seis horas que estaban emitidos.
+- CI encontró que `/Auth/me` y logout leían sólo el alias mapeado de identidad aunque el middleware acepta `nameid`; AuthController ahora resuelve ambos formatos y el test valida identidad JWT firmada.
+- Se retiró `JwtMiddleware` paralelo que dejaba un principal autenticado antes del handler oficial; `JwtBearer` es la única autenticación y su policy de 15 minutos valida `SecurityToken` tanto si es `JwtSecurityToken` como `JsonWebToken`.
+- El smoke MySQL descartable volvió a pasar cambio de contraseña/revocación inmediata `TokenVersion`, tenant/roles, operaciones de rutas y cleanup; Docker se ejecuta como UID 10001.
+- La colisión concurrente de documentos de Driver ahora se convierte en 409 sólo si la consulta confirma el duplicado; agregados tests SQLite y smoke HTTP/MySQL.
+- Actions Backend [`45227030382`](https://github.com/Paul1578/Back_GPS/actions/runs/45227030382) y [`45227043042`](https://github.com/Paul1578/Back_GPS/actions/runs/45227043042) validaron `ac14373`: Release/xUnit **165/165**, smokes tenant/concurrencia/rate limit y cleanup.
+- Se retiró la autenticación JWT paralela que evadía TokenVersion y expiración; la policy ahora soporta el `JsonWebToken` de .NET 8. Smoke HTTP/MySQL local confirmó que el token anterior responde 401.

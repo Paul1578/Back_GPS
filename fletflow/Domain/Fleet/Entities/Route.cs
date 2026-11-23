@@ -5,6 +5,9 @@ namespace fletflow.Domain.Fleet.Entities
 {
     public class RouteE
     {
+        private const int MaxEvidenceItemsPerRoute = 50;
+        private const long MaxEvidenceContentCharactersPerRoute = 8_000_000;
+
         public Guid Id { get; private set; }
 
         public Guid VehicleId { get; private set; }
@@ -17,6 +20,9 @@ namespace fletflow.Domain.Fleet.Entities
 
         public DateTime? PlannedStart { get; private set; }
         public DateTime? PlannedEnd { get; private set; }
+        public DateTime? StartedAt { get; private set; }
+        public DateTime? EndedAt { get; private set; }
+        public DateTime? CreatedAtUtc { get; private set; }
 
         public RouteStatus Status { get; private set; }
         public bool IsActive { get; private set; }
@@ -36,7 +42,10 @@ namespace fletflow.Domain.Fleet.Entities
             DateTime? plannedStart,
             DateTime? plannedEnd,
             RouteStatus status,
-            bool isActive)
+            bool isActive,
+            DateTime? startedAt = null,
+            DateTime? endedAt = null,
+            DateTime? createdAtUtc = null)
         {
             Id = id;
             VehicleId = vehicleId;
@@ -48,6 +57,11 @@ namespace fletflow.Domain.Fleet.Entities
             PlannedEnd = plannedEnd;
             Status = status;
             IsActive = isActive;
+            StartedAt = startedAt;
+            EndedAt = endedAt;
+            CreatedAtUtc = createdAtUtc.HasValue
+                ? DateTime.SpecifyKind(createdAtUtc.Value, DateTimeKind.Utc)
+                : null;
         }
 
         public static RouteE Create(
@@ -77,7 +91,8 @@ namespace fletflow.Domain.Fleet.Entities
                 plannedStart,
                 plannedEnd,
                 RouteStatus.Pending,
-                isActive: true
+                isActive: true,
+                createdAtUtc: DateTime.UtcNow
             );
         }
 
@@ -93,7 +108,10 @@ namespace fletflow.Domain.Fleet.Entities
             DateTime? plannedStart,
             DateTime? plannedEnd,
             RouteStatus status,
-            bool isActive)
+            bool isActive,
+            DateTime? startedAt = null,
+            DateTime? endedAt = null,
+            DateTime? createdAtUtc = null)
         {
             return new RouteE(
                 id,
@@ -107,7 +125,10 @@ namespace fletflow.Domain.Fleet.Entities
                 plannedStart,
                 plannedEnd,
                 status,
-                isActive
+                isActive,
+                startedAt,
+                endedAt,
+                createdAtUtc
             );
         }
 
@@ -134,9 +155,73 @@ namespace fletflow.Domain.Fleet.Entities
 
         public void ChangeStatus(RouteStatus newStatus)
         {
-            // Aquí podrías meter reglas: no pasar de Completed a InProgress, etc.
+            if (newStatus == RouteStatus.Completed && !AllOperationalStopsComplete())
+                throw new InvalidOperationException("Completa cada parada operativa y registra evidencia antes de cerrar la ruta.");
+            if (newStatus == RouteStatus.InProgress && StartedAt is null)
+                StartedAt = DateTime.UtcNow;
+            if (newStatus is RouteStatus.Completed or RouteStatus.Cancelled)
+                EndedAt = DateTime.UtcNow;
             Status = newStatus;
         }
+
+        public void UpdatePointStatus(int pointIndex, RoutePointStatus newStatus)
+        {
+            if (Status != RouteStatus.InProgress)
+                throw new InvalidOperationException("Las paradas sólo se pueden actualizar con la ruta en progreso.");
+            if (pointIndex < 0 || pointIndex >= _points.Count)
+                throw new ArgumentOutOfRangeException(nameof(pointIndex), "La parada no existe.");
+            if (_points[pointIndex].Operation == RoutePointOperation.None)
+                throw new InvalidOperationException("El origen y el destino no admiten estado de entrega/recogida.");
+            if (!IsAllowedPointTransition(_points[pointIndex].Status, newStatus))
+                throw new InvalidOperationException("La transición de estado de la parada no es válida.");
+            if ((newStatus is RoutePointStatus.Completed or RoutePointStatus.Skipped) &&
+                _points[pointIndex].Evidence.Count == 0)
+                throw new InvalidOperationException("Registra evidencia antes de cerrar la parada.");
+
+            var updatedPoints = _points.ToList();
+            updatedPoints[pointIndex] = updatedPoints[pointIndex].WithStatus(newStatus);
+            SetPointsInternal(updatedPoints[0], updatedPoints[^1], updatedPoints);
+        }
+
+        public void AddPointEvidence(int pointIndex, RoutePointEvidence evidence)
+        {
+            if (Status != RouteStatus.InProgress)
+                throw new InvalidOperationException("Sólo se puede adjuntar evidencia con la ruta en progreso.");
+            if (pointIndex < 0 || pointIndex >= _points.Count)
+                throw new ArgumentOutOfRangeException(nameof(pointIndex), "La parada no existe.");
+            if (_points[pointIndex].Operation == RoutePointOperation.None)
+                throw new InvalidOperationException("Sólo se puede adjuntar evidencia a una parada operativa.");
+            if (_points[pointIndex].Status is RoutePointStatus.Completed or RoutePointStatus.Skipped)
+                throw new InvalidOperationException("No se puede adjuntar evidencia a una parada cerrada.");
+
+            var currentEvidence = _points.SelectMany(point => point.Evidence).ToList();
+            if (currentEvidence.Count >= MaxEvidenceItemsPerRoute)
+                throw new InvalidOperationException("La ruta alcanzó el máximo de 50 evidencias.");
+
+            var nextContentSize = currentEvidence.Sum(item => (long)item.Content.Length) + evidence.Content.Length;
+            if (nextContentSize > MaxEvidenceContentCharactersPerRoute)
+                throw new InvalidOperationException("La ruta superaría el límite total de 8 MB de evidencias.");
+
+            var updatedPoints = _points.ToList();
+            updatedPoints[pointIndex] = updatedPoints[pointIndex].WithEvidence(evidence);
+            SetPointsInternal(updatedPoints[0], updatedPoints[^1], updatedPoints);
+        }
+
+        private bool AllOperationalStopsComplete()
+            => _points.Where(point => point.Operation != RoutePointOperation.None)
+                .All(point => (point.Status is RoutePointStatus.Completed or RoutePointStatus.Skipped)
+                              && point.Evidence.Count > 0);
+
+        private static bool IsAllowedPointTransition(RoutePointStatus current, RoutePointStatus next)
+            => (current, next) switch
+            {
+                (RoutePointStatus.Pending, RoutePointStatus.InProgress) => true,
+                (RoutePointStatus.Pending, RoutePointStatus.Skipped) => true,
+                (RoutePointStatus.InProgress, RoutePointStatus.Completed) => true,
+                (RoutePointStatus.InProgress, RoutePointStatus.Failed) => true,
+                (RoutePointStatus.Failed, RoutePointStatus.InProgress) => true,
+                _ => false
+            };
 
         public void Activate() => IsActive = true;
         public void Deactivate() => IsActive = false;

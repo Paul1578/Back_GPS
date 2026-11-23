@@ -1,4 +1,6 @@
 using fletflow.Domain.Fleet.Repositories;
+using fletflow.Domain.Fleet.Entities;
+using fletflow.Domain.Fleet.Exceptions;
 using fletflow.Infrastructure.Persistence.Contracts;
 
 namespace fletflow.Application.Fleet.Commands
@@ -16,14 +18,26 @@ namespace fletflow.Application.Fleet.Commands
 
         public async Task Execute(Guid id)
         {
-            var route = await _routes.GetByIdAsync(id)
-                ?? throw new KeyNotFoundException("Route not found.");
+            try
+            {
+                var route = await _routes.GetByIdAsync(id)
+                    ?? throw new KeyNotFoundException("Route not found.");
+                await _uow.LockRouteAssignmentAsync(route.VehicleId, route.DriverId, id);
+                route = await _routes.GetByIdAsync(id)
+                    ?? throw new KeyNotFoundException("Route not found.");
 
-            // Baja lógica
-            route.Deactivate();
+                if (route.Status == RouteStatus.InProgress)
+                    throw new BusinessConflictException("No se puede dar de baja una ruta en progreso. Cancélala primero.");
 
-            await _routes.UpdateAsync(route);
-            await _uow.CommitAsync();
+                route.Deactivate();
+                await _routes.UpdateAsync(route);
+                await _uow.CommitAsync();
+            }
+            catch
+            {
+                _uow.Rollback();
+                throw;
+            }
         }
     }
 }

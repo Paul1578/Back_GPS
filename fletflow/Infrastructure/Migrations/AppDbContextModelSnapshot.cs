@@ -46,6 +46,9 @@ namespace BackEnd_Gps.fletflow.Infrastructure.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("varchar(100)");
 
+                    b.Property<Guid?>("OwnerUserId")
+                        .HasColumnType("char(36)");
+
                     b.Property<string>("PhoneNumber")
                         .IsRequired()
                         .HasMaxLength(20)
@@ -59,15 +62,62 @@ namespace BackEnd_Gps.fletflow.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("DocumentNumber")
-                        .IsUnique();
-
                     b.HasIndex("UserId")
                         .IsUnique();
 
                     b.HasIndex("VehicleId");
 
+                    b.HasIndex("OwnerUserId", "DocumentNumber")
+                        .IsUnique();
+
                     b.ToTable("Drivers", (string)null);
+                });
+
+            modelBuilder.Entity("fletflow.Infrastructure.Persistence.Entities.EmailOutboxEntity", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("char(36)");
+
+                    b.Property<int>("AttemptCount")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<DateTime?>("DeadLetteredAtUtc")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("LastFailureType")
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
+
+                    b.Property<Guid?>("LockToken")
+                        .HasColumnType("char(36)");
+
+                    b.Property<DateTime?>("LockedUntilUtc")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<DateTime>("NextAttemptAtUtc")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("ProtectedPayload")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<DateTime?>("SentAtUtc")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("char(36)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("SentAtUtc", "DeadLetteredAtUtc", "NextAttemptAtUtc", "LockedUntilUtc");
+
+                    b.ToTable("EmailOutbox");
                 });
 
             modelBuilder.Entity("fletflow.Infrastructure.Persistence.Entities.PasswordResetTokenEntity", b =>
@@ -169,6 +219,9 @@ namespace BackEnd_Gps.fletflow.Infrastructure.Migrations
                         .HasMaxLength(1000)
                         .HasColumnType("varchar(1000)");
 
+                    b.Property<DateTime?>("CreatedAtUtc")
+                        .HasColumnType("datetime(6)");
+
                     b.Property<string>("Destination")
                         .IsRequired()
                         .HasMaxLength(200)
@@ -186,6 +239,9 @@ namespace BackEnd_Gps.fletflow.Infrastructure.Migrations
 
                     b.Property<Guid>("DriverId")
                         .HasColumnType("char(36)");
+
+                    b.Property<DateTime?>("EndedAt")
+                        .HasColumnType("datetime(6)");
 
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit(1)");
@@ -210,6 +266,9 @@ namespace BackEnd_Gps.fletflow.Infrastructure.Migrations
                         .HasColumnType("double")
                         .HasDefaultValue(0.0);
 
+                    b.Property<Guid?>("OwnerUserId")
+                        .HasColumnType("char(36)");
+
                     b.Property<DateTime?>("PlannedEnd")
                         .HasColumnType("datetime(6)");
 
@@ -221,6 +280,9 @@ namespace BackEnd_Gps.fletflow.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("longtext")
                         .HasDefaultValue("[]");
+
+                    b.Property<DateTime?>("StartedAt")
+                        .HasColumnType("datetime(6)");
 
                     b.Property<int>("Status")
                         .HasColumnType("int");
@@ -263,9 +325,9 @@ namespace BackEnd_Gps.fletflow.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("RouteId");
+                    b.HasIndex("RouteId", "RecordedAt");
 
-                    b.ToTable("RoutePositions");
+                    b.ToTable("RoutePositions", (string)null);
                 });
 
             modelBuilder.Entity("fletflow.Infrastructure.Persistence.Entities.UserEntity", b =>
@@ -282,10 +344,18 @@ namespace BackEnd_Gps.fletflow.Infrastructure.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("varchar(200)");
 
+                    b.Property<string>("FirstName")
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
+
                     b.Property<bool>("IsActive")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bit(1)")
                         .HasDefaultValue(true);
+
+                    b.Property<string>("LastName")
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
 
                     b.Property<bool>("MustChangePassword")
                         .ValueGeneratedOnAdd()
@@ -299,6 +369,11 @@ namespace BackEnd_Gps.fletflow.Infrastructure.Migrations
                         .IsRequired()
                         .HasMaxLength(500)
                         .HasColumnType("varchar(500)");
+
+                    b.Property<int>("TokenVersion")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(0);
 
                     b.Property<string>("Username")
                         .IsRequired()
@@ -325,6 +400,9 @@ namespace BackEnd_Gps.fletflow.Infrastructure.Migrations
 
                     b.HasIndex("RoleId");
 
+                    b.HasIndex("UserId")
+                        .IsUnique();
+
                     b.ToTable("UserRoles", (string)null);
                 });
 
@@ -350,6 +428,9 @@ namespace BackEnd_Gps.fletflow.Infrastructure.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("varchar(100)");
 
+                    b.Property<Guid?>("OwnerUserId")
+                        .HasColumnType("char(36)");
+
                     b.Property<string>("Plate")
                         .IsRequired()
                         .HasMaxLength(20)
@@ -363,7 +444,7 @@ namespace BackEnd_Gps.fletflow.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("Plate")
+                    b.HasIndex("OwnerUserId", "Plate")
                         .IsUnique();
 
                     b.ToTable("Vehicles", (string)null);
@@ -382,6 +463,17 @@ namespace BackEnd_Gps.fletflow.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Restrict);
 
                     b.Navigation("Vehicle");
+                });
+
+            modelBuilder.Entity("fletflow.Infrastructure.Persistence.Entities.EmailOutboxEntity", b =>
+                {
+                    b.HasOne("fletflow.Infrastructure.Persistence.Entities.UserEntity", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("fletflow.Infrastructure.Persistence.Entities.PasswordResetTokenEntity", b =>

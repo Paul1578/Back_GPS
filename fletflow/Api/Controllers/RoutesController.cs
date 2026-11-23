@@ -23,6 +23,7 @@ namespace fletflow.Api.Controllers
         private readonly ChangeRouteStatusCommand _changeStatus;
         private readonly GetRouteByIdQuery _getById;
         private readonly GetRoutesQuery _getAll;
+        private readonly GetRouteAssignmentOptionsQuery _getAssignmentOptions;
 
         private readonly RegisterRoutePositionCommand _registerPosition;
         private readonly GetRoutePositionsQuery _getPositions;  
@@ -36,6 +37,7 @@ namespace fletflow.Api.Controllers
             ChangeRouteStatusCommand changeStatus,
             GetRouteByIdQuery getById,
             GetRoutesQuery getAll,
+            GetRouteAssignmentOptionsQuery getAssignmentOptions,
             RegisterRoutePositionCommand registerPosition,
             GetRoutePositionsQuery getPositions,
             DeleteRouteCommand deleteRoute,
@@ -46,11 +48,24 @@ namespace fletflow.Api.Controllers
             _changeStatus = changeStatus;
             _getById = getById;
             _getAll = getAll;
+            _getAssignmentOptions = getAssignmentOptions;
             _registerPosition = registerPosition;
             _getPositions = getPositions;
             _deleteRoute = deleteRoute; 
             _unitOfWork = unitOfWork;
         }
+
+        /// <summary>
+        /// Obtiene sólo los datos operativos necesarios para asignar rutas.
+        /// </summary>
+        [HttpGet("assignment-options")]
+        [Authorize(Roles = "Admin,Manager,Logistics")]
+        public async Task<ActionResult<RouteAssignmentOptionsDto>> GetAssignmentOptions()
+        {
+            var result = await _getAssignmentOptions.Execute();
+            return Ok(result);
+        }
+
         /// <summary>
         /// Elimina una ruta por su ID.
         /// </summary>
@@ -58,7 +73,7 @@ namespace fletflow.Api.Controllers
         /// <response code="204">Ruta eliminada correctamente.</response>
         /// <response code="404">Ruta no encontrada.</response>
         [HttpDelete("{id:guid}")]
-        [Authorize(Roles = "Admin,Manager,Dispatcher")]
+        [Authorize(Roles = "Admin,Manager,Logistics")]
         public async Task<IActionResult> Delete(Guid id)
         {
             await _deleteRoute.Execute(id);
@@ -72,7 +87,7 @@ namespace fletflow.Api.Controllers
         /// <response code="201">Ruta creada correctamente.</response>
         /// <response code="400">Datos inválidos.</response>
         [HttpPost]
-        [Authorize(Roles = "Admin,Manager,Dispatcher")]
+        [Authorize(Roles = "Admin,Manager,Logistics")]
         public async Task<ActionResult<RouteDto>> Create([FromBody] CreateRouteRequest request)
         {
             var points = BuildPoints(request.Points, request.Origin, request.Destination);
@@ -99,7 +114,7 @@ namespace fletflow.Api.Controllers
         /// <response code="400">Datos inválidos.</response>
         /// <response code="404">Ruta no encontrada.</response>
         [HttpPut("{id:guid}")]
-        [Authorize(Roles = "Admin,Manager,Dispatcher")]
+        [Authorize(Roles = "Admin,Manager,Logistics")]
         public async Task<ActionResult<RouteDto>> Update(Guid id, [FromBody] UpdateRouteRequest request)
         {
             var points = BuildPoints(request.Points, request.Origin, request.Destination);
@@ -126,10 +141,26 @@ namespace fletflow.Api.Controllers
         /// <response code="204">Estado actualizado correctamente.</response>
         /// <response code="404">Ruta no encontrada.</response>
         [HttpPut("{id:guid}/status")]
-        [Authorize(Roles = "Admin,Manager,Dispatcher")]
+        [Authorize(Roles = "Admin,Manager,Logistics,Driver")]
         public async Task<IActionResult> ChangeStatus(Guid id, [FromBody] ChangeRouteStatusRequest request)
         {
-            await _changeStatus.Execute(id, request.Status);
+            Guid? requestingDriverId = null;
+            Guid? requestingUserId = null;
+            if (User.IsInRole("Driver"))
+            {
+                var route = await _unitOfWork.Routes.GetByIdAsync(id);
+                if (route is null || !await IsCurrentDriverAssigned(route))
+                    return NotFound();
+
+                requestingUserId = GetUserIdFromClaims();
+                if (!requestingUserId.HasValue)
+                    return Forbid();
+                requestingDriverId = await ResolveDriverIdAsync(requestingUserId.Value);
+                if (!requestingDriverId.HasValue)
+                    return Forbid();
+            }
+
+            await _changeStatus.Execute(id, request.Status, requestingDriverId, requestingUserId);
             return NoContent();
         }
 
@@ -143,7 +174,7 @@ namespace fletflow.Api.Controllers
         /// <param name="onlyActive">Solo rutas activas (opcional).</param>
         /// <response code="200">Listado de rutas.</response>
         [HttpGet]
-        [Authorize(Roles = "Admin,Manager,Dispatcher,Driver")]
+        [Authorize(Roles = "Admin,Manager,Logistics,Driver")]
         public async Task<ActionResult<List<RouteDto>>> GetAll(
     [FromQuery] Guid? vehicleId,
     [FromQuery] Guid? driverId,
@@ -160,6 +191,11 @@ namespace fletflow.Api.Controllers
 
             var currentDriverId = await ResolveDriverIdAsync(userId.Value);
             if (currentDriverId == null)
+            {
+                return Forbid();
+            }
+            var currentDriver = await _unitOfWork.Drivers.GetByIdAsync(currentDriverId.Value);
+            if (currentDriver?.IsActive != true)
             {
                 return Forbid();
             }
@@ -195,75 +231,102 @@ namespace fletflow.Api.Controllers
             onlyActive
         );
 
-        if (User.IsInRole("Driver") && result.Count == 0)
-        {
-            var userId = GetUserIdFromClaims();
-            if (userId != null && driverId != userId.Value)
-            {
-                var legacy = await _getAll.Execute(
-                    vehicleId: null,
-                    driverId: userId.Value,
-                    status: parsedStatus,
-                    onlyActive: onlyActive
-                );
-                if (legacy.Count > 0)
-                {
-                    result = legacy;
-                }
-            }
-        }
-
         return Ok(result);
     }
 
         [HttpGet("{id:guid}")]
-        [Authorize(Roles = "Admin,Manager,Dispatcher,Driver")]
+        [Authorize(Roles = "Admin,Manager,Logistics,Driver")]
         public async Task<ActionResult<RouteDto>> GetById(Guid id)
         {
-            var result = await _getById.Execute(id);
             if (User.IsInRole("Driver"))
             {
-                var userId = GetUserIdFromClaims();
-                if (userId == null)
-                {
-                    return Forbid();
-                }
-                var currentDriverId = await ResolveDriverIdAsync(userId.Value);
-                var matchesDriver = currentDriverId != null && result.DriverId == currentDriverId.Value;
-                var matchesLegacy = result.DriverId == userId.Value;
-                if (!matchesDriver && !matchesLegacy)
-                {
-                    return Forbid();
-                }
+                var route = await _unitOfWork.Routes.GetByIdAsync(id);
+                if (route is null) return NotFound();
+                if (!await IsCurrentDriverAssigned(route)) return Forbid();
             }
+
+            var result = await _getById.Execute(id);
             return Ok(result);
         }
 
+        [HttpPut("{routeId:guid}/points/{pointIndex:int}/status")]
+        [Authorize(Roles = "Admin,Manager,Logistics,Driver")]
+        public async Task<IActionResult> UpdatePointStatus(
+            Guid routeId,
+            int pointIndex,
+            [FromBody] UpdateRoutePointStatusRequest request)
+        {
+            try
+            {
+                var route = await _unitOfWork.Routes.GetByIdAsync(routeId);
+                if (route is null) return NotFound();
+                if (User.IsInRole("Driver") && !await IsCurrentDriverAssigned(route)) return NotFound();
+                await _unitOfWork.LockRouteAssignmentAsync(route.VehicleId, route.DriverId, routeId);
+                route = await _unitOfWork.Routes.GetByIdAsync(routeId);
+                if (route is null) { _unitOfWork.Rollback(); return NotFound(); }
+                if (User.IsInRole("Driver") && !await IsCurrentDriverAssigned(route)) { _unitOfWork.Rollback(); return NotFound(); }
+
+                route.UpdatePointStatus(pointIndex, request.Status);
+                await _unitOfWork.Routes.UpdateAsync(route);
+                await _unitOfWork.CommitAsync();
+                return Ok(await _getById.Execute(routeId));
+            }
+            catch
+            {
+                _unitOfWork.Rollback();
+                throw;
+            }
+        }
+
+        [HttpPost("{routeId:guid}/points/{pointIndex:int}/evidence")]
+        [Authorize(Roles = "Admin,Manager,Logistics,Driver")]
+        [RequestSizeLimit(6_000_000)]
+        public async Task<IActionResult> AddPointEvidence(
+            Guid routeId,
+            int pointIndex,
+            [FromBody] AddRoutePointEvidenceRequest request)
+        {
+            try
+            {
+                var route = await _unitOfWork.Routes.GetByIdAsync(routeId);
+                if (route is null) return NotFound();
+                if (User.IsInRole("Driver") && !await IsCurrentDriverAssigned(route)) return NotFound();
+                await _unitOfWork.LockRouteAssignmentAsync(route.VehicleId, route.DriverId, routeId);
+                route = await _unitOfWork.Routes.GetByIdAsync(routeId);
+                if (route is null) { _unitOfWork.Rollback(); return NotFound(); }
+                if (User.IsInRole("Driver") && !await IsCurrentDriverAssigned(route)) { _unitOfWork.Rollback(); return NotFound(); }
+
+                var evidence = RoutePointEvidence.Create(request.Type, request.Content, request.Description);
+                route.AddPointEvidence(pointIndex, evidence);
+                await _unitOfWork.Routes.UpdateAsync(route);
+                await _unitOfWork.CommitAsync();
+                return Ok(await _getById.Execute(routeId));
+            }
+            catch
+            {
+                _unitOfWork.Rollback();
+                throw;
+            }
+        }
+
         [HttpPost("{routeId:guid}/positions")]
-        [Authorize(Roles = "Admin,Manager,Dispatcher,Driver")]
+        [Authorize(Roles = "Admin,Manager,Logistics,Driver")]
         public async Task<ActionResult<RoutePositionDto>> RegisterPosition(
             Guid routeId,
             [FromBody] RegisterRoutePositionRequest request)
         {
+            Guid? requestingDriverId = null;
+            Guid? requestingUserId = null;
             if (User.IsInRole("Driver"))
             {
-                var userId = GetUserIdFromClaims();
-                if (userId == null)
-                {
-                    return Forbid();
-                }
-                var currentDriverId = await ResolveDriverIdAsync(userId.Value);
-                if (currentDriverId == null)
-                {
-                    return Forbid();
-                }
-                var route = await _getById.Execute(routeId);
-                var matchesDriver = route.DriverId == currentDriverId.Value;
-                var matchesLegacy = route.DriverId == userId.Value;
-                if (!matchesDriver && !matchesLegacy)
-                {
-                    return Forbid();
-                }
+                var route = await _unitOfWork.Routes.GetByIdAsync(routeId);
+                if (route is null) return NotFound();
+                if (!await IsCurrentDriverAssigned(route)) return Forbid();
+
+                requestingUserId = GetUserIdFromClaims();
+                if (!requestingUserId.HasValue) return Forbid();
+                requestingDriverId = await ResolveDriverIdAsync(requestingUserId.Value);
+                if (!requestingDriverId.HasValue) return Forbid();
             }
 
             var result = await _registerPosition.Execute(
@@ -272,7 +335,9 @@ namespace fletflow.Api.Controllers
                 request.Longitude,
                 request.RecordedAt,
                 request.SpeedKmh,
-                request.Heading
+                request.Heading,
+                requestingDriverId,
+                requestingUserId
             );
 
             return Ok(result);
@@ -280,35 +345,58 @@ namespace fletflow.Api.Controllers
 
         // GET api/routes/{routeId}/positions?from=2025-11-14T00:00:00Z&to=...
         [HttpGet("{routeId:guid}/positions")]
-        [Authorize(Roles = "Admin,Manager,Dispatcher,Driver")]
+        [Authorize(Roles = "Admin,Manager,Logistics,Driver")]
         public async Task<ActionResult<List<RoutePositionDto>>> GetPositions(
             Guid routeId,
             [FromQuery] DateTime? from,
             [FromQuery] DateTime? to)
         {
+            Guid? requestingDriverId = null;
+            Guid? requestingUserId = null;
             if (User.IsInRole("Driver"))
             {
-                var userId = GetUserIdFromClaims();
-                if (userId == null)
+                var route = await _unitOfWork.Routes.GetByIdAsync(routeId);
+                if (route is null) return NotFound();
+                if (!await IsCurrentDriverAssigned(route)) return Forbid();
+
+                requestingUserId = GetUserIdFromClaims();
+                if (!requestingUserId.HasValue) return Forbid();
+                requestingDriverId = await ResolveDriverIdAsync(requestingUserId.Value);
+                if (!requestingDriverId.HasValue) return Forbid();
+
+                try
                 {
-                    return Forbid();
+                    await _unitOfWork.LockRouteAssignmentAsync(route.VehicleId, route.DriverId, routeId);
+                    route = await _unitOfWork.Routes.GetByIdAsync(routeId);
+                    if (route is null || !await IsCurrentDriverAssigned(route))
+                    {
+                        _unitOfWork.Rollback();
+                        return Forbid();
+                    }
                 }
-                var currentDriverId = await ResolveDriverIdAsync(userId.Value);
-                if (currentDriverId == null)
+                catch
                 {
-                    return Forbid();
-                }
-                var route = await _getById.Execute(routeId);
-                var matchesDriver = route.DriverId == currentDriverId.Value;
-                var matchesLegacy = route.DriverId == userId.Value;
-                if (!matchesDriver && !matchesLegacy)
-                {
-                    return Forbid();
+                    _unitOfWork.Rollback();
+                    throw;
                 }
             }
 
-            var result = await _getPositions.Execute(routeId, from, to);
-            return Ok(result);
+            if (requestingDriverId.HasValue)
+            {
+                try
+                {
+                    var driverResult = await _getPositions.Execute(routeId, from, to);
+                    await _unitOfWork.CommitAsync();
+                    return Ok(driverResult);
+                }
+                catch
+                {
+                    _unitOfWork.Rollback();
+                    throw;
+                }
+            }
+
+            return Ok(await _getPositions.Execute(routeId, from, to));
         }
 
         private Guid? GetUserIdFromClaims()
@@ -326,6 +414,17 @@ namespace fletflow.Api.Controllers
         {
             var driver = await _unitOfWork.Drivers.GetByUserIdAsync(userId);
             return driver?.Id;
+        }
+
+        private async Task<bool> IsCurrentDriverAssigned(RouteE route)
+        {
+            var userId = GetUserIdFromClaims();
+            if (userId is null) return false;
+            var driverId = await ResolveDriverIdAsync(userId.Value);
+            if (!driverId.HasValue) return false;
+            var driver = await _unitOfWork.Drivers.GetByIdAsync(driverId.Value);
+            return driver?.IsActive == true &&
+                   (route.DriverId == driverId.Value || route.DriverId == userId.Value);
         }
 
         private static List<RoutePoint> BuildPoints(
@@ -362,7 +461,12 @@ namespace fletflow.Api.Controllers
 
         private static RoutePoint ToRoutePoint(RoutePointRequest request)
         {
-            return RoutePoint.Create(request.Lat, request.Lng, request.Name);
+            return RoutePoint.Create(
+                request.Lat,
+                request.Lng,
+                request.Name,
+                request.Operation,
+                RoutePointStatus.Pending);
         }
     }
 }

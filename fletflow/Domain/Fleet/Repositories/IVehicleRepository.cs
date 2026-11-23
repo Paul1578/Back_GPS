@@ -9,5 +9,6 @@ namespace fletflow.Domain.Fleet.Repositories
         Task AddAsync(Vehicle vehicle);
         Task UpdateAsync(Vehicle vehicle);
         Task<List<Vehicle>> GetAllAsync(bool? onlyActive = null);
+        Task<List<Vehicle>> GetByIdsAsync(IReadOnlyCollection<Guid> ids);
     }
 }

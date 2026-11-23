@@ -6,6 +6,8 @@ namespace fletflow.Application.DTOs.Auth
         public string Username { get; set; } = default!;
         public string Email { get; set; } = default!;
         public bool IsActive { get; set; }
+        /// <summary>Indica si esta cuenta es propietaria raíz de su empresa.</summary>
+        public bool IsRootAccount { get; set; }
         public List<string> Roles { get; set; } = new();
         /// <summary>
         /// Id del driver asociado al usuario (si aplica).

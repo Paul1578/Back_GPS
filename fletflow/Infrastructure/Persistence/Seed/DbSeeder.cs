@@ -7,24 +7,15 @@ public static class DbSeeder
     public static async Task SeedAsync(AppDbContext db)
     {
         await db.Database.MigrateAsync();
+        await EnsureBaseRolesAsync(db);
 
-        // 1) Asegurar roles base
-        var baseRoles = new[] { "Admin", "Manager", "Driver", "User" };
-        var existingRoleNames = await db.Roles.Select(r => r.Name).ToListAsync();
+        // 2) El administrador inicial solo se crea si el entorno lo solicita
+        // explícitamente. Nunca se deben sembrar credenciales conocidas.
+        var adminEmail = Environment.GetEnvironmentVariable("FLETFLOW_BOOTSTRAP_ADMIN_EMAIL");
+        var adminPassword = Environment.GetEnvironmentVariable("FLETFLOW_BOOTSTRAP_ADMIN_PASSWORD");
+        if (string.IsNullOrWhiteSpace(adminEmail) || string.IsNullOrWhiteSpace(adminPassword))
+            return;
 
-        var missingRoles = baseRoles
-            .Except(existingRoleNames, StringComparer.OrdinalIgnoreCase)
-            .ToList();
-
-        if (missingRoles.Count > 0)
-        {
-            foreach (var r in missingRoles)
-                db.Roles.Add(new RoleEntity { Name = r });
-            await db.SaveChangesAsync();
-        }
-
-        // 2) Asegurar usuario admin
-        var adminEmail = "admin@demo.com";
         var admin = await db.Users
             .Include(u => u.UserRoles)
             .FirstOrDefaultAsync(u => u.Email == adminEmail);
@@ -35,7 +26,7 @@ public static class DbSeeder
             {
                 Username = "admin",
                 Email = adminEmail,
-                PasswordHash = BCrypt.Net.BCrypt.HashPassword("Admin123!"),
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword(adminPassword),
                 IsActive = true
             };
             db.Users.Add(admin);
@@ -46,7 +37,7 @@ public static class DbSeeder
         var adminRoleId = await db.Roles
             .Where(r => r.Name == "Admin")
             .Select(r => r.Id)
-            .FirstAsync(); // existe seguro por (1)
+            .FirstAsync(); // existe seguro por EnsureBaseRolesAsync
 
         var hasAdminRole = await db.UserRoles
             .AnyAsync(ur => ur.UserId == admin.Id && ur.RoleId == adminRoleId);
@@ -58,6 +49,23 @@ public static class DbSeeder
                 UserId = admin.Id,
                 RoleId = adminRoleId
             });
+            await db.SaveChangesAsync();
+        }
+    }
+
+    public static async Task EnsureBaseRolesAsync(AppDbContext db)
+    {
+        var baseRoles = new[] { "Admin", "Manager", "Driver", "Logistics", "User" };
+        var existingRoleNames = await db.Roles.Select(r => r.Name).ToListAsync();
+
+        var missingRoles = baseRoles
+            .Except(existingRoleNames, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        if (missingRoles.Count > 0)
+        {
+            foreach (var r in missingRoles)
+                db.Roles.Add(new RoleEntity { Name = r });
             await db.SaveChangesAsync();
         }
     }

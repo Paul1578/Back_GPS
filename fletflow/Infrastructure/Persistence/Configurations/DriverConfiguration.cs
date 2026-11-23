@@ -24,7 +24,7 @@ namespace fletflow.Infrastructure.Persistence.Configurations
                 .IsRequired()
                 .HasMaxLength(20);
 
-            builder.HasIndex(d => d.DocumentNumber)
+            builder.HasIndex(d => new { d.OwnerUserId, d.DocumentNumber })
                 .IsUnique();
 
             builder.Property(d => d.PhoneNumber)

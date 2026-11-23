@@ -1,11 +1,15 @@
 using System;
+using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using fletflow.Application.Auth.Commands;
 using fletflow.Application.Auth.Commands.ActivateAccount;
 using fletflow.Application.Auth.Commands.ResetPassword;
 using fletflow.Application.DTOs.Auth;
 using fletflow.Infrastructure.Services;
+using fletflow.Domain.Fleet.Exceptions;
+using System.Diagnostics;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
 
 namespace fletflow.Api.Controllers
@@ -15,30 +19,51 @@ namespace fletflow.Api.Controllers
     public class AuthController : ControllerBase
     {
         private readonly AuthService _authService;
+        private readonly IUserRegistrationService _registrationService;
         private readonly IEmailSender _emailService;
         private readonly ActivateAccountCommand _activateAccountCommand;
+        private readonly IWebHostEnvironment _environment;
 
-        public AuthController(AuthService authService, IEmailSender emailService, ActivateAccountCommand activateAccountCommand)
+        public AuthController(AuthService authService, IUserRegistrationService registrationService, IEmailSender emailService, ActivateAccountCommand activateAccountCommand, IWebHostEnvironment environment)
         {
             _authService = authService;
+            _registrationService = registrationService;
             _emailService = emailService;
             _activateAccountCommand = activateAccountCommand;
+            _environment = environment;
         }
 
         /// <summary>
-        /// Registra un nuevo usuario y devuelve tokens de acceso y refresh.
+        /// Solicita el registro de una nueva empresa sin revelar si el correo ya existe.
         /// </summary>
         /// <param name="dto">Datos de registro (usuario, email, contraseña, rol).</param>
-        /// <returns>Tokens de acceso y refresh.</returns>
-        /// <response code="200">Usuario registrado correctamente.</response>
-        /// <response code="400">Datos inválidos o el correo ya fue registrado.</response>
+        /// <returns>Mensaje neutral; el usuario inicia sesión con sus credenciales.</returns>
+        /// <response code="200">Solicitud procesada.</response>
+        /// <response code="400">Datos con formato inválido.</response>
         [HttpPost("register")]
         [AllowAnonymous]
         public async Task<IActionResult> Register([FromBody] RegisterUserDto dto)
         {
             if (!ModelState.IsValid) return BadRequest(ModelState);
-            var response = await _authService.RegisterAsync(dto.Username, dto.Email, dto.Password, dto.RoleName);
-            return Ok(response);
+            var startedAt = Stopwatch.GetTimestamp();
+            // El alta pública crea la cuenta raíz Admin de una empresa nueva.
+            // El rol es fijo en el servidor y nunca se toma del request; owner_id queda
+            // asociado al usuario recién creado para aislar su empresa del resto.
+            try
+            {
+                await _registrationService.RegisterAsync(dto.Username, dto.Email, dto.Password, "Admin");
+            }
+            catch (BusinessConflictException)
+            {
+                // El payload y status se mantienen iguales para cuenta nueva y email existente.
+            }
+
+            var elapsed = Stopwatch.GetElapsedTime(startedAt);
+            var responseFloor = TimeSpan.FromMilliseconds(500);
+            if (elapsed < responseFloor)
+                await Task.Delay(responseFloor - elapsed);
+
+            return Ok(new { message = "Si el registro puede completarse, podrás iniciar sesión con tus credenciales." });
         }
 
         /// <summary>
@@ -47,8 +72,8 @@ namespace fletflow.Api.Controllers
         /// <param name="dto">Credenciales de usuario.</param>
         /// <returns>Tokens de acceso y refresh.</returns>
         /// <response code="200">Login exitoso.</response>
-        /// <response code="400">El usuario no existe o la cuenta no está activada.</response>
-        /// <response code="401">Contraseña incorrecta.</response>
+        /// <response code="400">Credenciales con formato inválido.</response>
+        /// <response code="401">Credenciales inválidas o cuenta no habilitada.</response>
         [HttpPost("login")]
         [AllowAnonymous]
         public async Task<IActionResult> Login([FromBody] LoginUserDto dto)
@@ -72,7 +97,7 @@ namespace fletflow.Api.Controllers
             [FromServices] ChangePasswordCommand command,
             [FromBody] ChangePasswordDto dto)
         {
-            var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var userIdStr = GetUserIdClaim();
             if (string.IsNullOrWhiteSpace(userIdStr))
                 return Unauthorized("Token sin identificador de usuario.");
 
@@ -114,7 +139,11 @@ namespace fletflow.Api.Controllers
         [Authorize]
         public async Task<IActionResult> Logout([FromBody] RefreshRequestDto dto)
         {
-            await _authService.LogoutAsync(dto.RefreshToken);
+            var userIdValue = GetUserIdClaim();
+            if (!Guid.TryParse(userIdValue, out var userId))
+                return Unauthorized("Token sin identificador de usuario.");
+
+            await _authService.LogoutAsync(dto.RefreshToken, userId);
             return Ok(new { message = "Sesion cerrada." });
         }
 
@@ -128,7 +157,7 @@ namespace fletflow.Api.Controllers
         [Authorize]
         public async Task<IActionResult> LogoutAll()
         {
-            var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var userIdStr = GetUserIdClaim();
             if (string.IsNullOrWhiteSpace(userIdStr))
                 return Unauthorized("Token sin identificador de usuario.");
 
@@ -148,7 +177,7 @@ namespace fletflow.Api.Controllers
         [Authorize]
         public async Task<IActionResult> Me()
         {
-            var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var userIdStr = GetUserIdClaim();
             if (string.IsNullOrWhiteSpace(userIdStr))
                 return Unauthorized("Token sin identificador de usuario.");
 
@@ -158,6 +187,9 @@ namespace fletflow.Api.Controllers
             var me = await _authService.GetMeAsync(userId);
             return Ok(me);
         }
+
+        private string? GetUserIdClaim() =>
+            User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue("nameid");
 
         /// <summary>
         /// Envía un correo para restablecer la contraseña del usuario.
@@ -215,16 +247,25 @@ namespace fletflow.Api.Controllers
         /// <response code="200">Correo de prueba enviado.</response>
         /// <response code="400">Email de destino no proporcionado.</response>
         [HttpGet("test-email")]
-        [AllowAnonymous]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> TestEmail([FromQuery] string to)
         {
+            if (!_environment.IsDevelopment())
+                return NotFound();
+
             if (string.IsNullOrWhiteSpace(to))
                 return BadRequest(new { message = "Debe enviar ?to=email@dominio.com" });
+
+            var authenticatedEmail = User.FindFirstValue(JwtRegisteredClaimNames.Email)
+                ?? User.FindFirstValue(ClaimTypes.Email);
+            if (string.IsNullOrWhiteSpace(authenticatedEmail) ||
+                !string.Equals(to.Trim(), authenticatedEmail, StringComparison.OrdinalIgnoreCase))
+                return Forbid();
 
             var plainToken = $"test-{Guid.NewGuid():N}";
             var encoded = Uri.EscapeDataString(plainToken);
             var testLink = $"https://example.com/reset?token={encoded}";
-            await _emailService.SendPasswordResetEmailAsync(to, testLink, plainToken);
+            await _emailService.SendPasswordResetEmailAsync(authenticatedEmail, testLink, plainToken);
             return Ok(new { message = "Correo de prueba enviado (si SMTP se configuro correctamente)." });
         }
     }

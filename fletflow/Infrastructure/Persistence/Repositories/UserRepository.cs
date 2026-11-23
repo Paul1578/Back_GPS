@@ -37,6 +37,7 @@ namespace fletflow.Infrastructure.Persistence.Repositories
         public async Task<User?> GetByIdAsync(Guid id)
         {
             var entity = await _context.Users
+                .AsNoTracking()
                 .Include(u => u.UserRoles).ThenInclude(ur => ur.Role)
                 .FirstOrDefaultAsync(u => u.Id == id);
 
@@ -70,24 +71,28 @@ namespace fletflow.Infrastructure.Persistence.Repositories
 
         public async Task UpdatePasswordHashAsync(Guid userId, string newPasswordHash)
         {
-            var entity = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
+            var entity = await _context.Users.FirstOrDefaultAsync(user => user.Id == userId);
             if (entity is null) throw new KeyNotFoundException("Usuario no encontrado.");
             entity.PasswordHash = newPasswordHash;
+            entity.TokenVersion++;
             _context.Users.Update(entity);
         }
 
         public async Task UpdatePasswordAndClearFlagAsync(Guid userId, string newPasswordHash, bool clearMustChangePassword)
         {
-            var entity = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
+            var entity = await _context.Users.FirstOrDefaultAsync(user => user.Id == userId);
             if (entity is null) throw new KeyNotFoundException("Usuario no encontrado.");
-
             entity.PasswordHash = newPasswordHash;
-            if (clearMustChangePassword)
-            {
-                entity.MustChangePassword = false;
-            }
-
+            entity.TokenVersion++;
+            if (clearMustChangePassword) entity.MustChangePassword = false;
             _context.Users.Update(entity);
+        }
+
+        public async Task IncrementTokenVersionAsync(Guid userId)
+        {
+            var entity = await _context.Users.FirstOrDefaultAsync(user => user.Id == userId);
+            if (entity is null) throw new KeyNotFoundException("Usuario no encontrado.");
+            entity.TokenVersion++;
         }
     }
 }

@@ -1,8 +1,10 @@
 using fletflow.Application.Fleet.Dtos;
 using fletflow.Application.Fleet.Mappings;
 using fletflow.Domain.Fleet.Entities;
+using fletflow.Domain.Fleet.Exceptions;
 using fletflow.Domain.Fleet.Repositories;
 using fletflow.Infrastructure.Persistence.Contracts;
+using Microsoft.EntityFrameworkCore;
 
 namespace fletflow.Application.Fleet.Commands
 {
@@ -24,20 +26,30 @@ namespace fletflow.Application.Fleet.Commands
             int year,
             string? description)
         {
-            plate = plate.Trim();
-            brand = brand.Trim();
-            model = model.Trim();
-            description = string.IsNullOrWhiteSpace(description) ? null : description.Trim();
+            plate = VehicleCommandInput.Required(plate, "La placa", 20);
+            brand = VehicleCommandInput.Required(brand, "La marca", 100);
+            model = VehicleCommandInput.Required(model, "El modelo", 100);
+            year = VehicleCommandInput.Year(year);
+            description = VehicleCommandInput.Optional(description, "La descripción", 1000);
 
             // Reglas: placa única
             var existing = await _vehicles.GetByPlateAsync(plate);
             if (existing is not null)
-                throw new InvalidOperationException($"A vehicle with plate {plate} already exists.");
+                throw new BusinessConflictException($"Ya existe un vehículo con la placa {plate} en esta empresa.");
 
             var vehicle = Vehicle.Create(plate, brand, model, year, description);
 
             await _vehicles.AddAsync(vehicle);
-            await _uow.CommitAsync();
+            try
+            {
+                await _uow.CommitAsync();
+            }
+            catch (DbUpdateException)
+            {
+                if (await _vehicles.GetByPlateAsync(plate) is not null)
+                    throw new BusinessConflictException($"Ya existe un vehículo con la placa {plate} en esta empresa.");
+                throw;
+            }
 
             return VehicleApplicationMapper.ToDto(vehicle);
         }

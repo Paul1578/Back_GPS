@@ -7,7 +7,8 @@ public class RegisterUserValidator : AbstractValidator<RegisterUserDto>
     {
         RuleFor(x => x.Username).NotEmpty().MinimumLength(3);
         RuleFor(x => x.Email).NotEmpty().EmailAddress();
-        RuleFor(x => x.Password).NotEmpty().MinimumLength(6);
+        RuleFor(x => x.Password).NotEmpty().MinimumLength(12)
+            .WithMessage("La contraseña debe tener al menos 12 caracteres.");
         RuleFor(x => x.RoleName).NotEmpty();
     }
 }

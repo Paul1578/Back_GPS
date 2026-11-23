@@ -1,6 +1,9 @@
 using fletflow.Domain.Fleet.Entities;
+using fletflow.Domain.Fleet.Exceptions;
 using fletflow.Domain.Fleet.Repositories;
+using fletflow.Domain.Auth.Repositories;
 using fletflow.Infrastructure.Persistence.Contracts;
+using System.Linq;
 
 namespace fletflow.Application.Fleet.Commands
 {
@@ -9,54 +12,122 @@ namespace fletflow.Application.Fleet.Commands
         private readonly IUnitOfWork _uow;
         private readonly IRouteRepository _routes;
         private readonly IVehicleRepository _vehicles;
+        private readonly IDriverRepository _drivers;
+        private readonly IUserRepository _users;
 
         public ChangeRouteStatusCommand(
             IUnitOfWork uow,
             IRouteRepository routes,
-            IVehicleRepository vehicles)
+            IVehicleRepository vehicles,
+            IDriverRepository drivers,
+            IUserRepository users)
         {
             _uow = uow;
             _routes = routes;
             _vehicles = vehicles;
+            _drivers = drivers;
+            _users = users;
         }
 
-        public async Task Execute(Guid id, RouteStatus status)
+        public async Task Execute(
+            Guid id,
+            RouteStatus status,
+            Guid? requestingDriverId = null,
+            Guid? requestingUserId = null)
         {
-            // 1. Cargamos la ruta
+            if (!Enum.IsDefined(typeof(RouteStatus), status))
+                throw new ArgumentException("Estado de ruta no válido.", nameof(status));
+
             var route = await _routes.GetByIdAsync(id)
                 ?? throw new KeyNotFoundException("Route not found.");
 
-            if (!route.IsActive)
-                throw new InvalidOperationException("Cannot change the status of an inactive route.");
-
-            // 2. Cargamos el vehículo asociado
-            var vehicle = await _vehicles.GetByIdAsync(route.VehicleId)
-                ?? throw new KeyNotFoundException("Vehicle associated with the route not found.");
-
-            // 3. Regla de negocio: estado de ruta → estado de vehículo
-            switch (status)
+            try
             {
-                case RouteStatus.InProgress:
+                // Bloquea la ruta y su asignación vigente antes de volver a leer su estado.
+                await _uow.LockRouteAssignmentAsync(route.VehicleId, route.DriverId, id);
+                route = await _routes.GetByIdAsync(id)
+                    ?? throw new KeyNotFoundException("Route not found.");
+
+                // Revalidate Driver ownership after acquiring the same route and assignment
+                // locks used by reassignment. The controller's earlier check alone leaves a
+                // window where a Driver could be removed from the route before this update.
+                if (requestingDriverId.HasValue)
+                {
+                    var requestingDriver = await _drivers.GetByIdAsync(requestingDriverId.Value);
+                    var stillAssigned = route.DriverId == requestingDriverId.Value
+                        || requestingUserId.HasValue && route.DriverId == requestingUserId.Value;
+                    if (requestingDriver?.IsActive != true || !stillAssigned)
+                        throw new KeyNotFoundException("Route not found.");
+                }
+
+                if (!route.IsActive)
+                    throw new InvalidOperationException("Cannot change the status of an inactive route.");
+
+                var transitionAllowed = route.Status switch
+                {
+                    RouteStatus.Pending => status is RouteStatus.InProgress or RouteStatus.Cancelled,
+                    RouteStatus.InProgress => status is RouteStatus.Pending or RouteStatus.Completed or RouteStatus.Cancelled,
+                    _ => false,
+                };
+                if (!transitionAllowed)
+                    throw new BusinessConflictException($"No se permite cambiar una ruta de {route.Status} a {status}.");
+
+                var vehicle = await _vehicles.GetByIdAsync(route.VehicleId)
+                    ?? throw new KeyNotFoundException("Vehicle associated with the route not found.");
+
+                if (status == RouteStatus.InProgress)
+                {
+                    if (!vehicle.IsActive)
+                        throw new BusinessConflictException("No se puede iniciar una ruta con un vehículo inactivo.");
+
+                    var driver = await _drivers.GetByIdAsync(route.DriverId)
+                        ?? throw new KeyNotFoundException("Driver assigned to the route not found.");
+                    if (!driver.IsActive)
+                        throw new BusinessConflictException("No se puede iniciar una ruta con un conductor inactivo.");
+                    if (driver.VehicleId != route.VehicleId)
+                        throw new BusinessConflictException(
+                            "El vehículo de la ruta no coincide con el asignado actualmente al conductor.");
+                    if (driver.UserId.HasValue)
+                    {
+                        await _uow.LockLinkedUserForRouteAssignmentAsync(driver.UserId.Value);
+                        var linkedUser = await _users.GetByIdAsync(driver.UserId.Value);
+                        if (linkedUser?.IsActive != true)
+                            throw new BusinessConflictException("No se puede iniciar una ruta con la cuenta del conductor inactiva.");
+                    }
+
+                    var otherInProgressRoutes = await _routes.GetAllAsync(
+                        vehicleId: route.VehicleId,
+                        status: RouteStatus.InProgress,
+                        onlyActive: true);
+                    if (otherInProgressRoutes.Any(other => other.Id != route.Id))
+                        throw new BusinessConflictException("El vehículo ya tiene otra ruta en progreso.");
+
+                    if (vehicle.Status != VehicleStatus.Available && route.Status != RouteStatus.InProgress)
+                        throw new BusinessConflictException("El vehículo no está disponible para iniciar esta ruta.");
+
                     vehicle.SetStatus(VehicleStatus.OnRoute);
-                    break;
+                }
+                else if (route.Status == RouteStatus.InProgress &&
+                         status is RouteStatus.Pending or RouteStatus.Completed or RouteStatus.Cancelled)
+                {
+                    var otherInProgressRoutes = await _routes.GetAllAsync(
+                        vehicleId: route.VehicleId,
+                        status: RouteStatus.InProgress,
+                        onlyActive: true);
+                    if (!otherInProgressRoutes.Any(other => other.Id != route.Id))
+                        vehicle.SetStatus(VehicleStatus.Available);
+                }
 
-                case RouteStatus.Completed:
-                case RouteStatus.Cancelled:
-                    vehicle.SetStatus(VehicleStatus.Available);
-                    break;
-
-                case RouteStatus.Pending:
-                    // En este caso no tocamos el estado del vehículo
-                    break;
+                route.ChangeStatus(status);
+                await _vehicles.UpdateAsync(vehicle);
+                await _routes.UpdateAsync(route);
+                await _uow.CommitAsync();
             }
-
-            // 4. Cambiamos el estado de la ruta
-            route.ChangeStatus(status);
-
-            // 5. Persistimos ambos cambios en una sola transacción
-            await _vehicles.UpdateAsync(vehicle);
-            await _routes.UpdateAsync(route);
-            await _uow.CommitAsync();
+            catch
+            {
+                _uow.Rollback();
+                throw;
+            }
         }
     }
 }

@@ -14,6 +14,7 @@ namespace fletflow.Infrastructure.Persistence.Contracts
         IRoleRepository Roles { get; }
 
         Task<int> CommitAsync();
+        Task LockUserSessionAsync(Guid userId) => Task.CompletedTask;
 
         /// <summary>
         /// Descarta cambios en el DbContext (si procede).
@@ -29,6 +30,8 @@ namespace fletflow.Infrastructure.Persistence.Contracts
         IDriverRepository Drivers { get; }
         IRouteRepository Routes { get; }
         IRoutePositionRepository RoutePositions { get; }
+        Task LockRouteAssignmentAsync(Guid? vehicleId, Guid? driverId, Guid? routeId = null) => Task.CompletedTask;
+        Task LockLinkedUserForRouteAssignmentAsync(Guid userId) => Task.CompletedTask;
         void Rollback();
     }
 }

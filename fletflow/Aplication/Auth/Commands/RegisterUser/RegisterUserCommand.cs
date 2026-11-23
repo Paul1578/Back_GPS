@@ -1,6 +1,7 @@
 using fletflow.Domain.Auth.Entities;
 using fletflow.Infrastructure.Persistence;
 using fletflow.Infrastructure.Persistence.Contracts;
+using fletflow.Domain.Fleet.Exceptions;
 
 namespace fletflow.Application.Auth.Commands
 {
@@ -13,12 +14,36 @@ namespace fletflow.Application.Auth.Commands
             _unitOfWork = unitOfWork;
         }
 
-        public async Task<User> Execute(string username, string email, string password, string roleName, Guid? ownerUserId = null, bool mustChangePassword = false)
+        public async Task<User> Execute(
+            string username,
+            string email,
+            string password,
+            string roleName,
+            Guid? ownerUserId = null,
+            bool mustChangePassword = false,
+            bool saveChanges = true,
+            string? firstName = null,
+            string? lastName = null)
         {
+            username = username.Trim();
+            email = email.Trim();
+            firstName = string.IsNullOrWhiteSpace(firstName) ? null : firstName.Trim();
+            lastName = string.IsNullOrWhiteSpace(lastName) ? null : lastName.Trim();
+            if (username.Length > 100)
+                throw new ArgumentException("El usuario no puede exceder 100 caracteres.");
+            if (email.Length > 200)
+                throw new ArgumentException("El correo no puede exceder 200 caracteres.");
+            if (firstName?.Length > 100 || lastName?.Length > 100)
+                throw new ArgumentException("Nombres y apellidos no pueden exceder 100 caracteres.");
+
+            // Hacer el mismo trabajo de password hashing antes del pre-check reduce
+            // la diferencia temporal entre un email nuevo y uno ya registrado.
+            var passwordHash = BCrypt.Net.BCrypt.HashPassword(password);
+
             // 1) Verificar si el usuario ya existe
             var existingUser = await _unitOfWork.Users.GetByEmailAsync(email);
             if (existingUser is not null)
-                throw new InvalidOperationException("El correo ya fue registrado.");
+                throw new BusinessConflictException("El correo ya fue registrado.");
 
             // 2) Normalizar rol
             roleName = string.IsNullOrWhiteSpace(roleName) ? "User" : roleName.Trim();
@@ -29,7 +54,6 @@ namespace fletflow.Application.Auth.Commands
             {
                 role = new Role { Id = Guid.NewGuid(), Name = roleName };
                 await _unitOfWork.Roles.AddAsync(role);
-                await _unitOfWork.CommitAsync(); // asegura Role.Id persistido
             }
 
             // 4) Crear usuario de dominio
@@ -37,8 +61,10 @@ namespace fletflow.Application.Auth.Commands
             {
                 Id = Guid.NewGuid(),
                 Username = username,
+                FirstName = string.IsNullOrWhiteSpace(firstName) ? null : firstName.Trim(),
+                LastName = string.IsNullOrWhiteSpace(lastName) ? null : lastName.Trim(),
                 Email = email,
-                PasswordHash = BCrypt.Net.BCrypt.HashPassword(password),
+                PasswordHash = passwordHash,
                 IsActive = true,
                 MustChangePassword = mustChangePassword,
                 OwnerUserId = ownerUserId 
@@ -55,7 +81,8 @@ namespace fletflow.Application.Auth.Commands
 
             // 6) Guardar usuario
             await _unitOfWork.Users.AddAsync(user);
-            await _unitOfWork.CommitAsync();
+            if (saveChanges)
+                await _unitOfWork.CommitAsync();
 
             return user;
         }

@@ -1,0 +1,246 @@
+using fletflow.Application.Auth.Commands.ActivateAccount;
+using fletflow.Application.Auth.Commands;
+using fletflow.Application.Auth.Commands.ResetPassword;
+using fletflow.Domain.Auth.Entities;
+using fletflow.Domain.Auth.Repositories;
+using fletflow.Domain.Fleet.Repositories;
+using fletflow.Infrastructure.Persistence.Contracts;
+using fletflow.Infrastructure.Security.Hashing;
+
+namespace BackEnd_Gps.Tests;
+
+public class PasswordRecoveryCommandTests
+{
+    [Fact]
+    public async Task ChangePassword_ChangesHashAndInvalidatesExistingSessions()
+    {
+        var scenario = new RecoveryScenario();
+        var hasher = new PasswordHasher();
+        scenario.User.PasswordHash = hasher.Hash("Current123");
+        var command = new ChangePasswordCommand(scenario, scenario.Users);
+
+        await command.Execute(scenario.User.Id, "Current123", "NewPassword123");
+
+        Assert.True(hasher.Verify("NewPassword123", scenario.User.PasswordHash));
+        Assert.Equal(1, scenario.User.TokenVersion);
+        Assert.Equal(1, scenario.RefreshTokens.RevokeAllCount);
+        Assert.Equal(1, scenario.CommitCount);
+        Assert.Equal(1, scenario.LockUserSessionCount);
+    }
+
+    [Fact]
+    public async Task ChangePassword_RejectsWrongCurrentPasswordWithoutChangingState()
+    {
+        var scenario = new RecoveryScenario();
+        var hasher = new PasswordHasher();
+        scenario.User.PasswordHash = hasher.Hash("Current123");
+        var originalHash = scenario.User.PasswordHash;
+        var command = new ChangePasswordCommand(scenario, scenario.Users);
+
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
+            command.Execute(scenario.User.Id, "Wrong123", "NewPassword123"));
+
+        Assert.Equal(originalHash, scenario.User.PasswordHash);
+        Assert.Equal(0, scenario.User.TokenVersion);
+        Assert.Equal(0, scenario.RefreshTokens.RevokeAllCount);
+        Assert.Equal(0, scenario.CommitCount);
+    }
+
+    [Fact]
+    public async Task ChangePassword_RejectsShortPasswordBeforeLockingOrMutating()
+    {
+        var scenario = new RecoveryScenario();
+        var command = new ChangePasswordCommand(scenario, scenario.Users);
+
+        await Assert.ThrowsAsync<ArgumentException>(() =>
+            command.Execute(scenario.User.Id, "Current123", "Short123"));
+
+        Assert.Equal(0, scenario.LockUserSessionCount);
+        Assert.Equal("old-hash", scenario.User.PasswordHash);
+        Assert.Equal(0, scenario.CommitCount);
+    }
+
+    [Fact]
+    public async Task ResetPassword_ChangesPasswordConsumesTokenAndRevokesSessions()
+    {
+        var scenario = new RecoveryScenario();
+        var command = new ResetPasswordCommand(
+            scenario.Tokens, scenario.Users, scenario.RefreshTokens, scenario, new PasswordHasher());
+
+        await command.ExecuteAsync(scenario.RawToken, "NewPassword123", "NewPassword123");
+
+        Assert.True(new PasswordHasher().Verify("NewPassword123", scenario.User.PasswordHash));
+        Assert.NotEqual("old-hash", scenario.User.PasswordHash);
+        Assert.Equal(1, scenario.User.TokenVersion);
+        Assert.NotNull(scenario.Token.UsedAt);
+        Assert.Equal(1, scenario.RefreshTokens.RevokeAllCount);
+        Assert.Equal(1, scenario.CommitCount);
+        Assert.Equal(1, scenario.LockUserSessionCount);
+    }
+
+    [Fact]
+    public async Task ResetPassword_RejectsConfirmationMismatchWithoutChangingState()
+    {
+        var scenario = new RecoveryScenario();
+        var command = new ResetPasswordCommand(
+            scenario.Tokens, scenario.Users, scenario.RefreshTokens, scenario, new PasswordHasher());
+
+        await Assert.ThrowsAsync<ArgumentException>(() =>
+            command.ExecuteAsync(scenario.RawToken, "NewPassword123", "Different123456"));
+
+        Assert.Equal("old-hash", scenario.User.PasswordHash);
+        Assert.Null(scenario.Token.UsedAt);
+        Assert.Equal(0, scenario.RefreshTokens.RevokeAllCount);
+        Assert.Equal(0, scenario.CommitCount);
+    }
+
+    [Fact]
+    public async Task ResetPassword_RejectsUsedToken()
+    {
+        var scenario = new RecoveryScenario();
+        scenario.Token.UsedAt = DateTime.UtcNow;
+        var command = new ResetPasswordCommand(
+            scenario.Tokens, scenario.Users, scenario.RefreshTokens, scenario, new PasswordHasher());
+
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() =>
+            command.ExecuteAsync(scenario.RawToken, "NewPassword123", "NewPassword123"));
+
+        Assert.Equal("old-hash", scenario.User.PasswordHash);
+        Assert.Equal(0, scenario.CommitCount);
+    }
+
+    [Fact]
+    public async Task ResetPassword_RejectsShortPasswordWithoutConsumingToken()
+    {
+        var scenario = new RecoveryScenario();
+        var command = new ResetPasswordCommand(
+            scenario.Tokens, scenario.Users, scenario.RefreshTokens, scenario, new PasswordHasher());
+
+        await Assert.ThrowsAsync<ArgumentException>(() =>
+            command.ExecuteAsync(scenario.RawToken, "Short123", "Short123"));
+
+        Assert.Equal("old-hash", scenario.User.PasswordHash);
+        Assert.Null(scenario.Token.UsedAt);
+        Assert.Equal(0, scenario.CommitCount);
+    }
+
+    [Fact]
+    public async Task ActivateAccount_ChangesPasswordClearsFlagConsumesTokenAndRevokesSessions()
+    {
+        var scenario = new RecoveryScenario();
+        scenario.User.MustChangePassword = true;
+        var command = new ActivateAccountCommand(scenario.Tokens, scenario.Users, scenario, new PasswordHasher());
+
+        await command.ExecuteAsync(scenario.RawToken, "WelcomePassword123", "WelcomePassword123");
+
+        Assert.True(new PasswordHasher().Verify("WelcomePassword123", scenario.User.PasswordHash));
+        Assert.Equal(1, scenario.User.TokenVersion);
+        Assert.False(scenario.User.MustChangePassword);
+        Assert.NotNull(scenario.Token.UsedAt);
+        Assert.Equal(1, scenario.RefreshTokens.RevokeAllCount);
+        Assert.Equal(1, scenario.CommitCount);
+    }
+
+    [Fact]
+    public async Task ActivateAccount_RejectsShortPasswordWithoutConsumingToken()
+    {
+        var scenario = new RecoveryScenario();
+        var command = new ActivateAccountCommand(scenario.Tokens, scenario.Users, scenario, new PasswordHasher());
+
+        await Assert.ThrowsAsync<ArgumentException>(() =>
+            command.ExecuteAsync(scenario.RawToken, "Short123", "Short123"));
+
+        Assert.Equal("old-hash", scenario.User.PasswordHash);
+        Assert.Null(scenario.Token.UsedAt);
+        Assert.Equal(0, scenario.User.TokenVersion);
+        Assert.Equal(0, scenario.CommitCount);
+    }
+
+    private sealed class RecoveryScenario : IUnitOfWork
+    {
+        public string RawToken { get; } = "recovery-token-for-test";
+        public User User { get; } = new() { Email = "recovery@example.test", PasswordHash = "old-hash" };
+        public PasswordResetToken Token { get; }
+        public UserRepository Users { get; }
+        public TokenRepository Tokens { get; }
+        public RefreshTokenRepository RefreshTokens { get; } = new();
+        public int CommitCount { get; private set; }
+        public int LockUserSessionCount { get; private set; }
+
+        public RecoveryScenario()
+        {
+            Token = new PasswordResetToken
+            {
+                UserId = User.Id,
+                TokenHash = TokenHashing.Sha256(RawToken),
+                ExpiresAt = DateTime.UtcNow.AddMinutes(10)
+            };
+            Users = new UserRepository(User);
+            Tokens = new TokenRepository(Token);
+        }
+
+        IUserRepository IUnitOfWork.Users => Users;
+        IRoleRepository IUnitOfWork.Roles => throw new NotSupportedException();
+        IRefreshTokenRepository IUnitOfWork.RefreshTokens => RefreshTokens;
+        IPasswordResetTokenRepository IUnitOfWork.PasswordResetTokens => Tokens;
+        IVehicleRepository IUnitOfWork.Vehicles => throw new NotSupportedException();
+        IDriverRepository IUnitOfWork.Drivers => throw new NotSupportedException();
+        IRouteRepository IUnitOfWork.Routes => throw new NotSupportedException();
+        IRoutePositionRepository IUnitOfWork.RoutePositions => throw new NotSupportedException();
+        public Task<int> CommitAsync() { CommitCount++; return Task.FromResult(1); }
+        public Task LockUserSessionAsync(Guid userId) { LockUserSessionCount++; return Task.CompletedTask; }
+        public void Rollback() { }
+
+        public sealed class UserRepository(User user) : IUserRepository
+        {
+            public Task<User?> GetByEmailAsync(string email) => Task.FromResult<User?>(null);
+            public Task<User?> GetByIdAsync(Guid id) => Task.FromResult(id == user.Id ? user : null);
+            public Task AddAsync(User value) => Task.CompletedTask;
+            public Task SaveChangesAsync() => Task.CompletedTask;
+            public Task<bool> HasRoleAsync(Guid userId, Guid roleId) => Task.FromResult(false);
+            public Task AssignRoleAsync(Guid userId, Guid roleId) => Task.CompletedTask;
+            public Task RemoveRoleAsync(Guid userId, Guid roleId) => Task.CompletedTask;
+            public Task UpdatePasswordHashAsync(Guid userId, string newPasswordHash)
+            {
+                user.PasswordHash = newPasswordHash;
+                user.TokenVersion++;
+                return Task.CompletedTask;
+            }
+            public Task UpdatePasswordAndClearFlagAsync(Guid userId, string newPasswordHash, bool clearMustChangePassword)
+            {
+                user.PasswordHash = newPasswordHash;
+                user.TokenVersion++;
+                if (clearMustChangePassword) user.MustChangePassword = false;
+                return Task.CompletedTask;
+            }
+            public Task IncrementTokenVersionAsync(Guid userId) => Task.CompletedTask;
+            public Task<List<User>> GetByOwnerAsync(Guid ownerUserId) => Task.FromResult(new List<User>());
+        }
+
+        public sealed class TokenRepository(PasswordResetToken token) : IPasswordResetTokenRepository
+        {
+            public Task AddAsync(PasswordResetToken value) => Task.CompletedTask;
+            public Task<PasswordResetToken?> GetByRawTokenAsync(string rawToken) => Task.FromResult<PasswordResetToken?>(null);
+            public Task<PasswordResetToken?> GetByTokenHashAsync(string tokenHash) =>
+                Task.FromResult<PasswordResetToken?>(token.TokenHash == tokenHash ? token : null);
+            public Task<bool> MarkUsedAsync(Guid id)
+            {
+                if (token.Id != id || !token.IsActive) return Task.FromResult(false);
+                token.UsedAt = DateTime.UtcNow;
+                return Task.FromResult(true);
+            }
+            public Task InvalidateAllForUserAsync(Guid userId) => Task.CompletedTask;
+        }
+
+        public sealed class RefreshTokenRepository : IRefreshTokenRepository
+        {
+            public int RevokeAllCount { get; private set; }
+            public Task AddAsync(RefreshToken token) => Task.CompletedTask;
+            public Task<RefreshToken?> GetByTokenAsync(string rawToken) => Task.FromResult<RefreshToken?>(null);
+            public Task RevokeAsync(Guid id, string? replacedByTokenHash = null) => Task.CompletedTask;
+            public Task<bool> TryRotateAsync(Guid currentTokenId, RefreshToken replacement) => Task.FromResult(false);
+            public Task RemoveExpiredAsync() => Task.CompletedTask;
+            public Task RevokeAllForUserAsync(Guid userId) { RevokeAllCount++; return Task.CompletedTask; }
+        }
+    }
+}

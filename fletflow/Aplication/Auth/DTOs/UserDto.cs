@@ -4,6 +4,8 @@
     {
         public Guid Id { get; set; }
         public string Username { get; set; } = default!;
+        public string? FirstName { get; set; }
+        public string? LastName { get; set; }
         public string Email { get; set; } = default!;
         public List<string> Roles { get; set; } = new();
         public bool IsActive { get; set; }

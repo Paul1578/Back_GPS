@@ -1,4 +1,5 @@
 using fletflow.Domain.Fleet.Repositories;
+using fletflow.Domain.Fleet.Entities;
 using fletflow.Infrastructure.Persistence.Contracts;
 
 namespace fletflow.Application.Fleet.Commands
@@ -21,24 +22,62 @@ namespace fletflow.Application.Fleet.Commands
 
         public async Task Execute(Guid driverId, Guid vehicleId)
         {
-            var driver = await _drivers.GetByIdAsync(driverId)
-                ?? throw new KeyNotFoundException("Driver not found.");
+            try
+            {
+                await _uow.LockRouteAssignmentAsync(vehicleId, driverId);
+                var driver = await _drivers.GetByIdAsync(driverId)
+                    ?? throw new KeyNotFoundException("Driver not found.");
 
-            var vehicle = await _vehicles.GetByIdAsync(vehicleId)
-                ?? throw new KeyNotFoundException("Vehicle not found.");
+                var vehicle = await _vehicles.GetByIdAsync(vehicleId)
+                    ?? throw new KeyNotFoundException("Vehicle not found.");
 
-            if (!driver.IsActive)
-                throw new InvalidOperationException("Cannot assign an inactive driver.");
+                if (!driver.IsActive)
+                    throw new InvalidOperationException("Cannot assign an inactive driver.");
 
-            if (!vehicle.IsActive)
-                throw new InvalidOperationException("Cannot assign an inactive vehicle.");
+                if (driver.UserId.HasValue)
+                {
+                    var linkedUser = await _uow.Users.GetByIdAsync(driver.UserId.Value);
+                    if (linkedUser is null || !linkedUser.IsActive)
+                        throw new InvalidOperationException("No se puede asignar un conductor con usuario inactivo.");
+                }
 
-            // Regla simple de MVP:
-            // si el driver ya tiene vehículo, lo pisamos
-            driver.AssignToVehicle(vehicle.Id);
+                if (!vehicle.IsActive)
+                    throw new InvalidOperationException("Cannot assign an inactive vehicle.");
 
-            await _drivers.UpdateAsync(driver);
-            await _uow.CommitAsync();
+                if (vehicle.Status != VehicleStatus.Available)
+                    throw new InvalidOperationException("No se puede asignar un vehículo que no esté disponible.");
+
+                var assignedDriver = await _drivers.GetOtherAssignedToVehicleAsync(vehicleId, driverId);
+                if (assignedDriver is not null)
+                    throw new fletflow.Domain.Fleet.Exceptions.BusinessConflictException(
+                        "El vehículo ya está asignado a otro conductor. Desasígnalo antes de reasignarlo.");
+
+                var inProgressRoutes = await _uow.Routes.GetAllAsync(
+                    driverId: driverId,
+                    status: RouteStatus.InProgress,
+                    onlyActive: true);
+                if (inProgressRoutes.Count > 0)
+                    throw new fletflow.Domain.Fleet.Exceptions.BusinessConflictException(
+                        "No se puede reasignar un conductor con una ruta en progreso.");
+
+                if (driver.VehicleId != vehicleId)
+                {
+                    var activeRoutes = await _uow.Routes.GetAllAsync(driverId: driverId, onlyActive: true);
+                    if (activeRoutes.Any(route => route.Status is RouteStatus.Pending or RouteStatus.InProgress))
+                        throw new fletflow.Domain.Fleet.Exceptions.BusinessConflictException(
+                            "No se puede cambiar el vehículo asignado mientras el conductor tenga rutas activas pendientes o en progreso.");
+                }
+
+                driver.AssignToVehicle(vehicle.Id);
+
+                await _drivers.UpdateAsync(driver);
+                await _uow.CommitAsync();
+            }
+            catch
+            {
+                _uow.Rollback();
+                throw;
+            }
         }
     }
 }

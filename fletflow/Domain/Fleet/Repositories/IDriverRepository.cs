@@ -7,8 +7,10 @@ namespace fletflow.Domain.Fleet.Repositories
         Task<Driver?> GetByIdAsync(Guid id);
         Task<Driver?> GetByDocumentAsync(string documentNumber);
         Task<Driver?> GetByUserIdAsync(Guid userId);
+        Task<Driver?> GetOtherAssignedToVehicleAsync(Guid vehicleId, Guid excludedDriverId);
         Task AddAsync(Driver driver);
         Task UpdateAsync(Driver driver);
         Task<List<Driver>> GetAllAsync(bool? onlyActive = null);
+        Task<List<Driver>> GetAssignableAsync();
     }
 }

@@ -14,10 +14,14 @@ namespace fletflow.Api.Middleware
 
         public async Task InvokeAsync(HttpContext context, RequestDelegate next)
         {
-            // Solo valida para métodos que suelen llevar body
-            if (context.Request.Method == HttpMethods.Post || context.Request.Method == HttpMethods.Put || context.Request.Method == HttpMethods.Patch)
+            // Sólo exigir Content-Type cuando la petición realmente lleva cuerpo.
+            // PUT sin body es válido (por ejemplo, desasignar un vehículo).
+            var hasBody = context.Request.ContentLength is > 0 ||
+                context.Request.Headers.ContainsKey("Transfer-Encoding");
+            if (hasBody && (context.Request.Method == HttpMethods.Post || context.Request.Method == HttpMethods.Put || context.Request.Method == HttpMethods.Patch))
             {
-                if (!context.Request.ContentType?.Contains("application/json") ?? true)
+                if (!Microsoft.Net.Http.Headers.MediaTypeHeaderValue.TryParse(context.Request.ContentType, out var contentType) ||
+                    !string.Equals(contentType.MediaType.Value, "application/json", System.StringComparison.OrdinalIgnoreCase))
                 {
                     _logger.LogWarning("[HeaderValidation] Content-Type inválido: {ContentType}", context.Request.ContentType);
                     context.Response.StatusCode = StatusCodes.Status415UnsupportedMediaType;

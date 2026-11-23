@@ -2,6 +2,8 @@
 
 ## Estado vigente de endurecimiento y riesgos de despliegue — 2026-11-23
 
+- Revisión independiente read-only de Backend `391792e` y Front `6555858`: no encontró un bypass nuevo de tenant/rol, fallo JWT explotable ni vector XSS concreto en el alcance inspeccionado. Confirmó filtros globales, root-only y validación `TokenVersion` en JwtBearer `OnTokenValidated`. La revisión estática no sustituye smokes dinámicos.
+
 - `POST /api/Auth/forgot-password` permite cinco solicitudes por diez minutos y por IP, incluso desde loopback en Development. El contador no usa correo/ID de cuenta, no bloquea cuentas y devuelve 429 con `Retry-After` al exceder el límite.
 - El limitador y sus ventanas residen en memoria del proceso: reiniciar el backend reinicia los contadores; varias réplicas no comparten el límite. `UseForwardedHeaders` procesa como máximo un salto de `X-Forwarded-For`/`X-Forwarded-Proto`, con simetría obligatoria y sólo desde IPs explícitas en `ForwardedHeaders:KnownProxies`. La lista versionada está vacía por defecto. El despliegue debe configurar las IP reales de su ingress y considerar un backend distribuido para escalar.
 - Los tokens de reset se generan con 32 bytes aleatorios (256 bits) y sólo se persiste su SHA-256. El TTL por defecto es 60 minutos; `Email:ResetTokenMinutes` sigue siendo configurable y se valida entre 1 y 1440 minutos.

@@ -2,6 +2,8 @@
 
 ## Estado vigente
 
+- Revisión de seguridad independiente read-only sobre Backend `391792e` y Front `6555858`: no encontró un nuevo bypass tenant/roles/JWT ni XSS explotable dentro del alcance revisado. Confirmó filtros globales, root-only y `TokenVersion` en `OnTokenValidated`; las comprobaciones dinámicas permanecen en las Actions HTTP/MySQL citadas.
+
 - Backend branch `chore/stabilize-fleet-platform`, código `63333bb` pasó Action [`45127502896`](https://github.com/Paul1578/Back_GPS/actions/runs/45127502896): Release build, xUnit **136/136**, tenant/concurrency/login rate limit HTTP/MySQL y cleanup. Front branch `refactor/route-builder`, HEAD documental `2cc3ee5`. Ambas ramas siguen separadas de `main`.
 - Front Action [`45124271067`](https://github.com/Paul1578/Front_gpsR/actions/runs/45124271067) pasó el SHA `1d7b922`: Release/xUnit backend, audit, lint/build, responsive **1/1**, Playwright API/MySQL **51/51** y teardown correcto. Backend Action [`45119396803`](https://github.com/Paul1578/Back_GPS/actions/runs/45119396803) pasó `341161d`.
 - Las rutas admiten sólo traslado o múltiples paradas de recogida, entrega o ambas. Ciclo operativo HTTP/MySQL con evidencia, GPS, finalización y vehículo disponible validado en Action `45108549336`; ciclo de traslado validado en `45119396803`.

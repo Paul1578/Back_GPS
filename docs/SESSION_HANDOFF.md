@@ -49,6 +49,11 @@
 
 # Handoff — 2026-11-23
 
+## Auditoría de seguridad independiente
+
+- Revisión estática read-only ejecutada sobre Backend `391792e` y Front `6555858`. No encontró bypass nuevo de tenant/roles, fallo JWT explotable ni vector XSS concreto en el alcance inspeccionado.
+- Evidencia revisada: filtros tenant en `FleetFlowDbContext`, handlers de rutas/usuarios, root-only y `TokenVersion` en JwtBearer `OnTokenValidated`. Front conserva access token en `localStorage`, que eleva el impacto potencial de una XSS futura; no se encontró vector XSS. El auditor no reejecutó pruebas dinámicas.
+
 ## Forwarded Headers bajo allowlist — CI aprobada
 
 - Backend `chore/stabilize-fleet-platform`; código `63333bb`, documentación de resultados pendiente de commit. No tocar `main`.

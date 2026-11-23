@@ -15,6 +15,7 @@
 
 - Auditoría de seguridad encontró `RoutesPRUEBAController` autenticado pero alcanzable en cualquier entorno, con rutas `/api/RoutesPRUEBA/*` que devolvían textos de prueba y sin consumidores en ninguno de los repositorios.
 - Se retiró el controller sin quitar funcionalidad de negocio y el smoke tenant ahora comprueba HTTP 404 en `/RoutesPRUEBA/admin` usando token válido.
+- Validación: Action `45086663424` pasó el smoke con HTTP 404, Release/xUnit, aislamiento tenant y concurrencia; build local con cero warnings/errors.
 - Prevención: no dejar endpoints de prueba/debug en el ensamblado API publicado; comprobar en HTTP que la ruta está ausente.
 
 # 2026-11-22 — Runner no exponía UserId requerido por E2E Manager de mapa — CORREGIDO LOCALMENTE

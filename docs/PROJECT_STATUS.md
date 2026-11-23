@@ -6,7 +6,7 @@
 - Backend commit `1ce4d45` pasó Action `45085910280`: build Release, xUnit, aislamiento tenant por HTTP/MySQL y concurrencia de asignación por MySQL; cleanup y contenedores completados.
 - Runner `2619531` entrega ahora un sufijo estable al E2E Manager para que Playwright limpie los mismos fixtures después de un reinicio de worker; `bash -n` y diff-check pasan, Action de integración posterior pendiente.
 - El E2E anterior Front `45085920993` completó **39/39** y responsive **1/1**, pero aún usó el sufijo UUID. Runner actualizado en `2619531` pasó Action Backend `45086298118`; Front `104723a` repetirá el caso con sufijo compartido.
-- Auditoría retiró `RoutesPRUEBAController`, que devolvía texto estático sin consumidores y estaba registrado en todos los entornos; smoke HTTP comprobará 404 con token válido. Validación backend pendiente.
+- Auditoría retiró `RoutesPRUEBAController`, que devolvía texto estático sin consumidores; Action `45086663424` validó HTTP 404 con token válido, build/xUnit, aislamiento tenant, concurrencia y cleanup.
 - Front Actions `45082924174` (un worker) y `45083215716` detectaron la escritura perdida, y dos aserciones UI/E2E ya corregidas en rama Front. Ver `ERROR_LOG.md` en ambos repos.
 - Ramas: `chore/stabilize-fleet-platform` y Front `refactor/route-builder`; main intacta. Misión abierta por cobertura CRUD/roles/responsive, decisiones Admin delegado y User↔Driver, SMTP externo y móvil nativo aplazado.
 

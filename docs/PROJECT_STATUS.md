@@ -584,3 +584,8 @@ Nota de actualización: algunos resultados históricos de registro público más
 - Usuario confirmó que se permiten rutas de traslado sin operaciones; backend domain test verifica Pending→InProgress→Completed sin paradas de operación.
 - Contraseñas nuevas ahora requieren 12 caracteres (registro/cambio/reset/activación); las claves actuales no se invalidan. Login limita a 10 POST/min/IP sobre el límite general de 60/min y no bloquea cuentas.
 - Release xUnit local **120/120**. HTTP smoke completo y Action sobre estos cambios pendientes de commit.
+
+## E2E y limpieza MySQL — diagnóstico pendiente
+
+- Front Action `45102498423`: los **43/43 E2E pasaron**, incluidos traslado, conductor ocupado, ruta multi-parada y confirmaciones de rol/estado; falló el cleanup de MySQL.
+- Backend `scripts/run-e2e-local.sh` ocultaba el stderr del comando `mysql`. Se actualizó para mostrar el mensaje sólo ante fallo y borrar el archivo temporal. Causa SQL exacta aún pendiente de la siguiente Action.

@@ -730,3 +730,9 @@ Errores de migración, herramientas, QA y soluciones están en `docs/ERROR_LOG.m
 - Decisión de claves confirmada: 12 caracteres para toda clave nueva; claves actuales no se invalidan. Endpoint de cambio/reset/activación y validadores actualizados; Front registro/perfil/activate/reset muestra mismo requisito.
 - Rate limit de login: 10 POST/min/IP y 429 + Retry-After encima del límite general; sin bloqueo de cuenta. En-memory por proceso, proxy forwarding requiere configuración segura para despliegue.
 - Backend Release local **120/120**. Front lint/build pasan; targeted Historial 2/2 tras arreglar su fixture. Nuevo commit y Action integrados pendientes.
+
+## Última Action: E2E pasan, cleanup reporta fallo
+
+- Front `45102498423`: 43/43 Playwright y responsive pasaron; el job acabó fallido al limpiar fixtures MySQL.
+- Diagnóstico: `scripts/run-e2e-local.sh` suprimía stderr de mysql. Backend tiene ahora un cambio que captura y muestra el error concreto al fallar, luego elimina el archivo temporal; siguiente Action deberá revelar/confirmar el cleanup.
+- No ejecutar `cleanup-e2e.sql` en la DB local persistente. La repetición debe usar el MySQL descartable del workflow.

@@ -1325,3 +1325,11 @@ Cada cambio de API debe incluir validación de compilación, migraciones si apli
 - **Límites:** rate limit en memoria por proceso; reinicios borran ventanas y réplicas no coordinan contadores. IP cliente usa `RemoteIpAddress`; `X-Forwarded-For` no se configura ni se considera confiable. No se simula el éxito SMTP.
 - **Error durante validación:** el primer test Release no compiló porque un fixture de asignación concurrente llamó `RouteE.Create` con un GUID adicional (10 argumentos frente a la firma vigente de 9). Se quitó el argumento sobrante; el test focal volvió a compilar y pasó. Prevención: contrastar fixtures con la firma actual al añadir escenarios.
 - **Verificación:** tests focalizados Release 17/17, suite `BackEnd_Gps.sln` Release 133/133 (0 fallidos/omitidos), build Release 0 warnings/0 errores. Se corrigió una advertencia nullable del test antes de la suite completa.
+
+# 2026-11-23 — Cleanup E2E falló con 43/43 tests verdes — DIAGNÓSTICO EN CURSO
+
+- **Síntoma:** Front Action `45102498423` pasó los 43 casos Playwright (3.3 min), pero `scripts/run-e2e-local.sh` terminó con error al limpiar fixtures MySQL.
+- **Causa observada:** el cleanup redirigía stdout y stderr de `mysql` a `/dev/null`, ocultando el error SQL concreto. La causa de base todavía no está identificada.
+- **Solución diagnóstica:** el runner guarda temporalmente la salida de `mysql`, la imprime sólo si la limpieza falla y elimina el archivo temporal. No se imprime la línea de conexión ni credenciales.
+- **Verificación pendiente:** `bash -n`, Backend CI y una nueva Front Action con 43 E2E + cleanup. Si el error persiste, corregir SQL/fixture con el mensaje real y volver a probar.
+- **Prevención:** no silenciar stderr en operaciones de limpieza; conservar el límite de la consulta a prefijos QA y no ejecutar el cleanup contra la DB local persistente.

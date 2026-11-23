@@ -76,12 +76,16 @@ fi
 
 cleanup() {
   local status=$?
+  local cleanup_output
+  cleanup_output="$(mktemp)"
   trap - EXIT
   if ! mysql --protocol=TCP --host="$MYSQL_HOST" --port="$MYSQL_PORT" --user="$MYSQL_USER" "$DB_NAME" \
-    < "$backend_dir/scripts/cleanup-e2e.sql" >/dev/null 2>&1; then
+    < "$backend_dir/scripts/cleanup-e2e.sql" >"$cleanup_output" 2>&1; then
     echo "No se pudieron limpiar los fixtures E2E de MySQL." >&2
+    cat "$cleanup_output" >&2
     status=1
   fi
+  rm -f "$cleanup_output"
   exit "$status"
 }
 trap cleanup EXIT

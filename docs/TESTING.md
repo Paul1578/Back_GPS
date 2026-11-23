@@ -632,3 +632,8 @@ La invitación envía sólo el enlace de activación; el usuario fija su contras
 - Release xUnit **120/120**: mínimo 12 en validadores de alta/cambio/reset, comandos de cambio/reset/activación rechazan cortas antes de bloquear/consumir token; limitador acepta 10 logins y devuelve 429 + Retry-After en el 11.º por IP. Una ruta sólo de traslado completa sin evidencia de paradas.
 - Pendiente: E2E frontend integrado contra API/MySQL para el nuevo contrato de contraseña.
 - Action Backend [`45096399172`](https://github.com/Paul1578/Back_GPS/actions/runs/45096399172) para `33e2499` pasó Release, xUnit 120/120, pruebas HTTP/MySQL tenant/concurrencia y cleanup.
+
+## E2E 43/43 y limpieza MySQL
+
+- Front Action `45102498423`: responsive 1/1, Playwright **43/43** en 3.3 min; cleanup MySQL falló y ocultó stderr.
+- Backend runner actualizado para imprimir diagnóstico sólo si falla la limpieza. Repetición integrada pendiente para cerrar cleanup.

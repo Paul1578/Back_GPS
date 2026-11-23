@@ -1,7 +1,7 @@
 # 2026-11-23 — Carrera de inicio de ruta y mantenimiento
 
 - Agregado test SQLite que impide iniciar ruta con vehículo en Maintenance y verifica que ambos estados permanezcan intactos.
-- Ampliado smoke de concurrencia con inicio HTTP y cambio a Maintenance simultáneos; SQL acepta únicamente `Pending/Maintenance` o `InProgress/OnRoute`. Suite Release **138/138**, build limpio y bash syntax pasan. Actions detectaron placa y documento de fixture sobrelargo; sufijos ahora son `MRV` y `MRD`, falta repetir HTTP/MySQL.
+- Ampliado smoke de concurrencia con inicio HTTP y cambio a Maintenance simultáneos; SQL acepta únicamente `Pending/Maintenance` o `InProgress/OnRoute`. Suite Release **138/138**, build limpio y bash syntax pasan. Tras acortar fixtures (`MRV`/`MRD`), Action [`45142742926`](https://github.com/Paul1578/Back_GPS/actions/runs/45142742926) pasó HTTP/MySQL, concurrencia, rate limit y cleanup.
 
 # 2026-11-23 — Corrección del estado de cobertura multi-parada
 

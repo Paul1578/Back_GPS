@@ -1,7 +1,7 @@
 # 2026-11-23 — Smoke paginado de Driver comparó el ID de otro fixture — CORREGIDO
 
 - Backend Actions `45177400984`/`45177409890` y `45177819577`/`45177834102` pasaron build, **151/151 xUnit** y llegaron al smoke HTTP/MySQL; el unlink y los cleanups pasaron. El GET paginado devolvió HTTP 200 y un Driver inactivo; primero falló la comparación contra un ID global de otro bloque. Tras cambiar a `documentNumber`, la segunda corrida reveló que el smoke buscaba `$document_number`, valor anterior al PUT que lo cambió por `$updated_document`; la búsqueda parcial coincidió con otro documento que compartía el prefijo.
-- Solución aplicada: buscar y comparar el documento vigente `$updated_document`, único después de la edición, además de estado y metadatos. La repetición Action en `a686e61` queda pendiente.
+- Solución aplicada: buscar y comparar el documento vigente `$updated_document`, único después de la edición, además de estado y metadatos. El commit `b98f8f9` pasó Action [`45178172092`](https://github.com/Paul1578/Back_GPS/actions/runs/45178172092), con smoke HTTP/MySQL, paginación tenant y cleanup correctos.
 - Prevención: al cambiar un identificador del fixture, actualizar las variables usadas en pruebas posteriores; búsquedas `Contains` requieren un término único completo y vigente, no un prefijo reutilizado.
 
 # 2026-11-23 — Errores corregidos al implementar paginación

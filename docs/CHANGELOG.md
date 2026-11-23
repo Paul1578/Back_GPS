@@ -2,7 +2,7 @@
 
 - Añadidos endpoints y contrato paginado compatibles con las rutas-array actuales; filtros server-side, orden estable, límite máximo de página y protección de tenant.
 - Front añade búsqueda debounced, filtro de rol/estado y controles responsive en Equipo y Conductores, más E2E con 26 elementos controlados.
-- Backend Release **151/151**, Front lint/build/discovery **52 tests** pasan local. Smoke API/MySQL y Actions de esta fase pendientes.
+- Backend Release **151/151** y Front lint/build/discovery **52 tests** pasan local. Backend Action [`45178172092`](https://github.com/Paul1578/Back_GPS/actions/runs/45178172092) pasó smoke API/MySQL, concurrencia, rate limit y cleanup; Front Action integrada continúa en ejecución.
 
 # 2026-11-23 — Desvinculación Driver validada extremo a extremo
 

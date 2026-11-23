@@ -1,8 +1,8 @@
-## Paginación de equipo y conductores — validación local; Action pendiente
+## Paginación de equipo y conductores — Action aprobada
 
 - Se añadieron `GET /api/Users/my-team/page` y `GET /api/Drivers/page`, con `{ items, page, pageSize, totalCount, totalPages }`; los endpoints anteriores conservan arrays. Página por defecto 25, límite 100, búsqueda/rol/estado, orden determinista y offsets seguros ante overflow. Se mantienen filtro explícito de OwnerUserId en usuarios y filtro global tenant en Drivers.
 - Backend Release local: **151/151 xUnit**, incluidos 7 tests nuevos de filtros, orden/páginas vacías, límite extremo, compatibilidad/ACL y aislamiento. `git diff --check` y `bash -n scripts/smoke-tenant-http.sh` pasan.
-- El smoke HTTP/MySQL ahora verifica conteo, tamaño, páginas 1/2, búsqueda de Driver inactivo y búsquedas paginadas de Users/Drivers aisladas entre tenants. Falta ejecutar Action sobre el commit integrado.
+- El smoke HTTP/MySQL verifica conteo/tamaño, páginas 1/2, búsqueda del Driver inactivo por documento actualizado y búsquedas paginadas de Users/Drivers aisladas entre tenants. Action [`45178172092`](https://github.com/Paul1578/Back_GPS/actions/runs/45178172092) en `b98f8f9` pasó build Release, **151/151 xUnit**, smoke HTTP/MySQL tenant, concurrencia, login rate limit y cleanup completo.
 - La desvinculación User–Driver quedó validada en Action [`45174526072`](https://github.com/Paul1578/Back_GPS/actions/runs/45174526072) (`08e14fa`): build, xUnit 144/144, API/MySQL incl. HTTP 409 con ruta Pending, concurrencia, rate limit y cleanup.
 
 ## Desvinculación User–Driver — smoke extendido en CI pendiente

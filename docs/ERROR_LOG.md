@@ -1,3 +1,9 @@
+# 2026-11-23 — Smoke paginado de Driver comparó el ID de otro fixture — CORREGIDO
+
+- Backend Actions `45177400984`/`45177409890` pasaron build, **151/151 xUnit** y llegaron al smoke HTTP/MySQL; el unlink y sus cuatro cleanups también pasaron. El nuevo GET de Driver devolvió HTTP 200 con `totalCount=1`, la fila inactiva correcta y el documento buscado, pero la aserción comparaba `id` contra `$driver_id`, que en ese punto del script no correspondía a la fila devuelta.
+- Solución: verificar `documentNumber` único de la búsqueda junto con `isActive=false` y metadatos de paginación, en vez del ID global reusado por otros escenarios.
+- Prevención: en smokes largos, afirmar el identificador natural único del fixture local al escenario; no reutilizar IDs mutables entre bloques independientes. Repetición HTTP/MySQL pendiente.
+
 # 2026-11-23 — Errores corregidos al implementar paginación
 
 - El primer build de tests resolvió namespaces del test de paginación de forma distinta a lo esperado; se corrigieron imports/referencias fully-qualified. Dos casos SQLite fallaron por collation sensible a mayúsculas en búsqueda y por `HttpContextAccessor` que no conservó contexto fuera del scope async; se ajustaron fixtures/claims y luego **151/151** pasó. Se revisó también el offset para evitar overflow con `page=int.MaxValue`, usando cálculo `long` acotado.

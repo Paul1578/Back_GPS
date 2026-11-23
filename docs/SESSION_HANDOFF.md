@@ -1,14 +1,19 @@
 # Handoff vigente — 2026-11-23
 
-- Backend `chore/stabilize-fleet-platform` HEAD `2763b85`; Front `refactor/route-builder` HEAD `ba35304` + local pendiente. Ambas separadas de `main`; main intacta.
-- Backend docs Action `45105170489` success; Release/xUnit **133/133**. Front Action [`45107818564`](https://github.com/Paul1578/Front_gpsR/actions/runs/45107818564) success con **45/45**, responsive 1/1, audit/lint/build y cleanup.
-- Backend smoke local sin publicar añade ciclo API/MySQL con tres operaciones (pickup, delivery, ambas), evidencia en cada parada, SQL `PointsJson`, route Completed/EndedAt y vehículo Available. MySQL 8 descartable, smoke completo exit 0, cleanup cero; falta publicar y correr Action backend. Errores de validación MySQL byte/rate-limit/outbox quedan en `ERROR_LOG.md`.
-- Front local pendiente: E2E de carga inicial Dashboard y `playwright.config.ts` ahora usan puerto derivado de `PLAYWRIGHT_BASE_URL`; server limpio :3010, focal 4/4. Commit y Action integradas pendientes.
+- Backend `chore/stabilize-fleet-platform` HEAD `a29a2fa`; Front `refactor/route-builder` HEAD `f71ae7d`. Ambas ramas están separadas de `main`, que permanece intacta.
+- Backend Action [`45108549336`](https://github.com/Paul1578/Back_GPS/actions/runs/45108549336) pasó Release build, xUnit **133/133**, smoke HTTP/MySQL tenant y concurrencia. El smoke de Logistics completó en una ruta tres operaciones (pickup, delivery y ambas), verificó evidencia persistida, estado Completed/EndedAt y vehículo Available, con cleanup cero.
+- Front Action [`45108539423`](https://github.com/Paul1578/Front_gpsR/actions/runs/45108539423) pasó audit/lint/build, responsive **1/1**, Playwright API/MySQL **46/46** y cleanup; incluye la nueva prueba de carga inicial del Dashboard.
+- Front `f71ae7d` añade comprobación E2E de carga inicial del Dashboard y configura `webServer` de Playwright con el puerto de `PLAYWRIGHT_BASE_URL`; con servidor limpio :3010, focal 4/4 y discovery 46 local. El error por servidor Next obsoleto/puerto fijo y su prevención están en Front `docs/ERROR_LOG.md`.
 - Cleanup FK 1451 resuelto en Backend `7ea14a6`: borrar puntos/rutas ligadas al Driver QA antes del Driver. Confirmado por Front Action `45103761122` y repetición documental `45104448741`.
 - Seguridad implementada: 12 caracteres claves nuevas, login 10/min/IP, reset 5/10 min/IP sin bloqueo por cuenta, token 256 bits, TTL 60 min por defecto (1–1440), URLs HTTPS en Production.
 - Riesgos productivos restantes: SMTP credenciales; rate limiter distribuido e IP confiable con proxy; Data Protection persistente; despliegue productivo no validado. Misión amplia sigue abierta.
 - Decisiones de usuario: sólo raíz asigna Admin; traslados sin paradas sí; una parada puede ser pickup/delivery/ambas; móvil nativo aplazado.
 - Las notas históricas debajo pueden estar superadas. Usa este resumen y `PROJECT_STATUS.md` vigente para continuar.
+
+## Verificación de ruta multi-parada — 2026-11-23
+
+- Backend `a29a2fa` y Action `45108549336`: smoke de ciclo completo API/MySQL descartable; evidencia de pickup, delivery y operación combinada se guardó en las tres paradas; la ruta terminó Completed y el vehículo Available. xUnit 133/133; cleanup sin datos QA residuales.
+- Errores encontrados al hacer determinista el smoke: MySQL CLI entrega `BIT` como byte y una repetición sobre el mismo proceso reusaba rate limit/outbox. Se normalizó `IsActive` con `CAST(... AS UNSIGNED)` y se repitió con DB/API efímeros limpios; detalles en `ERROR_LOG.md`.
 
 ---
 

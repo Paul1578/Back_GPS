@@ -1348,9 +1348,9 @@ Cada cambio de API debe incluir validación de compilación, migraciones si apli
 - Backend commit `7ea14a6` elimina posiciones y rutas ligadas a Driver QA antes de eliminar Drivers, acotado a prefijo `E2EQA`.
 - Front Action `45103761122` validó cleanup correcto en MySQL descartable tras **43/43** E2E; no se reprodujo FK 1451.
 - Backend Action `45103732510` pasó smoke HTTP/MySQL y Release/xUnit.
-## 2026-11-23 — Smoke de ciclo multi-parada asumía tipo booleano MySQL y reutilizaba estado — CORREGIDO
+## 2026-11-23 — Smoke de ciclo multi-parada asumía tipo booleano MySQL y reutilizaba estado — CORREGIDO Y VALIDADO
 
 - La primera verificación comparó `IsActive` devuelto por mysql como texto; MySQL expone el bit/boolean como byte y el assert no era portable. La consulta ahora usa `CAST(IsActive AS UNSIGNED)`.
 - Repetir el smoke en la misma instancia dejó rate limit por IP en memoria y mensajes anteriores del outbox, dando resultados no deterministas. La corrida final usó proceso API y MySQL 8 descartables limpios.
-- Verificación real local: restore/build Release (0 warnings/errores), `bash -n`, `git diff --check`, smoke HTTP/MySQL completo; tres paradas con evidencia, ruta Completed/EndedAt, vehículo Available y cleanup sin fixtures. Action integrada aún pendiente.
+- Verificación real: restore/build Release (0 warnings/errores), `bash -n`, `git diff --check`, smoke HTTP/MySQL completo local y Backend Action [`45108549336`](https://github.com/Paul1578/Back_GPS/actions/runs/45108549336); tres paradas con evidencia, ruta Completed/EndedAt, vehículo Available y cleanup sin fixtures.
 - Prevención: normalizar tipos SQL en assertions y usar una DB/proceso limpios al repetir flujos que consumen rate limit y email queue.

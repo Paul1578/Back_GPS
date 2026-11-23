@@ -555,3 +555,11 @@ Nota de actualización: algunos resultados históricos de registro público más
 - Misión no terminada; continuar CRUD, permisos y responsive. App nativa móvil pospuesta. Envío SMTP real y provisión productiva de PFX/key ring son limitaciones externas.
 - `/Auth/me` devuelve `isRootAccount` calculado por backend; smoke exige true para raíz y false para Admin delegado. Action `45090274537` pasó Release build sin warnings, xUnit 113/113, HTTP/MySQL, concurrencia y cleanup.
 - La Action Front `45090273209` sigue ejecutando E2E integrado contra este backend; esperar para confirmar la opción de rol de raíz en navegador real.
+
+## Ciclo multi-parada — validación local 2026-11-23
+
+- `scripts/smoke-tenant-http.sh` amplía el caso Logistics a cinco puntos: origen, recogida, entrega, parada combinada y destino. Verifica estados y evidencia persistidos en cada operación, GPS, cierre de ruta y vehículo Available.
+- Build Release y smoke API/MySQL 8 desechables pasan localmente; cleanup confirma fixtures removidos. Action CI pendiente de publicar el cambio.
+- Se mantiene pendiente la política de rutas sin operaciones, consultada al usuario.
+
+- Suite xUnit local con `/home/leonardo/.dotnet/dotnet test BackEnd_Gps.sln -c Release --no-restore -m:1`: **113/113**, 0 fallidas/omitidas. El primer intento apuntó al nombre supuesto `fletflow.sln` y falló por archivo inexistente; corregido al usar la solución real `BackEnd_Gps.sln`.

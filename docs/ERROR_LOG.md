@@ -1269,3 +1269,24 @@ Cada cambio de API debe incluir validación de compilación, migraciones si apli
 - **Solución:** `MeResponseDto` incluye `isRootAccount`, calculado por backend como `OwnerUserId` nulo o igual al propio ID; el Front prioriza el booleano explícito de `/Auth/me`. Smoke HTTP verifica true para root y false para Admin delegado.
 - **Prevención:** los atributos de cuenta que gobiernan opciones sensibles deben venir en el contrato autenticado desde el backend, no depender sólo de decodificar token en UI.
 - **Verificación:** Action [45090274537](https://github.com/Paul1578/Back_GPS/actions/runs/45090274537) pasó: build limpio, 113/113 xUnit, smoke HTTP/MySQL (incluye los dos valores root/delegado), concurrencia y cleanup. Front integrado está en Action `45090273209`.
+
+# 2026-11-23 — Smoke local no conectó con API iniciada mediante nohup — CORREGIDO
+
+- **Síntoma:** la primera corrida del smoke HTTP recibió conexión rechazada (curl exit 7) en `localhost:5058`.
+- **Causa:** el proceso API lanzado con `nohup` desde un comando de shell efímero fue terminado junto con esa sesión antes de ejecutar el smoke. No fue un defecto de API ni del script.
+- **Solución:** iniciar la API como proceso foreground en una sesión persistente del runner, esperar disponibilidad y ejecutar el smoke; al final detener API y eliminar el contenedor/base MySQL efímeros. La repetición terminó exit 0.
+- **Prevención:** los procesos que deben sobrevivir al comando padre se ejecutan en sesión persistente supervisada; comprobar readiness HTTP antes de iniciar fixtures.
+
+# 2026-11-23 — Host `dotnet` del PATH apunta a instalación incompleta — CORREGIDO EN LA EJECUCIÓN
+
+- **Síntoma:** `dotnet test` terminó exit 131: `/usr/lib64/dotnet/host/fxr` no contiene subdirectorios versionados.
+- **Causa:** el ejecutable global del host está incompleto, aunque el SDK .NET local está instalado en `/home/leonardo/.dotnet`.
+- **Solución:** invocar `/home/leonardo/.dotnet/dotnet` explícitamente y comprobar versión con ese ejecutable.
+- **Prevención:** usar el SDK local documentado en este entorno; no inferir que `dotnet` en PATH resuelve a una instalación funcional.
+
+# 2026-11-23 — Suite xUnit apuntó a nombre de solución inexistente — CORREGIDO
+
+- **Síntoma:** MSBuild respondió `MSB1009: Project file does not exist` para `fletflow.sln`.
+- **Causa:** se asumió el nombre de solución antes de inspeccionar los archivos del repositorio.
+- **Solución:** `rg --files -g '*.sln'` identificó `BackEnd_Gps.sln`; al ejecutar con el SDK local, Release pasó 113/113.
+- **Prevención:** confirmar el nombre de la solución/proyecto en el repo antes de correr la suite.

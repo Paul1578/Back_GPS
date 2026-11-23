@@ -491,3 +491,7 @@
 - Ampliado smoke positivo de edición de perfil: HTTP/GET y persistencia sincronizan User y Driver enlazados.
 - Backend Action `45088129188`: build Release limpio, 113/113 xUnit, aislamiento HTTP/MySQL, concurrencia y cleanup exitosos.
 - `/Auth/me` expone `isRootAccount` derivado de la relación de propiedad para coherencia con las opciones root-only de Gestión de Equipo.
+
+## 2026-11-23 — Cobertura HTTP de rutas con varias operaciones
+
+- El smoke tenant verifica recogida, entrega y recogida+entrega en paradas distintas; registra evidencia por parada, recorre inicio/cierre y confirma persistencia y estado final del vehículo.

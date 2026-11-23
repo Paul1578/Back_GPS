@@ -699,3 +699,11 @@ Errores de migración, herramientas, QA y soluciones están en `docs/ERROR_LOG.m
 - Backend Action `45066082294` pasó la versión final del lote `52d7e46`, incluidos timing smoke >=450 ms, neutralidad del cuerpo, 107/107 y cleanup.
 - Local: backend Release build 0 warnings/0 errors, xUnit **107/107**, bash syntax y diff-check; Front lint/build y discovery **33**. Código/docs todavía sin commit en esta fase; publicar ramas y confirmar Actions integradas. Revisar recovery bajo carga después.
 - Backend Action `45064942603` validó login anti-enumeración en SHA `30bcb2f` (106 tests, HTTP/MySQL y cleanup); registro neutral es posterior y requiere nueva Action.
+
+## 2026-11-23 — Ciclo operativo de recogidas y entregas
+
+- Rama `chore/stabilize-fleet-platform`; `main` sin tocar.
+- `scripts/smoke-tenant-http.sh` actualizado para cubrir origen + tres paradas (pickup, delivery y ambas) + destino, evidencia individual, rechazo por saltar secuencia/sin evidencia, persistencia de estados, GPS, fin de ruta y vehículo Available.
+- Build Release local pasó sin warnings/errores; smoke completo pasó en API y MySQL 8 efímeros, cleanup correcto. `bash -n` y diff-check limpios. xUnit Release **113/113** pasó localmente; registrar evidencia en la Action al publicar.
+- Primer intento no inició API porque `nohup` fue terminado junto con shell efímero; repetición en sesión persistente pasó. El `dotnet` del PATH también apunta a host incompleto; usar `/home/leonardo/.dotnet/dotnet`. Ambas incidencias están en ERROR_LOG.
+- Próximo: finalizar suite xUnit, publicar smoke + docs, inspeccionar Action backend. Política de ruta sin operaciones aún espera respuesta.

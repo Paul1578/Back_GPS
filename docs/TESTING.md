@@ -605,3 +605,10 @@ La invitación envía sólo el enlace de activación; el usuario fija su contras
 - Error previo: Action 45087881487 no llegó a comprobar autorización en creación porque el fixture omitía Password y recibió 400 de validación; corregido en `9e43bcd`, repetición satisfactoria. Detalle en `ERROR_LOG.md`.
 - Contrato `GET /Auth/me` ampliado con `isRootAccount`; smoke exige true para la cuenta propietaria y false para Admin delegado.
 - Action [45090274537](https://github.com/Paul1578/Back_GPS/actions/runs/45090274537) pasó: Release build 0 warnings/0 errors, xUnit 113/113, smoke tenant HTTP/MySQL, concurrencia y cleanup. Local también pasan `bash -n` y diff-check.
+
+## 2026-11-23 — Smoke HTTP de ciclo multi-parada
+
+- `bash -n scripts/smoke-tenant-http.sh` y `git diff --check` pasan. Build Release local pasa. Smoke completo API + MySQL 8 desechable pasa con recogida, entrega y operación combinada, evidencia individual, GPS, transición de ruta y restauración de vehículo; cleanup sin fixtures.
+- El smoke corre en Action al publicar el commit; no presentar validación local como CI.
+
+- xUnit Release local: **113/113** con `BackEnd_Gps.sln`; se usa `/home/leonardo/.dotnet/dotnet` porque el host global está incompleto.

@@ -146,7 +146,7 @@ El smoke anónimo solicitó rol Admin en el registro; la fila persistida conserv
 
 - Un auditor encontró que listar refresh activos antes de revocarlos podía omitir el sucesor que se insertara mientras tanto. La corrección hace que `logout-all` y `TryRotateAsync` tomen el mismo lock transaccional de la fila `Users` antes de cambiar sesiones. El incremento de `TokenVersion`, revocación y `SaveChanges` de logout-all se confirman juntos.
 - El smoke ahora bloquea deliberadamente la fila del usuario desde MySQL y lanza refresh/logout-all en paralelo; exige HTTP 200 de logout, cero refresh activos al final y 401 al sucesor si refresh alcanzó a responder 200. Resultado local MySQL 8: aprobado.
-- Un auditor indicó que no había validación de `TokenVersion` porque el middleware personalizado no la contiene. Revisión del pipeline completo confirmó que `Program.cs` registra `JwtBearerEvents.OnTokenValidated` y compara versión/estado/rol; smoke HTTP verificó que access anterior recibe 401. No se duplicó lógica.
+- Un auditor indicó que el middleware JWT personalizado no validaba `TokenVersion`. La revisión inicial fue incorrecta: el pipeline también asignaba un principal autenticado desde ese middleware antes de `UseAuthentication`, por lo que el token podía seguir autorizado aunque el handler oficial lo rechazara. El middleware legado se retiró del pipeline; `JwtBearer` queda como única autoridad. Smoke API/MySQL de esta corrección pendiente.
 
 ### Limitación de enumeración por tiempo en recuperación
 
@@ -243,6 +243,13 @@ Este proceso invalida los emails/token de recuperación que estén pendientes o 
 - Hallazgo histórico de mínimo de seis caracteres: resuelto posteriormente; las contraseñas nuevas requieren 12 caracteres, con pruebas y Action indicada en PROJECT_STATUS.
 - Hallazgo histórico de ausencia de límite específico de login: resuelto posteriormente con 10 logins/minuto/IP. El límite para login y recuperación sigue siendo en memoria y no coordina réplicas; recuperación ahora tiene 5 solicitudes/10 minutos/IP, según la sección vigente al inicio de este documento.
 - La aplicación de rate limit distribuido y almacenamiento persistente de Data Protection siguen siendo requisitos para múltiples réplicas/producción.
+
+## Única autenticación JWT HTTP — 2026-11-23
+
+- Se retiró el `JwtMiddleware` legado del pipeline. `JwtBearer` realiza verificación de firma, issuer, audience, lifetime, límite máximo de 15 minutos, estado actual de la cuenta, versión de token y rol persistido en una sola cadena de autenticación.
+- Antes, el middleware legado asignaba un principal autenticado al validar firma/issuer/audience/lifetime antes de `UseAuthentication`; eso podía dejar autenticado un token que el handler oficial rechazaba por `TokenVersion`.
+- La autorización por roles continúa mediante los atributos `[Authorize(Roles=...)]` tras `UseAuthorization`; el middleware redundante de roles se retiró del pipeline.
+- Validación integrada de cambio de contraseña, acceso con token anterior, login y roles está pendiente de la nueva Action con MySQL efímero.
 
 ## Endurecimiento de credenciales y login — 2026-11-23
 

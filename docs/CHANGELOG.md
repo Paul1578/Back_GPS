@@ -632,4 +632,6 @@
 - Backend limita access JWT a 15 minutos con validación al iniciar y ejecuta la imagen Docker como UID 10001.
 - Los tokens nuevos incluyen `nbf`; el middleware rechaza access JWT antiguos sin vigencia verificable o superiores a 15 minutos, incluidos los tokens de seis horas que estaban emitidos.
 - CI encontró que `/Auth/me` y logout leían sólo el alias mapeado de identidad aunque el middleware acepta `nameid`; AuthController ahora resuelve ambos formatos y el test valida identidad JWT firmada.
+- Se retiró `JwtMiddleware` paralelo que dejaba un principal autenticado antes del handler oficial; `JwtBearer` es la única autenticación y su policy de 15 minutos valida `SecurityToken` tanto si es `JwtSecurityToken` como `JsonWebToken`.
+- El smoke MySQL descartable volvió a pasar cambio de contraseña/revocación inmediata `TokenVersion`, tenant/roles, operaciones de rutas y cleanup; Docker se ejecuta como UID 10001.
 - La colisión concurrente de documentos de Driver ahora se convierte en 409 sólo si la consulta confirma el duplicado; agregados tests SQLite y smoke HTTP/MySQL.

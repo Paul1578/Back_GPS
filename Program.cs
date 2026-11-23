@@ -161,8 +161,6 @@ builder.Services.AddFluentValidationAutoValidation();
 builder.Services.AddValidatorsFromAssemblyContaining<RegisterUserValidator>();
 
 builder.Services.AddTransient<ExceptionMiddleware>();
-builder.Services.AddTransient<JwtMiddleware>();
-builder.Services.AddTransient<RoleValidationMiddleware>();
 builder.Services.AddTransient<SimpleRateLimitMiddleware>();
 builder.Services.AddTransient<HeaderValidationMiddleware>();
 
@@ -346,9 +344,6 @@ using (var scope = app.Services.CreateScope())
 app.UseMiddleware<SimpleRateLimitMiddleware>();
 app.UseMiddleware<HeaderValidationMiddleware>();
 app.UseMiddleware<ExceptionMiddleware>();
-app.UseMiddleware<JwtMiddleware>();
-app.UseMiddleware<RoleValidationMiddleware>();
-
 app.UseAuthentication();
 app.UseAuthorization();
 

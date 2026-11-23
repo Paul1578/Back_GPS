@@ -808,3 +808,11 @@ La invitación envía sólo el enlace de activación; el usuario fija su contras
 - El smoke HTTP/MySQL falló en `GET /Auth/me`: esperaba 200 y recibió 401 con `Token sin identificador de usuario.`. El middleware resolvía el claim `nameid`, pero `AuthController` sólo consultaba `ClaimTypes.NameIdentifier`.
 - AuthController ahora comparte resolución de ambos claim types; el test de JWT también valida firma e identidad mapeada. Release xUnit **165/165** y build **0 warnings/0 errors** pasaron localmente con `/home/leonardo/.dotnet/dotnet`.
 - Pendiente Actions del commit de corrección; el smoke real de API/MySQL debe volver a completar todos los escenarios y cleanup.
+
+### Pipeline JWT exclusivo y prueba MySQL local — 2026-11-23
+
+- Se eliminó la asignación del principal por `JwtMiddleware` legado; sólo `JwtBearer` autentica y autoriza. `JwtAccessTokenLifetimePolicy` ahora usa la API común `SecurityToken` y el test crea `JsonWebToken`, formato que entrega el handler real en .NET 8.
+- Release local: **165/165 xUnit**; build **0 warnings/0 errors**; `bash -n scripts/smoke-tenant-http.sh` y diff-check pasan.
+- `scripts/smoke-tenant-http.sh` pasó API + MySQL 8 descartable, incluidas la comparación token/DB y revocación inmediata tras cambio de contraseña, tenant/roles, carreras de ruta/Driver y cleanup completo.
+- `docker build -t fletflow-backend-security-check:local .` pasó; `docker image inspect` reporta `User=fletflow`; el contenedor devuelve UID 10001, key ring escribible y no incluye el assembly de tests.
+- CI del commit final aún pendiente; el Front Action `45223390345` usó el Backend previo y terminó con 39 E2E fallidos de autenticación en login, consistentes con la policy que rechazaba `JsonWebToken`. Repetir con el tip Backend actual.

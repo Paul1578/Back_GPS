@@ -944,3 +944,12 @@ Errores de migración, herramientas, QA y soluciones están en `docs/ERROR_LOG.m
 - Causa/fix: el middleware validaba identidad con `ClaimTypes.NameIdentifier` o `nameid`; AuthController sólo leía el alias. `/me`, logout/logout-all y change-password ahora usan helper con fallback explícito al claim `nameid`.
 - El test de JwtTokenService ahora valida firma y principal `NameIdentifier`. Local: **165/165**, Release build **0 warnings/0 errors**, usando `DOTNET_ROOT=/home/leonardo/.dotnet` (el host global no inicia).
 - Publicar Backend y repetir Action completa; el smoke debe confirmar API/MySQL tenant isolation, rutas, rate limit, roles y cleanup. Repetir también Front contra el tip Backend arreglado: Front Action `45223390345` sigue ejecutándose y checkout el SHA anterior.
+
+## Middleware JWT duplicado — validación local completada (2026-11-23)
+
+- El diagnóstico previo de `nameid` no explicaba el 200 del token anterior. `JwtMiddleware` legado asignaba principal después de validar sólo firma/issuer/audience/expiry, antes de `UseAuthentication`; esa identidad seguía autorizada cuando JwtBearer rechazaba `TokenVersion`.
+- Se quitó el middleware JWT legado y el de roles redundante del pipeline/DI. Sólo `JwtBearer` establece identidad y aplica `OnTokenValidated`; políticas de rol siguen con `[Authorize(Roles=...)]`.
+- Reproducción adicional encontró que .NET 8 entrega `JsonWebToken`, no `JwtSecurityToken`; policy `JwtAccessTokenLifetimePolicy` ahora usa la base `SecurityToken.ValidFrom/ValidTo` y su test cubre `JsonWebToken`.
+- Verificación local final: Release **165/165**, build **0 warnings/0 errors**, shell syntax/diff-check, Docker build e inspección (User `fletflow`, UID 10001, key ring escribible, tests excluidos); `scripts/smoke-tenant-http.sh` completo contra MySQL descartable pasó, incluida comparación del claim token_version frente a DB, rechazo 401 tras cambio de contraseña y cleanup.
+- Se limpió la base creada sólo para depuración; no se modificó `fletflow` persistente.
+- Backend cambios locales pendientes de commit al actualizar este handoff. El Front Action `45223390345` falló **39/67 E2E** porque checkout de Backend previo seguía rechazando todos los tokens por el tipo `JsonWebToken`; repetir Front contra el commit Backend siguiente. Mantener misión abierta.

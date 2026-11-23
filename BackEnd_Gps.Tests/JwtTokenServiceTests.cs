@@ -2,6 +2,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using fletflow.Infrastructure.Security;
+using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.Extensions.Options;
 
@@ -42,6 +43,7 @@ public sealed class JwtTokenServiceTests
             NameClaimType = ClaimTypes.NameIdentifier
         }, out _);
         Assert.Equal(userId.ToString(), principal.FindFirst(ClaimTypes.NameIdentifier)?.Value);
+        Assert.True(JwtAccessTokenLifetimePolicy.IsAllowed(new JsonWebToken(raw)));
     }
 
     [Fact]

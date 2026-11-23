@@ -1,4 +1,3 @@
-using System.IdentityModel.Tokens.Jwt;
 using Microsoft.IdentityModel.Tokens;
 
 namespace fletflow.Infrastructure.Security;
@@ -9,10 +8,10 @@ public static class JwtAccessTokenLifetimePolicy
 
     public static bool IsAllowed(SecurityToken? token)
     {
-        if (token is not JwtSecurityToken jwt)
+        if (token is null)
             return false;
 
-        var lifetime = jwt.ValidTo - jwt.ValidFrom;
+        var lifetime = token.ValidTo - token.ValidFrom;
         return lifetime > TimeSpan.Zero && lifetime <= MaximumLifetime;
     }
 }

@@ -804,6 +804,15 @@ request GET /Auth/me "" "$restricted_user_token"
 expect_status 200 "Mantener activa la sesión tras rechazar contraseña corta"
 request POST /Auth/change-password "$(jq -nc --arg current "$restricted_user_password" --arg next "$restricted_user_new_password" '{currentPassword:$current,newPassword:$next,confirmNewPassword:$next}')" "$restricted_user_token"
 expect_status 200 "Cambiar contraseña del usuario"
+restricted_user_jwt_payload="$(printf '%s' "$restricted_user_token" | cut -d. -f2 | tr '_-' '/+')"
+while (( ${#restricted_user_jwt_payload} % 4 != 0 )); do restricted_user_jwt_payload+="="; done
+restricted_user_token_version="$(printf '%s' "$restricted_user_jwt_payload" | base64 --decode | jq -er '.token_version')"
+restricted_user_db_token_version="$(mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" "$db_name" \
+  --batch --skip-column-names -e "SELECT TokenVersion FROM Users WHERE Id='$restricted_user_id';")"
+if [[ "$restricted_user_db_token_version" == "$restricted_user_token_version" ]]; then
+  echo "Cambiar contraseña no incrementó TokenVersion en MySQL (token=$restricted_user_token_version, DB=$restricted_user_db_token_version)." >&2
+  exit 1
+fi
 request GET /Auth/me "" "$restricted_user_token"
 expect_status 401 "Invalidar access token anterior al cambiar contraseña"
 request POST /Auth/refresh "$(jq -nc --arg refreshToken "$restricted_user_refresh_token" '{refreshToken:$refreshToken}')" ""

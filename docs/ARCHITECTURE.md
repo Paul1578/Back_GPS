@@ -10,6 +10,8 @@ Los access JWT duran como máximo 15 minutos. El backend valida `Jwt:ExpireMinut
 
 La imagen Docker de API corre como UID 10001. Los volúmenes montados para Data Protection deben permitir escritura a ese usuario.
 
+La autenticación JWT HTTP usa únicamente `JwtBearer`. `UseAuthentication` precede a `UseAuthorization`; `OnTokenValidated` aplica vigencia máxima, estado, `TokenVersion` y rol actual desde MySQL. No se asigna `HttpContext.User` desde middleware JWT paralelo.
+
 Las rutas almacenan puntos ordenados como JSON en `Routes.PointsJson`. Cada punto mantiene operación (`None`, `Pickup`, `Delivery`, `PickupAndDelivery`), estado y evidencias. Las mutaciones por parada validan el estado de la ruta y se vuelven a persistir en el JSON. `RoutePositions` guarda posiciones GPS históricas enlazadas con la ruta.
 
 `POST /api/Routes` y `PUT /api/Routes/{id}` reciben `points` con origen, paradas intermedias y destino en ese orden; también reciben `origin` y `destination` explícitos para compatibilidad. El mapper de frontend conserva los extremos y excluye sólo esos dos al mostrar la lista intermedia. El estado de una parada enviado por el cliente al crear/editar se ignora y se inicia como `Pending`.

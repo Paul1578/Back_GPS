@@ -21,7 +21,7 @@ cleanup() {
 }
 trap cleanup EXIT
 
-for command in docker mysql openssl tar rg; do
+for command in docker mysql openssl tar grep; do
   command -v "$command" >/dev/null || {
     echo "Falta dependencia: $command" >&2
     exit 2
@@ -191,7 +191,7 @@ if apply_migration "$discordant_db" "$tenant_migration" >"$work_dir/discordant-m
   echo "La migración aceptó una ruta con Driver y Vehicle de root owners distintos." >&2
   exit 1
 fi
-if ! rg -q 'TenantFleetOwnership stopped before schema changes: a route links resources from different owners' "$work_dir/discordant-migration.log"; then
+if ! grep -Fq 'TenantFleetOwnership stopped before schema changes: a route links resources from different owners' "$work_dir/discordant-migration.log"; then
   cat "$work_dir/discordant-migration.log" >&2
   echo "La migración discordante falló por un motivo distinto al guard esperado." >&2
   exit 1

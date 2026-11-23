@@ -4,6 +4,7 @@
 - El script aísla `dotnet ef` en una copia temporal sin `.env` para evitar que configuración local redirija migraciones a una base persistente.
 - Smoke HTTP cubre payloads SQL-like en las búsquedas paginadas de Users y Drivers, validando aislamiento tenant.
 - La base local afectada durante el primer ensayo fue restaurada y verificada en modo lectura; incidencia y evidencia están en `ERROR_LOG.md`.
+- La Action inicial encontró `rg` ausente en GitHub Ubuntu; el chequeo usa ahora `grep -Fq` y se instala MySQL client antes del test. CI con esa corrección pendiente.
 
 ## 2026-11-23 — Serialización E2E validada en integración
 

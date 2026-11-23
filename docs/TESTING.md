@@ -1,11 +1,10 @@
-## Estado vigente — 2026-11-23
+## Estado vigente — 2026-11-23 — código `ac14373`
 
-- `DOTNET_ROOT=/home/leonardo/.dotnet /home/leonardo/.dotnet/dotnet test BackEnd_Gps.sln -c Release --no-restore -m:1`: **158/158**; build Release **0 warnings, 0 errors**.
-- Action [`45190701729`](https://github.com/Paul1578/Back_GPS/actions/runs/45190701729) pasó Release/xUnit, smokes HTTP/MySQL de tenant/concurrencia/rate limit y cleanup. Action de documentación [`45192161720`](https://github.com/Paul1578/Back_GPS/actions/runs/45192161720) pasó.
-- Front Action integrada [`45193357694`](https://github.com/Paul1578/Front_gpsR/actions/runs/45193357694) pasó 53/53 E2E autenticados, responsive 1/1, audit/lint/build, Backend Release/xUnit 158/158, smokes API/MySQL y cleanup.
-- Front Action [`45195812271`](https://github.com/Paul1578/Front_gpsR/actions/runs/45195812271) validó el cambio de origen local con 53/53 E2E, responsive, audit/lint/build, backend 158/158, API/MySQL y cleanup.
-- El host global `/usr/bin/dotnet` no tiene runtime usable; las pruebas usan la instalación funcional `/home/leonardo/.dotnet`. Ver `ERROR_LOG.md`.
-- Preflight de consistencia de la DB local (solo agregados, read-only): **5 usuarios**, **2 OwnerUserId nulos** correspondientes a las dos raíces existentes, **0 rutas OwnerUserId nulo**, **0 usuarios con más de un rol**.
+- Local: `DOTNET_ROOT=/home/leonardo/.dotnet /home/leonardo/.dotnet/dotnet test BackEnd_Gps.sln -c Release --no-restore -m:1`: **165/165**; Release build **0 warnings / 0 errors**; Docker build y ejecución como UID 10001 correctos.
+- Actions [`45227030382`](https://github.com/Paul1578/Back_GPS/actions/runs/45227030382) y [`45227043042`](https://github.com/Paul1578/Back_GPS/actions/runs/45227043042): Release, **165/165 xUnit**, smoke tenant HTTP/MySQL, concurrencia, rate limit Staging y cleanup pasaron.
+- Smoke local sobre esquema MySQL descartable: aislamiento, rutas, carrera de DocumentNumber 201/409, unlink con ruta activa 409 sin mutación, unlink exitoso conservando cuenta/perfil/rol y rechazo del token antiguo 401. No se tocó `fletflow` persistente.
+- Action Front integrada [`45227072219`](https://github.com/Paul1578/Front_gpsR/actions/runs/45227072219) contra Backend `ac14373`: build/audit/lint/responsive pasaron; E2E autenticado pendiente al corte.
+- El host global `/usr/bin/dotnet` no tiene runtime usable; usar `/home/leonardo/.dotnet/dotnet` con `DOTNET_ROOT`. Detalle en `ERROR_LOG.md`.
 
 ## 2026-11-23 — Contrato de evidencia en lista y detalle
 

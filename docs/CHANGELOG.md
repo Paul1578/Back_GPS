@@ -635,3 +635,5 @@
 - Se retiró `JwtMiddleware` paralelo que dejaba un principal autenticado antes del handler oficial; `JwtBearer` es la única autenticación y su policy de 15 minutos valida `SecurityToken` tanto si es `JwtSecurityToken` como `JsonWebToken`.
 - El smoke MySQL descartable volvió a pasar cambio de contraseña/revocación inmediata `TokenVersion`, tenant/roles, operaciones de rutas y cleanup; Docker se ejecuta como UID 10001.
 - La colisión concurrente de documentos de Driver ahora se convierte en 409 sólo si la consulta confirma el duplicado; agregados tests SQLite y smoke HTTP/MySQL.
+- Actions Backend [`45227030382`](https://github.com/Paul1578/Back_GPS/actions/runs/45227030382) y [`45227043042`](https://github.com/Paul1578/Back_GPS/actions/runs/45227043042) validaron `ac14373`: Release/xUnit **165/165**, smokes tenant/concurrencia/rate limit y cleanup.
+- Se retiró la autenticación JWT paralela que evadía TokenVersion y expiración; la policy ahora soporta el `JsonWebToken` de .NET 8. Smoke HTTP/MySQL local confirmó que el token anterior responde 401.

@@ -1,11 +1,15 @@
-# Handoff vigente — carrera de DocumentNumber Driver — 2026-11-23
+# Handoff vigente — `ac14373` JWT unificado y regresión E2E Front — 2026-11-23
 
-- Rama activa `chore/stabilize-fleet-platform`; árbol inicial limpio; `main` no se tocó.
-- Cambio acotado: `CreateDriverCommand` y `UpdateDriverCommand` capturan `DbUpdateException` del commit, reconsultan por documento y devuelven `BusinessConflictException` sólo si existe otro Driver dentro del tenant. Si no se confirma duplicado, relanzan el error original.
-- Cobertura xUnit de SQLite relacional fuerza colisión de índice concurrente durante commit tanto para alta como edición, verifica el registro ganador y conserva fallos de DB no relacionados. Suite Release **162/162**; build Release **0 warnings/0 errors**. `bash -n scripts/smoke-tenant-http.sh` y `git diff --check` pasan.
-- Añadido al smoke HTTP/MySQL trigger temporal con demora para hacer que dos POST pasen el precheck antes del insert; comprueba 201/409 y una fila, y elimina trigger/fixture. **Pendiente ejecutar en CI**. No ejecutar en la DB local `fletflow`: no es descartable; no se modificó.
-- Error de prueba resuelto y documentado: fixture del test negativo de Update superaba 20 caracteres, se acortó; suite Release final pasa.
-- Próximo paso: ejecutar Actions del Backend sobre este cambio y confirmar smoke MySQL/cleanup; actualizar este handoff con resultado o fallo de CI. Archivos clave: ambos comandos Driver, `BackEnd_Gps.Tests/DriverTests.cs`, `scripts/smoke-tenant-http.sh`, `docs/ERROR_LOG.md`, `docs/TESTING.md`, `docs/PROJECT_STATUS.md`.
+- Rama Backend `chore/stabilize-fleet-platform`; `main` no tocada. Código `ac14373`; Release build 0 warnings/0 errors y xUnit **165/165**. Actions Backend [`45227030382`](https://github.com/Paul1578/Back_GPS/actions/runs/45227030382) y [`45227043042`](https://github.com/Paul1578/Back_GPS/actions/runs/45227043042) pasaron, incluidos smokes HTTP/MySQL, concurrencia, rate limit y cleanup.
+- El cambio retiró los middlewares JWT/roles duplicados: asignaban un principal antes de la validación de `TokenVersion` y permitían seguir usando access tokens tras cambio de clave. El pipeline estándar `UseAuthentication`/`UseAuthorization` es ahora la única autoridad. `JwtAccessTokenLifetimePolicy` acepta `JsonWebToken` y `JwtSecurityToken` mediante `SecurityToken.ValidFrom/ValidTo`.
+- Smoke local MySQL efímero confirmó tenant/roles, conflicto 201/409 de documentos concurrentes, rechazo HTTP 409 de unlink con ruta activa sin mutación, unlink exitoso conservando cuenta/perfil/rol y rechazo 401 del access token antiguo. DB persistente `fletflow` no se usó.
+- Imagen Docker se construyó localmente y corre como `fletflow` UID 10001. Usar `/home/leonardo/.dotnet/dotnet` con `DOTNET_ROOT=/home/leonardo/.dotnet`; el dotnet del PATH local carece de runtime.
+- Front `refactor/route-builder` en `36a453b` tiene ejecutando Action integrada [`45227072219`](https://github.com/Paul1578/Front_gpsR/actions/runs/45227072219) contra el Backend actual. Build/audit/lint/responsive ya pasaron; está corriendo E2E autenticado. Verificar resultado, fixtures y cleanup antes de cerrar el handoff.
+- Próximos pasos: sincronizar documentación en ambas ramas; inspeccionar pendientes verificables en `docs/AUDIT_PLAN.md`; continuar con los hallazgos corregibles. Límite externo: SMTP y configuración/validación de infraestructura productiva.
+
+## Estado previo — carrera de DocumentNumber Driver
+
+El cambio y su prueba ya están incluidos en `ac14373`; la evidencia final de CI figura arriba. Las notas históricas siguientes conservan el contexto de fases previas.
 
 ---
 
@@ -952,4 +956,4 @@ Errores de migración, herramientas, QA y soluciones están en `docs/ERROR_LOG.m
 - Reproducción adicional encontró que .NET 8 entrega `JsonWebToken`, no `JwtSecurityToken`; policy `JwtAccessTokenLifetimePolicy` ahora usa la base `SecurityToken.ValidFrom/ValidTo` y su test cubre `JsonWebToken`.
 - Verificación local final: Release **165/165**, build **0 warnings/0 errors**, shell syntax/diff-check, Docker build e inspección (User `fletflow`, UID 10001, key ring escribible, tests excluidos); `scripts/smoke-tenant-http.sh` completo contra MySQL descartable pasó, incluida comparación del claim token_version frente a DB, rechazo 401 tras cambio de contraseña y cleanup.
 - Se limpió la base creada sólo para depuración; no se modificó `fletflow` persistente.
-- Backend cambios locales pendientes de commit al actualizar este handoff. El Front Action `45223390345` falló **39/67 E2E** porque checkout de Backend previo seguía rechazando todos los tokens por el tipo `JsonWebToken`; repetir Front contra el commit Backend siguiente. Mantener misión abierta.
+- Backend fix publicado en `ac14373`; Action push `45227030382` en curso. El Front Action `45223390345` falló **39/67 E2E** al usar Backend previo; workflow_dispatch `45227072219` ahora prueba Front `36a453b` contra el tip Backend `ac14373`. Mantener misión abierta y actualizar aquí los resultados de ambas Actions.

@@ -1,12 +1,14 @@
-## Estado vigente — conflicto concurrente de DocumentNumber — validado localmente, CI pendiente — 2026-11-23
+## Estado vigente — Backend `ac14373` — 2026-11-23
 
-- Rama `chore/stabilize-fleet-platform`; cambios limitados a CreateDriver/UpdateDriver, sus pruebas, smoke de tenant y documentación. `main` y la DB local persistente no se modificaron.
-- Ambos comandos traducen a `BusinessConflictException` el `DbUpdateException` únicamente cuando una consulta tenant confirma que otro Driver tiene el `DocumentNumber`; fallos de persistencia sin ese duplicado conservan la excepción original.
-- xUnit relacional SQLite fuerza las carreras durante el commit de alta y edición, valida que sólo persista el ganador y comprueba los fallos no duplicados. Suite Release **162/162**; build Release **0 warnings/0 errors**.
-- El smoke `scripts/smoke-tenant-http.sh` incluye carrera HTTP/MySQL sincronizada con trigger temporal en DB descartable: esperado 201/409 y una fila. Sintaxis Bash y diff-check locales pasan. **El smoke HTTP/MySQL está pendiente de CI**: el entorno disponible sólo tiene `fletflow` persistente y no se tocó.
-- Error de fixture detectado y corregido: un documento de test excedía 20 caracteres y fallaba antes del commit. Ver `docs/ERROR_LOG.md`.
+- Rama `chore/stabilize-fleet-platform`; `main` intacta y DB local persistente preservada. Árbol: sólo queda por publicar la sincronización documental de este handoff.
+- Release build: **0 warnings / 0 errors**; xUnit **165/165** (CI: [`45227030382`](https://github.com/Paul1578/Back_GPS/actions/runs/45227030382)). PR workflow [`45227043042`](https://github.com/Paul1578/Back_GPS/actions/runs/45227043042) también pasó.
+- Los workflows verificaron aislamiento por tenant/roles, integridad MySQL HTTP, asignaciones concurrentes, límite de login en Staging, unlink bloqueado ante rutas activas, token antiguo rechazado tras cambio de contraseña y cleanup de la DB descartable. Smoke local con MySQL aislado también pasó.
+- Docker Release construye como usuario no root (`fletflow`, UID 10001); imagen de tests excluida y key ring escribible.
+- Decisiones vigentes: cuenta raíz única con privilegio Admin; traslado sin paradas permitido; paradas de recogida, entrega o ambas; unlink conserva rol Driver/cuenta/perfil y se bloquea ante Pending/InProgress; web responsive ahora, móvil nativo después.
+- Pendientes que requieren entorno/credenciales: SMTP real, proxies confiables reales, key ring Data Protection persistente/protegido en despliegue y rate limit distribuido antes de varias réplicas. No se declara despliegue productivo ni envío real de correo.
+- Incidentes y causas de pruebas anteriores están en `docs/ERROR_LOG.md`; los bloques históricos bajo esta cabecera no representan el estado vigente.
 
-## Estado vigente — 2026-11-23
+## Snapshot anterior — 2026-11-23 (histórico; ver estado vigente al inicio)
 
 - Rama `chore/stabilize-fleet-platform`; `main` no se modificó.
 - Código `b817f9f`; documentación sincronizada y validada por Actions Backend [`45194801300`](https://github.com/Paul1578/Back_GPS/actions/runs/45194801300) y [`45194814911`](https://github.com/Paul1578/Back_GPS/actions/runs/45194814911). Las listas de rutas omiten Base64 de imágenes y el detalle mantiene contenido completo. Release/xUnit **158/158**, build **0 warnings/0 errors**, smokes API/MySQL y cleanup pasan en Actions [`45190701729`](https://github.com/Paul1578/Back_GPS/actions/runs/45190701729) y [`45192161720`](https://github.com/Paul1578/Back_GPS/actions/runs/45192161720).

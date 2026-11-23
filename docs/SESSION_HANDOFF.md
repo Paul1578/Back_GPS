@@ -4,7 +4,7 @@
 
 - Revisión read-only del Backend confirmó que el pendiente descrito más abajo estaba desactualizado: `scripts/smoke-tenant-http.sh:1140-1229` ya recorre tres paradas (pickup, delivery y ambas), guarda evidencia en cada una, completa/cierra y verifica el `PointsJson` persistido.
 - Action [`45132350399`](https://github.com/Paul1578/Back_GPS/actions/runs/45132350399) en `c42a306` pasó xUnit **136/136**, build Release, smoke tenant HTTP/MySQL y cleanup. No se hizo un cambio de lógica; se corrigió documentación únicamente.
-- El xUnit sólo usa una parada en esos ciclos; el smoke integrado es la evidencia multi-parada. Diferencia anotada en `PROJECT_STATUS.md` y `TESTING.md`.
+- El xUnit sólo usa una parada en esos ciclos; el smoke integrado es la evidencia multi-parada. La cobertura de Driver UI también existe en Front: dos paradas secuenciales, evidencia y cierre, Action `45131410815` (51/51). Diferencia anotada en `PROJECT_STATUS.md` y `TESTING.md`.
 
 ## Login rate limit HTTP — CI verificada
 
@@ -84,7 +84,7 @@
 - Política Admin decidida por usuario y validada: sólo cuenta raíz puede crear/promover Admin. El primer Action `45087881487` falló porque el POST de fixture omitió Password; corregido y registrado en `ERROR_LOG.md`.
 - Front `9d84562` pasó Action `45091340306`: backend, audit/lint/build, responsive 1/1 y E2E API/MySQL 40/40. Se revisó la traza de la Action anterior `45090273209`: el botón Gerente estaba visible, pero `exact: true` no contemplaba la descripción accesible.
 - Front commit `992053d` mejora revisión de paradas y cancela búsquedas obsoletas; Action `45092540906` está en curso para validar búsqueda Nominatim, búsqueda vacía/error/tardía y reintento de guardado tras 503.
-- Auditoría backend read-only no encontró defecto en root-only ni aislamiento tenant. Quedan pendientes prueba de ciclo logístico de varias paradas y configuración/prueba de Data Protection persistente.
+- Nota histórica supersedida: el ciclo multi-parada está validado por Backend Action `45132350399` y el recorrido autenticado de Driver por Front Action `45131410815`. Sigue pendiente la configuración/prueba de Data Protection persistente.
 - Decisión confirmada: se permiten traslados sin recogida/entrega; la prueba de ciclo domain valida inicio y finalización.
 - Decisión confirmada: claves nuevas de mínimo 12 caracteres y 10 intentos de login por minuto/IP, sin bloquear cuentas. Código y pruebas locales agregados; publicar ambos branches y verificar Actions.
 - Commit Backend `33e2499` pasó Action `45096399172`: build Release, xUnit 120/120, aislamiento tenant y concurrencia Vehicle/Driver por HTTP/MySQL, limpieza correcta.

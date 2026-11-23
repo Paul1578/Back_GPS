@@ -34,6 +34,7 @@
 - Root-only Admin: Action Backend `45090274537` pasó Release build, xUnit **113/113**, smoke HTTP/MySQL tenant/roles, concurrencia y cleanup. `/Auth/me` afirma root true/delegado false; creación/promoción root permitida y delegado recibe 403 sin mutación SQL.
 - Front integrado contra este backend: Action `45091340306` pasó **40/40 E2E**, responsive **1/1**, backend Release/xUnit, audit, lint/build y cleanup.
 - Ciclo multi-parada ya integrado: `scripts/smoke-tenant-http.sh:1140-1229` ejecuta tres paradas pickup/delivery/ambas con evidencia, completa y cierra la ruta, y verifica persistencia MySQL. Action [`45132350399`](https://github.com/Paul1578/Back_GPS/actions/runs/45132350399) pasó build Release, xUnit 136/136, smoke HTTP/MySQL y cleanup.
+- Flujo Driver desde Front: `e2e/fleet-admin.spec.ts` completa dos paradas reales en secuencia con nota y foto, rechaza cierre sin evidencia, completa la ruta y consulta evidencias en Historial. Action Front [`45131410815`](https://github.com/Paul1578/Front_gpsR/actions/runs/45131410815) pasó 51/51, responsive y cleanup.
 - El xUnit de dominio cubre reglas de evidencia/cierre con una parada y el traslado sin paradas por separado; no reemplaza el smoke multi-parada. Falta sólo la prueba externa del key ring persistente en restart/réplicas.
 - Decisión confirmada por producto: se permiten rutas de traslado sin operación logística.
 

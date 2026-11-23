@@ -1,6 +1,7 @@
 # 2026-11-23 — Corrección del estado de cobertura multi-parada
 
 - La auditoría confirmó que el ciclo con tres paradas operativas y evidencia ya estaba cubierto por `smoke-tenant-http.sh` y Action `45132350399`; se retiró el pendiente obsoleto del estado vigente y se distinguió de la cobertura xUnit de dominio con una sola parada.
+- Se confirmó también el flujo Driver de dos paradas con nota/foto, evidencia obligatoria, cierre e Historial en Front Action `45131410815` (51/51).
 - Sin cambios de código ni base de datos.
 
 # 2026-11-22 — Serializar edición Driver y asignación Vehicle

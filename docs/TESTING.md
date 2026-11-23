@@ -1,9 +1,9 @@
 ## Estado vigente — 2026-11-23 — código `cd2a512`
 
 - Local: `DOTNET_ROOT=/home/leonardo/.dotnet /home/leonardo/.dotnet/dotnet test BackEnd_Gps.sln -c Release --no-restore -m:1`: **165/165**; Release build **0 warnings / 0 errors**; Docker build y ejecución como UID 10001 correctos.
-- Actions Backend [`45238865888`](https://github.com/Paul1578/Back_GPS/actions/runs/45238865888) y [`45238853928`](https://github.com/Paul1578/Back_GPS/actions/runs/45238853928) sobre `cd2a512`: Release, **165/165 xUnit**, smoke tenant HTTP/MySQL, concurrencia, rate limit Staging y cleanup pasaron; verificaron que no queden fixtures de prueba.
+- Actions Backend [`45240751113`](https://github.com/Paul1578/Back_GPS/actions/runs/45240751113) y [`45240738019`](https://github.com/Paul1578/Back_GPS/actions/runs/45240738019) sobre documentación HEAD `0547e1c` y código `cd2a512`: Release, **165/165 xUnit**, smoke tenant HTTP/MySQL, concurrencia, rate limit Staging y cleanup pasaron; verificaron que no queden fixtures.
 - Smoke local sobre esquema MySQL descartable: aislamiento, rutas, carrera de DocumentNumber 201/409, unlink con ruta activa 409 sin mutación, unlink exitoso conservando cuenta/perfil/rol y rechazo del token antiguo 401. No se tocó `fletflow` persistente.
-- Front `b58ef4c` con Backend `cd2a512`: Action integrada [`45238865792`](https://github.com/Paul1578/Front_gpsR/actions/runs/45238865792) pasó **67/67 E2E**, responsive 1/1, audit/lint/build, Backend Release/xUnit 165/165, API/MySQL y teardown. La corrida previa [`45236210209`](https://github.com/Paul1578/Front_gpsR/actions/runs/45236210209) encontró la falta de confirmación; fix actual confirma ambos AlertDialog.
+- Front `b58ef4c` con Backend `cd2a512`: Action integrada [`45240745193`](https://github.com/Paul1578/Front_gpsR/actions/runs/45240745193) pasó **67/67 E2E**, responsive 1/1, audit/lint/build, Backend Release/xUnit 165/165, API/MySQL y teardown. La corrida previa [`45236210209`](https://github.com/Paul1578/Front_gpsR/actions/runs/45236210209) encontró la falta de confirmación; fix actual confirma ambos AlertDialog.
 - El host global `/usr/bin/dotnet` no tiene runtime usable; usar `/home/leonardo/.dotnet/dotnet` con `DOTNET_ROOT`. Detalle en `ERROR_LOG.md`.
 
 ## 2026-11-23 — Contrato de evidencia en lista y detalle

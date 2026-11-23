@@ -16,6 +16,7 @@
 - No se infiere que esos registros existan: la consulta de conteos en MySQL local falló con `Access denied` (contraseña en `.env` no coincide con credencial del contenedor). Ningún dato se leyó ni alteró. Reintentar sólo cuando la credencial de una copia local/descartable se haya sincronizado; usar SQL documentado en `SECURITY.md`.
 - Otros riesgos de despliegue confirmados por revisión estática: IP de rate limit detrás de proxy y límite en memoria por proceso; rate específico/antiabuso de registro; posible diferencia temporal en recuperación. No se probó configuración de proxy ni una instancia de producción.
 - Auditoría Front independiente concluye que faltan E2E de UI para recuperación/restablecimiento/activación, exportación real, preferencia de tema y responsive en esas pantallas. Son brechas de evidencia, no defectos confirmados; backend ya cubre root-only por HTTP/MySQL.
+- Cambio local aún no publicado: límite de registro público 5/10 minutos por IP; se aplica en Development loopback y conserva login desbloqueado. xUnit focal 8/8, suite Release 135/135, build Release 0 warnings/0 errors. Ejecutar diff-check, publicar rama y confirmar workflow Backend.
 
 ## Verificación de ruta multi-parada — 2026-11-23
 

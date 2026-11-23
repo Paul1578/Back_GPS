@@ -34,6 +34,13 @@
 - **Acción segura:** inspeccionar conteos/relaciones en copia local con credencial válida; resolver propietario/rol según datos de negocio antes de la migración. No elegir reglas automáticas que puedan otorgar privilegios o abandonar operaciones.
 - **Revisión independiente adicional:** IP/proxy y rate limit por proceso, antiabuso de registro y diferencia temporal potencial de recuperación; detalle vigente en `SECURITY.md`.
 
+## 2026-11-23 — SDK `dotnet` global sin host/fxr instalado — SOLUCIONADO PARA ESTA VALIDACIÓN
+
+- **Síntoma:** `/usr/bin/dotnet test` terminó exit 131 porque `/usr/lib64/dotnet/host/fxr` no contiene ninguna carpeta de versión.
+- **Causa:** launcher global apunta a una instalación incompleta; SDK .NET 8 funcional existe en `/home/leonardo/.dotnet`.
+- **Solución/verificación:** usar `DOTNET_ROOT=/home/leonardo/.dotnet /home/leonardo/.dotnet/dotnet`. Middleware focal pasó 8/8 y la suite Release pasó 135/135. No se alteró la instalación global.
+- **Prevención:** ejecutar con el SDK funcional o reparar la instalación del sistema; no atribuir exit 131 a cambios del código.
+
 - El endpoint limitaba el miembro al mismo tenant, pero cualquier Admin del equipo podía otorgar el máximo rol mediante POST `/Users`, PUT `/{id}/role` o el alias POST `/{id}/roles/Admin`.
 - El usuario definió que sólo la cuenta raíz de la empresa puede hacerlo. Backend compara el ID autenticado con el `owner_id` firmado; Admin delegado recibe 403. El smoke verifica allow root, deny delegado y snapshots/persistencia MySQL.
 - La primera compilación del cambio reportó dos CS8604 porque los DTO/parámetros de rol podían ser null antes de llamar al comando. Se añadieron validaciones 400 para rol vacío y se pasa un nombre normalizado no nulo; repetir Release build para confirmar 0 warnings.

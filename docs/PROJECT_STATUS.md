@@ -12,6 +12,7 @@
 - La misión global permanece abierta para continuar la auditoría de funcionalidad y cobertura UI/roles/responsive. La app móvil nativa se pospuso por decisión del usuario.
 - Auditoría estática independiente: verificar en la DB local/copia de migración que no haya Admins sin `OwnerUserId`, filas de `UserRoles` múltiples por usuario, ni rutas sin propietario antes de migrar; código solo no permite clasificar con seguridad cuentas antiguas. La consulta local no pudo autenticarse con la contraseña de `.env`; no se modificaron datos. Detalle y SQL de verificación en `SECURITY.md`/`ERROR_LOG.md`.
 - Brechas de evidencia Front aún por cubrir: UI real de recuperación/restablecimiento/activación, descarga de exportación, persistencia del tema y responsive de autenticación secundaria. Backend smoke ya verifica la política root-only por HTTP/MySQL; el test Front de opciones delegado es simulado. Revisar handoff Front y no confundir falta de E2E con bug confirmado.
+- Lote local Backend: registro público con límite específico de cinco solicitudes/10 min/IP, también en Development loopback. Suite Release **135/135**, middleware focal **8/8**, build **0 warnings/0 errors**; publicar y validar Action/smoke antes de contar como integrado.
 
 ## Historial de auditoría y fases anteriores
 

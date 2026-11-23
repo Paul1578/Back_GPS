@@ -502,6 +502,11 @@
 - Contraseñas nuevas requieren 12 caracteres en registro, cambio, recuperación y activación.
 - Login tiene límite adicional de 10 solicitudes/minuto/IP, responde 429 + Retry-After y no bloquea cuentas.
 - Suite xUnit Release local: 120/120; Action pendiente.
+
+## 2026-11-23 — Límite específico del registro público
+
+- Registro restringido a cinco solicitudes por IP cada diez minutos; también aplica en loopback Development. El límite no bloquea Login ni cuentas.
+- Pruebas nuevas cubren 429, `Retry-After`, continuidad de Login y enforcement en Development; middleware **8/8** y suite Release **135/135** local. CI pendiente.
 ## 2026-11-23 — Ciclo HTTP/MySQL de ruta con múltiples operaciones — VERIFICADO
 
 - Smoke Logistics recorre en una misma ruta una recogida, entrega y parada combinada; guarda evidencia y completa cada una en secuencia.

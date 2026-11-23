@@ -576,6 +576,13 @@ La invitación envía sólo el enlace de activación; el usuario fija su contras
 
 - Login enum: xUnit verifica mismo 401/mensaje para email desconocido, contraseña incorrecta, cuenta inactiva y pendiente; smoke compara código y mensaje usando API/MySQL. Backend Action `45064942603` pasó build, xUnit **106/106**, smoke y cleanup.
 - Registro público nuevo/duplicado: controller entrega payload neutral en ambos casos; E2E compara cuerpos, luego autentica la cuenta creada. Smoke HTTP/MySQL incluido. Local Release **107/107**, build 0/0 y syntax shell; Actions pendientes.
+
+## 2026-11-23 — Límite de registro público — VALIDACIÓN LOCAL, ACTION PENDIENTE
+
+- `SimpleRateLimitMiddlewareTests`: permite cinco altas por IP en diez minutos; la sexta recibe 429 + `Retry-After`; Login sigue accesible y no hay bloqueo de cuenta. También se aplica a loopback en Development.
+- Con SDK `DOTNET_ROOT=/home/leonardo/.dotnet`: pruebas focales middleware **8/8** y suite Release `BackEnd_Gps.sln` **135/135**.
+- La primera invocación de `/usr/bin/dotnet` terminó exit 131 por falta de versiones en `/usr/lib64/dotnet/host/fxr`; usar el SDK 8 de `~/.dotnet` resolvió el problema sin cambiar la instalación global.
+- Action integrada y smoke API/MySQL del commit aún pendientes.
 - Smoke de registro mide ambas respuestas >=450 ms (controlador fija piso de 500 ms); no certifica igualdad temporal bajo carga externa.
 - Backend Action `45065747053` pasó build/xUnit **107/107**, alta nueva/duplicada y cleanup, antes de la adición del piso temporal. Validar esa medición en la siguiente Action.
 - Backend Action `45066082294` pasó build/xUnit **107/107**, smoke HTTP/MySQL de alta nueva/duplicada, cuerpo neutral, tiempo >=450 ms y cleanup.

@@ -180,6 +180,68 @@ public class SimpleRateLimitMiddlewareTests
     }
 
     [Fact]
+    public async Task Registration_AllowsFiveRequestsPerIpThenReturns429WithoutBlockingOtherEndpoints()
+    {
+        var middleware = new SimpleRateLimitMiddleware(
+            NullLogger<SimpleRateLimitMiddleware>.Instance,
+            new TestWebHostEnvironment("Production"));
+        var remoteAddress = new IPAddress(Guid.NewGuid().ToByteArray());
+        var acceptedRegistrations = 0;
+        DefaultHttpContext? sixthContext = null;
+
+        for (var requestNumber = 0; requestNumber < 6; requestNumber++)
+        {
+            var context = new DefaultHttpContext();
+            context.Connection.RemoteIpAddress = remoteAddress;
+            context.Request.Method = HttpMethods.Post;
+            context.Request.Path = "/api/Auth/register";
+            await middleware.InvokeAsync(context, _ =>
+            {
+                acceptedRegistrations++;
+                return Task.CompletedTask;
+            });
+
+            if (requestNumber == 5)
+                sixthContext = context;
+            else
+                Assert.Equal(StatusCodes.Status200OK, context.Response.StatusCode);
+        }
+
+        Assert.Equal(5, acceptedRegistrations);
+        Assert.NotNull(sixthContext);
+        Assert.Equal(StatusCodes.Status429TooManyRequests, sixthContext.Response.StatusCode);
+        Assert.True(int.TryParse(sixthContext.Response.Headers["Retry-After"], out var retryAfter));
+        Assert.InRange(retryAfter, 1, 600);
+
+        var loginContext = new DefaultHttpContext();
+        loginContext.Connection.RemoteIpAddress = remoteAddress;
+        loginContext.Request.Method = HttpMethods.Post;
+        loginContext.Request.Path = "/api/Auth/login";
+        await middleware.InvokeAsync(loginContext, _ => Task.CompletedTask);
+        Assert.Equal(StatusCodes.Status200OK, loginContext.Response.StatusCode);
+    }
+
+    [Fact]
+    public async Task DevelopmentLoopback_RegistrationLimitStillApplies()
+    {
+        var middleware = new SimpleRateLimitMiddleware(
+            NullLogger<SimpleRateLimitMiddleware>.Instance,
+            new TestWebHostEnvironment("Development"));
+
+        for (var requestNumber = 0; requestNumber < 6; requestNumber++)
+        {
+            var context = new DefaultHttpContext();
+            context.Connection.RemoteIpAddress = IPAddress.Loopback;
+            context.Request.Method = HttpMethods.Post;
+            context.Request.Path = "/api/Auth/register";
+            await middleware.InvokeAsync(context, _ => Task.CompletedTask);
+            Assert.Equal(
+                requestNumber < 5 ? StatusCodes.Status200OK : StatusCodes.Status429TooManyRequests,
+                context.Response.StatusCode);
+        }
+    }
+
+    [Fact]
     public async Task ConcurrentRequests_CannotExceedSixtyAcceptedRequestsPerWindow()
     {
         var middleware = new SimpleRateLimitMiddleware(

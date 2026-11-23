@@ -19,7 +19,7 @@
 ## Otros riesgos por validar en despliegue
 
 - `SimpleRateLimitMiddleware` usa `RemoteIpAddress` y memoria estática. Tras proxy, varios usuarios pueden compartir límite; varias réplicas no comparten contadores. Configurar proxies de confianza y almacenamiento distribuido antes de escalar.
-- Registro público permite crear nuevos tenants y sólo hereda el límite general de 60 solicitudes/minuto/IP. Evaluar antiabuso/límite específico con prueba de carga en entorno descartable.
+- Registro público permite crear nuevos tenants; ahora también está limitado a cinco solicitudes por diez minutos/IP, además del límite general. La ventana vive en memoria y comparte las limitaciones de proxy/réplicas descritas arriba.
 - Recuperación devuelve cuerpo uniforme y tiene un piso temporal, pero la rama de cuenta existente hace más escrituras que la inexistente. La diferencia temporal potencial no se midió bajo carga.
 
 ## Hallazgo corregido — revocación de refresh por cuenta — 2026-11-22

@@ -1,12 +1,15 @@
-# Handoff — 2026-11-22
+# Handoff — 2026-11-23
 
 ## Estado vigente — 2026-11-23
 
-- HEAD Backend `9fb418b` (`chore/stabilize-fleet-platform`) y Front `5784b36` (`refactor/route-builder`), ramas separadas de `main`.
-- Action Backend `45088129188` pasó Release build (0 warnings/0 errors), xUnit 113/113, aislamiento/permisos y perfil HTTP/MySQL, concurrencia y cleanup. La repetición docs `45088881490` pasó también.
+- HEAD Backend `df88238` (`chore/stabilize-fleet-platform`) y Front al actualizar este registro `992053d` (`refactor/route-builder`), ramas separadas de `main`.
+- Action Backend `45090274537` pasó Release build (0 warnings/0 errors), xUnit 113/113, aislamiento/permisos y perfil HTTP/MySQL, concurrencia y cleanup. `df88238` registra esa evidencia.
 - Política Admin decidida por usuario y validada: sólo cuenta raíz puede crear/promover Admin. El primer Action `45087881487` falló porque el POST de fixture omitió Password; corregido y registrado en `ERROR_LOG.md`.
-- Front corrigió UX de rol root-only. Acción Front `45088879212` comprueba SHA `5784b36`, previo al test E2E delegado agregado después; suite local actual 40 tests descubiertos, spec `team-management-load-errors` 10/10.
-- Siguiente paso: publicar el E2E delegado de alta/promoción, esperar CI integrada, registrar resultados; luego seguir matriz CRUD/responsive alcanzable.
+- Front `9d84562` pasó Action `45091340306`: backend, audit/lint/build, responsive 1/1 y E2E API/MySQL 40/40. Se revisó la traza de la Action anterior `45090273209`: el botón Gerente estaba visible, pero `exact: true` no contemplaba la descripción accesible.
+- Front commit `992053d` mejora revisión de paradas y cancela búsquedas obsoletas; Action `45092540906` está en curso para validar búsqueda Nominatim, búsqueda vacía/error/tardía y reintento de guardado tras 503.
+- Auditoría backend read-only no encontró defecto en root-only ni aislamiento tenant. Quedan pendientes prueba de ciclo logístico de varias paradas y configuración/prueba de Data Protection persistente.
+- Caso consultado al usuario: permitir traslado sin recogida/entrega. No cambiar validación backend hasta recibir su decisión.
+- Siguiente paso: finalizar Action Front `45092540906`; después completar criterios funcionales restantes, actualizar ambas ramas/documentación y seguir auditando CRUD, seguridad y responsive.
 - Misión sigue abierta. SMTP requiere credenciales externas; Data Protection PFX/key ring requiere infraestructura persistente; app móvil nativa aplazada.
 - E2E Front Action `45088879212` detectó que root autenticado no veía opción Admin aunque la API aceptaba la política. Se agregó `isRootAccount` backend-derived a `/Auth/me`, consumido por Front. Backend Action `45090274537` pasó: 113/113, build limpio, smoke HTTP/MySQL, concurrencia y cleanup. Front Action `45090273209` aún valida navegador integrado.
 

@@ -1,9 +1,16 @@
 # Estado actual de estabilización — 2026-11-23
 
-- HEAD backend `9fb418b` en `chore/stabilize-fleet-platform`; Front relacionado `5784b36` en `refactor/route-builder`; ambas ramas, `main` intacta.
+- HEAD backend `df88238` en `chore/stabilize-fleet-platform`; Front relacionado `9d84562` (la rama avanzó luego a `992053d`) en `refactor/route-builder`; ambas ramas separadas de `main`.
 - Política confirmada por el usuario: sólo la cuenta raíz puede crear/promover Admin. Action backend `45088129188` pasó la política y edición/sincronización de perfil vía HTTP/MySQL, xUnit 113/113, Release build limpio, concurrencia y cleanup. Action `45088881490` también pasó para el commit documental.
-- Front ocultó “Gerente” (rol Admin API) para Admin delegado; lint/build local pasan, y el spec de equipo pasa 10/10. Un E2E nuevo contrasta root/delegado y espera Action en el SHA siguiente.
+- Front oculta “Gerente” (rol Admin API) a Admin delegado; Action `45091340306` aprobó la integración con **40/40 E2E**, responsive 1/1, audit, lint/build y backend xUnit.
 - La misión permanece abierta por cobertura CRUD/responsive y configuración externa de producción. Móvil nativo aplazado; SMTP real requiere credenciales vigentes.
+
+## Hallazgos de auditoría en curso — 2026-11-23
+
+- No hay evidencia de defecto en aislamiento de tenant ni en la política root-only; el backend aprobó Action `45090274537` (build Release, xUnit 113/113, smoke HTTP/MySQL, concurrencia y cleanup).
+- La misión de rutas aún requiere probar el ciclo de una ruta con varias paradas operativas hasta completar evidencias y cerrar ruta. La evidencia actual cubre creación de varios tipos y cierre con una operación.
+- Caso de negocio consultado: si se permiten rutas de traslado entre origen/destino sin recogida/entrega. No endurecer comandos/reglas antes de la respuesta del usuario.
+- Data Protection persistente/compartido para reinicios y réplicas sigue pendiente de configuración y prueba de despliegue. Móvil nativo aplazado; SMTP real depende de credenciales.
 
 - Corregida posible actualización perdida entre edición del perfil Driver y asignación Vehicle: el comando de edición bloquea/relee la fila antes de guardar. Release xUnit **113/113** local y Action `45084368819` success, incluida regresión interleaving y smoke HTTP/MySQL.
 - Runner actualizado para exportar el UserId requerido por el nuevo E2E Manager mapa; `bash -n` y diff-check pasan, Action Backend `45084501616` success. La Action Front debe confirmar que el escenario no figure skipped.

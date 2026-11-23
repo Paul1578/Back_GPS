@@ -22,4 +22,5 @@ DELETE FROM Users
 WHERE Email LIKE 'fletflow.e2e.admin.%@example.test'
    OR Email LIKE 'fletflow.e2e.user.%@example.test'
    OR Email LIKE 'fletflow.e2e.driver.%@example.test'
+   OR Email LIKE 'fletflow.e2e.logistics.matrix.%@example.test'
    OR Email LIKE 'fletflow.e2e.manager.map.%@example.test';

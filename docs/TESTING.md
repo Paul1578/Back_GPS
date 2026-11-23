@@ -1,9 +1,9 @@
-## Estado vigente — 2026-11-23 — código `ac14373`
+## Estado vigente — 2026-11-23 — código `bc31fdd`
 
 - Local: `DOTNET_ROOT=/home/leonardo/.dotnet /home/leonardo/.dotnet/dotnet test BackEnd_Gps.sln -c Release --no-restore -m:1`: **165/165**; Release build **0 warnings / 0 errors**; Docker build y ejecución como UID 10001 correctos.
-- Actions [`45227030382`](https://github.com/Paul1578/Back_GPS/actions/runs/45227030382) y [`45227043042`](https://github.com/Paul1578/Back_GPS/actions/runs/45227043042): Release, **165/165 xUnit**, smoke tenant HTTP/MySQL, concurrencia, rate limit Staging y cleanup pasaron.
+- Action Backend [`45236180746`](https://github.com/Paul1578/Back_GPS/actions/runs/45236180746) sobre `bc31fdd`: Release, **165/165 xUnit**, smoke tenant HTTP/MySQL, concurrencia, rate limit Staging y cleanup pasaron.
 - Smoke local sobre esquema MySQL descartable: aislamiento, rutas, carrera de DocumentNumber 201/409, unlink con ruta activa 409 sin mutación, unlink exitoso conservando cuenta/perfil/rol y rechazo del token antiguo 401. No se tocó `fletflow` persistente.
-- Action Front integrada [`45227072219`](https://github.com/Paul1578/Front_gpsR/actions/runs/45227072219) contra Backend `ac14373`: build/audit/lint/responsive pasaron; E2E autenticado pendiente al corte.
+- Front `8f00c75` con Backend `bc31fdd`: Action integrada [`45236210209`](https://github.com/Paul1578/Front_gpsR/actions/runs/45236210209) terminó 66/67; build/audit/lint/responsive y 66 E2E pasaron. Timeout a los 180 s al faltar confirmación del diálogo de baja Driver; corrección actual de Front espera una Action nueva.
 - El host global `/usr/bin/dotnet` no tiene runtime usable; usar `/home/leonardo/.dotnet/dotnet` con `DOTNET_ROOT`. Detalle en `ERROR_LOG.md`.
 
 ## 2026-11-23 — Contrato de evidencia en lista y detalle

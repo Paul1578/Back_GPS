@@ -2,7 +2,8 @@
 
 - El runner E2E crea un Logistics aislado en la DB descartable junto al resto de identidades QA y lo habilita para login sólo en ese esquema temporal; exporta sus credenciales al frontend. `cleanup-e2e.sql` ya elimina el prefijo del fixture.
 - Causa documentada en Front `docs/ERROR_LOG.md`: el test anterior creaba por API una cuenta con `MustChangePassword=true`; cambiar sólo `IsActive` no la activa y login devolvía 401.
-- `bash -n scripts/run-e2e-local.sh` y `git diff --check` pasan. Action nueva requerida para verificar login, matriz de permisos y cleanup de extremo a extremo.
+- `bash -n scripts/run-e2e-local.sh` y `git diff --check` pasan. Action Backend [`45236180746`](https://github.com/Paul1578/Back_GPS/actions/runs/45236180746) pasó con Release/xUnit 165/165, smokes tenant/concurrencia/rate limit y cleanup. Front integrada [`45236210209`](https://github.com/Paul1578/Front_gpsR/actions/runs/45236210209) permitió el login Logistics y terminó 66/67: el flujo CRUD Manager agotó sus 180 s al no aceptar el diálogo de confirmación de baja Driver. El Front corrigió ambas bajas y amplió el límite; la repetición está pendiente.
+- La siguiente edición también consulta el estado de la fila Logistics después del UPDATE (`IsActive:MustChangePassword=1:0`) para señalar de inmediato si el runner no activó el fixture. `bash -n` y diff-check locales pasan; falta una Action que incluya esta verificación.
 
 ## 2026-11-23 — Evitar Base64 repetido en listados de rutas
 

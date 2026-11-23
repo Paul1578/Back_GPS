@@ -271,6 +271,14 @@ mysql --protocol=TCP --host="$MYSQL_HOST" --port="$MYSQL_PORT" --user="$MYSQL_US
 mysql --protocol=TCP --host="$MYSQL_HOST" --port="$MYSQL_PORT" --user="$MYSQL_USER" "$DB_NAME" \
   -e "UPDATE Users SET IsActive=1, MustChangePassword=0 WHERE Email IN ('$FLETFLOW_E2E_USER_EMAIL', '$FLETFLOW_E2E_DEACTIVATION_EMAIL', '$FLETFLOW_E2E_DRIVER_EMAIL', '$FLETFLOW_E2E_ROUTE_DRIVER_EMAIL', '$FLETFLOW_E2E_MANAGER_MAP_EMAIL', '$FLETFLOW_E2E_LOGISTICS_EMAIL', '$FLETFLOW_E2E_DELEGATED_ADMIN_EMAIL');" \
   >/dev/null 2>&1
+logistics_fixture_state="$(mysql --protocol=TCP --host="$MYSQL_HOST" --port="$MYSQL_PORT" --user="$MYSQL_USER" "$DB_NAME" \
+  --batch --skip-column-names \
+  -e "SELECT CONCAT(CAST(IsActive AS UNSIGNED), ':', CAST(MustChangePassword AS UNSIGNED)) FROM Users WHERE Email='$FLETFLOW_E2E_LOGISTICS_EMAIL';" \
+  2>/dev/null)"
+[[ "$logistics_fixture_state" == "1:0" ]] || {
+  echo "El fixture E2E Logistics no quedó habilitado (IsActive:MustChangePassword='$logistics_fixture_state')." >&2
+  exit 1
+}
 
 mysql --protocol=TCP --host="$MYSQL_HOST" --port="$MYSQL_PORT" --user="$MYSQL_USER" "$DB_NAME" \
   -e "UPDATE Users SET IsActive=1, MustChangePassword=0 WHERE Email='$FLETFLOW_E2E_RESET_EMAIL'; UPDATE Users SET IsActive=1, MustChangePassword=1 WHERE Email='$FLETFLOW_E2E_ACTIVATE_EMAIL'; INSERT INTO PasswordResetTokens (Id, UserId, TokenHash, ExpiresAt, CreatedAt, UsedAt) SELECT UUID(), Id, UPPER(SHA2('$FLETFLOW_E2E_RESET_TOKEN', 256)), DATE_ADD(UTC_TIMESTAMP(6), INTERVAL 30 MINUTE), UTC_TIMESTAMP(6), NULL FROM Users WHERE Email='$FLETFLOW_E2E_RESET_EMAIL'; INSERT INTO PasswordResetTokens (Id, UserId, TokenHash, ExpiresAt, CreatedAt, UsedAt) SELECT UUID(), Id, UPPER(SHA2('$FLETFLOW_E2E_ACTIVATE_TOKEN', 256)), DATE_ADD(UTC_TIMESTAMP(6), INTERVAL 30 MINUTE), UTC_TIMESTAMP(6), NULL FROM Users WHERE Email='$FLETFLOW_E2E_ACTIVATE_EMAIL';" \

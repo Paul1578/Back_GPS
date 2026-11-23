@@ -1,8 +1,8 @@
-## Estado vigente — Backend `ac14373` — 2026-11-23
+## Estado vigente — Backend `bc31fdd` — 2026-11-23
 
-- Rama `chore/stabilize-fleet-platform`; `main` intacta y DB local persistente preservada. Árbol: sólo queda por publicar la sincronización documental de este handoff.
-- Release build: **0 warnings / 0 errors**; xUnit **165/165** (CI: [`45227030382`](https://github.com/Paul1578/Back_GPS/actions/runs/45227030382)). PR workflow [`45227043042`](https://github.com/Paul1578/Back_GPS/actions/runs/45227043042) también pasó.
-- Los workflows verificaron aislamiento por tenant/roles, integridad MySQL HTTP, asignaciones concurrentes, límite de login en Staging, unlink bloqueado ante rutas activas, token antiguo rechazado tras cambio de contraseña y cleanup de la DB descartable. Smoke local con MySQL aislado también pasó.
+- Rama `chore/stabilize-fleet-platform`; `main` intacta y DB local persistente preservada. Código `bc31fdd`; ajuste del fixture Logistics para el runner autenticado.
+- Release build: **0 warnings / 0 errors**; xUnit **165/165** (CI: [`45236180746`](https://github.com/Paul1578/Back_GPS/actions/runs/45236180746)). Build/test y smokes HTTP/MySQL de tenant, concurrencia y rate limit terminaron success; cleanup confirmó cero fixtures persistentes.
+- Los workflows verificaron aislamiento por tenant/roles, integridad MySQL HTTP, asignaciones concurrentes, límite de login en Staging, unlink bloqueado ante rutas activas, token antiguo rechazado tras cambio de contraseña y cleanup de la DB descartable. El runner E2E crea cuenta Logistics autenticable sólo en MySQL desechable. Front integrada [`45236210209`](https://github.com/Paul1578/Front_gpsR/actions/runs/45236210209) permitió login pero terminó 66/67 porque el test no confirmó la baja Driver; el Front corrige los dos diálogos y el timeout, repetición pendiente.
 - Docker Release construye como usuario no root (`fletflow`, UID 10001); imagen de tests excluida y key ring escribible.
 - Decisiones vigentes: cuenta raíz única con privilegio Admin; traslado sin paradas permitido; paradas de recogida, entrega o ambas; unlink conserva rol Driver/cuenta/perfil y se bloquea ante Pending/InProgress; web responsive ahora, móvil nativo después.
 - Pendientes que requieren entorno/credenciales: SMTP real, proxies confiables reales, key ring Data Protection persistente/protegido en despliegue y rate limit distribuido antes de varias réplicas. No se declara despliegue productivo ni envío real de correo.

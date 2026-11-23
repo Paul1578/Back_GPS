@@ -1375,3 +1375,8 @@ Cada cambio de API debe incluir validación de compilación, migraciones si apli
 - Repetir el smoke en la misma instancia dejó rate limit por IP en memoria y mensajes anteriores del outbox, dando resultados no deterministas. La corrida final usó proceso API y MySQL 8 descartables limpios.
 - Verificación real: restore/build Release (0 warnings/errores), `bash -n`, `git diff --check`, smoke HTTP/MySQL completo local y Backend Action [`45108549336`](https://github.com/Paul1578/Back_GPS/actions/runs/45108549336); tres paradas con evidencia, ruta Completed/EndedAt, vehículo Available y cleanup sin fixtures.
 - Prevención: normalizar tipos SQL en assertions y usar una DB/proceso limpios al repetir flujos que consumen rate limit y email queue.
+# 2026-11-23 — Credencial del MySQL local no coincide con servidor — SIN CAMBIOS EN DATOS
+
+- Las consultas agregadas read-only de preflight no autentican con `DB_PASSWORD` de `.env`. Se inspeccionó la variable declarada por el contenedor sin imprimirla; también falló con 1045 por TCP y socket desde `mysql-gps`.
+- Resultado: no se consultaron filas ni se alteraron datos. No se reinició la contraseña root ni se recreó el volumen porque eso puede afectar datos persistentes.
+- Solución para continuar la auditoría heredada: sincronizar la credencial del entorno mediante operador o trabajar sobre una copia/DB desechable y correr las consultas de `SECURITY.md`.

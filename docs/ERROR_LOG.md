@@ -1400,3 +1400,7 @@ Cada cambio de API debe incluir validación de compilación, migraciones si apli
 - Los dos primeros intentos se detuvieron antes de iniciar Staging: `/usr/bin/dotnet` apunta a `/usr/lib64/dotnet` sin `host/fxr`; en esta máquina `DOTNET_ROOT` solo no cambia ese launcher. No llegaron a enviar requests y cada contenedor/DB efímera se limpió al salir.
 - Solución: anteponer `/home/leonardo/.dotnet` a `PATH` y volver a ejecutar contra MySQL 8 y API desechables. El flujo HTTP real pasó: diez 401, 11.º 429 con `Retry-After`; la misma cuenta autenticó desde la segunda IP. No se tocó la DB local existente.
 - Prevención: comprobar `command -v dotnet` y `dotnet --info`; usar SDK local con prioridad en `PATH` cuando el host de sistema esté incompleto. Este fallo fue del entorno, no del producto.
+
+## Smoke HTTP de login rate limit validado en CI
+
+- Action [`45126308692`](https://github.com/Paul1578/Back_GPS/actions/runs/45126308692), SHA `88f669d`: éxito. xUnit 136/136, smokes tenant/concurrencia, 10 login HTTP 401, intento 11 429 con Retry-After, misma cuenta autenticada desde otra IP; teardown MySQL/API/container correcto.

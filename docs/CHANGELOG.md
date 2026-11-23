@@ -543,3 +543,5 @@
 ## 2026-11-23 — Smoke HTTP de login rate limit añadido
 
 - CI reinicia API Release en Staging y verifica 10 intentos, HTTP 429 + Retry-After por IP y login válido desde otra IP; no simula respuestas ni bloquea cuentas. Certificado/key ring y DB de prueba son efímeros. Local MySQL/API descartables pasó; Action pendiente.
+
+- Action Backend [`45126308692`](https://github.com/Paul1578/Back_GPS/actions/runs/45126308692) pasó el nuevo smoke HTTP Staging: build Release, xUnit 136/136, tenant/concurrencia HTTP/MySQL, rate limit por IP y cleanup.

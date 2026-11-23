@@ -1,13 +1,13 @@
 # Handoff vigente — 2026-11-23
 
-## Siguiente verificación activa — login rate limit por HTTP
+## Login rate limit HTTP — CI verificada
 
-- Branch backend: `chore/stabilize-fleet-platform`, `main` intacta. Último commit base `341161d`; hay cambios locales en `.github/workflows/ci.yml` y nuevo `scripts/smoke-login-rate-limit-http.sh`.
+- Backend branch `chore/stabilize-fleet-platform`, commit de código `88f669d`; `main` intacta y el árbol quedó limpio tras registrar el resultado.
 - El middleware omite rate limiting en Development loopback por diseño. El script se protege con `CI=true` y DB `fletflow_ci*`, detiene API Development y reinicia el mismo Release binario en Staging sobre la DB descartable. Genera key ring/certificado Data Protection efímeros, valida 10 login HTTP 401, intento 11 HTTP 429 + Retry-After y acceso 200 a la misma cuenta desde IP `127.0.0.3` tras exceder el límite con `127.0.0.2`; elimina API, keyring/cert y fixtures temporales al salir.
 - Verificación local real: MySQL 8 en contenedor disposable, API y migraciones reales; el script pasó. Fixture usado sólo en `fletflow_ci_rate_limit`; contenedor y procesos se retiraron. Release build 0 warnings/errores, xUnit **136/136**, `bash -n` y `git diff --check` pasan.
 - Primeros arranques fallaron antes de ejecutar el test por el `dotnet` de PATH local sin runtime; quedó corregido al priorizar `/home/leonardo/.dotnet` en PATH. Detalle y prevención en `ERROR_LOG.md`.
-- Próximo: inspeccionar diff y docs, commit/push; observar Action backend Release/xUnit + tenant HTTP/MySQL + concurrencia + nuevo rate-limit Staging smoke + cleanup. Si la redirección HTTPS o IP source cambia en CI, revisar logs sin debilitar las protecciones.
-- Front actual `refactor/route-builder` `2cc3ee5`, con código `f0acce7` y SHA documental `1d7b922` verificados por Actions `45123444413` y `45124271067` (51/51 E2E y responsive 1/1). Backend HEAD antes de este lote `341161d`, Action `45119396803` success.
+- Action [`45126308692`](https://github.com/Paul1578/Back_GPS/actions/runs/45126308692) pasó: Release build, xUnit **136/136**, tenant HTTP/MySQL, concurrencia y smoke Staging: diez 401, 11.º 429 con Retry-After, login válido de la misma cuenta desde otra IP. Cleanup/stop API/containers correctos.
+- Front actual `refactor/route-builder` `2cc3ee5`, con código `f0acce7` y SHA documental `1d7b922` verificados por Actions `45123444413` y `45124271067` (51/51 E2E y responsive 1/1). Backend `88f669d` y Action `45126308692` success.
 - Persisten pendientes de producción: SMTP, rate limiter distribuido/proxies confiables, key ring Data Protection persistente/cifrado y despliegue. No completar toda la misión por cerrar sólo este lote.
 
 ---

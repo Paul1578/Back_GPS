@@ -246,4 +246,6 @@ Este proceso invalida los emails/token de recuperación que estén pendientes o 
 ## Validación HTTP de login por IP — 2026-11-23
 
 - El rate limit de login es 10 intentos/minuto por dirección IP y no bloquea cuentas. El nuevo smoke usa la API Release en Staging y verifica el pipeline HTTP completo: primera IP obtiene 10 rechazos de credenciales normales, exceso recibe 429 + `Retry-After`, segunda IP puede iniciar sesión en la misma cuenta.
-- Smoke local comprobado contra DB MySQL 8 descartable; Action CI pendiente. En producción el contador sigue en memoria por proceso; antes de escalar se requiere store distribuido y configurar trusted proxies/forwarded headers con lista de proxies permitidos.
+- Smoke local y Action `45126308692` comprobados contra DB MySQL 8 descartable. En producción el contador sigue en memoria por proceso; antes de escalar se requiere store distribuido y configurar trusted proxies/forwarded headers con lista de proxies permitidos.
+
+- Action [`45126308692`](https://github.com/Paul1578/Back_GPS/actions/runs/45126308692), backend `88f669d`, ejecutó y aprobó el flujo HTTP Staging completo de login rate limit sobre MySQL descartable. Contador distribuido/proxy confiable siguen pendientes de infraestructura de producción.

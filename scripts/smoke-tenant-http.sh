@@ -102,9 +102,16 @@ reset_user_email=""
 manual_link_user_email=""
 manual_link_user_password=""
 manual_link_user_token=""
+manual_link_plain_token=""
+manual_link_token_hash=""
+manual_link_token_version_before_unlink=""
 manual_link_user_id=""
 manual_link_driver_id=""
 manual_link_driver_document=""
+manual_link_vehicle_id=""
+manual_link_vehicle_plate=""
+manual_link_route_id=""
+manual_link_route_name=""
 
 cleanup() {
   local status=$?
@@ -141,6 +148,8 @@ cleanup() {
     elif [[ -n "$transfer_route_name" ]]; then
       sql+=" DELETE rp FROM RoutePositions rp JOIN Routes r ON r.Id=rp.RouteId WHERE r.Name='$transfer_route_name'; DELETE FROM Routes WHERE Name='$transfer_route_name';"
     fi
+    if [[ -n "$manual_link_route_id" ]]; then sql+=" DELETE FROM RoutePositions WHERE RouteId='$manual_link_route_id'; DELETE FROM Routes WHERE Id='$manual_link_route_id';"
+    elif [[ -n "$manual_link_route_name" ]]; then sql+=" DELETE rp FROM RoutePositions rp JOIN Routes r ON r.Id=rp.RouteId WHERE r.Name='$manual_link_route_name'; DELETE FROM Routes WHERE Name='$manual_link_route_name';"; fi
     if [[ -n "$inactive_driver_route_id" ]]; then
       sql+=" DELETE FROM RoutePositions WHERE RouteId='$inactive_driver_route_id'; DELETE FROM Routes WHERE Id='$inactive_driver_route_id';"
     elif [[ -n "$inactive_driver_route_name" ]]; then
@@ -160,6 +169,8 @@ cleanup() {
     if [[ -n "$inactive_linked_driver_id" ]]; then sql+=" DELETE FROM Drivers WHERE Id='$inactive_linked_driver_id';"; fi
     if [[ -n "$manual_link_driver_id" ]]; then sql+=" DELETE FROM Drivers WHERE Id='$manual_link_driver_id';"
     elif [[ -n "$manual_link_driver_document" ]]; then sql+=" DELETE FROM Drivers WHERE DocumentNumber='$manual_link_driver_document';"; fi
+    if [[ -n "$manual_link_vehicle_id" ]]; then sql+=" UPDATE Vehicles SET Status=0 WHERE Id='$manual_link_vehicle_id'; DELETE FROM Vehicles WHERE Id='$manual_link_vehicle_id';"
+    elif [[ -n "$manual_link_vehicle_plate" ]]; then sql+=" DELETE FROM Vehicles WHERE Plate='$manual_link_vehicle_plate';"; fi
     if [[ -n "$vehicle_id" ]]; then sql+=" DELETE FROM Vehicles WHERE Id='$vehicle_id';"
     elif [[ -n "$plate" ]]; then sql+=" DELETE FROM Vehicles WHERE Plate='$plate';"; fi
     if [[ -n "$driver_positive_vehicle_id" ]]; then sql+=" UPDATE Vehicles SET Status=0 WHERE Id='$driver_positive_vehicle_id'; DELETE FROM Vehicles WHERE Id='$driver_positive_vehicle_id';"
@@ -325,16 +336,16 @@ cleanup() {
       local manual_link_cleanup_remaining
       manual_link_cleanup_remaining="$(mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" \
         --batch --skip-column-names "$db_name" \
-        -e "SELECT CONCAT((SELECT COUNT(*) FROM Drivers WHERE Id='$manual_link_driver_id' OR DocumentNumber='$manual_link_driver_document'), ':', (SELECT COUNT(*) FROM Users WHERE Email='$manual_link_user_email'));")" || {
+        -e "SELECT CONCAT((SELECT COUNT(*) FROM Drivers WHERE Id='$manual_link_driver_id' OR DocumentNumber='$manual_link_driver_document'), ':', (SELECT COUNT(*) FROM Users WHERE Email='$manual_link_user_email'), ':', (SELECT COUNT(*) FROM Vehicles WHERE Id='$manual_link_vehicle_id' OR Plate='$manual_link_vehicle_plate'), ':', (SELECT COUNT(*) FROM Routes WHERE Id='$manual_link_route_id' OR Name='$manual_link_route_name'));")" || {
         echo "No se pudo verificar cleanup del vínculo manual User/Driver." >&2
         status=1
         manual_link_cleanup_remaining="unknown"
       }
-      if [[ "$manual_link_cleanup_remaining" != "0:0" && "$manual_link_cleanup_remaining" != "unknown" ]]; then
-        echo "Cleanup dejó el vínculo manual User/Driver (conteos: $manual_link_cleanup_remaining)." >&2
+      if [[ "$manual_link_cleanup_remaining" != "0:0:0:0" && "$manual_link_cleanup_remaining" != "unknown" ]]; then
+        echo "Cleanup dejó fixtures del unlink manual (Driver:User:Vehicle:Route = $manual_link_cleanup_remaining)." >&2
         status=1
-      elif [[ "$manual_link_cleanup_remaining" == "0:0" ]]; then
-        echo "Cleanup verificado: cero Driver/User del vínculo manual." >&2
+      elif [[ "$manual_link_cleanup_remaining" == "0:0:0:0" ]]; then
+        echo "Cleanup verificado: cero fixtures Driver/User/Vehicle/Route del unlink manual." >&2
       fi
     fi
     if [[ -n "$delegated_admin_email" ]]; then
@@ -1376,6 +1387,12 @@ expect_status 200 "Confirmar User sin Driver antes del cambio de rol"
 jq -e --arg userId "$manual_link_user_id" 'any(.[]; .id == $userId and .driverId == null)' "$work_dir/response.json" >/dev/null || {
   echo "El User de vínculo manual ya aparece asociado a Driver antes de crear el perfil." >&2; cat "$work_dir/response.json" >&2; exit 1;
 }
+manual_link_plain_token="unlink-activation-$suffix-$(openssl rand -hex 8)"
+manual_link_token_hash="$(printf '%s' "$manual_link_plain_token" | openssl dgst -sha256 | awk '{print toupper($NF)}')"
+mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" "$db_name" \
+  -e "INSERT INTO PasswordResetTokens (Id, UserId, TokenHash, ExpiresAt, CreatedAt, UsedAt) VALUES (UUID(), '$manual_link_user_id', '$manual_link_token_hash', DATE_ADD(UTC_TIMESTAMP(), INTERVAL 10 MINUTE), UTC_TIMESTAMP(), NULL);" >/dev/null
+request POST /Auth/activate-account "$(jq -nc --arg token "$manual_link_plain_token" --arg password "$manual_link_user_password" '{token:$token,newPassword:$password,confirmNewPassword:$password}')" ""
+expect_status 200 "Activar cuenta Driver de prueba con clave controlada"
 request PUT "/Users/$manual_link_user_id/role" '{"roleName":"Driver"}' "$token"
 expect_status 200 "Cambiar User a rol Driver para vínculo manual"
 manual_link_role="$(mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" "$db_name" \
@@ -1402,6 +1419,31 @@ manual_link_sql="$(mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port
   echo "La relación User/Driver no quedó consistente en MySQL ($manual_link_sql)." >&2; exit 1;
 }
 
+manual_link_vehicle_plate="E2EUL${suffix: -9}"
+request POST /Vehicles "$(jq -nc --arg plate "$manual_link_vehicle_plate" '{plate:$plate,brand:"CI unlink",model:"Pending guard",year:2025}')" "$token"
+expect_status 201 "Crear vehículo para verificar unlink con ruta activa"
+manual_link_vehicle_id="$(jq -er '.id' "$work_dir/response.json")"
+request PUT "/Drivers/$manual_link_driver_id/assign-vehicle" "$(jq -nc --arg vehicleId "$manual_link_vehicle_id" '{vehicleId:$vehicleId}')" "$token"
+expect_status 204 "Asignar vehículo al Driver del escenario unlink"
+manual_link_route_name="E2E unlink active route $suffix"
+request POST /Routes "$(jq -nc --arg name "$manual_link_route_name" --arg vehicleId "$manual_link_vehicle_id" --arg driverId "$manual_link_driver_id" --argjson points "$role_points" '{name:$name,cargoDescription:"Unlink active route guard",vehicleId:$vehicleId,driverId:$driverId,points:$points}')" "$token"
+expect_status 201 "Crear ruta Pending para bloquear unlink"
+manual_link_route_id="$(jq -er '.id' "$work_dir/response.json")"
+manual_link_token_version_before_unlink="$(mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" "$db_name" \
+  --batch --skip-column-names -e "SELECT TokenVersion FROM Users WHERE Id='$manual_link_user_id';")"
+request PUT "/Drivers/$manual_link_driver_id/unlink-user" "" "$token"
+expect_status 409 "Impedir unlink de Driver con ruta Pending"
+manual_link_blocked_state="$(mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" "$db_name" \
+  --batch --skip-column-names -e "SELECT CONCAT((SELECT CAST(UserId AS CHAR) FROM Drivers WHERE Id='$manual_link_driver_id'),':',(SELECT TokenVersion FROM Users WHERE Id='$manual_link_user_id'),':',(SELECT Status FROM Routes WHERE Id='$manual_link_route_id'),':',(SELECT Status FROM Vehicles WHERE Id='$manual_link_vehicle_id'));" )"
+expected_manual_link_blocked_state="$manual_link_user_id:$manual_link_token_version_before_unlink:0:0"
+[[ "$manual_link_blocked_state" == "$expected_manual_link_blocked_state" ]] || {
+  echo "El unlink rechazado mutó el vínculo, sesión, ruta o vehículo ($manual_link_blocked_state)." >&2; exit 1;
+}
+request PUT "/Routes/$manual_link_route_id/status" '{"status":3}' "$token"
+expect_status 204 "Cancelar ruta de prueba para continuar unlink"
+request PUT "/Drivers/$manual_link_driver_id/unassign-vehicle" "" "$token"
+expect_status 204 "Liberar asignación tras cancelar ruta de unlink"
+
 manual_profile_username="Manual Driver Link actualizado $suffix"
 request PUT "/Users/$manual_link_user_id/profile" "$(jq -nc --arg username "$manual_profile_username" \
   '{username:$username,firstName:"Nombre actualizado",lastName:"Apellido actualizado"}')" "$token"
@@ -1424,8 +1466,6 @@ expected_manual_profile_sql="$manual_profile_username:Nombre actualizado:Apellid
   exit 1
 }
 
-mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" "$db_name" \
-  -e "UPDATE Users SET IsActive=1, MustChangePassword=0 WHERE Id='$manual_link_user_id';" >/dev/null
 request POST /Auth/login "$(jq -nc --arg email "$manual_link_user_email" --arg password "$manual_link_user_password" '{email:$email,password:$password}')" ""
 expect_status 200 "Iniciar sesión con cuenta Driver vinculada antes de desvincular"
 manual_link_user_token="$(jq -er '.token // .accessToken' "$work_dir/response.json")"
@@ -1462,7 +1502,8 @@ jq -e --arg userId "$manual_link_user_id" 'any(.[]; .id == $userId and .driverId
 }
 manual_unlink_sql="$(mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" "$db_name" \
   --batch --skip-column-names -e "SELECT CONCAT((SELECT LOWER(r.Name) FROM UserRoles ur JOIN Roles r ON r.Id=ur.RoleId WHERE ur.UserId='$manual_link_user_id'),':',(SELECT COUNT(*) FROM Users WHERE Id='$manual_link_user_id'),':',(SELECT COUNT(*) FROM Drivers WHERE Id='$manual_link_driver_id'),':',(SELECT COALESCE(CAST(UserId AS CHAR),'NULL') FROM Drivers WHERE Id='$manual_link_driver_id'),':',(SELECT TokenVersion FROM Users WHERE Id='$manual_link_user_id'));" )"
-[[ "$manual_unlink_sql" == "driver:1:1:NULL:2" ]] || {
+expected_manual_link_token_version=$((manual_link_token_version_before_unlink + 1))
+[[ "$manual_unlink_sql" == "driver:1:1:NULL:$expected_manual_link_token_version" ]] || {
   echo "El unlink no conservó cuenta/perfil/rol o no invalidó TokenVersion ($manual_unlink_sql)." >&2; exit 1;
 }
 

@@ -1,3 +1,8 @@
+## Desvincular User del perfil Driver — smoke HTTP activo pendiente en CI
+
+- Action `45173035947` (`fd6ad1e`) pasó build Release, **144/144 xUnit**, smoke HTTP/MySQL tenant, concurrencia, rate limit de login y cleanup. La ejecución anterior `45172421318` falló en login por precondición del fixture. La corrección crea token de activación efímero y llama `POST /Auth/activate-account` antes de autenticar, sin mutar flags de cuenta por SQL.
+- Smoke adicional local pendiente: ruta Pending debe hacer que unlink responda 409 y dejar UserId/TokenVersion/ruta/vehículo sin cambios; tras cancelar la ruta se verifica unlink exitoso, revocación de access/refresh, rol conservado y cleanup de todas las filas.
+
 # Estado vigente — 2026-11-23
 
 ## Desvincular User del perfil Driver — validación local en curso

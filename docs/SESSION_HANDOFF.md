@@ -1,3 +1,10 @@
+## Handoff vigente — desvinculación Driver y cobertura activa
+
+- Backend `fd6ad1e` Action `45173035947`: success, build Release, **144/144 xUnit**, smokes tenant/concurrencia/login rate limit y cleanup. La Action anterior `45172421318` falló porque el usuario de fixture no podía iniciar sesión; el smoke ahora activa esa cuenta mediante token de activación, por el endpoint real.
+- En el working tree Backend está ampliado `scripts/smoke-tenant-http.sh`: crea vehículo y ruta Pending asociados al Driver y comprueba que unlink devuelve 409 sin alterar UserId, TokenVersion, Route ni Vehicle; luego cancela y libera recursos antes del unlink normal. Incluye cleanup verificado Route/Vehicle/Driver/User. Aún requiere shell syntax, diff-check y Action en commit.
+- Front `a75b1da` ya tiene la función; Action `45172574266` falló 1/51 porque el test pulsó “Gestionar choferes” cuando el panel ya estaba abierto. Fix local elimina el segundo click y verifica la tarjeta actual. Docs `ERROR_LOG.md` ya registra el incidente; sincronizar status/testing/handoff/changelog, validar y publicar.
+- Cuando las dos ramas pasen Actions sobre sus commits vigentes, continuar con brecha de paginación de usuarios/conductores hallada por auditoría. No cerrar la misión global.
+
 # Handoff vigente — 2026-11-23
 
 ## Trabajo vigente — desvinculación Driver

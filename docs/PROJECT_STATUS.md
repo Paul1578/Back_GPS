@@ -1,3 +1,9 @@
+## Desvinculación User–Driver — smoke extendido en CI pendiente
+
+- La Action Backend `45173035947` sobre `fd6ad1e` pasó build Release, **144/144 xUnit**, aislamiento HTTP/MySQL, concurrencia, login/rate limit y limpieza. Corrigió el fallo anterior de login del fixture (`45172421318`) estableciendo una activación real por token, sin marcar flags directamente.
+- El smoke local en curso añade la regresión que faltaba: un `PUT /Drivers/{id}/unlink-user` responde HTTP 409 cuando hay ruta Pending; SQL confirma vínculo, TokenVersion, ruta y vehículo intactos. Después cancela ruta, libera vehículo y valida el unlink exitoso, revocación de sesiones, rol Driver y limpieza de cuatro fixtures.
+- Pendiente ejecutar `bash -n`, diff-check, publicar el cambio y obtener Action verde que incluya la nueva cobertura. No se declara cubierto el HTTP 409 hasta esa ejecución.
+
 # Estado actual de estabilización — 2026-11-23
 
 ## Desvincular cuenta del perfil Driver — implementación local en curso

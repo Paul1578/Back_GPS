@@ -1,3 +1,9 @@
+# 2026-11-23 — Smoke de desvinculación con ruta activa
+
+- El fixture manual ahora activa la cuenta usando el endpoint de activación y token efímero.
+- Se amplía el escenario HTTP/MySQL para confirmar HTTP 409 e invariancia de datos ante ruta Pending, luego cancelar/liberar recursos y comprobar limpieza completa.
+- La base validada `fd6ad1e` pasó Action `45173035947` (144/144 xUnit y smokes existentes); la nueva cobertura está pendiente de su propio Action.
+
 # 2026-11-23 — Desvincular User del perfil Driver
 
 - Añadido endpoint de desvinculación User–Driver que conserva cuenta, perfil y rol Driver, bloquea rutas activas y revoca sesiones existentes; tests focales 5/5 y suite 144/144. La Action inicial encontró precondición de activación omitida en el fixture; runner corregido y validación integrada pendiente.

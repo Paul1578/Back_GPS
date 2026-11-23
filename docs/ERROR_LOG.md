@@ -1,3 +1,9 @@
+# 2026-11-23 — Patch de documentación con contexto obsoleto — CORREGIDO
+
+- El primer parche agrupado de estado/handoff/testing/changelog no coincidió con el texto vigente de handoff y se rechazó de forma atómica; no cambió archivos. La inspección inicial también produjo una salida truncada que ocultaba los encabezados de cada documento.
+- Solución: releer encabezados puntuales y actualizar cada documento con inserción al inicio verificando por archivo.
+- Prevención: usar contexto mínimo y comprobar diff-check después de cambios documentales.
+
 # 2026-11-23 — `git diff --check` encontró línea vacía extra al final de CHANGELOG — CORREGIDO
 
 - Al registrar la corrección del estado multi-parada, una inserción sin contexto agregó el bloque de changelog al final del archivo y dejó una línea en blanco extra. `git diff --check` detectó el espacio en blanco al EOF antes del commit.

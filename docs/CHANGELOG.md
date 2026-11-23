@@ -1,3 +1,8 @@
+## 2026-11-23 — Serialización E2E validada en integración
+
+- Backend `4079ae2` añade lock MySQL por target para evitar que dos runners locales se limpien mutuamente. Suite Release local **165/165** y rechazo concurrente del runner real comprobado sin alterar datos.
+- Backend Actions [`45243805957`](https://github.com/Paul1578/Back_GPS/actions/runs/45243805957) y [`45243813554`](https://github.com/Paul1578/Back_GPS/actions/runs/45243813554) pasaron; Front integrada [`45244177166`](https://github.com/Paul1578/Front_gpsR/actions/runs/45244177166) pasó **67/67 E2E**, responsive **1/1**, audit/lint/build, backend 165/165, API/MySQL y teardown.
+
 ## 2026-11-23 — Serialización del runner E2E local
 
 - Añadido advisory lock MySQL por host/puerto/esquema para impedir limpiezas cruzadas entre ejecuciones concurrentes.

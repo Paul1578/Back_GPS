@@ -2,7 +2,8 @@
 
 - `bash -n scripts/run-e2e-local.sh`, `git diff --check` y `DOTNET_ROOT=/home/leonardo/.dotnet /home/leonardo/.dotnet/dotnet test BackEnd_Gps.sln --configuration Release --no-restore -m:1`: correctos; xUnit **165/165**.
 - Prueba read-only contra MySQL local usando `DB_USER`/`DB_PASSWORD`: conexión titular obtuvo `GET_LOCK=1`; segundo cliente sobre el mismo host/puerto/esquema obtuvo `0`. La conexión titular se cerró y el lock se liberó. No se insertaron, actualizaron ni eliminaron filas.
-- El runner no instala cleanup hasta confirmar lock; cualquier conexión fallida, rechazo o timeout termina antes de tocar fixtures. La invocación completa con otro lock titular terminó en exit 2, con el mensaje de conflicto y antes de limpieza. CI integrada pendiente para el nuevo código.
+- El runner no instala cleanup hasta confirmar lock; cualquier conexión fallida, rechazo o timeout termina antes de tocar fixtures. La invocación completa con otro lock titular terminó en exit 2, con el mensaje de conflicto y antes de limpieza.
+- Backend Actions [`45243805957`](https://github.com/Paul1578/Back_GPS/actions/runs/45243805957) y [`45243813554`](https://github.com/Paul1578/Back_GPS/actions/runs/45243813554) pasaron con el cambio. Front integrada [`45244177166`](https://github.com/Paul1578/Front_gpsR/actions/runs/45244177166): **67/67 E2E**, responsive 1/1, audit/lint/build, Release/xUnit **165/165**, API/MySQL y cleanup.
 
 ## Estado vigente — 2026-11-23 — código `cd2a512`
 

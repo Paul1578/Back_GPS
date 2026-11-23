@@ -1,8 +1,9 @@
 ## Handoff vigente — lock del runner E2E local — 2026-11-23
 
-- Rama Backend `chore/stabilize-fleet-platform`; se está trabajando encima de `cd2a512`. Se añadió `GET_LOCK` con clave derivada de host/puerto/esquema a `scripts/run-e2e-local.sh`; no activar cleanup antes de adquirirlo y mantener viva su conexión hasta terminar.
+- Rama Backend `chore/stabilize-fleet-platform`, HEAD `4079ae2`; Front `refactor/route-builder`, HEAD `b1d5924`; `main` intacta. Se añadió `GET_LOCK` con clave derivada de host/puerto/esquema a `scripts/run-e2e-local.sh`; no activar cleanup antes de adquirirlo y mantener viva su conexión hasta terminar.
 - Prueba real read-only con el DB user de aplicación: primera conexión `1`, segundo intento `0`; conexión cerrada y lock liberado. `bash -n`/`git diff --check` pasan. El cliente MariaDB exigió `--unbuffered`, y su salida se parsea por línea exacta `0`/`1`; causa y prevención documentadas en `docs/ERROR_LOG.md`.
-- El rechazo se probó invocando el runner completo mientras otro cliente tenía el lock: exit 2, mensaje esperado, sin cleanup. `dotnet test -c Release --no-restore -m:1` pasó 165/165; `bash -n` y diff-check pasan. Falta publicar y esperar Backend Actions, luego ejecutar/esperar Front integrada y registrar resultados. Mantener ramas separadas de main.
+- El rechazo se probó invocando el runner completo mientras otro cliente tenía el lock: exit 2, mensaje esperado, sin cleanup. `dotnet test -c Release --no-restore -m:1` pasó 165/165; `bash -n` y diff-check pasan. Backend Actions [`45243805957`](https://github.com/Paul1578/Back_GPS/actions/runs/45243805957) y [`45243813554`](https://github.com/Paul1578/Back_GPS/actions/runs/45243813554) pasaron. Front Action [`45244177166`](https://github.com/Paul1578/Front_gpsR/actions/runs/45244177166) pasó **67/67 E2E**, responsive, audit/lint/build, Backend 165/165 y API/MySQL/teardown.
+- Próximo: continuar los criterios globales pendientes de `docs/AUDIT_PLAN.md`; no declarar terminada la misión global por el cierre de esta fase.
 - Credencial root local persistida no coincide con `.env`; lock test funcionó con `DB_USER`/`DB_PASSWORD`. No se tocaron filas durante esa prueba.
 
 # Handoff vigente — `cd2a512` confirmación CRUD de Driver en E2E — 2026-11-23

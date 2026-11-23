@@ -5,6 +5,7 @@
 - Error durante la prueba: el cliente MariaDB local imprime avisos antes del resultado y almacena la salida del batch mientras ejecuta `SLEEP`. Leer la primera línea o no pedir salida no bufferizada producía espera/lectura incorrecta aunque el lock estuviera adquirido. Solución: `--unbuffered` y parseo exclusivo de líneas `0`/`1`.
 - Validación de concurrencia contra MySQL con credenciales DB de aplicación, sin mutar filas: primer `GET_LOCK=1`, segundo intento `GET_LOCK=0`; se liberó la conexión. `bash -n` y `git diff --check` pasan. El primer intento read-only como root recibió 1045 porque la contraseña root persistida del contenedor no coincide con `.env`; repetir con `DB_USER`/`DB_PASSWORD` pasó.
 - Prevención: serializar runners que limpian por prefijo y usar siempre el usuario de base configurado para la aplicación; no inferir éxito leyendo la primera línea de salida del cliente mysql.
+- Cierre validado: Backend Actions [`45243805957`](https://github.com/Paul1578/Back_GPS/actions/runs/45243805957) y [`45243813554`](https://github.com/Paul1578/Back_GPS/actions/runs/45243813554); integración Front [`45244177166`](https://github.com/Paul1578/Front_gpsR/actions/runs/45244177166) con **67/67 E2E** y cleanup.
 
 ## 2026-11-23 — Login E2E de cuenta invitada Logistics devolvió 401 — FIX EN VALIDACIÓN
 

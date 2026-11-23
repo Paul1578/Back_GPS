@@ -1,8 +1,8 @@
 ## Estado vigente — runner E2E serializado — 2026-11-23
 
 - `scripts/run-e2e-local.sh` adquiere lock MySQL por target antes de permitir limpieza; runner concurrente debe fallar en preflight sin borrar fixtures. El smoke read-only local probó titular `GET_LOCK=1` y segundo intento `0`, sin modificar tablas.
-- Validaciones locales: `bash -n`, `git diff --check`, lock/concurrencia read-only y suite Release xUnit **165/165** pasan. Actions que incluyan el lock aún pendientes; consultar `SESSION_HANDOFF.md`.
-- Estado previamente validado bajo esta fase: rama Backend `chore/stabilize-fleet-platform`, Front `refactor/route-builder`, `main` intacta; Front integrada 67/67 y backend Release/xUnit 165/165 en Actions anteriores.
+- Validaciones locales: `bash -n`, `git diff --check`, lock/concurrencia read-only, runner completo y suite Release xUnit **165/165** pasan. El runner completo rechazó la segunda ejecución antes de cleanup.
+- Backend commit `4079ae2`: Actions [`45243805957`](https://github.com/Paul1578/Back_GPS/actions/runs/45243805957) y [`45243813554`](https://github.com/Paul1578/Back_GPS/actions/runs/45243813554) pasaron build/tests, tenant HTTP/MySQL, concurrencia y rate limit. Front integrada [`45244177166`](https://github.com/Paul1578/Front_gpsR/actions/runs/45244177166) sobre Backend con lock pasó **67/67 E2E**, responsive **1/1**, audit/lint/build, backend Release/xUnit **165/165**, API/MySQL y teardown. Ramas Front/Backend separadas; `main` intacta.
 
 ## Estado vigente — Backend `cd2a512` — 2026-11-23
 

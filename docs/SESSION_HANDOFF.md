@@ -741,3 +741,10 @@ Errores de migración, herramientas, QA y soluciones están en `docs/ERROR_LOG.m
 
 - Front `45103134467` ejecutó 43/43 tests; cleanup produjo MySQL 1451 en `Routes.DriverId` al borrar Driver QA. El nombre de una ruta ligada no coincidía con prefijo `E2E QA ruta`.
 - Backend `cleanup-e2e.sql` corregido para borrar RoutePositions/Routes asociados por Driver QA (`DocumentNumber E2EQA%`) antes de borrar Driver. El test siguiente debe verificar cleanup en MySQL efímero. No tocar la DB local persistente.
+
+
+## Cleanup QA verificado
+
+- Backend `7ea14a6` Action `45103732510`: success build/xUnit + smoke tenant/concurrency MySQL.
+- Front `85da39c` Action `45103761122`: success, 43/43 E2E, responsive 1/1, cleanup MySQL.
+- FK restrict resuelta con limpieza por `Driver.DocumentNumber E2EQA%`. Rama limpia, no tocar main.

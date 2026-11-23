@@ -642,3 +642,9 @@ La invitación envía sólo el enlace de activación; el usuario fija su contras
 
 - Action `45103134467`: Playwright **43/43** pasó; cleanup falló con FK 1451 (`Routes.DriverId`).
 - SQL de cleanup amplió filtro a rutas por Driver QA antes de borrar Drivers. Validación integrada pendiente en DB descartable.
+
+
+## Verificación final cleanup
+
+- Front Action `45103761122`: 43/43 E2E, responsive 1/1 y cleanup MySQL success.
+- Backend Action `45103732510`: Release/xUnit y smoke tenant HTTP/MySQL/concurrencia success.

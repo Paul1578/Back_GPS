@@ -1341,3 +1341,10 @@ Cada cambio de API debe incluir validación de compilación, migraciones si apli
 - **Solución:** limpiar primero RoutePositions y Routes que coincidan con el prefijo de ruta QA o estén vinculadas a un Driver cuyo `DocumentNumber` empiece con `E2EQA`; luego eliminar Drivers/Vehicles/Users QA.
 - **Verificación:** sólo con base descartable de CI en siguiente Front Action; no ejecutar sobre la DB local persistente.
 - **Prevención:** cleanup debe contemplar FKs por ID además de los prefijos de nombre y quitar dependencias antes de eliminar entidades padre.
+
+
+## Corrección cleanup QA cerrada — 2026-11-23
+
+- Backend commit `7ea14a6` elimina posiciones y rutas ligadas a Driver QA antes de eliminar Drivers, acotado a prefijo `E2EQA`.
+- Front Action `45103761122` validó cleanup correcto en MySQL descartable tras **43/43** E2E; no se reprodujo FK 1451.
+- Backend Action `45103732510` pasó smoke HTTP/MySQL y Release/xUnit.

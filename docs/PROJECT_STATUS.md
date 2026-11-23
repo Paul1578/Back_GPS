@@ -594,3 +594,10 @@ Nota de actualización: algunos resultados históricos de registro público más
 
 - Front Action `45103134467`: **43/43 E2E** pasaron; cleanup falló con MySQL 1451 porque quedaba una ruta ligada al Driver QA bajo `ON DELETE RESTRICT`.
 - `cleanup-e2e.sql` ahora elimina posiciones y rutas por nombre QA o por `Driver.DocumentNumber LIKE 'E2EQA%'`, antes de borrar los Drivers. Repetir Front Action para comprobar cleanup en DB efímera.
+
+
+## Resultado CI de cleanup y estabilidad
+
+- Backend `7ea14a6`, Action [`45103732510`](https://github.com/Paul1578/Back_GPS/actions/runs/45103732510): Release build/xUnit, smoke tenant HTTP/MySQL y concurrencia success.
+- Front Action [`45103761122`](https://github.com/Paul1578/Front_gpsR/actions/runs/45103761122): 43/43 Playwright, responsive 1/1, cleanup MySQL success; valida backend `7ea14a6`.
+- Root cause MySQL 1451 resuelto: SQL limpia Routes/RoutePositions relacionadas por Driver QA antes de borrar Driver. Misión general sigue abierta.

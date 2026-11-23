@@ -1,5 +1,11 @@
 # Handoff vigente — 2026-11-23
 
+## Nuevo xUnit para cierre multi-parada
+
+- La cobertura real existente está en smoke HTTP/MySQL, pero los xUnit de dominio sólo ejecutaban ciclo con una parada. Añadido caso con pickup, delivery y operación combinada; bloquea cierre parcial sin cambiar estado y permite finalizar cuando cada punto tiene evidencia.
+- Verificado localmente: test enfocado **1/1**, suite Release **137/137**, build Release **0 advertencias/0 errores**. Falta ejecutar Action integrada en esta rama y anotar su resultado.
+- Front `e3e5e0e` incluye responsive de username largo validada en Action `45139564823`; Front acciones de roles/rutas listadas en el estado vigente.
+
 ## Auditoría: documentación de ciclo multi-parada corregida
 
 - Revisión read-only del Backend confirmó que el pendiente descrito más abajo estaba desactualizado: `scripts/smoke-tenant-http.sh:1140-1229` ya recorre tres paradas (pickup, delivery y ambas), guarda evidencia en cada una, completa/cierra y verifica el `PointsJson` persistido.

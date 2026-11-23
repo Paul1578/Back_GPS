@@ -71,6 +71,45 @@ public class RoutePointTests
     }
 
     [Fact]
+    public void RouteWithPickupDeliveryAndCombinedStopsRequiresEveryStopBeforeCompletion()
+    {
+        var origin = RoutePoint.Create(-0.18, -78.46, "Origen");
+        var pickup = RoutePoint.Create(-0.19, -78.47, "Recogida", RoutePointOperation.Pickup);
+        var delivery = RoutePoint.Create(-0.195, -78.475, "Entrega", RoutePointOperation.Delivery);
+        var combined = RoutePoint.Create(-0.198, -78.478, "Recogida y entrega", RoutePointOperation.PickupAndDelivery);
+        var destination = RoutePoint.Create(-0.20, -78.48, "Destino");
+        var route = RouteE.Create(Guid.NewGuid(), Guid.NewGuid(), "Ruta multi-operación", origin, destination,
+            new[] { origin, pickup, delivery, combined, destination }, null, null, null);
+
+        route.ChangeStatus(RouteStatus.InProgress);
+
+        for (var index = 1; index <= 3; index++)
+        {
+            route.UpdatePointStatus(index, RoutePointStatus.InProgress);
+            route.AddPointEvidence(index, RoutePointEvidence.Create("note", $"Operación {index} confirmada", null));
+            route.UpdatePointStatus(index, RoutePointStatus.Completed);
+
+            if (index < 3)
+            {
+                Assert.Throws<InvalidOperationException>(() => route.ChangeStatus(RouteStatus.Completed));
+                Assert.Equal(RouteStatus.InProgress, route.Status);
+            }
+        }
+
+        route.ChangeStatus(RouteStatus.Completed);
+
+        Assert.Equal(RouteStatus.Completed, route.Status);
+        Assert.Equal(
+            new[] { RoutePointOperation.Pickup, RoutePointOperation.Delivery, RoutePointOperation.PickupAndDelivery },
+            route.Points.Skip(1).Take(3).Select(point => point.Operation));
+        Assert.All(route.Points.Skip(1).Take(3), point =>
+        {
+            Assert.Equal(RoutePointStatus.Completed, point.Status);
+            Assert.Single(point.Evidence);
+        });
+    }
+
+    [Fact]
     public void PointStatusTransitionMustBeOperationalAndValid()
     {
         var route = CreateRoute();

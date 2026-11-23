@@ -4,6 +4,12 @@
 - Solución: mover la entrada al inicio de `CHANGELOG.md` y normalizar el archivo a una sola nueva línea final; confirmar con `git diff --check`.
 - Prevención: aplicar cambios de documentación con contexto de encabezado explícito y ejecutar `git diff --check` inmediatamente después de cada parche.
 
+## 2026-11-23 — Primera búsqueda del agregado usó nombre de archivo/clase incorrecto — RESUELTO
+
+- Una búsqueda intentó abrir `fletflow/Domain/Fleet/Entities/RouteE.cs`; el archivo real se llama `Route.cs` y contiene la entidad `RouteE`. No hubo edición ni efecto de prueba.
+- Solución: localizar fuente con `rg --files fletflow/Domain` y usar `Route.cs`.
+- Prevención: distinguir nombre de clase del nombre del archivo y resolver rutas antes de `sed`/`rg` con ruta literal.
+
 # 2026-11-22 — Fixture del E2E Manager mapa compartía rol y no se limpiaba tras timeout — CORREGIDO LOCALMENTE
 
 - Front Actions `45084368342`/`45084699175` pasaron 38/39; el único fallo fue el E2E de mapa que reutilizaba una cuenta Driver, cambiaba su rol y podía expirar antes de restaurarlo. El siguiente retry veía `Manager` y fallaba esperando `Driver`; también quedaban ruta y vehículo QA.

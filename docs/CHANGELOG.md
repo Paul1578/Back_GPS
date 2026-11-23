@@ -4,6 +4,10 @@
 - Se confirmó también el flujo Driver de dos paradas con nota/foto, evidencia obligatoria, cierre e Historial en Front Action `45131410815` (51/51).
 - Sin cambios de código ni base de datos.
 
+# 2026-11-23 — xUnit de dominio para múltiples operaciones en una ruta
+
+- Añadido ciclo con pickup, delivery y PickupAndDelivery, evidencia individual, rechazo de cierre incompleto y cierre válido. Test focalizado **1/1**, suite Release **137/137** y build Release **0 advertencias/0 errores**; Action integrada de la rama pendiente.
+
 # 2026-11-22 — Serializar edición Driver y asignación Vehicle
 
 - `UpdateDriverCommand` comparte lock de asignación, vuelve a leer Driver bajo transacción y revierte si falla una validación/escritura.

@@ -1,5 +1,13 @@
 # Estado vigente — 2026-11-23
 
+## xUnit de dominio — ciclo multi-parada
+
+- Nuevo caso `RouteWithPickupDeliveryAndCombinedStopsRequiresEveryStopBeforeCompletion`: completa pickup, delivery y PickupAndDelivery con evidencia; intenta cerrar temprano y verifica que la ruta siga InProgress; después de cerrar las tres, completa la ruta.
+- Test focalizado: **1/1 pasó** con `dotnet test BackEnd_Gps.sln --configuration Release --filter 'FullyQualifiedName~RouteWithPickupDeliveryAndCombinedStopsRequiresEveryStopBeforeCompletion'`.
+- Suite completa: **137/137 pasó** con `dotnet test BackEnd_Gps.sln --configuration Release`.
+- Build Release: **0 advertencias, 0 errores** con `dotnet build BackEnd_Gps.sln --configuration Release --no-restore`.
+- Action integrada HTTP/MySQL sobre la rama de trabajo pendiente.
+
 ## Fixture de Admin delegado real para E2E Front
 
 - `scripts/run-e2e-local.sh` crea un Admin delegado aleatorio bajo el tenant QA, lo habilita y exporta su correo/clave/ID al spec. La limpieza ya incluye el prefijo `fletflow.e2e.admin.*`.

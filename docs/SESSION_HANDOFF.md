@@ -855,3 +855,9 @@ Errores de migración, herramientas, QA y soluciones están en `docs/ERROR_LOG.m
 - Backend `7ea14a6` Action `45103732510`: success build/xUnit + smoke tenant/concurrency MySQL.
 - Front `85da39c` Action `45103761122`: success, 43/43 E2E, responsive 1/1, cleanup MySQL.
 - FK restrict resuelta con limpieza por `Driver.DocumentNumber E2EQA%`. Rama limpia, no tocar main.
+
+## Continuación — resultado de persistencia de rutas — 2026-11-23
+
+- Backend HEAD de código `f49ee13`; Action [45153378636](https://github.com/Paul1578/Back_GPS/actions/runs/45153378636) success: Release, xUnit **139/139**, tenant HTTP/MySQL, concurrencia de rutas, login rate limit Staging y limpieza.
+- La baja se validó por GET, listado activo y SQL; carrera de UpdateRoute comprobó ruta ganadora/perdedora y asociaciones persistidas. La promoción de Admin sigue root-only.
+- Próximo: validar Front Action `45153408262`; mantener misión abierta y retomar pendientes CRUD/roles/responsive desde este handoff.

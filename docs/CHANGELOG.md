@@ -574,3 +574,8 @@
 - Smoke concurrente de UpdateRoute valida la pareja ganadora/perdedora y asignación de Driver por HTTP+SQL.
 - Smoke de DeleteRoute valida baja cancelada por GET, listado activo y MySQL.
 - CI Backend ahora ejecuta smokes tenant y concurrencia con API/MySQL descartables en pushes a la rama de estabilización.
+
+## 2026-11-23 — Validación de edición y baja lógica de rutas
+
+- Action Backend [45153378636](https://github.com/Paul1578/Back_GPS/actions/runs/45153378636) pasó con 139/139 xUnit, Release, smokes tenant/concurrencia HTTP/MySQL, rate limit y cleanup.
+- La cobertura ahora comprueba persistencia de la edición concurrente ganadora/perdedora y de la baja lógica vía API, listado y MySQL.

@@ -1,5 +1,14 @@
 # Handoff — 2026-11-22
 
+## Estado vigente — 2026-11-23
+
+- HEAD Backend `9fb418b` (`chore/stabilize-fleet-platform`) y Front `5784b36` (`refactor/route-builder`), ramas separadas de `main`.
+- Action Backend `45088129188` pasó Release build (0 warnings/0 errors), xUnit 113/113, aislamiento/permisos y perfil HTTP/MySQL, concurrencia y cleanup. La repetición docs `45088881490` pasó también.
+- Política Admin decidida por usuario y validada: sólo cuenta raíz puede crear/promover Admin. El primer Action `45087881487` falló porque el POST de fixture omitió Password; corregido y registrado en `ERROR_LOG.md`.
+- Front corrigió UX de rol root-only. Acción Front `45088879212` comprueba SHA `5784b36`, previo al test E2E delegado agregado después; suite local actual 40 tests descubiertos, spec `team-management-load-errors` 10/10.
+- Siguiente paso: publicar el E2E delegado de alta/promoción, esperar CI integrada, registrar resultados; luego seguir matriz CRUD/responsive alcanzable.
+- Misión sigue abierta. SMTP requiere credenciales externas; Data Protection PFX/key ring requiere infraestructura persistente; app móvil nativa aplazada.
+
 ## Estado vigente — actualización concurrente Driver
 
 - Rama backend `chore/stabilize-fleet-platform`; Front `refactor/route-builder`; no tocar main.

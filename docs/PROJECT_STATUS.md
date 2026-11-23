@@ -1,4 +1,9 @@
-# Estado actual de estabilización — 2026-11-22
+# Estado actual de estabilización — 2026-11-23
+
+- HEAD backend `9fb418b` en `chore/stabilize-fleet-platform`; Front relacionado `5784b36` en `refactor/route-builder`; ambas ramas, `main` intacta.
+- Política confirmada por el usuario: sólo la cuenta raíz puede crear/promover Admin. Action backend `45088129188` pasó la política y edición/sincronización de perfil vía HTTP/MySQL, xUnit 113/113, Release build limpio, concurrencia y cleanup. Action `45088881490` también pasó para el commit documental.
+- Front ocultó “Gerente” (rol Admin API) para Admin delegado; lint/build local pasan, y el spec de equipo pasa 10/10. Un E2E nuevo contrasta root/delegado y espera Action en el SHA siguiente.
+- La misión permanece abierta por cobertura CRUD/responsive y configuración externa de producción. Móvil nativo aplazado; SMTP real requiere credenciales vigentes.
 
 - Corregida posible actualización perdida entre edición del perfil Driver y asignación Vehicle: el comando de edición bloquea/relee la fila antes de guardar. Release xUnit **113/113** local y Action `45084368819` success, incluida regresión interleaving y smoke HTTP/MySQL.
 - Runner actualizado para exportar el UserId requerido por el nuevo E2E Manager mapa; `bash -n` y diff-check pasan, Action Backend `45084501616` success. La Action Front debe confirmar que el escenario no figure skipped.
@@ -7,10 +12,10 @@
 - Runner `2619531` entrega ahora un sufijo estable al E2E Manager para que Playwright limpie los mismos fixtures después de un reinicio de worker; `bash -n` y diff-check pasan, Action de integración posterior pendiente.
 - El E2E anterior Front `45085920993` completó **39/39** y responsive **1/1**, pero aún usó el sufijo UUID. Runner actualizado en `2619531` pasó Action Backend `45086298118`; Front `104723a` repetirá el caso con sufijo compartido.
 - Auditoría retiró `RoutesPRUEBAController`, que devolvía texto estático sin consumidores; Action `45086663424` validó HTTP 404 con token válido, build/xUnit, aislamiento tenant, concurrencia y cleanup.
-- Política producto ahora definida: sólo la cuenta raíz otorga rol Admin. Las rutas Users validan actor raíz y el smoke comprueba creación/promoción permitida y tres denegaciones de Admin delegado; xUnit/CI pendiente.
-- El smoke amplía el perfil User: actualización HTTP exitosa, respuesta GET y sincronización/persistencia MySQL del Driver enlazado; CI pendiente.
+- Política producto definida y validada: sólo cuenta raíz otorga Admin. Action `45088129188` probó creación/promoción permitida, tres denegaciones a delegado y no mutación SQL.
+- El smoke de perfil User pasó HTTP/MySQL: actualización, GET y sincronización persistida con Driver enlazado. Resultado en Action `45088129188`.
 - Front Actions `45082924174` (un worker) y `45083215716` detectaron la escritura perdida, y dos aserciones UI/E2E ya corregidas en rama Front. Ver `ERROR_LOG.md` en ambos repos.
-- Ramas: `chore/stabilize-fleet-platform` y Front `refactor/route-builder`; main intacta. Misión abierta por cobertura CRUD/roles/responsive, decisiones Admin delegado y User↔Driver, SMTP externo y móvil nativo aplazado.
+- Ramas: `chore/stabilize-fleet-platform` y Front `refactor/route-builder`; main intacta. Misión abierta por cobertura CRUD/roles/responsive y SMTP externo; móvil nativo aplazado.
 
 ## Evidencia obligatoria para estados terminales — validado localmente y en CI
 

@@ -1,3 +1,9 @@
+## Revisión de autorización/tenant read-only — 2026-11-23
+
+- HEAD revisado: `chore/stabilize-fleet-platform` `4993e3c`; sin modificaciones ni pruebas en ese pase. Roles de Users, Drivers y Routes y las reglas de unlink coinciden estáticamente con las decisiones de producto.
+- `OwnerUserId IS NULL` define root para claims y endpoints Admin; un delegado legado con owner nulo sería riesgoso, pero no hay evidencia actual de ese registro y el supuesto ya está documentado en `docs/SECURITY.md`. Validar únicamente con consulta agregada read-only antes de diseñar una migración.
+- Actions recientes del HEAD: Release/xUnit 165/165, migración tenant desechable, SQL-like HTTP/MySQL, concurrencia y rate limit [`45254278511`](https://github.com/Paul1578/Back_GPS/actions/runs/45254278511), [`45254291858`](https://github.com/Paul1578/Back_GPS/actions/runs/45254291858).
+
 ## Trabajo actual — upgrade histórico ownership / seguridad de filtros — 2026-11-23
 
 - Rama Backend `chore/stabilize-fleet-platform`; nunca modificar `main`.

@@ -1,3 +1,9 @@
+## Auditoría de roles y cuentas raíz — 2026-11-23
+
+- Revisión estática read-only de HEAD `4993e3c` contrastó `UserController`, `DriversController`, `RoutesController` y unlink con las reglas vigentes. La creación/promoción Admin se limita a la cuenta identificada como raíz; Manager/Admin manejan Drivers; rutas administrativas permiten Admin/Manager/Logistics; unlink rechaza rutas Pending/InProgress y conserva cuenta/rol Driver.
+- Riesgo de datos heredados: JWT/root checks infieren raíz desde `OwnerUserId IS NULL` (documentado en `docs/SECURITY.md`). Un Admin delegado con owner nulo podría obtener autoridad raíz, pero la auditoría no confirmó que exista tal registro ni que el flujo vigente lo genere. La base histórica descrita tiene las cuentas nulas registradas como roots. No se hizo cambio de código sin evidencia de un estado inválido.
+- Esta revisión fue estática; la evidencia dinámica vigente permanece en xUnit 165/165 y smokes HTTP/MySQL de Actions [`45254278511`](https://github.com/Paul1578/Back_GPS/actions/runs/45254278511) y [`45254291858`](https://github.com/Paul1578/Back_GPS/actions/runs/45254291858).
+
 ## Estado vigente — runner E2E serializado — 2026-11-23
 
 - `scripts/run-e2e-local.sh` adquiere lock MySQL por target antes de permitir limpieza; runner concurrente debe fallar en preflight sin borrar fixtures. El smoke read-only local probó titular `GET_LOCK=1` y segundo intento `0`, sin modificar tablas.

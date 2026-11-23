@@ -66,6 +66,14 @@ namespace fletflow.Api.Controllers
             return userId;
         }
 
+        private bool IsCurrentAccountRoot()
+        {
+            var currentUserClaim = User.FindFirstValue(ClaimTypes.NameIdentifier) ??
+                                   User.FindFirstValue("nameid");
+            return Guid.TryParse(currentUserClaim, out var currentUserId) &&
+                   currentUserId == GetCurrentOwnerId();
+        }
+
         private async Task<bool> BelongsToCurrentOwner(Guid userId)
         {
             var ownerId = GetCurrentOwnerId();
@@ -140,11 +148,17 @@ namespace fletflow.Api.Controllers
         [HttpPut("{id:guid}/role")]
         public async Task<IActionResult> ChangeRole(Guid id, [FromBody] ChangeUserRoleRequest request)
         {
+            if (string.IsNullOrWhiteSpace(request.RoleName))
+                return BadRequest("El rol es obligatorio.");
+            var roleName = request.RoleName.Trim();
+            if (string.Equals(roleName, "Admin", StringComparison.OrdinalIgnoreCase) &&
+                !IsCurrentAccountRoot())
+                return Forbid();
             if (id == GetCurrentOwnerId())
                 return BadRequest("No se puede cambiar el rol del propietario de la empresa.");
             if (!await BelongsToCurrentOwner(id)) return NotFound();
-            await _changeUserRoleCommand.Execute(id, request.RoleName);
-            return Ok(new { message = "Rol actualizado", userId = id, role = request.RoleName });
+            await _changeUserRoleCommand.Execute(id, roleName);
+            return Ok(new { message = "Rol actualizado", userId = id, role = roleName });
         }
 
         /// <summary>
@@ -157,11 +171,17 @@ namespace fletflow.Api.Controllers
         [HttpPost("{id:guid}/roles/{name}")]
         public async Task<IActionResult> AssignRole(Guid id, string name)
         {
+            if (string.IsNullOrWhiteSpace(name))
+                return BadRequest("El rol es obligatorio.");
+            var roleName = name.Trim();
+            if (string.Equals(roleName, "Admin", StringComparison.OrdinalIgnoreCase) &&
+                !IsCurrentAccountRoot())
+                return Forbid();
             if (id == GetCurrentOwnerId())
                 return BadRequest("No se pueden modificar los roles del propietario de la empresa.");
             if (!await BelongsToCurrentOwner(id)) return NotFound();
-            await _changeUserRoleCommand.Execute(id, name);
-            return Ok(new { message = "Rol actualizado", userId = id, role = name });
+            await _changeUserRoleCommand.Execute(id, roleName);
+            return Ok(new { message = "Rol actualizado", userId = id, role = roleName });
         }
 
         /// <summary>
@@ -214,6 +234,9 @@ namespace fletflow.Api.Controllers
                 return BadRequest("El rol solicitado no está permitido.");
 
             var ownerId = GetCurrentOwnerId();
+            if (request.RoleName.Trim().Equals("Admin", StringComparison.OrdinalIgnoreCase) &&
+                !IsCurrentAccountRoot())
+                return Forbid();
             var isDriver = request.RoleName.Trim().Equals("Driver", StringComparison.OrdinalIgnoreCase);
             if (isDriver && (string.IsNullOrWhiteSpace(request.DocumentNumber) ||
                              string.IsNullOrWhiteSpace(request.PhoneNumber)))

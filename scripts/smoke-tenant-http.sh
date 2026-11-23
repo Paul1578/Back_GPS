@@ -51,6 +51,7 @@ driver_id=""
 other_tenant_email=""
 other_tenant_member_email=""
 restricted_user_email=""
+delegated_admin_email=""
 duplicate_email_race=""
 deactivated_user_email=""
 inactive_driver_user_email=""
@@ -174,6 +175,9 @@ cleanup() {
     fi
     if [[ -n "$restricted_user_email" ]]; then
       sql+=" SET @qa_user_id=(SELECT Id FROM Users WHERE Email='$restricted_user_email'); DELETE FROM RefreshTokens WHERE UserId=@qa_user_id; DELETE FROM PasswordResetTokens WHERE UserId=@qa_user_id; DELETE FROM UserRoles WHERE UserId=@qa_user_id; DELETE FROM Users WHERE Id=@qa_user_id;"
+    fi
+    if [[ -n "$delegated_admin_email" ]]; then
+      sql+=" SET @qa_user_id=(SELECT Id FROM Users WHERE Email='$delegated_admin_email'); DELETE FROM RefreshTokens WHERE UserId=@qa_user_id; DELETE FROM PasswordResetTokens WHERE UserId=@qa_user_id; DELETE FROM UserRoles WHERE UserId=@qa_user_id; DELETE FROM Users WHERE Id=@qa_user_id;"
     fi
     if [[ -n "$activation_user_email" ]]; then
       sql+=" SET @qa_user_id=(SELECT Id FROM Users WHERE Email='$activation_user_email'); DELETE FROM EmailOutbox WHERE UserId=@qa_user_id; DELETE FROM RefreshTokens WHERE UserId=@qa_user_id; DELETE FROM PasswordResetTokens WHERE UserId=@qa_user_id; DELETE FROM UserRoles WHERE UserId=@qa_user_id; DELETE FROM Users WHERE Id=@qa_user_id;"
@@ -322,6 +326,23 @@ cleanup() {
         status=1
       elif [[ "$manual_link_cleanup_remaining" == "0:0" ]]; then
         echo "Cleanup verificado: cero Driver/User del vínculo manual." >&2
+      fi
+    fi
+    if [[ -n "$delegated_admin_email" ]]; then
+      local delegated_admin_cleanup_remaining
+      delegated_admin_cleanup_remaining="$(mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" \
+        --batch --skip-column-names "$db_name" \
+        -e "SELECT COUNT(*) FROM Users WHERE Email='$delegated_admin_email';" 2>"$work_dir/delegated_admin_cleanup_verify.stderr")" || {
+        echo "No se pudo verificar cleanup del Admin delegado QA." >&2
+        cat "$work_dir/delegated_admin_cleanup_verify.stderr" >&2
+        status=1
+        delegated_admin_cleanup_remaining="unknown"
+      }
+      if [[ "$delegated_admin_cleanup_remaining" != "0" && "$delegated_admin_cleanup_remaining" != "unknown" ]]; then
+        echo "Cleanup dejó $delegated_admin_cleanup_remaining cuenta(s) Admin delegado." >&2
+        status=1
+      elif [[ "$delegated_admin_cleanup_remaining" == "0" ]]; then
+        echo "Cleanup verificado: cero cuentas Admin delegado de prueba." >&2
       fi
     fi
   fi
@@ -1179,6 +1200,41 @@ other_tenant_root_id="$(mysql --protocol=TCP --host="$mysql_host" --port="$mysql
   echo "No se encontraron las cuentas raíz/miembro QA para probar aislamiento de usuarios." >&2
   exit 1
 }
+
+# Only the account that owns this tenant may create or promote an Admin.
+delegated_admin_email="fletflow.e2e.admin.delegated.$suffix@example.test"
+delegated_admin_password="$(openssl rand -hex 24)"
+request POST /Users "$(jq -nc --arg email "$delegated_admin_email" --arg password "$delegated_admin_password" --arg username "E2E delegated Admin $suffix" '{username:$username,email:$email,password:$password,roleName:"Admin"}')" "$token"
+expect_status 200 "La cuenta raíz puede crear un Admin delegado"
+delegated_admin_id="$(jq -er '.id' "$work_dir/response.json")"
+mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" "$db_name" \
+  -e "UPDATE Users SET IsActive=1, MustChangePassword=0 WHERE Id='$delegated_admin_id';" >/dev/null
+request POST /Auth/login "$(jq -nc --arg email "$delegated_admin_email" --arg password "$delegated_admin_password" '{email:$email,password:$password}')" ""
+expect_status 200 "Login del Admin delegado QA"
+delegated_admin_token="$(jq -er '.token // .accessToken' "$work_dir/response.json")"
+
+denied_admin_email="fletflow.e2e.admin.denied.$suffix@example.test"
+request POST /Users "$(jq -nc --arg email "$denied_admin_email" --arg username "E2E Admin denegado $suffix" '{username:$username,email:$email,roleName:"Admin"}')" "$delegated_admin_token"
+expect_status 403 "Admin delegado no puede crear otro Admin"
+request PUT "/Users/$restricted_user_id/role" '{"roleName":"Admin"}' "$delegated_admin_token"
+expect_status 403 "Admin delegado no puede promover a otro usuario a Admin"
+request POST "/Users/$restricted_user_id/roles/Admin" "" "$delegated_admin_token"
+expect_status 403 "El alias de roles tampoco permite a un Admin delegado otorgar Admin"
+delegated_admin_policy_state="$(mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" "$db_name" \
+  --batch --skip-column-names -e "SELECT CONCAT((SELECT LOWER(r.Name) FROM UserRoles ur JOIN Roles r ON r.Id=ur.RoleId WHERE ur.UserId='$delegated_admin_id'), ':', (SELECT CAST(OwnerUserId AS CHAR) FROM Users WHERE Id='$delegated_admin_id'), ':', (SELECT LOWER(r.Name) FROM UserRoles ur JOIN Roles r ON r.Id=ur.RoleId WHERE ur.UserId='$restricted_user_id'), ':', (SELECT COUNT(*) FROM Users WHERE Email='$denied_admin_email'));")"
+expected_delegated_admin_policy_state="admin:$root_user_id:user:0"
+[[ "$delegated_admin_policy_state" == "$expected_delegated_admin_policy_state" ]] || {
+  echo "El límite de Admin raíz mutó privilegios o creó cuenta rechazada (esperado $expected_delegated_admin_policy_state, recibido $delegated_admin_policy_state)." >&2
+  exit 1
+}
+
+request PUT "/Users/$restricted_user_id/role" '{"roleName":"Admin"}' "$token"
+expect_status 200 "La cuenta raíz puede promover un miembro a Admin"
+root_promoted_role="$(mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" "$db_name" \
+  --batch --skip-column-names -e "SELECT LOWER(r.Name) FROM UserRoles ur JOIN Roles r ON r.Id=ur.RoleId WHERE ur.UserId='$restricted_user_id';")"
+[[ "$root_promoted_role" == "admin" ]] || { echo "La promoción desde la cuenta raíz no persistió en MySQL." >&2; exit 1; }
+request PUT "/Users/$restricted_user_id/role" '{"roleName":"User"}' "$token"
+expect_status 200 "La cuenta raíz puede revertir la promoción de prueba"
 
 manual_link_user_email="fletflow.e2e.manual-driver-link.$suffix@example.test"
 manual_link_driver_document="MANUAL${suffix: -9}"

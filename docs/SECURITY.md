@@ -46,7 +46,7 @@ Los hallazgos anteriores de roles públicos, logs con tokens, CORS abierto, recu
 - Auditoría estática independiente confirmó que el endpoint exige Admin, limita el miembro al tenant, bloquea editar cuenta raíz, valida campos a 100 caracteres y no expone hash/token.
 - No se encontró IDOR directo por este endpoint. Como defensa en profundidad, `UpdateUserProfileCommand` ahora exige `CurrentOwnerUserId` y filtra tanto usuario como Driver asociado por propietario.
 - xUnit verifica sync de nombres User/Driver y rechazo cross-tenant. Actions `45007491905` pasó 64/64 y smoke HTTP/MySQL valida máximos de username, FirstName y LastName; cleanup exitoso.
-- Hallazgo aún abierto de política: cualquier Admin actual puede asignar el rol Admin a otro miembro de su mismo tenant (y potencialmente a sí mismo); no se cambió el comportamiento hasta definir si sólo la cuenta raíz puede otorgarlo.
+- Política definida por el usuario: sólo la cuenta raíz puede crear o promover miembros a Admin. La verificación compara el ID autenticado con el `owner_id` firmado; las rutas de creación, cambio de rol y alias responden 403 a Admin delegado.
 
 ## Cobertura verificada — 2026-11-21
 
@@ -159,7 +159,7 @@ El smoke anónimo solicitó rol Admin en el registro; la fila persistida conserv
 
 ## Hallazgos de autorización aún abiertos
 
-- Un Admin delegado puede crear o promover otros Admin dentro de su tenant. La implementación está aislada por propietario y no se encontró IDOR, pero falta definir si este permiso debe quedar reservado a la cuenta raíz. No cambiar hasta resolver política de producto.
+- La política de otorgamiento de Admin quedó definida: sólo cuenta raíz. El smoke HTTP/MySQL cubre creación/promoción permitidas desde raíz y las tres operaciones denegadas para Admin delegado, incluyendo ausencia de filas/cambios en SQL.
 - La clave/contraseña PFX y el volumen persistente cifrado deben provisionarse por el entorno de despliegue; no hay material de producción disponible en el repositorio para validar su instalación.
 - Verificación local fail-fast: con entorno `Production`, key ring configurado y certificado ausente, el proceso se negó a iniciar con mensaje explícito; no llegó a conectarse a DB ni creó core file en el repositorio.
 - Validación remota `45037399332` sobre `94c3e90`: build limpio, 85/85 xUnit, aislamiento/roles y ciclo de flota HTTP/MySQL, smoke concurrente y cleanup correctos. La configuración productiva con certificado real continúa pendiente de secretos/infraestructura de despliegue.

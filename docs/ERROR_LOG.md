@@ -18,6 +18,13 @@
 - Validación: Action `45086663424` pasó el smoke con HTTP 404, Release/xUnit, aislamiento tenant y concurrencia; build local con cero warnings/errors.
 - Prevención: no dejar endpoints de prueba/debug en el ensamblado API publicado; comprobar en HTTP que la ruta está ausente.
 
+## 2026-11-23 — Admin delegado podía crear o promover otros Admin — CORREGIDO LOCALMENTE; CI PENDIENTE
+
+- El endpoint limitaba el miembro al mismo tenant, pero cualquier Admin del equipo podía otorgar el máximo rol mediante POST `/Users`, PUT `/{id}/role` o el alias POST `/{id}/roles/Admin`.
+- El usuario definió que sólo la cuenta raíz de la empresa puede hacerlo. Backend compara el ID autenticado con el `owner_id` firmado; Admin delegado recibe 403. El smoke verifica allow root, deny delegado y snapshots/persistencia MySQL.
+- La primera compilación del cambio reportó dos CS8604 porque los DTO/parámetros de rol podían ser null antes de llamar al comando. Se añadieron validaciones 400 para rol vacío y se pasa un nombre normalizado no nulo; repetir Release build para confirmar 0 warnings.
+- Prevención: las políticas de privilegios se comprueban en el backend para cada alias de endpoint; no asumir que validar sólo tenant basta para autorización por jerarquía.
+
 # 2026-11-22 — Runner no exponía UserId requerido por E2E Manager de mapa — CORREGIDO LOCALMENTE
 
 - La prueba Manager del Front necesita la cuenta Driver de QA para cambiar temporalmente su rol y validar mapa/ruta como Manager. El runner sólo exportaba `FLETFLOW_E2E_DRIVER_ID`; el test también requiere el `UserId` de la cuenta, por lo que habría quedado en skipped aunque la suite figurase verde.

@@ -559,7 +559,7 @@ Nota de actualización: algunos resultados históricos de registro público más
 ## Ciclo multi-parada — validación local 2026-11-23
 
 - `scripts/smoke-tenant-http.sh` amplía el caso Logistics a cinco puntos: origen, recogida, entrega, parada combinada y destino. Verifica estados y evidencia persistidos en cada operación, GPS, cierre de ruta y vehículo Available.
-- Build Release y smoke API/MySQL 8 desechables pasan localmente; cleanup confirma fixtures removidos. Action CI pendiente de publicar el cambio.
+- Build Release y smoke API/MySQL 8 desechables pasan localmente; Action `45093565790` también ejecutó el smoke actualizado y limpió fixtures.
 - Se mantiene pendiente la política de rutas sin operaciones, consultada al usuario.
 
 - Suite xUnit local con `/home/leonardo/.dotnet/dotnet test BackEnd_Gps.sln -c Release --no-restore -m:1`: **113/113**, 0 fallidas/omitidas. El primer intento apuntó al nombre supuesto `fletflow.sln` y falló por archivo inexistente; corregido al usar la solución real `BackEnd_Gps.sln`.

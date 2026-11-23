@@ -1304,3 +1304,10 @@ Cada cambio de API debe incluir validación de compilación, migraciones si apli
 - **Causa:** el repositorio organiza las capas bajo `fletflow/Api` y `fletflow/Aplication`.
 - **Solución:** enumerar carpetas, reubicar las búsquedas y completar revisión read-only; no hubo cambios de datos/código por este error.
 - **Prevención:** verificar estructura real antes de inferir rutas a partir del documento de misión.
+
+# 2026-11-23 — Clasificación inicial errónea del alcance de smoke CI — CORREGIDA
+
+- **Síntoma:** el handoff afirmaba que la Action backend no ejecutaba la cobertura Logistics multi-parada recién añadida.
+- **Causa:** se infirió el alcance desde el nombre del step de GitHub Actions sin abrir el log del comando ejecutado.
+- **Solución:** inspeccionar `gh run view 45093565790 --log`; confirmó `bash scripts/smoke-tenant-http.sh` sobre `e678e6c` y el resultado de Logistics con recogida/entrega, evidencia/GPS y cleanup. Se corrigieron PROJECT_STATUS, TESTING y SESSION_HANDOFF.
+- **Prevención:** confirmar el comando/trace del job antes de declarar que un escenario quedó fuera de CI.

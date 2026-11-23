@@ -1,3 +1,12 @@
+## Upgrade histórico de ownership y filtros SQL-like — validado localmente
+
+- `bash scripts/smoke-tenant-migration.sh` ejecuta dos escenarios contra MySQL 8 en contenedor efímero: migración legacy válida hasta `TenantFleetOwnership` y ruta con recursos de distintos owners que debe detenerse antes de DDL.
+- Resultado: vehículo sin Driver asignado al Admin raíz más antiguo; Vehicle/Driver/Route conservados con owner; escenario discordante rechazado, sin OwnerUserId ni actualización de historial y con filas legacy intactas. El contenedor se eliminó al finalizar.
+- El primer intento cargó por error `.env` del checkout y revirtió migraciones de la DB local. Se restauró y una comprobación sólo lectura verificó historial `20261123132833_GuardDiscordantRouteOwnership`, 5 Users, 0 Routes, 1 Vehicle, 0 Drivers, cero owners nulos/rutas discordantes y el owner del vehículo esperado. La prevención quedó incorporada al script: copia temporal sin `.env*`, EF sólo dentro de esa copia y MySQL aislado. Detalle en `ERROR_LOG.md`.
+- El fixture inicialmente omitía `Routes.PointsJson`; se agregó el valor `'[]'` y la repetición completa pasó.
+- `scripts/smoke-tenant-http.sh` ahora envía payload SQL-like en la búsqueda paginada de Users y Drivers y valida 200 con cero resultados y sin datos de otro tenant. `bash -n`, `git diff --check`, Release build (0 warnings/0 errors) y smoke HTTP/MySQL descartable pasaron. La integración CI del nuevo smoke sigue pendiente.
+- CI debe ejecutar `bash scripts/smoke-tenant-migration.sh` desde checkout `Back_GPS`; falta resultado integrado.
+
 ## Bloqueo concurrente del runner E2E — 2026-11-23
 
 - `bash -n scripts/run-e2e-local.sh`, `git diff --check` y `DOTNET_ROOT=/home/leonardo/.dotnet /home/leonardo/.dotnet/dotnet test BackEnd_Gps.sln --configuration Release --no-restore -m:1`: correctos; xUnit **165/165**.

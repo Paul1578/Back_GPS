@@ -1,3 +1,10 @@
+## 2026-11-23 — Pruebas de upgrade histórico y filtros seguros
+
+- Se incorpora `scripts/smoke-tenant-migration.sh`: arranca MySQL efímero, actualiza un esquema legacy hasta `TenantFleetOwnership`, verifica owners/datos y prueba rechazo de rutas discordantes antes de DDL.
+- El script aísla `dotnet ef` en una copia temporal sin `.env` para evitar que configuración local redirija migraciones a una base persistente.
+- Smoke HTTP cubre payloads SQL-like en las búsquedas paginadas de Users y Drivers, validando aislamiento tenant.
+- La base local afectada durante el primer ensayo fue restaurada y verificada en modo lectura; incidencia y evidencia están en `ERROR_LOG.md`.
+
 ## 2026-11-23 — Serialización E2E validada en integración
 
 - Backend `4079ae2` añade lock MySQL por target para evitar que dos runners locales se limpien mutuamente. Suite Release local **165/165** y rechazo concurrente del runner real comprobado sin alterar datos.

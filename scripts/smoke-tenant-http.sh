@@ -1619,6 +1619,16 @@ request GET "/Users/my-team/page?page=1&pageSize=1&search=$other_tenant_member_e
 expect_status 200 "Aislar búsqueda paginada de usuarios entre tenants"
 jq -e '.totalCount == 0 and (.items | length) == 0' "$work_dir/response.json" >/dev/null \
   || { echo "La búsqueda paginada expuso un miembro de tenant B a tenant A." >&2; cat "$work_dir/response.json" >&2; exit 1; }
+sql_injection_search="$(jq -nr --arg value "%' OR 1=1 -- " '$value | @uri')"
+request GET "/Users/my-team/page?page=1&pageSize=100&search=$sql_injection_search" "" "$token"
+expect_status 200 "Tratar payload SQL-injection-like como texto en Users paginados"
+jq -e --arg foreignUserId "$other_tenant_member_id" \
+  '.totalCount == 0 and (.items | length) == 0 and all(.items[]; .id != $foreignUserId)' \
+  "$work_dir/response.json" >/dev/null || {
+  echo "El filtro paginado de Users interpretó el payload SQL o expuso datos entre tenants." >&2
+  cat "$work_dir/response.json" >&2
+  exit 1
+}
 user_scope_after="$(mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" "$db_name" \
   --batch --skip-column-names -e "SELECT CONCAT(COALESCE((SELECT CAST(OwnerUserId AS CHAR) FROM Users WHERE Id='$root_user_id'),'NULL'), ':', COALESCE((SELECT CAST(OwnerUserId AS CHAR) FROM Users WHERE Id='$restricted_user_id'),'NULL'), ':', COALESCE((SELECT CAST(OwnerUserId AS CHAR) FROM Users WHERE Id='$other_tenant_root_id'),'NULL'), ':', COALESCE((SELECT CAST(OwnerUserId AS CHAR) FROM Users WHERE Id='$other_tenant_member_id'),'NULL'));")"
 [[ "$user_scope_after" == "$user_scope_before" ]] || {
@@ -1906,6 +1916,15 @@ request GET "/Drivers/page?page=1&pageSize=1&search=$other_tenant_driver_documen
 expect_status 200 "Aislar búsqueda paginada de Drivers entre tenants"
 jq -e '.totalCount == 0 and (.items | length) == 0' "$work_dir/response.json" >/dev/null || {
   echo "La búsqueda paginada expuso el Driver de otro tenant." >&2; cat "$work_dir/response.json" >&2; exit 1;
+}
+request GET "/Drivers/page?page=1&pageSize=100&search=$sql_injection_search"
+expect_status 200 "Tratar payload SQL-injection-like como texto en Drivers paginados"
+jq -e --arg foreignDriverId "$other_tenant_driver_id" \
+  '.totalCount == 0 and (.items | length) == 0 and all(.items[]; .id != $foreignDriverId)' \
+  "$work_dir/response.json" >/dev/null || {
+  echo "El filtro paginado de Drivers interpretó el payload SQL o expuso datos entre tenants." >&2
+  cat "$work_dir/response.json" >&2
+  exit 1
 }
 request PUT "/Drivers/$driver_id/status" '{"isActive":true}'
 expect_status 204 "Reactivar Driver propio"

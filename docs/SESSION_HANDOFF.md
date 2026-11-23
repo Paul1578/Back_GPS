@@ -1,3 +1,12 @@
+## Trabajo actual — upgrade histórico ownership / seguridad de filtros — 2026-11-23
+
+- Rama Backend `chore/stabilize-fleet-platform`; nunca modificar `main`.
+- Añadidos `scripts/smoke-tenant-migration.sh` (MySQL 8 desechable, upgrade desde `LinkDriverUser`, asignación al root Admin más antiguo y guard pre-DDL discordante) y casos SQL-like en `scripts/smoke-tenant-http.sh` para Users/Drivers paginados.
+- La suite de upgrade pasó localmente tras corregir `PointsJson='[]'` en los fixtures. La rama de CI Front incluye ejecución del script; Action integrada pendiente.
+- **Incidente a recordar:** primer borrador ejecutó EF desde el repo y `.env` tomó precedencia sobre DB_* temporal, revirtiendo migraciones de DB local. Se reaplicaron; lectura posterior confirmó historial `GuardDiscordantRouteOwnership`, 5 Users, 0 Routes, 1 Vehicle, 0 Drivers, ownership completo y owner correcto. El script ahora copia fuente excluyendo `.env*`, `bin`, `obj` y sólo usa DB MySQL efímero. No eliminar esta guarda ni ejecutar EF de pruebas desde el checkout con `.env`.
+- Un fixture legacy falló al omitir `Routes.PointsJson`, columna NOT NULL sin default efectivo; se agregó `'[]'`, repetición completa pasa. Ver `docs/ERROR_LOG.md`.
+- Siguiente: ejecutar `bash -n`, diff-check, suite xUnit/backend release y confirmar Action completa Front una vez integrados ambos repos. Documentar IDs/resultados; mantener datos locales intactos.
+
 ## Handoff vigente — lock del runner E2E local — 2026-11-23
 
 - Rama Backend `chore/stabilize-fleet-platform`, HEAD `4079ae2`; Front `refactor/route-builder`, HEAD `b1d5924`; `main` intacta. Se añadió `GET_LOCK` con clave derivada de host/puerto/esquema a `scripts/run-e2e-local.sh`; no activar cleanup antes de adquirirlo y mantener viva su conexión hasta terminar.

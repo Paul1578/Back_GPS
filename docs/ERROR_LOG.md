@@ -1,3 +1,11 @@
+## 2026-11-23 — Prueba de migración usó `.env` local y fixture legacy incompleto — CORREGIDO
+
+- **Incidente de aislamiento:** el primer borrador de `smoke-tenant-migration.sh` ejecutó EF desde el repositorio y `AppDbContextDesignTimeFactory` cargó `.env`; `DotNetEnv.Env.Load()` sustituyó la configuración temporal y revirtió migraciones de la base local durante la preparación del esquema histórico.
+- **Recuperación verificada:** se reaplicaron migraciones hasta `20261123132833_GuardDiscordantRouteOwnership`. Lectura MySQL posterior (sin mutaciones) confirmó historial vigente, 5 usuarios, 0 rutas, 1 vehículo, 0 conductores, 0 owners nulos, 0 rutas discordantes y que el vehículo sigue asignado al Admin raíz más antiguo. Las tres columnas `OwnerUserId` siguen presentes.
+- **Prevención:** el runner copia el código a una carpeta temporal excluyendo `.env*`, `bin` y `obj`; `dotnet ef` sólo se invoca desde esa copia y el script crea MySQL en un contenedor aislado con puerto aleatorio. El contenedor y la copia temporal se limpian mediante `trap`. No ejecutar scripts EF de fixtures desde el checkout que contiene configuración local.
+- **Fixture legacy:** la primera carga de ruta falló porque la migración antigua crea `Routes.PointsJson` como `NOT NULL` sin default MySQL efectivo. Se agregó `PointsJson='[]'` explícitamente a ambos inserts; el smoke completo pasó después.
+- **Validación final del smoke:** se aplicó la migración desde `20251124021054_LinkDriverUser`; vehículo sin Driver, Driver y Route sobrevivieron y recibieron el owner esperado. Un segundo escenario de ruta discordante fue rechazado por el guard antes de DDL: 0 columnas añadidas, 0 fila de historial y las 4 filas legacy intactas. Contenedor eliminado.
+
 ## 2026-11-23 — El runner E2E podía limpiar fixtures de otra ejecución — CORREGIDO
 
 - Revisión independiente: dos runners locales contra el mismo esquema podían solaparse; la limpieza usa prefijos compartidos y podía borrar fixtures del otro proceso.

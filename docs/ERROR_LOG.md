@@ -2,7 +2,7 @@
 
 - El polling consultaba rutas con contenido completo de cada foto, multiplicando el payload por tenant.
 - Solución: mapper de lista conserva metadata sin Content; mapper de detalle entrega evidencia íntegra. Test cubre ambos contratos y texto de nota.
-- Verificación: Release 158/158, build sin warnings/errores. Smokes HTTP/MySQL de CI pendientes.
+- Verificación: Release 158/158, build sin warnings/errores. Action [45190701729](https://github.com/Paul1578/Back_GPS/actions/runs/45190701729) pasó Release/xUnit, tenant, concurrencia y login rate limit HTTP/MySQL, cleanup.
 - Error de entorno: dotnet del PATH usa /usr/lib64/dotnet sin runtime, aunque .NET 8 reside en /home/leonardo/.dotnet. Solución: DOTNET_ROOT=/home/leonardo/.dotnet e invocar ese binario.
 - Prevención: revisar resolución de host y runtime antes de declarar que falta el SDK.
 

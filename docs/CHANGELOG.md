@@ -1,7 +1,7 @@
 ## 2026-11-23 — Evitar Base64 repetido en listados de rutas
 
 - DTO de lista omite Content de evidencias tipo imagen. Metadata y notas se conservan; endpoint de detalle devuelve imágenes.
-- Agregada prueba de contrato. Release 158/158 y build limpio local; Action pendiente.
+- Agregada prueba de contrato. Release 158/158 y build limpio local. Action [45190701729](https://github.com/Paul1578/Back_GPS/actions/runs/45190701729) pasó build, xUnit, smokes HTTP/MySQL y cleanup.
 
 ## 2026-11-23 — Límites de evidencia agregada por ruta
 

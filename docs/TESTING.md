@@ -3,7 +3,7 @@
 - Prueba mapper: lista excluye Base64 de imagen, conserva tipo/descripción/fecha y texto de nota; detalle devuelve Base64.
 - dotnet test BackEnd_Gps.sln -c Release --no-restore -m:1: 158/158 passed, usando DOTNET_ROOT=/home/leonardo/.dotnet.
 - Build Release: 0 warnings, 0 errors.
-- Smoke HTTP/MySQL de Action posterior al cambio pendiente.
+- Action [45190701729](https://github.com/Paul1578/Back_GPS/actions/runs/45190701729) pasó build Release, 158/158 xUnit, tenant HTTP/MySQL, concurrencia, login rate limit y cleanup.
 
 ## Integridad de puntos y ownership de rutas — validación local parcial
 

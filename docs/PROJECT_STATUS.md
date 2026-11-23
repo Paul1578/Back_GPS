@@ -1,8 +1,8 @@
-## Payload de evidencias de rutas — validación local; smoke CI pendiente
+## Payload de evidencias de rutas — CI aprobado
 
 - GET /Routes omite contenido Base64 de imágenes y mantiene metadata; GET /Routes/{id} conserva evidencia completa. Las notas mantienen su texto.
 - Prueba nueva del mapper confirma el contrato de lista frente a detalle. Suite Release: 158/158; build Release: 0 warnings, 0 errors.
-- Action posterior al commit y smokes HTTP/MySQL descartables pendientes.
+- Action [45190701729](https://github.com/Paul1578/Back_GPS/actions/runs/45190701729) pasó build Release, xUnit 158/158 y smokes HTTP/MySQL de aislamiento tenant, concurrencia de rutas y rate limit, con cleanup.
 
 ## Integridad de rutas heredadas — Backend CI aprobado
 

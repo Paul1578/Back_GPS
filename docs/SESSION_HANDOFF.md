@@ -2,7 +2,7 @@
 
 - Backend chore/stabilize-fleet-platform: RouteApplicationMapper.ToDtoList omite contenido de imágenes Base64; ToDto de detalle conserva bytes. DTO hace Content nullable.
 - RouteApplicationMapperTests valida omisión en lista, metadata y nota presentes, detalle completo. Release 158/158, build 0 warnings/0 errors usando DOTNET_ROOT=/home/leonardo/.dotnet.
-- Action y smokes HTTP/MySQL para este commit pendientes. La lista entrega resumen; endpoint individual conserva detalle.
+- Action [45190701729](https://github.com/Paul1578/Back_GPS/actions/runs/45190701729) pasó Release, xUnit 158/158, smokes HTTP/MySQL de tenant, concurrencia y rate limit, cleanup. La lista entrega resumen; endpoint individual conserva detalle.
 
 ## Handoff vigente — integridad de rutas heredadas
 

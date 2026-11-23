@@ -1848,6 +1848,13 @@ if (( driver_total > 1 )); then
     echo "La paginación de Drivers repitió filas o devolvió una página incorrecta." >&2; cat "$work_dir/response.json" >&2; exit 1;
   }
 fi
+other_tenant_driver_document="$(mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" "$db_name" \
+  --batch --skip-column-names -e "SELECT DocumentNumber FROM Drivers WHERE Id='$other_tenant_driver_id';")"
+request GET "/Drivers/page?page=1&pageSize=1&search=$other_tenant_driver_document"
+expect_status 200 "Aislar búsqueda paginada de Drivers entre tenants"
+jq -e '.totalCount == 0 and (.items | length) == 0' "$work_dir/response.json" >/dev/null || {
+  echo "La búsqueda paginada expuso el Driver de otro tenant." >&2; cat "$work_dir/response.json" >&2; exit 1;
+}
 request PUT "/Drivers/$driver_id/status" '{"isActive":true}'
 expect_status 204 "Reactivar Driver propio"
 request GET "/Drivers/$driver_id"

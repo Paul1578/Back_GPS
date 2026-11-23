@@ -1394,3 +1394,9 @@ Cada cambio de API debe incluir validación de compilación, migraciones si apli
 - Causa: el comando de prueba usó `dotnet` de PATH, cuyo host `/usr/lib64/dotnet/host/fxr` no contiene runtimes, aunque el SDK .NET 8 de usuario sí está instalado.
 - Solución: ejecutar con `DOTNET_ROOT=/home/leonardo/.dotnet` y `/home/leonardo/.dotnet/dotnet`. La repetición levantó la API disposable y pasaron ambos smokes contra MySQL 8 efímero; el contenedor se eliminó automáticamente.
 - Prevención: fijar DOTNET_ROOT/SDK explícito en comandos locales; no interpretar un host incorrecto como fallo de aplicación.
+
+## 2026-11-23 — Smoke de login local lanzó host .NET global incompleto — RESUELTO
+
+- Los dos primeros intentos se detuvieron antes de iniciar Staging: `/usr/bin/dotnet` apunta a `/usr/lib64/dotnet` sin `host/fxr`; en esta máquina `DOTNET_ROOT` solo no cambia ese launcher. No llegaron a enviar requests y cada contenedor/DB efímera se limpió al salir.
+- Solución: anteponer `/home/leonardo/.dotnet` a `PATH` y volver a ejecutar contra MySQL 8 y API desechables. El flujo HTTP real pasó: diez 401, 11.º 429 con `Retry-After`; la misma cuenta autenticó desde la segunda IP. No se tocó la DB local existente.
+- Prevención: comprobar `command -v dotnet` y `dotnet --info`; usar SDK local con prioridad en `PATH` cuando el host de sistema esté incompleto. Este fallo fue del entorno, no del producto.

@@ -539,3 +539,7 @@
 
 - El runner E2E crea un Admin delegado aislado para que Front valide sus permisos desde sesión UI y API real, además del smoke backend que ya verifica persistencia.
 - `bash -n` del runner pasa; falta ejecutar la integración Front con el branch actualizado.
+
+## 2026-11-23 — Smoke HTTP de login rate limit añadido
+
+- CI reinicia API Release en Staging y verifica 10 intentos, HTTP 429 + Retry-After por IP y login válido desde otra IP; no simula respuestas ni bloquea cuentas. Certificado/key ring y DB de prueba son efímeros. Local MySQL/API descartables pasó; Action pendiente.

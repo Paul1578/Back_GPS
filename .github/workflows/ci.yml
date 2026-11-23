@@ -98,6 +98,9 @@ jobs:
       - name: Verify route assignment concurrency through MySQL
         run: bash scripts/smoke-route-concurrency.sh
 
+      - name: Verify login rate limit through the Staging HTTP pipeline
+        run: bash scripts/smoke-login-rate-limit-http.sh
+
       - name: Stop API
         if: always()
         run: |

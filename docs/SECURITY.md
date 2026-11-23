@@ -242,3 +242,8 @@ Este proceso invalida los emails/token de recuperación que estén pendientes o 
 - `POST /api/Auth/login` aplica 10 intentos/minuto por IP además del límite general de 60 solicitudes/minuto. Devuelve 429 con `Retry-After`; no bloquea cuentas ni revela si un email existe.
 - El contador es en memoria por proceso. Para varias réplicas debe migrarse a un limitador distribuido y configurar correctamente la IP cliente detrás de proxies confiables; no confiar en `X-Forwarded-For` sin una lista de proxies permitidos.
 - xUnit local y Action `45096399172`: 120/120 para el endurecimiento de contraseñas/login. Cambios posteriores de recuperación/token/URLs tienen validación local Release 133/133; no se han publicado en esta rama.
+
+## Validación HTTP de login por IP — 2026-11-23
+
+- El rate limit de login es 10 intentos/minuto por dirección IP y no bloquea cuentas. El nuevo smoke usa la API Release en Staging y verifica el pipeline HTTP completo: primera IP obtiene 10 rechazos de credenciales normales, exceso recibe 429 + `Retry-After`, segunda IP puede iniciar sesión en la misma cuenta.
+- Smoke local comprobado contra DB MySQL 8 descartable; Action CI pendiente. En producción el contador sigue en memoria por proceso; antes de escalar se requiere store distribuido y configurar trusted proxies/forwarded headers con lista de proxies permitidos.

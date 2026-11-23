@@ -1,3 +1,11 @@
+## Handoff vigente — integridad de rutas heredadas
+
+- Rama backend `chore/stabilize-fleet-platform`; `main` intacta. El cambio local agrega una guarda a `TenantFleetOwnership` para detenerse si una ruta enlaza Driver y Vehicle de distintos tenants, antes de asignar ownership, y una migración de verificación que hace fallar el arranque si la migración vieja ya dejó esa ruta con owner nulo.
+- `FleetMapper` ahora lanza `InvalidDataException` con el ID de ruta si el JSON persistido está corrupto; conserva la conversión heredada para `[]`. Prueba focal **4/4**; suite Release **155/155** y build **0 warnings/0 errores**.
+- API arrancó desde DB vacía en MySQL 8 efímero y aplicó toda la cadena de migraciones. La guarda de ruta existente probada con una relación discordante devolvió SQLSTATE 45000; lectura posterior confirmó OwnerUserId nulo y owners Driver/Vehicle distintos sin mutación. DB efímera y API apagadas.
+- Pendiente inmediato: revisar diff, commit/push y Action integrada; si falla, corregir y repetir. No se usó ni cambió la DB local del proyecto.
+- Front Action `45183402334` para `22bb081` seguía ejecutando E2E autenticado contra API/MySQL al guardar este handoff. Consultar resultado y cerrar el ciclo Front antes de sincronizar su documentación.
+
 ## Handoff vigente — paginación server-side
 
 - Front y Backend comparten worktrees de ramas `refactor/route-builder` / `chore/stabilize-fleet-platform`. La desvinculación Driver está cerrada en CI: Backend Action [`45174526072`](https://github.com/Paul1578/Back_GPS/actions/runs/45174526072) success en `08e14fa`; Front Action [`45174598922`](https://github.com/Paul1578/Front_gpsR/actions/runs/45174598922) success en `6c8c7a9`, **51/51 E2E**.

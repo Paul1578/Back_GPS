@@ -1,3 +1,10 @@
+## Integridad de puntos y ownership de rutas — validación local parcial
+
+- `FleetMapperTests`: **4/4**; malformed JSON, JSON con objeto en vez de arreglo, elemento null y compatibilidad heredada de `[]`.
+- `TenantFleetOwnership` comprueba ownership derivado antes de DDL; `GuardDiscordantRouteOwnership` comprueba instalaciones donde la migración anterior ya dejó `OwnerUserId=NULL`.
+- API arrancó contra MySQL 8 efímero desde base vacía y aplicó todas las migraciones. Procedimiento de guard probado con ruta discordante produjo SQLSTATE 45000 y la consulta posterior confirmó que la fila y propietarios no cambiaron.
+- Suite Release **155/155**; build Release **0 warnings/0 errores**. Action integrada pendiente.
+
 ## Paginación Usuarios/Drivers — validación local y smoke HTTP pendiente en CI
 
 - Backend `dotnet test BackEnd_Gps.sln --configuration Release --no-restore`: **151/151**; incluye 7 pruebas nuevas: orden estable entre páginas, búsqueda/rol/estado, páginas vacías y `int.MaxValue`, filtros tenant, ACL, compatibilidad y bounds.

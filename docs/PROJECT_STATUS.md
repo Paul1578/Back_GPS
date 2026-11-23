@@ -1,3 +1,11 @@
+## Integridad de rutas heredadas — protección en implementación
+
+- La revisión encontró que `TenantFleetOwnership` dejaba `OwnerUserId=NULL` cuando Driver y Vehicle pertenecían a empresas diferentes; el filtro tenant ocultaba entonces la ruta.
+- La migración ahora comprueba la discrepancia antes de actualizar rutas y aborta con un error explícito. Una migración adicional detecta rutas que ya quedaron sin propietario en entornos donde se aplicó la versión anterior, impidiendo que el API arranque y oculte el problema.
+- También se corrigió `FleetMapper`: `PointsJson` inválido ya no degrada silenciosamente una ruta a origen/destino. El fallback se conserva sólo para el arreglo vacío heredado `[]`.
+- Prueba focal FleetMapper: **4/4**; suite Release **155/155**, build **0 warnings/0 errores**. API arrancó contra MySQL 8 efímero desde DB vacía y aplicó todas las migraciones, incluidas ambas guardas. Una segunda verificación MySQL produjo SQLSTATE 45000 para owner discordante y confirmó la ruta y ambos propietarios intactos.
+- La Action integrada con API/MySQL y cleanup sigue pendiente.
+
 ## Paginación de equipo y conductores — Action aprobada
 
 - Se añadieron `GET /api/Users/my-team/page` y `GET /api/Drivers/page`, con `{ items, page, pageSize, totalCount, totalPages }`; los endpoints anteriores conservan arrays. Página por defecto 25, límite 100, búsqueda/rol/estado, orden determinista y offsets seguros ante overflow. Se mantienen filtro explícito de OwnerUserId en usuarios y filtro global tenant en Drivers.

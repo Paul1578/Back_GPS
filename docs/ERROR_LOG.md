@@ -1,3 +1,16 @@
+## 2026-11-23 — Datos de rutas heredadas podían ocultarse o degradarse — CORRECCIÓN EN VALIDACIÓN
+
+- **Causa:** `TenantFleetOwnership` guardaba `OwnerUserId=NULL` cuando Vehicle y Driver tenían propietarios diferentes; el filtro global tenant ocultaba la ruta. En paralelo, `FleetMapper.DeserializePoints` capturaba cualquier excepción y devolvía sólo origen/destino, haciendo pasar datos corruptos de paradas/evidencia por una ruta válida.
+- **Corrección:** la migración ahora aborta ante ownership incompatible antes de escribir la ruta; una migración guard detecta instalaciones donde ya existe la ruta oculta. `FleetMapper` falla explícitamente con `InvalidDataException` e ID de ruta para JSON no vacío inválido; `[]` conserva fallback legado. Las pruebas focales pasan **4/4**.
+- **Validación:** API aplicó la cadena completa en MySQL 8 descartable; la guarda del estado heredado rechazó el mismatch con SQLSTATE 45000 y lectura posterior verificó que ruta/owners seguían intactos. No cambiar el owner automáticamente: requiere reconciliación explícita del negocio.
+- **Prevención:** no convertir fallos de parseo de datos persistidos en resultados plausibles; probar migraciones tenant con relaciones incompatibles y leer de vuelta los registros tras el rechazo.
+
+## 2026-11-23 — SQL manual de prueba de procedure y namespace de migración — CORREGIDOS
+
+- El primer smoke ad hoc con el cliente `mysql` no creó el procedimiento porque el cliente trató los `;` internos como límites; las tablas de fixture sí quedaron en la DB descartable. Se añadió `DELIMITER //` a ese cliente y la guarda SQLSTATE 45000 pasó con la fila intacta. La prueba de migraciones real vía API confirmó que EF envía el cuerpo completo al servidor sin ese problema.
+- La primera suite tras crear `GuardDiscordantRouteOwnership` falló compilación porque el import del contexto usaba `BackEnd_Gps...`; el namespace real es `fletflow.Infrastructure.Persistence.Context`. Se corrigió y la suite Release pasó **155/155**.
+- Prevención: para SQL de rutinas, distinguir parser del cliente MySQL del protocolo usado por EF; copiar namespaces del contexto desde migraciones Designer existentes.
+
 # 2026-11-23 — Smoke paginado de Driver comparó el ID de otro fixture — CORREGIDO
 
 - Backend Actions `45177400984`/`45177409890` y `45177819577`/`45177834102` pasaron build, **151/151 xUnit** y llegaron al smoke HTTP/MySQL; el unlink y los cleanups pasaron. El GET paginado devolvió HTTP 200 y un Driver inactivo; primero falló la comparación contra un ID global de otro bloque. Tras cambiar a `documentNumber`, la segunda corrida reveló que el smoke buscaba `$document_number`, valor anterior al PUT que lo cambió por `$updated_document`; la búsqueda parcial coincidió con otro documento que compartía el prefijo.

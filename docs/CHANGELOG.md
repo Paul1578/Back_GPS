@@ -3,6 +3,7 @@
 - Consulta MySQL local encontró 5 usuarios: los 2 con `OwnerUserId IS NULL` tienen rol Admin y hay 0 Admins con propietario asignado. No se encontraron delegados con owner nulo en esta base.
 - No hubo mutaciones ni exposición de nombres/secretos; no se puede extrapolar a bases de otros ambientes. Ver `SECURITY.md`.
 - Backend `7906ef2` pasó Actions [`45269381165`](https://github.com/Paul1578/Back_GPS/actions/runs/45269381165) y [`45269364838`](https://github.com/Paul1578/Back_GPS/actions/runs/45269364838): Release/xUnit y smokes MySQL/HTTP de migración, tenant, concurrencia y rate limit.
+- HEAD documental `9fa14a8` pasó también Actions [`45270259692`](https://github.com/Paul1578/Back_GPS/actions/runs/45270259692) y [`45270276674`](https://github.com/Paul1578/Back_GPS/actions/runs/45270276674), sin cambios de código.
 
 ## 2026-11-23 — Pruebas de upgrade histórico y filtros seguros
 

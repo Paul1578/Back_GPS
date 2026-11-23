@@ -4,6 +4,8 @@
 - Riesgo de datos heredados: JWT/root checks infieren raíz desde `OwnerUserId IS NULL` (documentado en `docs/SECURITY.md`). La consulta sólo lectura de la DB local encontró 5 usuarios, 2 con owner nulo, ambos Admin raíz; 0 Admins con propietario asignado. Coincide con las dos cuentas raíz confirmadas y no muestra delegado inconsistente en esta DB; no permite inferir el estado de otros ambientes. No se hizo cambio de código sin evidencia de un estado inválido.
 - Esta revisión fue estática; la evidencia dinámica vigente permanece en xUnit 165/165 y smokes HTTP/MySQL de Actions [`45254278511`](https://github.com/Paul1578/Back_GPS/actions/runs/45254278511) y [`45254291858`](https://github.com/Paul1578/Back_GPS/actions/runs/45254291858).
 - El commit documental `7906ef2` pasó Actions [`45269381165`](https://github.com/Paul1578/Back_GPS/actions/runs/45269381165) y [`45269364838`](https://github.com/Paul1578/Back_GPS/actions/runs/45269364838): build/xUnit, upgrade tenant histórico, HTTP/MySQL tenant, concurrencia, rate limit y cleanup.
+- El HEAD documental posterior `9fa14a8` repitió ambos checks: Actions [`45270259692`](https://github.com/Paul1578/Back_GPS/actions/runs/45270259692) y [`45270276674`](https://github.com/Paul1578/Back_GPS/actions/runs/45270276674), todas las etapas build/xUnit/migración/HTTP-MySQL/concurrencia/rate limit verdes.
+- Pendientes externos de despliegue descritos en `SECURITY.md`: credenciales SMTP válidas, dominio/TLS e IPs confiables de ingress, persistencia/cifrado de Data Protection y almacenamiento distribuido del rate limit antes de operar varias réplicas.
 
 ## Estado vigente — runner E2E serializado — 2026-11-23
 

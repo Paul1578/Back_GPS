@@ -3,6 +3,7 @@
 - HEAD revisado: `chore/stabilize-fleet-platform` `4993e3c`; sin modificaciones ni pruebas en ese pase. Roles de Users, Drivers y Routes y las reglas de unlink coinciden estáticamente con las decisiones de producto.
 - `OwnerUserId IS NULL` define root para claims y endpoints Admin. Reconsulta local agregada encontró 5 usuarios, 2 roots Admin con owner nulo y 0 Admins con propietario asignado; no muestra delegado inconsistente en esta DB. Otros ambientes no se inspeccionaron; evidencia en `docs/SECURITY.md`.
 - La lectura inicial asumió `fletflow/Program.cs`; `Program.cs` vive en la raíz. No hubo mutaciones; se corrigió con `rg --files` y se registró en `docs/ERROR_LOG.md`.
+- HEAD documental Backend `7906ef2` pasó Actions [`45269381165`](https://github.com/Paul1578/Back_GPS/actions/runs/45269381165) y [`45269364838`](https://github.com/Paul1578/Back_GPS/actions/runs/45269364838), incluidos xUnit y todos los smokes integrados de DB.
 - Actions recientes del HEAD: Release/xUnit 165/165, migración tenant desechable, SQL-like HTTP/MySQL, concurrencia y rate limit [`45254278511`](https://github.com/Paul1578/Back_GPS/actions/runs/45254278511), [`45254291858`](https://github.com/Paul1578/Back_GPS/actions/runs/45254291858).
 
 ## Trabajo actual — upgrade histórico ownership / seguridad de filtros — 2026-11-23

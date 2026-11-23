@@ -1,7 +1,7 @@
 ## 2026-11-23 — Límites de evidencia agregada por ruta
 
 - Una ruta acepta como máximo 50 evidencias y hasta 8 MB de contenido acumulado; los rechazos no modifican la ruta.
-- Unit tests **20/20**, suite Release **157/157**, build limpio. Action Backend pendiente.
+- Unit tests **20/20**, suite Release **157/157**, build limpio. Actions Backend `45187302298` / `45187289527` corren sobre `a07838d`.
 
 ## 2026-11-23 — Preservación de integridad en rutas y paradas heredadas
 

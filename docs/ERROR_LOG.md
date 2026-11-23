@@ -2,7 +2,7 @@
 
 - La validación anterior limitaba cada imagen a 4 MB y cada request a 6 MB, pero repetidas solicitudes podían añadir evidencia ilimitada a una misma ruta; GET/listados serializaban cada payload Base64.
 - Solución: el dominio rechaza antes de mutar si la ruta alcanzaría más de 50 evidencias o más de 8 MB agregados. `RoutePointTests` confirma los límites y que el estado permanece igual.
-- Validación: focales **20/20**, suite Release **157/157**, build Release 0 warnings/errores. Action pendiente.
+- Validación: focales **20/20**, suite Release **157/157**, build Release 0 warnings/errores. Actions Backend `45187302298` y `45187289527` siguen en curso.
 - Prevención: imponer límites agregados en la entidad de dominio, además de límites HTTP y por adjunto; comprobar estado persistido ante rechazo.
 
 ## 2026-11-23 — Datos de rutas heredadas podían ocultarse o degradarse — CORRECCIÓN EN VALIDACIÓN

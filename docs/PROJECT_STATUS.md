@@ -5,12 +5,12 @@
 - También se corrigió `FleetMapper`: `PointsJson` inválido ya no degrada silenciosamente una ruta a origen/destino. El fallback se conserva sólo para el arreglo vacío heredado `[]`.
 - Prueba focal FleetMapper: **4/4**; suite Release **155/155**, build **0 warnings/0 errores**. API arrancó contra MySQL 8 efímero desde DB vacía y aplicó todas las migraciones, incluidas ambas guardas. Una segunda verificación MySQL produjo SQLSTATE 45000 para owner discordante y confirmó la ruta y ambos propietarios intactos.
 - Action Backend [`45185698388`](https://github.com/Paul1578/Back_GPS/actions/runs/45185698388) para `492f8f9` terminó success: build/test Release, smoke tenant HTTP/MySQL, concurrencia, rate limit y cleanup. La ejecución automática duplicada [`45185687229`](https://github.com/Paul1578/Back_GPS/actions/runs/45185687229) también terminó success.
-- Front Action [`45185761490`](https://github.com/Paul1578/Front_gpsR/actions/runs/45185761490) está probando `8dc1a2a` contra la nueva rama Backend; otra ejecución para el commit Front posterior sigue en curso.
+- Front Action [`45185961950`](https://github.com/Paul1578/Front_gpsR/actions/runs/45185961950) validó `dff947f`: **53/53 E2E**, responsive, build/lint, Backend Release/xUnit, API/MySQL y cleanup.
 
 ## Tamaño total de evidencias — cobertura local aprobada
 
 - Cada foto ya tenía máximo de 4 MB, pero una ruta podía acumular fotos/notas ilimitadas. `RouteE.AddPointEvidence` ahora limita a **50 evidencias y 8 MB de contenido total**, rechazando sin mutación.
-- Pruebas `RoutePointTests`: **20/20**; suite Release **157/157**; build Release **0 warnings/0 errores**. Action backend integrada pendiente.
+- Pruebas `RoutePointTests`: **20/20**; suite Release **157/157**; build Release **0 warnings/0 errores**. Actions Backend [`45187302298`](https://github.com/Paul1578/Back_GPS/actions/runs/45187302298) / [`45187289527`](https://github.com/Paul1578/Back_GPS/actions/runs/45187289527) para `a07838d` están en curso.
 
 ## Paginación de equipo y conductores — Action aprobada
 

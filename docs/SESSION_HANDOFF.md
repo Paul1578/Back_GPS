@@ -4,12 +4,12 @@
 - `FleetMapper` ahora lanza `InvalidDataException` con el ID de ruta si el JSON persistido está corrupto; conserva la conversión heredada para `[]`. Prueba focal **4/4**; suite Release **155/155** y build **0 warnings/0 errores**.
 - API arrancó desde DB vacía en MySQL 8 efímero y aplicó toda la cadena de migraciones. La guarda de ruta existente probada con una relación discordante devolvió SQLSTATE 45000; lectura posterior confirmó OwnerUserId nulo y owners Driver/Vehicle distintos sin mutación. DB efímera y API apagadas.
 - Action Backend [`45185698388`](https://github.com/Paul1578/Back_GPS/actions/runs/45185698388) y la duplicada [`45185687229`](https://github.com/Paul1578/Back_GPS/actions/runs/45185687229) terminaron success con API/MySQL y cleanup.
-- No se usó ni cambió la DB local del proyecto. El Front `45183402334` falló 51/53 por dos asserts obsoletos; corregidos en `8dc1a2a`. La Action [`45185761490`](https://github.com/Paul1578/Front_gpsR/actions/runs/45185761490) y una ejecución posterior con la limpieza de componentes siguen corriendo; comprobarlas y sincronizar su documentación.
+- No se usó ni cambió la DB local del proyecto. El Front `45183402334` falló 51/53 por dos asserts obsoletos; corregidos en `8dc1a2a`. Front Action [`45185961950`](https://github.com/Paul1578/Front_gpsR/actions/runs/45185961950) validó `dff947f` con **53/53 E2E**, backend Release/xUnit, MySQL y cleanup.
 
 ## Lote siguiente — límites totales de evidencia
 
 - Cambio local: `RouteE.AddPointEvidence` rechaza una evidencia que exceda **50 elementos/ruta** o **8,000,000 caracteres de contenido agregado**, antes de modificar paradas. Prueba imágenes repetidas de 3 MiB y valida persistencia sin agregar la segunda; caso de notas cubre el item 51.
-- Tests focales **20/20**, suite Release **157/157**, build **0 warnings/0 errores**. Pendiente documentar en detalle, commit/push y Action Backend (HTTP smoke y cleanup).
+- Tests focales **20/20**, suite Release **157/157**, build **0 warnings/0 errores**. Commit `a07838d` publicado; Actions Backend `45187302298` y `45187289527` en curso.
 - Front `dff947f` pasó [`45185961950`](https://github.com/Paul1578/Front_gpsR/actions/runs/45185961950): **53/53 E2E**, responsive 1/1, Backend Release/xUnit, audit/lint/build y cleanup. Actualizar docs Front al resultado y publicar esa documentación.
 
 ## Handoff vigente — paginación server-side

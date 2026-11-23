@@ -5,6 +5,12 @@
 - La prueba usa navegación desktop directa y el sufijo estable por worker elimina fixtures creados en un retry anterior. Validar con nueva Action Front; `bash -n` y diff-check pasan local.
 - Prevención: no cambiar el rol de fixtures compartidos entre escenarios; usar identidades temporales por caso y cleanup idempotente ante retries.
 
+## 2026-11-22 — Retry Manager podía generar un sufijo nuevo tras reiniciar worker — CORREGIDO LOCALMENTE; CI FRONT PENDIENTE
+
+- La revisión E2E encontró que el frontend creaba el nombre de ruta/placa con `randomUUID()` al cargar el spec; Playwright puede reiniciar worker entre retries, haciendo que cleanup busque otro nombre.
+- `run-e2e-local.sh` exporta `FLETFLOW_E2E_MAP_FIXTURE_SUFFIX` estable para toda la ejecución; el spec lo requiere y reusa al limpiar. Validar con nueva Action Front.
+- Prevención: compartir un identificador determinista de ejecución con los specs que crean fixtures, para que cleanup sobreviva reinicios del worker.
+
 # 2026-11-22 — Runner no exponía UserId requerido por E2E Manager de mapa — CORREGIDO LOCALMENTE
 
 - La prueba Manager del Front necesita la cuenta Driver de QA para cambiar temporalmente su rol y validar mapa/ruta como Manager. El runner sólo exportaba `FLETFLOW_E2E_DRIVER_ID`; el test también requiere el `UserId` de la cuenta, por lo que habría quedado en skipped aunque la suite figurase verde.

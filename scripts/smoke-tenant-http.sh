@@ -81,6 +81,8 @@ foreign_reactivate_vehicle_id=""
 manager_route_name=""
 manager_route_id=""
 logistics_route_id=""
+transfer_route_id=""
+transfer_route_name=""
 logistics_route_name=""
 logistics_gps_recorded_at=""
 restricted_user_id=""
@@ -131,6 +133,11 @@ cleanup() {
       sql+=" DELETE FROM RoutePositions WHERE RouteId='$logistics_route_id'; DELETE FROM Routes WHERE Id='$logistics_route_id';"
     elif [[ -n "$logistics_route_name" ]]; then
       sql+=" DELETE rp FROM RoutePositions rp JOIN Routes r ON r.Id=rp.RouteId WHERE r.Name='$logistics_route_name'; DELETE FROM Routes WHERE Name='$logistics_route_name';"
+    fi
+    if [[ -n "$transfer_route_id" ]]; then
+      sql+=" DELETE FROM RoutePositions WHERE RouteId='$transfer_route_id'; DELETE FROM Routes WHERE Id='$transfer_route_id';"
+    elif [[ -n "$transfer_route_name" ]]; then
+      sql+=" DELETE rp FROM RoutePositions rp JOIN Routes r ON r.Id=rp.RouteId WHERE r.Name='$transfer_route_name'; DELETE FROM Routes WHERE Name='$transfer_route_name';"
     fi
     if [[ -n "$inactive_driver_route_id" ]]; then
       sql+=" DELETE FROM RoutePositions WHERE RouteId='$inactive_driver_route_id'; DELETE FROM Routes WHERE Id='$inactive_driver_route_id';"
@@ -529,6 +536,15 @@ activation_plain_token="activation-$suffix-$(openssl rand -hex 8)"
 activation_token_hash="$(printf '%s' "$activation_plain_token" | openssl dgst -sha256 | awk '{print toupper($NF)}')"
 mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" "$db_name" \
   -e "INSERT INTO PasswordResetTokens (Id, UserId, TokenHash, ExpiresAt, CreatedAt, UsedAt) VALUES (UUID(), '$activation_user_id', '$activation_token_hash', DATE_ADD(UTC_TIMESTAMP(), INTERVAL 10 MINUTE), UTC_TIMESTAMP(), NULL);" >/dev/null
+activation_state_before_short_password="$(mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" "$db_name" \
+  --batch --skip-column-names -e "SELECT CONCAT(CAST(IsActive AS UNSIGNED), ':', CAST(MustChangePassword AS UNSIGNED), ':', SHA2(PasswordHash,256), ':', (SELECT CASE WHEN UsedAt IS NULL THEN 'unused' ELSE 'used' END FROM PasswordResetTokens WHERE TokenHash='$activation_token_hash')) FROM Users WHERE Id='$activation_user_id';")"
+request POST /Auth/activate-account "$(jq -nc --arg token "$activation_plain_token" '{token:$token,newPassword:"Short-123",confirmNewPassword:"Short-123"}')" ""
+expect_status 400 "Rechazar contraseña corta al activar cuenta"
+activation_state_after_short_password="$(mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" "$db_name" \
+  --batch --skip-column-names -e "SELECT CONCAT(CAST(IsActive AS UNSIGNED), ':', CAST(MustChangePassword AS UNSIGNED), ':', SHA2(PasswordHash,256), ':', (SELECT CASE WHEN UsedAt IS NULL THEN 'unused' ELSE 'used' END FROM PasswordResetTokens WHERE TokenHash='$activation_token_hash')) FROM Users WHERE Id='$activation_user_id';")"
+[[ "$activation_state_before_short_password" == "$activation_state_after_short_password" ]] || {
+  echo "La activación con clave corta consumió el token o modificó el usuario." >&2; exit 1;
+}
 activation_new_password="ActivationNew-$(openssl rand -hex 8)aA1!"
 request POST /Auth/activate-account "$(jq -nc --arg token "$activation_plain_token" --arg password "$activation_new_password" '{token:$token,newPassword:$password,confirmNewPassword:$password}')" ""
 expect_status 200 "Activar cuenta con token vigente"
@@ -551,6 +567,16 @@ reset_plain_token="reset-$suffix-$(openssl rand -hex 8)"
 reset_token_hash="$(printf '%s' "$reset_plain_token" | openssl dgst -sha256 | awk '{print toupper($NF)}')"
 mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" "$db_name" \
   -e "INSERT INTO PasswordResetTokens (Id, UserId, TokenHash, ExpiresAt, CreatedAt, UsedAt) VALUES (UUID(), '$reset_user_id', '$reset_token_hash', DATE_ADD(UTC_TIMESTAMP(), INTERVAL 10 MINUTE), UTC_TIMESTAMP(), NULL);" >/dev/null
+reset_state_before_short_password="$(mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" "$db_name" \
+  --batch --skip-column-names -e "SELECT CONCAT(SHA2(PasswordHash,256), ':', (SELECT CASE WHEN UsedAt IS NULL THEN 'unused' ELSE 'used' END FROM PasswordResetTokens WHERE TokenHash='$reset_token_hash')) FROM Users WHERE Id='$reset_user_id';")"
+short_reset_password="Short-123"
+request POST /Auth/reset-password "$(jq -nc --arg token "$reset_plain_token" --arg password "$short_reset_password" '{token:$token,newPassword:$password,confirmNewPassword:$password}')" ""
+expect_status 400 "Rechazar contraseña corta al restablecer"
+reset_state_after_short_password="$(mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" "$db_name" \
+  --batch --skip-column-names -e "SELECT CONCAT(SHA2(PasswordHash,256), ':', (SELECT CASE WHEN UsedAt IS NULL THEN 'unused' ELSE 'used' END FROM PasswordResetTokens WHERE TokenHash='$reset_token_hash')) FROM Users WHERE Id='$reset_user_id';")"
+[[ "$reset_state_before_short_password" == "$reset_state_after_short_password" ]] || {
+  echo "El reset con clave corta consumió el token o modificó el hash de contraseña." >&2; exit 1;
+}
 reset_new_password="ResetNew-$(openssl rand -hex 8)aA1!"
 request POST /Auth/reset-password "$(jq -nc --arg token "$reset_plain_token" --arg password "$reset_new_password" '{token:$token,newPassword:$password,confirmNewPassword:$password}')" ""
 expect_status 200 "Restablecer contraseña con token vigente"
@@ -564,6 +590,14 @@ request POST /Auth/login "$(jq -nc --arg email "$reset_user_email" --arg passwor
 expect_status 200 "Iniciar sesión con contraseña restablecida"
 
 public_registration_email="fletflow.e2e.register.ci.$(date +%s%N | tail -c 9)@example.test"
+short_registration_email="fletflow.e2e.short-password.$suffix@example.test"
+request POST /Auth/register "$(jq -nc --arg username "Short password QA" --arg email "$short_registration_email" '{username:$username,email:$email,password:"Short-123",roleName:"Admin"}')" ""
+expect_status 400 "Rechazar contraseña corta en registro público"
+short_registration_rows="$(mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" "$db_name" \
+  --batch --skip-column-names -e "SELECT COUNT(*) FROM Users WHERE Email='$short_registration_email';")"
+[[ "$short_registration_rows" == "0" ]] || {
+  echo "Registro con contraseña corta creó una cuenta ($short_registration_rows)." >&2; exit 1;
+}
 public_registration_password="$(openssl rand -hex 24)"
 request POST /Auth/register "$(jq -nc --arg username "Public registration QA" --arg email "$public_registration_email" --arg password "$public_registration_password" '{username:$username,email:$email,password:$password,roleName:"Driver"}')" ""
 expect_status 200 "Registro público crea empresa raíz ignorando el rol solicitado"
@@ -701,6 +735,17 @@ restricted_user_write_rows="$(mysql --protocol=TCP --host="$mysql_host" --port="
 }
 
 restricted_user_new_password="$(openssl rand -hex 24)"
+restricted_user_hash_before_short_password="$(mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" "$db_name" \
+  --batch --skip-column-names -e "SELECT SHA2(PasswordHash,256) FROM Users WHERE Id='$restricted_user_id';")"
+request POST /Auth/change-password "$(jq -nc --arg current "$restricted_user_password" '{currentPassword:$current,newPassword:"Short-123",confirmNewPassword:"Short-123"}')" "$restricted_user_token"
+expect_status 400 "Rechazar contraseña corta al cambiar clave"
+restricted_user_hash_after_short_password="$(mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" "$db_name" \
+  --batch --skip-column-names -e "SELECT SHA2(PasswordHash,256) FROM Users WHERE Id='$restricted_user_id';")"
+[[ "$restricted_user_hash_before_short_password" == "$restricted_user_hash_after_short_password" ]] || {
+  echo "El cambio con clave corta alteró el hash de contraseña." >&2; exit 1;
+}
+request GET /Auth/me "" "$restricted_user_token"
+expect_status 200 "Mantener activa la sesión tras rechazar contraseña corta"
 request POST /Auth/change-password "$(jq -nc --arg current "$restricted_user_password" --arg next "$restricted_user_new_password" '{currentPassword:$current,newPassword:$next,confirmNewPassword:$next}')" "$restricted_user_token"
 expect_status 200 "Cambiar contraseña del usuario"
 request GET /Auth/me "" "$restricted_user_token"
@@ -1184,6 +1229,32 @@ jq -e --arg suffix "$suffix" '
 echo "Verificado en MySQL: tres paradas operativas con evidencia, ruta Completed y vehículo Available."
 request DELETE "/Routes/$logistics_route_id" "" "$logistics_token"
 expect_status 204 "Dar de baja ruta completada como Logistics"
+
+transfer_route_name="${manager_route_name} transfer"
+transfer_points='[{"lat":-0.18,"lng":-78.46,"name":"Transfer origin","operation":0,"status":0},{"lat":-0.19,"lng":-78.47,"name":"Transfer destination","operation":0,"status":0}]'
+request POST /Routes "$(jq -nc --arg name "$transfer_route_name" --arg vehicleId "$manager_vehicle_id" --arg driverId "$manager_driver_id" --argjson points "$transfer_points" '{name:$name,cargoDescription:"Transfer E2E",vehicleId:$vehicleId,driverId:$driverId,points:$points}')" "$logistics_token"
+expect_status 201 "Crear ruta de traslado sin operaciones logísticas"
+transfer_route_id="$(jq -er '.id' "$work_dir/response.json")"
+request GET "/Routes/$transfer_route_id" "" "$logistics_token"
+expect_status 200 "Leer ruta de traslado persistida"
+jq -e --arg id "$transfer_route_id" '.id == $id and .status == 0 and (.points | length == 2) and ([.points[] | .operation] | all(. == 0))' "$work_dir/response.json" >/dev/null || {
+  echo "La ruta de traslado no conservó origen/destino sin operaciones." >&2; cat "$work_dir/response.json" >&2; exit 1;
+}
+request PUT "/Routes/$transfer_route_id/status" '{"status":1}' "$logistics_token"
+expect_status 204 "Iniciar ruta de traslado"
+request PUT "/Routes/$transfer_route_id/status" '{"status":2}' "$logistics_token"
+expect_status 204 "Completar ruta de traslado sin paradas"
+request GET "/Routes/$transfer_route_id" "" "$logistics_token"
+expect_status 200 "Confirmar ciclo de traslado completado"
+jq -e --arg id "$transfer_route_id" '.id == $id and .status == 2 and .startedAt != null and .endedAt != null and (.points | length == 2) and ([.points[] | .status] | all(. == 0))' "$work_dir/response.json" >/dev/null || {
+  echo "La ruta de traslado no completó su ciclo ni preservó origen/destino." >&2; cat "$work_dir/response.json" >&2; exit 1;
+}
+transfer_sql_state="$(mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" "$db_name" \
+  --batch --skip-column-names -e "SELECT CONCAT(r.Status, ':', IF(r.StartedAt IS NULL, 0, 1), ':', IF(r.EndedAt IS NULL, 0, 1), ':', v.Status, ':', JSON_LENGTH(r.PointsJson)) FROM Routes r JOIN Vehicles v ON v.Id=r.VehicleId WHERE r.Id='$transfer_route_id';")"
+[[ "$transfer_sql_state" == "2:1:1:0:2" ]] || {
+  echo "Estado SQL inesperado para traslado (status:started:ended:vehicle:points=$transfer_sql_state)." >&2; exit 1;
+}
+echo "Verificado en HTTP/MySQL: traslado con origen/destino, sin paradas operativas, completado y vehículo Available."
 # Forzar una carrera real: refresh y cambio de rol esperan por el mismo lock de Users.
 mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" "$db_name" \
   -e "SET SESSION innodb_lock_wait_timeout=10; START TRANSACTION; SELECT Id FROM Users WHERE Id='$logistics_user_id' FOR UPDATE; DO SLEEP(2); COMMIT;" \

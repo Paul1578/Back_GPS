@@ -50,6 +50,21 @@ public class LoginUserCommandTests
         Assert.Same(user, result);
     }
 
+    [Fact]
+    public async Task Execute_AllowsLegacyPasswordShorterThanCurrentMinimum()
+    {
+        const string legacyPassword = "Old123";
+        var user = new User
+        {
+            Email = "legacy-password@example.test",
+            PasswordHash = BCrypt.Net.BCrypt.HashPassword(legacyPassword),
+        };
+
+        var result = await CreateCommand(user).Execute(user.Email, legacyPassword);
+
+        Assert.Same(user, result);
+    }
+
     private static LoginUserCommand CreateCommand(User? user) =>
         new(new TestUnitOfWork(new TestUserRepository(user)));
 

@@ -506,7 +506,12 @@
 ## 2026-11-23 — Límite específico del registro público
 
 - Registro restringido a cinco solicitudes por IP cada diez minutos; también aplica en loopback Development. El límite no bloquea Login ni cuentas.
-- Pruebas nuevas cubren 429, `Retry-After`, continuidad de Login y enforcement en Development; middleware **8/8** y suite Release **135/135** local. CI pendiente.
+- Pruebas nuevas cubren 429, `Retry-After`, continuidad de Login y enforcement en Development; middleware **8/8** y suite Release **135/135** local. Commit `585fcb0` pasó Action [`45110342238`](https://github.com/Paul1578/Back_GPS/actions/runs/45110342238), incluidos smoke HTTP/MySQL, concurrencia y cleanup.
+
+## 2026-11-23 — Fixtures de E2E para reset y activación
+
+- El runner crea dos usuarios de prueba aislados, tokens impredecibles y sus SHA-256 dentro de la base desechable; verifica que ambos estén presentes antes de correr Playwright.
+- Front E2E usa reset/activación reales, confirma nueva clave, rechazo de clave anterior y consumo de token. `bash -n` pasa; Actions integradas pendientes.
 ## 2026-11-23 — Ciclo HTTP/MySQL de ruta con múltiples operaciones — VERIFICADO
 
 - Smoke Logistics recorre en una misma ruta una recogida, entrega y parada combinada; guarda evidencia y completa cada una en secuencia.

@@ -95,6 +95,12 @@ export FLETFLOW_E2E_USER_EMAIL="fletflow.e2e.user.$user_suffix@example.test"
 export FLETFLOW_E2E_USER_PASSWORD="$(openssl rand -hex 24)"
 export FLETFLOW_E2E_DEACTIVATION_EMAIL="fletflow.e2e.user.deactivation.$user_suffix@example.test"
 export FLETFLOW_E2E_DEACTIVATION_PASSWORD="$(openssl rand -hex 24)"
+export FLETFLOW_E2E_RESET_EMAIL="fletflow.e2e.user.reset.$user_suffix@example.test"
+export FLETFLOW_E2E_RESET_PASSWORD="$(openssl rand -hex 24)"
+export FLETFLOW_E2E_RESET_TOKEN="$(openssl rand -hex 32)"
+export FLETFLOW_E2E_ACTIVATE_EMAIL="fletflow.e2e.user.activate.$user_suffix@example.test"
+export FLETFLOW_E2E_ACTIVATE_PASSWORD="$(openssl rand -hex 24)"
+export FLETFLOW_E2E_ACTIVATE_TOKEN="$(openssl rand -hex 32)"
 export FLETFLOW_E2E_DRIVER_EMAIL="fletflow.e2e.driver.$user_suffix@example.test"
 export FLETFLOW_E2E_DRIVER_PASSWORD="$(openssl rand -hex 24)"
 export FLETFLOW_E2E_ROUTE_DRIVER_EMAIL="fletflow.e2e.driver.route.$user_suffix@example.test"
@@ -144,6 +150,20 @@ await createUser({
   username: "E2E QA Deactivation",
   email: process.env.FLETFLOW_E2E_DEACTIVATION_EMAIL,
   password: process.env.FLETFLOW_E2E_DEACTIVATION_PASSWORD,
+  roleName: "User",
+});
+
+await createUser({
+  username: "E2E QA Password Reset",
+  email: process.env.FLETFLOW_E2E_RESET_EMAIL,
+  password: process.env.FLETFLOW_E2E_RESET_PASSWORD,
+  roleName: "User",
+});
+
+await createUser({
+  username: "E2E QA Account Activation",
+  email: process.env.FLETFLOW_E2E_ACTIVATE_EMAIL,
+  password: process.env.FLETFLOW_E2E_ACTIVATE_PASSWORD,
   roleName: "User",
 });
 
@@ -231,6 +251,16 @@ mysql --protocol=TCP --host="$MYSQL_HOST" --port="$MYSQL_PORT" --user="$MYSQL_US
 mysql --protocol=TCP --host="$MYSQL_HOST" --port="$MYSQL_PORT" --user="$MYSQL_USER" "$DB_NAME" \
   -e "UPDATE Users SET IsActive=1, MustChangePassword=0 WHERE Email IN ('$FLETFLOW_E2E_USER_EMAIL', '$FLETFLOW_E2E_DEACTIVATION_EMAIL', '$FLETFLOW_E2E_DRIVER_EMAIL', '$FLETFLOW_E2E_ROUTE_DRIVER_EMAIL', '$FLETFLOW_E2E_MANAGER_MAP_EMAIL');" \
   >/dev/null 2>&1
+
+mysql --protocol=TCP --host="$MYSQL_HOST" --port="$MYSQL_PORT" --user="$MYSQL_USER" "$DB_NAME" \
+  -e "UPDATE Users SET IsActive=1, MustChangePassword=0 WHERE Email='$FLETFLOW_E2E_RESET_EMAIL'; UPDATE Users SET IsActive=1, MustChangePassword=1 WHERE Email='$FLETFLOW_E2E_ACTIVATE_EMAIL'; INSERT INTO PasswordResetTokens (Id, UserId, TokenHash, ExpiresAt, CreatedAt, UsedAt) SELECT UUID(), Id, UPPER(SHA2('$FLETFLOW_E2E_RESET_TOKEN', 256)), DATE_ADD(UTC_TIMESTAMP(6), INTERVAL 30 MINUTE), UTC_TIMESTAMP(6), NULL FROM Users WHERE Email='$FLETFLOW_E2E_RESET_EMAIL'; INSERT INTO PasswordResetTokens (Id, UserId, TokenHash, ExpiresAt, CreatedAt, UsedAt) SELECT UUID(), Id, UPPER(SHA2('$FLETFLOW_E2E_ACTIVATE_TOKEN', 256)), DATE_ADD(UTC_TIMESTAMP(6), INTERVAL 30 MINUTE), UTC_TIMESTAMP(6), NULL FROM Users WHERE Email='$FLETFLOW_E2E_ACTIVATE_EMAIL';" \
+  >/dev/null 2>&1
+token_fixture_count="$(mysql --protocol=TCP --host="$MYSQL_HOST" --port="$MYSQL_PORT" --user="$MYSQL_USER" "$DB_NAME" \
+  --batch --skip-column-names -e "SELECT COUNT(*) FROM PasswordResetTokens WHERE TokenHash IN (UPPER(SHA2('$FLETFLOW_E2E_RESET_TOKEN', 256)), UPPER(SHA2('$FLETFLOW_E2E_ACTIVATE_TOKEN', 256)));" 2>/dev/null)"
+[[ "$token_fixture_count" == "2" ]] || {
+  echo "No se pudieron preparar los fixtures temporales de recuperación/activación." >&2
+  exit 1
+}
 
 PLAYWRIGHT_BASE_URL="$playwright_base_url" \
 PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH="${PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH:-/usr/bin/google-chrome}" \

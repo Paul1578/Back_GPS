@@ -577,12 +577,18 @@ La invitación envía sólo el enlace de activación; el usuario fija su contras
 - Login enum: xUnit verifica mismo 401/mensaje para email desconocido, contraseña incorrecta, cuenta inactiva y pendiente; smoke compara código y mensaje usando API/MySQL. Backend Action `45064942603` pasó build, xUnit **106/106**, smoke y cleanup.
 - Registro público nuevo/duplicado: controller entrega payload neutral en ambos casos; E2E compara cuerpos, luego autentica la cuenta creada. Smoke HTTP/MySQL incluido. Local Release **107/107**, build 0/0 y syntax shell; Actions pendientes.
 
-## 2026-11-23 — Límite de registro público — VALIDACIÓN LOCAL, ACTION PENDIENTE
+## 2026-11-23 — Límite de registro público — VALIDADO EN ACTION
 
 - `SimpleRateLimitMiddlewareTests`: permite cinco altas por IP en diez minutos; la sexta recibe 429 + `Retry-After`; Login sigue accesible y no hay bloqueo de cuenta. También se aplica a loopback en Development.
 - Con SDK `DOTNET_ROOT=/home/leonardo/.dotnet`: pruebas focales middleware **8/8** y suite Release `BackEnd_Gps.sln` **135/135**.
 - La primera invocación de `/usr/bin/dotnet` terminó exit 131 por falta de versiones en `/usr/lib64/dotnet/host/fxr`; usar el SDK 8 de `~/.dotnet` resolvió el problema sin cambiar la instalación global.
-- Action integrada y smoke API/MySQL del commit aún pendientes.
+- Backend commit `585fcb0`, Action [`45110342238`](https://github.com/Paul1578/Back_GPS/actions/runs/45110342238): build Release, suite xUnit **135/135**, smoke tenant HTTP/MySQL, concurrencia y cleanup success.
+
+## Fixtures E2E UI de reset y activación — CI pendiente
+
+- El runner crea cuentas QA dedicadas y tokens aleatorios de 32 bytes; persiste sólo SHA-256 en `PasswordResetTokens` de la DB permitida (`fletflow_ci*` en CI). Comprueba la existencia exacta de dos tokens.
+- Front E2E ejecuta los forms reales de Reset/Activate, valida 200, login con password nueva, rechazo de la anterior y 401 al reutilizar el token. SMTP no se simula como entregado.
+- `bash -n scripts/run-e2e-local.sh`, Front lint/build/discovery pasan. Publicar runner Backend antes del Front y validar la CI integrada.
 - Smoke de registro mide ambas respuestas >=450 ms (controlador fija piso de 500 ms); no certifica igualdad temporal bajo carga externa.
 - Backend Action `45065747053` pasó build/xUnit **107/107**, alta nueva/duplicada y cleanup, antes de la adición del piso temporal. Validar esa medición en la siguiente Action.
 - Backend Action `45066082294` pasó build/xUnit **107/107**, smoke HTTP/MySQL de alta nueva/duplicada, cuerpo neutral, tiempo >=450 ms y cleanup.

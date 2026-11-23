@@ -794,3 +794,10 @@ La invitación envía sólo el enlace de activación; el usuario fija su contras
 - `CreateDriver_RethrowsDatabaseFailureWhenDocumentConflictIsNotConfirmed` y `UpdateDriver_RethrowsDatabaseFailureWhenOtherDriverDoesNotOwnDocument` aseguran que una falla de persistencia sin otro Driver confirmado no se convierta en conflicto de negocio.
 - Verificación Release local: **162/162 xUnit**; build Release **0 warnings, 0 errors**. `bash -n scripts/smoke-tenant-http.sh` y `git diff --check` pasan.
 - El smoke MySQL ahora sincroniza dos `POST /Drivers` después del precheck mediante un trigger temporal en una DB `fletflow_ci*`; verifica HTTP 201/409 y una sola fila. Ejecución de este smoke en CI **pendiente**. No se usó la DB persistente local `fletflow`.
+
+## Auditoría de access JWT y contenedor — 2026-11-23
+
+- `docker build -t fletflow-backend-security-check:local .`: pasa. `docker image inspect` reporta usuario `fletflow`; el contenedor ejecuta UID **10001**, puede escribir en su key ring por defecto y excluye `/app/BackEnd_Gps.Tests.dll`.
+- Action [`45220748028`](https://github.com/Paul1578/Back_GPS/actions/runs/45220748028) del commit `9d201e8`: Release build, **162/162 xUnit**, smoke de carrera DocumentNumber con un POST **201**, otro **409**, una fila y cleanup; smoke general tenant/roles pasó.
+- Revalidación local tras añadir `nbf` y rechazar JWT antiguos o >15 min: Release xUnit **165/165**, build Release **0 warnings/0 errors**, Docker build y verificación UID/test-assembly/keyring correctos, `bash -n` y diff-check correctos. Incluye caso legacy sin `nbf`.
+- Los tests de 15 minutos, validación startup y rechazo de JWT legacy, junto con Docker non-root, son posteriores a la Action `45220748028`; CI del siguiente commit pendiente. El smoke no se ejecutó localmente contra la base persistente `fletflow`.

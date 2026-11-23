@@ -174,7 +174,11 @@ builder.Services.AddOptions<EmailSettings>()
 // =====================
 // JWT
 // =====================
-builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("Jwt"));
+builder.Services.AddOptions<JwtSettings>()
+    .Bind(builder.Configuration.GetSection("Jwt"))
+    .Validate(settings => double.IsFinite(settings.ExpireMinutes) && settings.ExpireMinutes > 0 && settings.ExpireMinutes <= 15,
+        "Jwt:ExpireMinutes debe estar entre 0 y 15 para limitar la vigencia de access tokens.")
+    .ValidateOnStart();
 var jwtSettings = builder.Configuration.GetSection("Jwt").Get<JwtSettings>();
 
 if (jwtSettings == null ||
@@ -205,6 +209,12 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         {
             OnTokenValidated = async context =>
             {
+                if (!JwtAccessTokenLifetimePolicy.IsAllowed(context.SecurityToken))
+                {
+                    context.Fail("La vigencia del access token excede el límite permitido.");
+                    return;
+                }
+
                 var userIdValue = context.Principal?.FindFirstValue(ClaimTypes.NameIdentifier)
                     ?? context.Principal?.FindFirstValue("nameid");
                 if (!Guid.TryParse(userIdValue, out var userId))

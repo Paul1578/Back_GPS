@@ -920,3 +920,20 @@ Errores de migración, herramientas, QA y soluciones están en `docs/ERROR_LOG.m
 - Backend HEAD de código `f49ee13`; Action [45153378636](https://github.com/Paul1578/Back_GPS/actions/runs/45153378636) success: Release, xUnit **139/139**, tenant HTTP/MySQL, concurrencia de rutas, login rate limit Staging y limpieza.
 - La baja se validó por GET, listado activo y SQL; carrera de UpdateRoute comprobó ruta ganadora/perdedora y asociaciones persistidas. La promoción de Admin sigue root-only.
 - Próximo: validar Front Action `45153408262`; mantener misión abierta y retomar pendientes CRUD/roles/responsive desde este handoff.
+
+## Continuación misión — auditoría seguridad y UX — 2026-11-23
+
+- Backend rama `chore/stabilize-fleet-platform`: commit `9d201e8` publicado por carrera de DocumentNumber (xUnit 162/162 en ese cambio; Action Backend pendiente). Smoke MySQL sincroniza dos POST, espera 201/409 y comprueba una fila.
+- Front rama `refactor/route-builder`: auth BFF cambiado localmente para lista allowlist de orígenes en producción (`FLETFLOW_AUTH_ALLOWED_ORIGINS`), sin confiar en `X-Forwarded-*`, y HTTPS requerido para API remota. CI debe incluir la variable allowlist `http://127.0.0.1:3000` para E2E descartables.
+- Front UX local: markers Leaflet ahora son accesibles y el E2E afirma feedback “Ubicación fijada” y etiquetas A/1/2/B; baja del Driver desde pantalla dedicada requiere confirmación/cancelación comprobada; CRUD de Drivers cubre alta tablet, edición y asignación persistida.
+- Auditoría Backend posterior: access tokens máximo 15 min con `ValidateOnStart`; Docker corre UID 10001. La validación local de Release y Docker está registrada abajo; falta Action del nuevo commit.
+- Pendiente crítico inmediato: revisar y publicar ambos lotes locales; esperar Actions de commits exactos Front/Backend y corregir cualquier fallo/flake. Actualizar handoff/status/error log tras resultados.
+- Limitación de logout documentada: revoca refresh inmediatamente, access JWT copiado puede vivir hasta 15 min; `logout-all`/cambio de rol invalida por `TokenVersion`.
+
+## Seguridad Backend — validación local final (2026-11-23)
+
+- Se añadió policy de JWT efectiva: tokens nuevos incluyen `nbf`; `OnTokenValidated` rechaza los JWT antiguos sin tiempo de emisión verificable y duración >15 minutos. Configuración `Jwt:ExpireMinutes` valida startup en 1..15.
+- El test inicial encontró `ValidFrom=DateTime.MinValue` por ausencia de `nbf`; el generador ahora comparte el mismo instante UTC para `notBefore`/`expires`. Error y solución documentados en ERROR_LOG.
+- Estado local: Release xUnit **165/165**, build **0 warnings/0 errors**, `bash -n`/diff-check correctos. Docker reconstruido después del ajuste final: UID 10001, sin assemblies de test y keyring escribible.
+- Back commit `9d201e8` y Action [`45220748028`](https://github.com/Paul1578/Back_GPS/actions/runs/45220748028) validaron DocumentNumber race. Próximo: finalizar Docker build exacto, actualizar docs, publicar este endurecimiento y esperar su Action.
+- Después publicar Front lote UX/BFF; CI deberá usar la rama backend más reciente. No cerrar misión hasta resolver ambos workflows y revisar los demás criterios/external limitations.

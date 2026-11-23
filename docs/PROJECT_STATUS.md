@@ -685,3 +685,10 @@ Nota de actualización: algunos resultados históricos de registro público más
 - Backend `f49ee13`, Action [45153378636](https://github.com/Paul1578/Back_GPS/actions/runs/45153378636): Release build, xUnit **139/139**, smokes HTTP/MySQL de tenant y concurrencia, login Staging y cleanup pasaron.
 - La edición concurrente confirmó ganador/perdedor por API y SQL; la baja lógica quedó verificada por GET, `onlyActive=true` y persistencia MySQL.
 - Rutas de traslado sin paradas permitidas; las paradas admiten recogida, entrega o ambas.
+
+## Auditoría adicional de seguridad — cambios locales en validación (2026-11-23)
+
+- Front: BFF requiere una lista explícita `FLETFLOW_AUTH_ALLOWED_ORIGINS` en producción; ignora forwarded headers no confiables; bloquea API remota HTTP. Tests directos cubren forged forwarded y HTTP remoto sin enviar solicitud. E2E de rutas añade marcadores accesibles/feedback; baja de Driver pide confirmación; CRUD de Driver se extiende a tablet.
+- Backend: colisión de documento Driver concurrente responde 409 con consulta confirmatoria, conserva 500 para fallos no relacionados; smoke MySQL compite dos inserts. Access JWT de 15 minutos como máximo; Docker corre sin root.
+- Backend local Release **165/165**; build **0 warnings/0 errors**; Docker build exitoso con usuario `fletflow`/UID 10001, key ring escribible y tests excluidos. Action [`45220748028`](https://github.com/Paul1578/Back_GPS/actions/runs/45220748028) validó el fix del documento con 162/162, carrera HTTP/MySQL 201/409 y cleanup.
+- Se rechazan JWT antiguos sin `nbf` y cualquier access token de más de 15 min; CI de este commit posterior y del lote Front todavía pendientes. No cerrar aún.

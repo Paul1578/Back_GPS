@@ -47,6 +47,8 @@
 - El cambio de rol se guarda en una unidad de trabajo. El estado de Driver no permite iniciar una ruta si el perfil está inactivo; la baja bloquea si hay ruta en curso y libera el vehículo.
 - Los tokens de recuperación/activación se guardan con hash y no se escriben en logs. La invitación envía enlace de activación y no envía una contraseña temporal. Reset y activación revocan los refresh tokens existentes.
 - Cada cuenta tiene un único rol (índice único en DB, cambio transaccional y emisión JWT rechaza estados inconsistentes). El borrado aislado de un rol se rechaza.
+- Desde la auditoría 2026-11-23, access JWT expira a los **15 minutos**. `Jwt:ExpireMinutes` falla al iniciar si es <= 0, no finito o > 15; el cliente renueva vía refresh token. `OnTokenValidated` rechaza tokens sin una vida de emisión verificable o que excedan 15 minutos, invalidando inmediatamente JWT antiguos de seis horas. Logout individual revoca refresh; access JWT nuevos copiados pueden seguir válidos hasta su expiración, máximo 15 minutos.
+- El Dockerfile ejecuta la API como UID 10001 sin privilegios. El key ring Data Protection debe montarse con permisos de escritura para ese UID; no conceder privilegios root al proceso.
 - CORS se aplica en todos los entornos con orígenes configurables. En producción se aplican HSTS y redirección HTTPS; el despliegue debe configurar proxy/certificado y `AllowedHosts` del dominio real.
 - MySQL y phpMyAdmin de Docker sólo publican puertos en loopback (`127.0.0.1`), no en todas las interfaces del host.
 - La asignación manual rechaza vehículos fuera de estado Available y los endpoints de rutas no usan el ID de cuenta como fallback de ID de ruta.

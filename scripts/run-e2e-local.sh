@@ -97,6 +97,7 @@ export FLETFLOW_E2E_ROUTE_DRIVER_EMAIL="fletflow.e2e.driver.route.$user_suffix@e
 export FLETFLOW_E2E_ROUTE_DRIVER_PASSWORD="$(openssl rand -hex 24)"
 export FLETFLOW_E2E_MANAGER_MAP_EMAIL="fletflow.e2e.manager.map.$user_suffix@example.test"
 export FLETFLOW_E2E_MANAGER_MAP_PASSWORD="$(openssl rand -hex 24)"
+export FLETFLOW_E2E_MAP_FIXTURE_SUFFIX="$user_suffix"
 export FLETFLOW_E2E_OTHER_TENANT_EMAIL="fletflow.e2e.admin.other.$user_suffix@example.test"
 export FLETFLOW_E2E_OTHER_TENANT_PASSWORD="$(openssl rand -hex 24)"
 

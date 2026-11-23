@@ -3,6 +3,7 @@
 - Corregida posible actualización perdida entre edición del perfil Driver y asignación Vehicle: el comando de edición bloquea/relee la fila antes de guardar. Release xUnit **113/113** local y Action `45084368819` success, incluida regresión interleaving y smoke HTTP/MySQL.
 - Runner actualizado para exportar el UserId requerido por el nuevo E2E Manager mapa; `bash -n` y diff-check pasan, Action Backend `45084501616` success. La Action Front debe confirmar que el escenario no figure skipped.
 - El E2E Manager mapa falló en Actions por uso del hamburger desktop y estado de rol residual; runner ahora crea Manager/Driver exclusivos con cleanup SQL. `bash -n` y diff-check pasan local; Front debe validar el flujo nuevo.
+- Backend commit `1ce4d45` pasó Action `45085910280`: build Release, xUnit, aislamiento tenant por HTTP/MySQL y concurrencia de asignación por MySQL; cleanup y contenedores completados.
 - Front Actions `45082924174` (un worker) y `45083215716` detectaron la escritura perdida, y dos aserciones UI/E2E ya corregidas en rama Front. Ver `ERROR_LOG.md` en ambos repos.
 - Ramas: `chore/stabilize-fleet-platform` y Front `refactor/route-builder`; main intacta. Misión abierta por cobertura CRUD/roles/responsive, decisiones Admin delegado y User↔Driver, SMTP externo y móvil nativo aplazado.
 

@@ -110,6 +110,8 @@ export FLETFLOW_E2E_MANAGER_MAP_PASSWORD="$(openssl rand -hex 24)"
 export FLETFLOW_E2E_MAP_FIXTURE_SUFFIX="$user_suffix"
 export FLETFLOW_E2E_OTHER_TENANT_EMAIL="fletflow.e2e.admin.other.$user_suffix@example.test"
 export FLETFLOW_E2E_OTHER_TENANT_PASSWORD="$(openssl rand -hex 24)"
+export FLETFLOW_E2E_DELEGATED_ADMIN_EMAIL="fletflow.e2e.admin.delegated.$user_suffix@example.test"
+export FLETFLOW_E2E_DELEGATED_ADMIN_PASSWORD="$(openssl rand -hex 24)"
 
 FLETFLOW_E2E_DRIVER_IDS="$(node <<'NODE'
 const api = "http://127.0.0.1:5048/api";
@@ -138,6 +140,13 @@ const createUser = async (body) => {
   if (!response.ok) throw new Error(`Alta fixture ${body.roleName}: HTTP ${response.status}`);
   return response.json();
 };
+
+const delegatedAdmin = await createUser({
+  username: "E2E QA Delegated Admin",
+  email: process.env.FLETFLOW_E2E_DELEGATED_ADMIN_EMAIL,
+  password: process.env.FLETFLOW_E2E_DELEGATED_ADMIN_PASSWORD,
+  roleName: "Admin",
+});
 
 await createUser({
   username: "E2E QA User",
@@ -228,6 +237,7 @@ process.stdout.write(JSON.stringify({
   driverId: driver.driverId,
   driverUserId: driver.id,
   routeDriverId: routeDriver.driverId,
+  delegatedAdminId: delegatedAdmin.id,
   mapManagerId: mapManager.id,
   mapRouteDriverId: mapDriver.id,
 }));
@@ -238,18 +248,20 @@ FLETFLOW_E2E_DRIVER_USER_ID="$(node -e 'process.stdout.write(JSON.parse(process.
 FLETFLOW_E2E_ROUTE_DRIVER_ID="$(node -e 'process.stdout.write(JSON.parse(process.argv[1]).routeDriverId)' "$FLETFLOW_E2E_DRIVER_IDS")"
 FLETFLOW_E2E_MAP_MANAGER_ID="$(node -e 'process.stdout.write(JSON.parse(process.argv[1]).mapManagerId)' "$FLETFLOW_E2E_DRIVER_IDS")"
 FLETFLOW_E2E_MAP_ROUTE_DRIVER_ID="$(node -e 'process.stdout.write(JSON.parse(process.argv[1]).mapRouteDriverId)' "$FLETFLOW_E2E_DRIVER_IDS")"
+FLETFLOW_E2E_DELEGATED_ADMIN_ID="$(node -e 'process.stdout.write(JSON.parse(process.argv[1]).delegatedAdminId)' "$FLETFLOW_E2E_DRIVER_IDS")"
 export FLETFLOW_E2E_DRIVER_ID
 export FLETFLOW_E2E_DRIVER_USER_ID
 export FLETFLOW_E2E_ROUTE_DRIVER_ID
 export FLETFLOW_E2E_MAP_MANAGER_ID
 export FLETFLOW_E2E_MAP_ROUTE_DRIVER_ID
+export FLETFLOW_E2E_DELEGATED_ADMIN_ID
 
 mysql --protocol=TCP --host="$MYSQL_HOST" --port="$MYSQL_PORT" --user="$MYSQL_USER" "$DB_NAME" \
   -e "UPDATE Users SET IsActive=1, MustChangePassword=0 WHERE Email='$FLETFLOW_E2E_OTHER_TENANT_EMAIL';" \
   >/dev/null 2>&1
 
 mysql --protocol=TCP --host="$MYSQL_HOST" --port="$MYSQL_PORT" --user="$MYSQL_USER" "$DB_NAME" \
-  -e "UPDATE Users SET IsActive=1, MustChangePassword=0 WHERE Email IN ('$FLETFLOW_E2E_USER_EMAIL', '$FLETFLOW_E2E_DEACTIVATION_EMAIL', '$FLETFLOW_E2E_DRIVER_EMAIL', '$FLETFLOW_E2E_ROUTE_DRIVER_EMAIL', '$FLETFLOW_E2E_MANAGER_MAP_EMAIL');" \
+  -e "UPDATE Users SET IsActive=1, MustChangePassword=0 WHERE Email IN ('$FLETFLOW_E2E_USER_EMAIL', '$FLETFLOW_E2E_DEACTIVATION_EMAIL', '$FLETFLOW_E2E_DRIVER_EMAIL', '$FLETFLOW_E2E_ROUTE_DRIVER_EMAIL', '$FLETFLOW_E2E_MANAGER_MAP_EMAIL', '$FLETFLOW_E2E_DELEGATED_ADMIN_EMAIL');" \
   >/dev/null 2>&1
 
 mysql --protocol=TCP --host="$MYSQL_HOST" --port="$MYSQL_PORT" --user="$MYSQL_USER" "$DB_NAME" \

@@ -53,6 +53,7 @@
 
 - Revisión estática read-only ejecutada sobre Backend `391792e` y Front `6555858`. No encontró bypass nuevo de tenant/roles, fallo JWT explotable ni vector XSS concreto en el alcance inspeccionado.
 - Evidencia revisada: filtros tenant en `FleetFlowDbContext`, handlers de rutas/usuarios, root-only y `TokenVersion` en JwtBearer `OnTokenValidated`. Front conserva access token en `localStorage`, que eleva el impacto potencial de una XSS futura; no se encontró vector XSS. El auditor no reejecutó pruebas dinámicas.
+- Front Action [`45131410815`](https://github.com/Paul1578/Front_gpsR/actions/runs/45131410815) también pasó contra esta rama: **51/51 E2E**, responsive 1/1, Release/xUnit y cleanup, incluyendo ciclo Driver de traslado por UI.
 
 ## Forwarded Headers bajo allowlist — CI aprobada
 

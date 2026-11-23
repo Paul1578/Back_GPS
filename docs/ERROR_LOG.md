@@ -1410,3 +1410,13 @@ Cada cambio de API debe incluir validación de compilación, migraciones si apli
 - Una búsqueda inicial apuntó a `BackEnd_Gps/fletflow/...`, estructura que no existe; `rg` informó paths faltantes y no alteró archivos. La estructura real está en `fletflow/Infrastructure/...` y `fletflow/Api/...`.
 - En otra búsqueda, backticks dentro de comillas dobles se interpretaron como sustitución de comandos por Bash (`ForwardedHeaders: command not found`). No se modificaron archivos ni se ejecutó una operación del proyecto.
 - Solución: localizar paths con `rg --files` y envolver patrones con backticks en comillas simples. Prevención: verificar la estructura y tratar `cmd` como shell ejecutable antes de enviar búsquedas.
+
+## 2026-11-23 — Lectura de spec Front desde el checkout Backend — RESUELTO
+
+- Una lectura agrupada intentó abrir `e2e/fleet-admin.spec.ts` mientras `workdir` era `/home/leonardo/Back_GPS`; el archivo pertenece a Front y `sed` devolvió path ausente. No hubo edición ni efecto en pruebas.
+- Solución: leer cada archivo con el checkout propietario o establecer un path absoluto. Prevención: agrupar comandos sólo cuando compartan `workdir`; dividir lecturas entre repositorios.
+
+## 2026-11-23 — Informe QA omitió el ciclo HTTP/MySQL de traslado ya existente — ACLARADO
+
+- El informe independiente de QA indicó que el smoke Backend no completaba traslados sin operaciones. La inspección de `scripts/smoke-tenant-http.sh:1233-1257` mostró que sí crea el traslado, lo inicia y completa como Logistics, y verifica estado/timestamps/vehículo Available por HTTP y SQL.
+- La brecha real era más estrecha: faltaba el mismo ciclo en la interfaz autenticada del Driver. Se cubrió en Front Action `45131410815` (51/51). Prevención: verificar el script completo y su tramo final antes de concluir ausencia de cobertura.

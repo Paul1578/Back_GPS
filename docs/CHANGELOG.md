@@ -8,6 +8,7 @@
 - Action `45085910280` confirmó build, pruebas unitarias, aislamiento multiempresa HTTP/MySQL y concurrencia de asignación; cleanup completo.
 - El runner entrega sufijo estable al spec Manager para que un retry tras restart de worker limpie la ruta y vehículo previos.
 - Action `45086298118` para `2619531` pasó build, xUnit, isolation/concurrency smoke y cleanup.
+- Se retiró el API controller de prueba con respuestas estáticas sin consumidores y se añadió aserción de endpoint ausente al smoke HTTP.
 
 # 2026-11-22 — Bloquear baja de cuenta Driver con ruta activa — VALIDADO EN CI
 

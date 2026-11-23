@@ -11,6 +11,12 @@
 - `run-e2e-local.sh` exporta `FLETFLOW_E2E_MAP_FIXTURE_SUFFIX` estable para toda la ejecución; el spec lo requiere y reusa al limpiar. Validar con nueva Action Front.
 - Prevención: compartir un identificador determinista de ejecución con los specs que crean fixtures, para que cleanup sobreviva reinicios del worker.
 
+## 2026-11-23 — API publicaba controlador de rutas de prueba con respuestas estáticas — CORREGIDO LOCALMENTE
+
+- Auditoría de seguridad encontró `RoutesPRUEBAController` autenticado pero alcanzable en cualquier entorno, con rutas `/api/RoutesPRUEBA/*` que devolvían textos de prueba y sin consumidores en ninguno de los repositorios.
+- Se retiró el controller sin quitar funcionalidad de negocio y el smoke tenant ahora comprueba HTTP 404 en `/RoutesPRUEBA/admin` usando token válido.
+- Prevención: no dejar endpoints de prueba/debug en el ensamblado API publicado; comprobar en HTTP que la ruta está ausente.
+
 # 2026-11-22 — Runner no exponía UserId requerido por E2E Manager de mapa — CORREGIDO LOCALMENTE
 
 - La prueba Manager del Front necesita la cuenta Driver de QA para cambiar temporalmente su rol y validar mapa/ruta como Manager. El runner sólo exportaba `FLETFLOW_E2E_DRIVER_ID`; el test también requiere el `UserId` de la cuenta, por lo que habría quedado en skipped aunque la suite figurase verde.

@@ -422,6 +422,9 @@ request POST /Auth/login "$(jq -nc --arg email "$admin_email" --arg password "$a
 expect_status 200 "Login tenant A"
 token="$(jq -er '.token // .accessToken' "$work_dir/response.json")"
 
+request GET /RoutesPRUEBA/admin "" "$token"
+expect_status 404 "No publicar endpoints de rutas de prueba fuera del producto"
+
 unknown_login_email="unknown.$(date +%s%N)@example.test"
 request POST /Auth/login "$(jq -nc --arg email "$unknown_login_email" '{email:$email,password:"invalid-credential"}')" ""
 expect_status 401 "Login con correo inexistente devuelve credenciales genéricas"

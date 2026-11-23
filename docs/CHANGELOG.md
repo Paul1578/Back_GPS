@@ -2,7 +2,8 @@
 
 - Las migraciones tenant frenan ownership discordante entre conductor y vehículo y detectan rutas ya ocultas con `OwnerUserId=NULL`.
 - JSON de paradas corrupto ahora produce error explícito con el ID de la ruta; el fallback queda reservado a `PointsJson=[]` legado.
-- Prueba focal **4/4**, suite Release **155/155**, build sin warnings/errores. API aplicó migraciones desde DB vacía en MySQL 8 efímero; guard rechazó datos discordantes y preservó relaciones. Action integrada pendiente.
+- Prueba focal **4/4**, suite Release **155/155**, build sin warnings/errores. API aplicó migraciones desde DB vacía en MySQL 8 efímero; guard rechazó datos discordantes y preservó relaciones.
+- Action [`45185698388`](https://github.com/Paul1578/Back_GPS/actions/runs/45185698388) validó Release, HTTP/MySQL, concurrencia, rate limit y cleanup.
 
 # 2026-11-23 — Paginación server-side de Equipo y Conductores
 

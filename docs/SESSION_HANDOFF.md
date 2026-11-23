@@ -1,10 +1,10 @@
 ## Handoff vigente — integridad de rutas heredadas
 
-- Rama backend `chore/stabilize-fleet-platform`; `main` intacta. El cambio local agrega una guarda a `TenantFleetOwnership` para detenerse si una ruta enlaza Driver y Vehicle de distintos tenants, antes de asignar ownership, y una migración de verificación que hace fallar el arranque si la migración vieja ya dejó esa ruta con owner nulo.
+- Rama backend `chore/stabilize-fleet-platform`; `main` intacta. Commit `492f8f9` agrega una guarda a `TenantFleetOwnership` para detenerse si una ruta enlaza Driver y Vehicle de distintos tenants, antes de DDL, y una migración que hace fallar el arranque si la migración anterior dejó esa ruta con owner nulo.
 - `FleetMapper` ahora lanza `InvalidDataException` con el ID de ruta si el JSON persistido está corrupto; conserva la conversión heredada para `[]`. Prueba focal **4/4**; suite Release **155/155** y build **0 warnings/0 errores**.
 - API arrancó desde DB vacía en MySQL 8 efímero y aplicó toda la cadena de migraciones. La guarda de ruta existente probada con una relación discordante devolvió SQLSTATE 45000; lectura posterior confirmó OwnerUserId nulo y owners Driver/Vehicle distintos sin mutación. DB efímera y API apagadas.
-- Pendiente inmediato: revisar diff, commit/push y Action integrada; si falla, corregir y repetir. No se usó ni cambió la DB local del proyecto.
-- Front Action `45183402334` para `22bb081` seguía ejecutando E2E autenticado contra API/MySQL al guardar este handoff. Consultar resultado y cerrar el ciclo Front antes de sincronizar su documentación.
+- Action Backend [`45185698388`](https://github.com/Paul1578/Back_GPS/actions/runs/45185698388) y la duplicada [`45185687229`](https://github.com/Paul1578/Back_GPS/actions/runs/45185687229) terminaron success con API/MySQL y cleanup.
+- No se usó ni cambió la DB local del proyecto. El Front `45183402334` falló 51/53 por dos asserts obsoletos; corregidos en `8dc1a2a`. La Action [`45185761490`](https://github.com/Paul1578/Front_gpsR/actions/runs/45185761490) y una ejecución posterior con la limpieza de componentes siguen corriendo; comprobarlas y sincronizar su documentación.
 
 ## Handoff vigente — paginación server-side
 

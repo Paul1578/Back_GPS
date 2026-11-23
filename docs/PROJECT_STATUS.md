@@ -1,10 +1,11 @@
-## Integridad de rutas heredadas — protección en implementación
+## Integridad de rutas heredadas — Backend CI aprobado
 
 - La revisión encontró que `TenantFleetOwnership` dejaba `OwnerUserId=NULL` cuando Driver y Vehicle pertenecían a empresas diferentes; el filtro tenant ocultaba entonces la ruta.
 - La migración ahora comprueba la discrepancia antes de actualizar rutas y aborta con un error explícito. Una migración adicional detecta rutas que ya quedaron sin propietario en entornos donde se aplicó la versión anterior, impidiendo que el API arranque y oculte el problema.
 - También se corrigió `FleetMapper`: `PointsJson` inválido ya no degrada silenciosamente una ruta a origen/destino. El fallback se conserva sólo para el arreglo vacío heredado `[]`.
 - Prueba focal FleetMapper: **4/4**; suite Release **155/155**, build **0 warnings/0 errores**. API arrancó contra MySQL 8 efímero desde DB vacía y aplicó todas las migraciones, incluidas ambas guardas. Una segunda verificación MySQL produjo SQLSTATE 45000 para owner discordante y confirmó la ruta y ambos propietarios intactos.
-- La Action integrada con API/MySQL y cleanup sigue pendiente.
+- Action Backend [`45185698388`](https://github.com/Paul1578/Back_GPS/actions/runs/45185698388) para `492f8f9` terminó success: build/test Release, smoke tenant HTTP/MySQL, concurrencia, rate limit y cleanup. La ejecución automática duplicada [`45185687229`](https://github.com/Paul1578/Back_GPS/actions/runs/45185687229) también terminó success.
+- Front Action [`45185761490`](https://github.com/Paul1578/Front_gpsR/actions/runs/45185761490) está probando `8dc1a2a` contra la nueva rama Backend; otra ejecución para el commit Front posterior sigue en curso.
 
 ## Paginación de equipo y conductores — Action aprobada
 

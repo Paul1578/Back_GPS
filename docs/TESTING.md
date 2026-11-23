@@ -3,7 +3,8 @@
 - `FleetMapperTests`: **4/4**; malformed JSON, JSON con objeto en vez de arreglo, elemento null y compatibilidad heredada de `[]`.
 - `TenantFleetOwnership` comprueba ownership derivado antes de DDL; `GuardDiscordantRouteOwnership` comprueba instalaciones donde la migración anterior ya dejó `OwnerUserId=NULL`.
 - API arrancó contra MySQL 8 efímero desde base vacía y aplicó todas las migraciones. Procedimiento de guard probado con ruta discordante produjo SQLSTATE 45000 y la consulta posterior confirmó que la fila y propietarios no cambiaron.
-- Suite Release **155/155**; build Release **0 warnings/0 errores**. Action integrada pendiente.
+- Suite Release **155/155**; build Release **0 warnings/0 errores**.
+- Action [`45185698388`](https://github.com/Paul1578/Back_GPS/actions/runs/45185698388) pasó build/test Release, smoke HTTP/MySQL tenant, concurrencia, rate limit y teardown descartable.
 
 ## Paginación Usuarios/Drivers — validación local y smoke HTTP pendiente en CI
 

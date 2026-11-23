@@ -10,6 +10,7 @@
 - El primer smoke ad hoc con el cliente `mysql` no creó el procedimiento porque el cliente trató los `;` internos como límites; las tablas de fixture sí quedaron en la DB descartable. Se añadió `DELIMITER //` a ese cliente y la guarda SQLSTATE 45000 pasó con la fila intacta. La prueba de migraciones real vía API confirmó que EF envía el cuerpo completo al servidor sin ese problema.
 - La primera suite tras crear `GuardDiscordantRouteOwnership` falló compilación porque el import del contexto usaba `BackEnd_Gps...`; el namespace real es `fletflow.Infrastructure.Persistence.Context`. Se corrigió y la suite Release pasó **155/155**.
 - Prevención: para SQL de rutinas, distinguir parser del cliente MySQL del protocolo usado por EF; copiar namespaces del contexto desde migraciones Designer existentes.
+- La Action [`45185698388`](https://github.com/Paul1578/Back_GPS/actions/runs/45185698388) validó el commit final con todos los smokes y teardown.
 
 # 2026-11-23 — Smoke paginado de Driver comparó el ID de otro fixture — CORREGIDO
 

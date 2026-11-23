@@ -229,6 +229,60 @@ wait "$p1"
 wait "$p2"
 assert_one_created_one_conflict update_a update_b "UpdateRoute concurrente (mismo vehículo y conductor)" 200
 
+if [[ "$(cat "$work_dir/update_a.status")" == "200" ]]; then
+  updated_route_id="$route_a"
+  updated_source_driver_id="$update_driver_a"
+  updated_source_vehicle_id="$update_source_vehicle_a"
+  unchanged_route_id="$route_b"
+  unchanged_vehicle_id="$update_source_vehicle_b"
+  unchanged_driver_id="$update_driver_b"
+else
+  updated_route_id="$route_b"
+  updated_source_driver_id="$update_driver_b"
+  updated_source_vehicle_id="$update_source_vehicle_b"
+  unchanged_route_id="$route_a"
+  unchanged_vehicle_id="$update_source_vehicle_a"
+  unchanged_driver_id="$update_driver_a"
+fi
+updated_route_response="$(curl -fsS -H "Authorization: Bearer $token" "$api_base/Routes/$updated_route_id")"
+unchanged_route_response="$(curl -fsS -H "Authorization: Bearer $token" "$api_base/Routes/$unchanged_route_id")"
+updated_driver_response="$(curl -fsS -H "Authorization: Bearer $token" "$api_base/Drivers/$update_target_driver")"
+previous_driver_response="$(curl -fsS -H "Authorization: Bearer $token" "$api_base/Drivers/$updated_source_driver_id")"
+printf '%s' "$updated_route_response" | jq -e --arg vehicle "$update_target_vehicle" --arg driver "$update_target_driver" \
+  '.vehicleId == $vehicle and .driverId == $driver and .status == 0 and .isActive == true' >/dev/null || {
+  echo "La edición exitosa no persistió asignación/estado de la ruta destino." >&2
+  printf '%s\n' "$updated_route_response" >&2
+  exit 1
+}
+printf '%s' "$unchanged_route_response" | jq -e --arg vehicle "$unchanged_vehicle_id" --arg driver "$unchanged_driver_id" \
+  '.vehicleId == $vehicle and .driverId == $driver and .status == 0 and .isActive == true' >/dev/null || {
+  echo "La edición en conflicto mutó la asignación de la ruta que perdió la carrera." >&2
+  printf '%s\n' "$unchanged_route_response" >&2
+  exit 1
+}
+printf '%s' "$updated_driver_response" | jq -e --arg vehicle "$update_target_vehicle" '.vehicleId == $vehicle and .isActive == true' >/dev/null || {
+  echo "UpdateRoute no persistió la asignación del Driver elegido al nuevo vehículo." >&2
+  printf '%s\n' "$updated_driver_response" >&2
+  exit 1
+}
+printf '%s' "$previous_driver_response" | jq -e --arg vehicle "$updated_source_vehicle_id" '.vehicleId == $vehicle and .isActive == true' >/dev/null || {
+  echo "Editar la ruta cambió la asignación independiente del Driver que antes la operaba." >&2
+  printf '%s\n' "$previous_driver_response" >&2
+  exit 1
+}
+updated_route_sql_state="$(mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" \
+  --batch --skip-column-names "$db_name" -e "SELECT CONCAT(r.VehicleId, ':', r.DriverId, ':', d.VehicleId, ':', r.Status, ':', CAST(r.IsActive AS UNSIGNED)) FROM Routes r JOIN Drivers d ON d.Id=r.DriverId WHERE r.Id='$updated_route_id';")"
+[[ "$updated_route_sql_state" == "$update_target_vehicle:$update_target_driver:$update_target_vehicle:0:1" ]] || {
+  echo "La reasignación de ruta no coincide con MySQL (vehicle:driver:driverVehicle:status:active=$updated_route_sql_state)." >&2
+  exit 1
+}
+unchanged_route_sql_state="$(mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" \
+  --batch --skip-column-names "$db_name" -e "SELECT CONCAT(r.VehicleId, ':', r.DriverId, ':', d.VehicleId, ':', r.Status, ':', CAST(r.IsActive AS UNSIGNED)) FROM Routes r JOIN Drivers d ON d.Id=r.DriverId WHERE r.Id='$unchanged_route_id';")"
+[[ "$unchanged_route_sql_state" == "$unchanged_vehicle_id:$unchanged_driver_id:$unchanged_vehicle_id:0:1" ]] || {
+  echo "La edición en conflicto mutó MySQL para la ruta no elegida ($unchanged_route_sql_state)." >&2
+  exit 1
+}
+
 start_status_a="2033-04-05T10:00:00Z"
 end_status_a="2033-04-05T11:00:00Z"
 start_status_b="2034-04-05T10:00:00Z"
@@ -345,6 +399,25 @@ request PUT "/Routes/$guard_route/status" '{"status":3}'
 expect 204 "Cancelar ruta antes de baja"
 request DELETE "/Routes/$guard_route"
 expect 204 "Dar de baja ruta cancelada"
+request GET "/Routes/$guard_route"
+expect 200 "Consultar ruta cancelada dada de baja"
+jq -e '.isActive == false and .status == 3' "$work_dir/response.json" >/dev/null || {
+  echo "La baja lógica de la ruta cancelada no se conservó en el GET." >&2
+  cat "$work_dir/response.json" >&2
+  exit 1
+}
+guard_route_inactive_sql="$(mysql --protocol=TCP --host="$mysql_host" --port="$mysql_port" --user="$mysql_user" \
+  --batch --skip-column-names "$db_name" -e "SELECT CONCAT(CAST(IsActive AS UNSIGNED), ':', Status) FROM Routes WHERE Id='$guard_route';")"
+[[ "$guard_route_inactive_sql" == "0:3" ]] || {
+  echo "La baja HTTP de ruta no persistió en MySQL (active:status=$guard_route_inactive_sql)." >&2
+  exit 1
+}
+request GET "/Routes?onlyActive=true"
+expect 200 "Listar sólo rutas activas tras la baja lógica"
+if jq -e --arg id "$guard_route" 'any(.[]; .id == $id)' "$work_dir/response.json" >/dev/null; then
+  echo "La ruta inactiva aparece en la lista solicitada sólo con rutas activas." >&2
+  exit 1
+fi
 request PUT "/Drivers/$guard_driver/unassign-vehicle" '{}'
 expect 204 "Desasignar Driver sin ruta activa"
 request DELETE "/Vehicles/$guard_vehicle"

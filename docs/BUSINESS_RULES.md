@@ -30,6 +30,7 @@
 - Crear o editar una ruta no permite al cliente inyectar estados previos de paradas: todas comienzan pendientes.
 - El conductor asignado sólo puede mutar las paradas de su ruta.
 - Al iniciar una ruta, el vehículo pasa a en ruta; al cerrar, vuelve a disponible si no existe otra operación activa.
+- Editar una ruta pendiente aplica la pareja Vehicle/Driver elegida dentro de una transacción y actualiza `Driver.VehicleId` para el conductor elegido. La asignación explícita del conductor anterior se conserva; si se desea cambiar esa relación independientemente de la ruta, se usa la acción de asignar/desasignar vehículo.
 - Pausar una ruta la devuelve a pendiente y libera el vehículo si ninguna otra ruta sigue en curso; reanudar exige que el vehículo esté disponible.
 - Un vehículo sólo puede tener una ruta activa en progreso a la vez; cambios concurrentes de ruta se serializan y el perdedor recibe HTTP 409.
 - El inicio exige Driver activo. La baja del Driver, la asignación manual y el cambio de estado del vehículo se serializan con inicio/edición para evitar estados incompatibles.

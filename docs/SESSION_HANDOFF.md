@@ -1,5 +1,13 @@
 # Handoff vigente — 2026-11-23
 
+## Smokes backend de reasignación y baja lógica — Action pendiente
+
+- Auditoría read-only encontró dos faltas de evidencia: DeleteRoute no comprobaba que `IsActive=false` se guardara y UpdateRoute concurrente sólo asertaba HTTP 200/409.
+- `smoke-route-concurrency.sh` consulta ambas rutas por API y MySQL, verifica que una sola adopta la nueva Vehicle/Driver, que la perdedora no muta y que el Driver previo conserva su asignación explícita. La baja cancelada se valida por GET (`isActive=false`, estado Cancelled), SQL (`0:3`) y ausencia de `onlyActive=true`.
+- El workflow ya ejecuta smokes tenant, concurrencia y rate limit con API/MySQL desechables; se amplió el trigger de push para `chore/stabilize-fleet-platform`, que antes sólo corría por dispatch manual o push a `main`.
+- `bash -n scripts/smoke-route-concurrency.sh` y diff-check pasaron. No declarar verificado hasta que Action ejecutada sobre el commit nuevo complete xUnit, ambos smokes y teardown.
+- Hallazgo estático no confirmó bug de asignación; comportamiento presente documentado en `BUSINESS_RULES.md` y cubierto por estado final.
+
 ## Ramas y evidencia integrada
 
 - Backend `chore/stabilize-fleet-platform`: código `ca1a278`; Action [`45145214415`](https://github.com/Paul1578/Back_GPS/actions/runs/45145214415) pasó Release, xUnit **139/139**, tenant HTTP/MySQL, concurrencia, login rate limit/proxy y cleanup.

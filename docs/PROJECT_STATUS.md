@@ -1,5 +1,13 @@
 # Estado actual de estabilización — 2026-11-23
 
+## Brechas smoke backend encontradas por auditoría independiente — en curso
+
+- La edición concurrente ya daba un 200 y un 409, pero no comprobaba por API/MySQL el destino final de cada ruta ni `Driver.VehicleId`. Se añadieron asserts de lectura API+SQL: una sola ruta toma la nueva pareja; la perdedora y asignaciones previas quedan intactas.
+- Baja lógica ya impedía borrar una ruta en progreso y permitía borrarla cancelada, pero no verificaba el `isActive=false` final. Ahora el smoke lee por GET, SQL y lista `onlyActive=true`.
+- `.github/workflows/ci.yml` ya contiene smokes tenant, concurrencia y login con MySQL/API descartables; se amplió el disparador para que el push a `chore/stabilize-fleet-platform` también los ejecute automáticamente (antes sólo push a `main` o dispatch manual).
+- Contrato observado en la edición: se asigna el Vehicle nuevo al Driver elegido; la relación explícita del Driver anterior se conserva. Está documentado y el smoke lo verifica.
+- `bash -n` y `git diff --check` pasan. Falta la Action de Backend con los nuevos smokes para confirmar persistencia y cleanup.
+
 ## Estado vigente
 
 - Front más reciente: Actions [`45138088658`](https://github.com/Paul1578/Front_gpsR/actions/runs/45138088658) (cambio de rol persistido por UI) y [`45139564823`](https://github.com/Paul1578/Front_gpsR/actions/runs/45139564823) (username largo responsive) pasaron **51/51 E2E**; API/MySQL, responsive, Release/xUnit y cleanup correctos.

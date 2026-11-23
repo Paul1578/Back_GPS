@@ -569,3 +569,8 @@
 ## 2026-11-23 — Revisión independiente de seguridad
 
 - Auditoría read-only de Front y Backend no encontró un bypass nuevo de tenant/roles, fallo JWT explotable o vector XSS concreto en el alcance revisado. Confirmó filtros globales, root-only y validación `TokenVersion`; la revisión estática no reemplaza la evidencia dinámica de Actions HTTP/MySQL.
+# 2026-11-23 — Cobertura persistida de edición y baja lógica de rutas
+
+- Smoke concurrente de UpdateRoute valida la pareja ganadora/perdedora y asignación de Driver por HTTP+SQL.
+- Smoke de DeleteRoute valida baja cancelada por GET, listado activo y MySQL.
+- CI Backend ahora ejecuta smokes tenant y concurrencia con API/MySQL descartables en pushes a la rama de estabilización.

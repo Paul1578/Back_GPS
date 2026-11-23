@@ -728,3 +728,8 @@ La invitación envía sólo el enlace de activación; el usuario fija su contras
 
 - Backend `88f669d`, Action [`45126308692`](https://github.com/Paul1578/Back_GPS/actions/runs/45126308692): **success**. Restore/build Release, xUnit **136/136**, tenant HTTP/MySQL, concurrencia, login rate limit Staging y teardown pasaron. Log exacto: “10 respuestas 401, intento 11 = 429 con Retry-After, la misma cuenta funciona desde otra IP.”
 - Backend `63333bb`, Action [`45127502896`](https://github.com/Paul1578/Back_GPS/actions/runs/45127502896): **success**. Build, xUnit 136/136, tenant HTTP/MySQL, concurrencia, smoke Staging ampliado con dos proxies confiables y limpieza pasaron.
+# Reasignación de ruta y baja lógica persistida — CI pendiente — 2026-11-23
+
+- `smoke-route-concurrency.sh` ahora valida las respuestas 200/409 concurrentes y luego compara ruta/Driver por API y MySQL; la edición ganadora debe persistir vehículo/conductor destino, la ruta perdedora no mutarse, y el Driver previo conservar su vehículo explícito.
+- Después de cancelar y dar de baja una ruta, se comprueba GET (`isActive=false`, Cancelled), fila MySQL y ausencia en `/Routes?onlyActive=true`.
+- `bash -n` y diff-check locales pasan; la Action Backend ahora correrá automáticamente en cada push de `chore/stabilize-fleet-platform`. HTTP/MySQL real y cleanup pendientes.

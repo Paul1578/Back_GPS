@@ -3,7 +3,7 @@ name: Build Backend (.NET)
 on:
   workflow_dispatch:
   push:
-    branches: [ "main" ]
+    branches: [ "main", "chore/stabilize-fleet-platform" ]
   pull_request:
     branches: [ "main" ]
 

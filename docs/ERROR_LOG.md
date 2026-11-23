@@ -1468,3 +1468,15 @@ Cada cambio de API debe incluir validación de compilación, migraciones si apli
 
 - El informe independiente de QA indicó que el smoke Backend no completaba traslados sin operaciones. La inspección de `scripts/smoke-tenant-http.sh:1233-1257` mostró que sí crea el traslado, lo inicia y completa como Logistics, y verifica estado/timestamps/vehículo Available por HTTP y SQL.
 - La brecha real era más estrecha: faltaba el mismo ciclo en la interfaz autenticada del Driver. Se cubrió en Front Action `45131410815` (51/51). Prevención: verificar el script completo y su tramo final antes de concluir ausencia de cobertura.
+
+## 2026-11-23 — Búsqueda de configuración usó raíz Program.cs incorrecta — RESUELTO
+
+- Una consulta intentó buscar `fletflow/Program.cs`, pero el entrypoint está en `Program.cs` de la raíz del checkout. `rg` informó el path faltante; no hubo cambios ni ejecución de producto.
+- Solución: localizarlo con `rg --files | rg '(^|/)Program.cs$'` y leer el entrypoint real.
+- Prevención: confirmar la raíz del proyecto antes de prefijar `fletflow/` a archivos que están en la raíz.
+
+## 2026-11-23 — Revisión parcial de workflow intentó duplicar pasos de smoke — CORREGIDO ANTES DE COMMIT
+
+- Una lectura inicial de `.github/workflows/ci.yml` sólo cubrió hasta el primer bloque `Test`, y no las secciones inferiores donde ya se instalaba MySQL, iniciaba API y ejecutaban los smokes tenant, concurrencia y rate limit. Se preparó temporalmente un segundo bloque duplicado.
+- La revisión completa del workflow detectó la duplicación antes de commit/push; se eliminó el bloque nuevo y se conservó únicamente el cambio del trigger para la rama de estabilización. No se ejecutó Action ni producto con la versión duplicada.
+- Prevención: leer workflow completo o localizar todos sus pasos con `rg` antes de añadir pipelines; alinear el plan con lo que ya ejecuta el final del archivo.

@@ -2,10 +2,10 @@
 
 - Rama Backend `chore/stabilize-fleet-platform`; nunca modificar `main`.
 - Añadidos `scripts/smoke-tenant-migration.sh` (MySQL 8 desechable, upgrade desde `LinkDriverUser`, asignación al root Admin más antiguo y guard pre-DDL discordante) y casos SQL-like en `scripts/smoke-tenant-http.sh` para Users/Drivers paginados.
-- La suite de upgrade pasó localmente tras corregir `PointsJson='[]'` en los fixtures. La rama de CI Front incluye ejecución del script; Action integrada pendiente.
+- La suite de upgrade pasó localmente tras corregir `PointsJson='[]'` en los fixtures. Actions Backend [`45253546602`](https://github.com/Paul1578/Back_GPS/actions/runs/45253546602) y [`45253557375`](https://github.com/Paul1578/Back_GPS/actions/runs/45253557375) pasaron Release, 165/165 xUnit, upgrade migration, tenant SQL-like/API/MySQL, concurrencia, rate limit y cleanup.
 - **Incidente a recordar:** primer borrador ejecutó EF desde el repo y `.env` tomó precedencia sobre DB_* temporal, revirtiendo migraciones de DB local. Se reaplicaron; lectura posterior confirmó historial `GuardDiscordantRouteOwnership`, 5 Users, 0 Routes, 1 Vehicle, 0 Drivers, ownership completo y owner correcto. El script ahora copia fuente excluyendo `.env*`, `bin`, `obj` y sólo usa DB MySQL efímero. No eliminar esta guarda ni ejecutar EF de pruebas desde el checkout con `.env`.
 - Un fixture legacy falló al omitir `Routes.PointsJson`, columna NOT NULL sin default efectivo; se agregó `'[]'`, repetición completa pasa. Ver `docs/ERROR_LOG.md`.
-- Siguiente: ejecutar `bash -n`, diff-check, suite xUnit/backend release y confirmar Action completa Front una vez integrados ambos repos. Documentar IDs/resultados; mantener datos locales intactos.
+- Siguiente: confirmar la Action completa Front del HEAD `9f576d8`, documentar su resultado y volver a ejecutar CI sólo si los cambios finales a documentación requieren HEAD validado. Mantener datos locales intactos.
 
 ## Handoff vigente — lock del runner E2E local — 2026-11-23
 

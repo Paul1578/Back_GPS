@@ -4,11 +4,11 @@
 - Validaciones locales: `bash -n`, `git diff --check`, lock/concurrencia read-only, runner completo y suite Release xUnit **165/165** pasan. El runner completo rechazó la segunda ejecución antes de cleanup.
 - Backend commit `4079ae2`: Actions [`45243805957`](https://github.com/Paul1578/Back_GPS/actions/runs/45243805957) y [`45243813554`](https://github.com/Paul1578/Back_GPS/actions/runs/45243813554) pasaron build/tests, tenant HTTP/MySQL, concurrencia y rate limit. Front integrada [`45244177166`](https://github.com/Paul1578/Front_gpsR/actions/runs/45244177166) sobre Backend con lock pasó **67/67 E2E**, responsive **1/1**, audit/lint/build, backend Release/xUnit **165/165**, API/MySQL y teardown. Ramas Front/Backend separadas; `main` intacta.
 
-## QA de migración tenant — código local validado, CI pendiente — 2026-11-23
+## QA de migración tenant — validado local y CI — 2026-11-23
 
 - Rama `chore/stabilize-fleet-platform`; `main` intacta.
 - Script `scripts/smoke-tenant-migration.sh` ahora copia el backend a una carpeta temporal sin `.env*`, ejecuta `dotnet ef` sólo desde esa copia y levanta MySQL 8 efímero. Localmente pasó migración válida y rechazo pre-DDL de ruta discordante.
-- El smoke HTTP de búsqueda paginada agrega entradas SQL-like para Users y Drivers; pasó API/MySQL descartable con build Release sin warnings. El Front CI ejecutará el test de migración; aún falta Action integrada.
+- El smoke HTTP de búsqueda paginada agrega entradas SQL-like para Users y Drivers. Actions Backend [`45253546602`](https://github.com/Paul1578/Back_GPS/actions/runs/45253546602) y [`45253557375`](https://github.com/Paul1578/Back_GPS/actions/runs/45253557375) pasaron Release build, xUnit 165/165, migration smoke, tenant HTTP/MySQL, concurrencia, rate limit y cleanup.
 - Primer borrador usó `.env` local y revirtió migraciones del esquema persistente; fueron reaplicadas y una consulta sólo lectura confirmó historial vigente, datos, ownership y vehículo en el root esperado. Causa, recuperación y prevención constan en `ERROR_LOG.md`.
 - Validación local de la DB persistente tras el incidente: último historial `20261123132833_GuardDiscordantRouteOwnership`, 5 users/0 routes/1 vehicle/0 drivers, cero owners nulos, cero rutas discordantes y vehículo atribuido al Admin raíz más antiguo.
 

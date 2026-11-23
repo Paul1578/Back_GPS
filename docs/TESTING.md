@@ -5,7 +5,8 @@
 - El primer intento cargó por error `.env` del checkout y revirtió migraciones de la DB local. Se restauró y una comprobación sólo lectura verificó historial `20261123132833_GuardDiscordantRouteOwnership`, 5 Users, 0 Routes, 1 Vehicle, 0 Drivers, cero owners nulos/rutas discordantes y el owner del vehículo esperado. La prevención quedó incorporada al script: copia temporal sin `.env*`, EF sólo dentro de esa copia y MySQL aislado. Detalle en `ERROR_LOG.md`.
 - El fixture inicialmente omitía `Routes.PointsJson`; se agregó el valor `'[]'` y la repetición completa pasó.
 - `scripts/smoke-tenant-http.sh` ahora envía payload SQL-like en la búsqueda paginada de Users y Drivers y valida 200 con cero resultados y sin datos de otro tenant. `bash -n`, `git diff --check`, Release build (0 warnings/0 errors) y smoke HTTP/MySQL descartable pasaron. La integración CI del nuevo smoke sigue pendiente.
-- La primera Action [`45252968270`](https://github.com/Paul1578/Back_GPS/actions/runs/45252968270) falló en preflight porque GitHub Ubuntu no tiene `rg`; reemplazado por `grep -Fq` y el smoke se reordenó después de instalar cliente MySQL. Nuevas Actions deben confirmar los cambios.
+- La primera Action [`45252968270`](https://github.com/Paul1578/Back_GPS/actions/runs/45252968270) falló en preflight porque GitHub Ubuntu no tiene `rg`; reemplazado por `grep -Fq` y el smoke se reordenó después de instalar cliente MySQL.
+- Actions Backend [`45253546602`](https://github.com/Paul1578/Back_GPS/actions/runs/45253546602) y [`45253557375`](https://github.com/Paul1578/Back_GPS/actions/runs/45253557375) pasaron con el arreglo: Release build, xUnit 165/165, upgrade histórico, tenant HTTP/MySQL incluyendo filtros SQL-like de Users/Drivers, concurrencia de asignación, rate limit y cleanup de fixtures.
 
 ## Bloqueo concurrente del runner E2E — 2026-11-23
 

@@ -546,7 +546,7 @@
 
 - Action Backend [`45126308692`](https://github.com/Paul1578/Back_GPS/actions/runs/45126308692) pasó el nuevo smoke HTTP Staging: build Release, xUnit 136/136, tenant/concurrencia HTTP/MySQL, rate limit por IP y cleanup.
 
-## 2026-11-23 — IP de cliente detrás de proxy confiable — CI pendiente
+## 2026-11-23 — IP de cliente detrás de proxy confiable — VALIDADO
 
 - Se habilitó `UseForwardedHeaders` con máximo un salto, XFF/XFP simétricos y `ForwardedHeaders:KnownProxies` como allowlist vacía por defecto. Sólo direcciones IP explícitas son válidas; se documentó la configuración de ingress.
-- El smoke HTTP local comprobó que un origen no confiable no puede falsificar XFF, que dos proxies permitidos comparten el rate limit del cliente reenviado y que otra IP puede iniciar sesión. Release build, xUnit 136/136 y smoke MySQL/API local pasaron; CI pendiente.
+- El smoke HTTP local y Action Backend [`45127502896`](https://github.com/Paul1578/Back_GPS/actions/runs/45127502896) comprobaron que un origen no confiable no puede falsificar XFF, que dos proxies permitidos comparten el rate limit del cliente reenviado y que otra IP puede iniciar sesión. Release build, xUnit 136/136, smokes HTTP/MySQL y cleanup pasaron.

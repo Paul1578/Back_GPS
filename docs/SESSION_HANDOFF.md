@@ -937,3 +937,10 @@ Errores de migración, herramientas, QA y soluciones están en `docs/ERROR_LOG.m
 - Estado local: Release xUnit **165/165**, build **0 warnings/0 errors**, `bash -n`/diff-check correctos. Docker reconstruido después del ajuste final: UID 10001, sin assemblies de test y keyring escribible.
 - Back commit `9d201e8` y Action [`45220748028`](https://github.com/Paul1578/Back_GPS/actions/runs/45220748028) validaron DocumentNumber race. Próximo: finalizar Docker build exacto, actualizar docs, publicar este endurecimiento y esperar su Action.
 - Después publicar Front lote UX/BFF; CI deberá usar la rama backend más reciente. No cerrar misión hasta resolver ambos workflows y revisar los demás criterios/external limitations.
+
+## Regresión CI de claim JWT — corrección local (2026-11-23)
+
+- Backend commit `18fd6be` pasó Release build y **165/165 xUnit** en Action, pero sus dos Actions (`45223224457` push y `45223243553` PR) fallaron en el smoke `GET /Auth/me`: 401 `Token sin identificador de usuario.`
+- Causa/fix: el middleware validaba identidad con `ClaimTypes.NameIdentifier` o `nameid`; AuthController sólo leía el alias. `/me`, logout/logout-all y change-password ahora usan helper con fallback explícito al claim `nameid`.
+- El test de JwtTokenService ahora valida firma y principal `NameIdentifier`. Local: **165/165**, Release build **0 warnings/0 errors**, usando `DOTNET_ROOT=/home/leonardo/.dotnet` (el host global no inicia).
+- Publicar Backend y repetir Action completa; el smoke debe confirmar API/MySQL tenant isolation, rutas, rate limit, roles y cleanup. Repetir también Front contra el tip Backend arreglado: Front Action `45223390345` sigue ejecutándose y checkout el SHA anterior.

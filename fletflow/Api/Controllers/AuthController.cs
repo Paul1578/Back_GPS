@@ -97,7 +97,7 @@ namespace fletflow.Api.Controllers
             [FromServices] ChangePasswordCommand command,
             [FromBody] ChangePasswordDto dto)
         {
-            var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var userIdStr = GetUserIdClaim();
             if (string.IsNullOrWhiteSpace(userIdStr))
                 return Unauthorized("Token sin identificador de usuario.");
 
@@ -139,7 +139,7 @@ namespace fletflow.Api.Controllers
         [Authorize]
         public async Task<IActionResult> Logout([FromBody] RefreshRequestDto dto)
         {
-            var userIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var userIdValue = GetUserIdClaim();
             if (!Guid.TryParse(userIdValue, out var userId))
                 return Unauthorized("Token sin identificador de usuario.");
 
@@ -157,7 +157,7 @@ namespace fletflow.Api.Controllers
         [Authorize]
         public async Task<IActionResult> LogoutAll()
         {
-            var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var userIdStr = GetUserIdClaim();
             if (string.IsNullOrWhiteSpace(userIdStr))
                 return Unauthorized("Token sin identificador de usuario.");
 
@@ -177,7 +177,7 @@ namespace fletflow.Api.Controllers
         [Authorize]
         public async Task<IActionResult> Me()
         {
-            var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var userIdStr = GetUserIdClaim();
             if (string.IsNullOrWhiteSpace(userIdStr))
                 return Unauthorized("Token sin identificador de usuario.");
 
@@ -187,6 +187,9 @@ namespace fletflow.Api.Controllers
             var me = await _authService.GetMeAsync(userId);
             return Ok(me);
         }
+
+        private string? GetUserIdClaim() =>
+            User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue("nameid");
 
         /// <summary>
         /// Envía un correo para restablecer la contraseña del usuario.

@@ -801,3 +801,10 @@ La invitación envía sólo el enlace de activación; el usuario fija su contras
 - Action [`45220748028`](https://github.com/Paul1578/Back_GPS/actions/runs/45220748028) del commit `9d201e8`: Release build, **162/162 xUnit**, smoke de carrera DocumentNumber con un POST **201**, otro **409**, una fila y cleanup; smoke general tenant/roles pasó.
 - Revalidación local tras añadir `nbf` y rechazar JWT antiguos o >15 min: Release xUnit **165/165**, build Release **0 warnings/0 errors**, Docker build y verificación UID/test-assembly/keyring correctos, `bash -n` y diff-check correctos. Incluye caso legacy sin `nbf`.
 - Los tests de 15 minutos, validación startup y rechazo de JWT legacy, junto con Docker non-root, son posteriores a la Action `45220748028`; CI del siguiente commit pendiente. El smoke no se ejecutó localmente contra la base persistente `fletflow`.
+
+### Regresión encontrada en Actions de 18fd6be
+
+- Build Release y xUnit **165/165** pasaron tanto en push `45223224457` como en PR `45223243553`.
+- El smoke HTTP/MySQL falló en `GET /Auth/me`: esperaba 200 y recibió 401 con `Token sin identificador de usuario.`. El middleware resolvía el claim `nameid`, pero `AuthController` sólo consultaba `ClaimTypes.NameIdentifier`.
+- AuthController ahora comparte resolución de ambos claim types; el test de JWT también valida firma e identidad mapeada. Release xUnit **165/165** y build **0 warnings/0 errors** pasaron localmente con `/home/leonardo/.dotnet/dotnet`.
+- Pendiente Actions del commit de corrección; el smoke real de API/MySQL debe volver a completar todos los escenarios y cleanup.
